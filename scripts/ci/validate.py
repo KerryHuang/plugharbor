@@ -30,6 +30,8 @@ PLACEHOLDER_STEM = re.compile(r"^(x+|foo|bar|example|sample)$", re.I)
 KNOWN_MISSING = {
     # ui-ux-pro-max 的 CLI 與資料庫刻意未納入，README 與 SKILL.md 已註明 fallback
     "ui-ux": {"search.py"},
+    # reviewer agent 內文的 YAML 範例路徑（示意用，不是真檔）
+    "toolkit": {"checklist.md", "my-agent.md"},
 }
 
 errors: list[str] = []

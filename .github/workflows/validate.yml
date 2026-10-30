@@ -32,6 +32,14 @@ jobs:
           done
           exit $status
 
+      - name: Skill 腳本測試（node）
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Skill 腳本測試（node --test）
+        run: node --test $(git ls-files 'plugins/**/*.test.mjs')
+
       - name: Hook 測試（pytest 與 shell）
         run: |
           pip install pytest

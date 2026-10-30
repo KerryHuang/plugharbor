@@ -1,0 +1,5 @@
+# 來源聲明
+
+本目錄的 `*-reviewer.md` 五支 agent 取自 Reflexive-Claude-Code（rcc）plugin 13.1.1，
+https://github.com/wayne930242/Reflexive-Claude-Code ，以 MIT License 授權。
+2026-10-02 停用 rcc plugin 後搬入，只保留實際在用的 reviewer（config-doctor Phase 3 派發）。

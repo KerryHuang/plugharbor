@@ -1,6 +1,6 @@
 # toolkit
 
-通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。目前只有 hooks，skills 與 agents 之後再加。
+通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。另附 7 個 skills 與 5 支 reviewer agents（見下）。
 
 ## 安裝
 
