@@ -51,3 +51,13 @@ jobs:
             echo "::endgroup::"
           done
           exit $status
+
+      - name: Setup 腳本測試
+        run: |
+          status=0
+          for t in $(git ls-files 'setup/tests/*.sh'); do
+            echo "::group::$t"
+            bash "$t" || status=1
+            echo "::endgroup::"
+          done
+          exit $status

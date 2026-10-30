@@ -1,0 +1,128 @@
+id = "plugharbor.sidebar"
+name = "Sidebar"
+version = "0.1.0"
+min_herdr_version = "0.9.3"
+description = "側欄依狀態替 tab／workspace 名稱上色、各狀態計數，並把子智慧體掛在 launcher 底下排成樹"
+platforms = ["macos", "linux", "windows"]
+
+# 每個入口拆兩條：macOS 的 herdr server 由 brew service 啟動，PATH 只有 /usr/bin:/bin:/usr/sbin:/sbin，
+# 找不到 Homebrew 的 node（manifest 不經 shell），所以 Unix 先補 PATH 再 exec；Windows 直接跑 node。
+
+[[startup]]
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[startup]]
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+[[events]]
+on = "pane.agent_detected"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "pane.agent_detected"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+# pane 關掉或 tab 改名時，$where 的序號與名稱要重算。
+# 用 API 關 pane 發 pane.closed；pane 內程式結束（如 claude /exit）只發 pane.exited，兩個都要掛
+[[events]]
+on = "pane.closed"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "pane.closed"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+[[events]]
+on = "pane.exited"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "pane.exited"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+[[events]]
+on = "tab.renamed"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "tab.renamed"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+# claude /exit 後 pane 還留著 shell，不會發 pane.exited，只能靠狀態變化補算
+[[events]]
+on = "pane.agent_status_changed"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+# workspace 改名時 $space_<狀態> 的名稱要重算
+[[events]]
+on = "workspace.renamed"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "workspace.renamed"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+# done→idle（看過了）只是翻 seen 旗標，herdr 不發 agent_status_changed；
+# 看過＝切到那個 tab，所以掛 focus 事件補算，否則 tab 名稱會停在綠色
+[[events]]
+on = "tab.focused"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "tab.focused"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+[[events]]
+on = "pane.focused"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "pane.focused"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+[[events]]
+on = "workspace.focused"
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+platforms = ["macos", "linux"]
+
+[[events]]
+on = "workspace.focused"
+command = ["node", "apply.mjs"]
+platforms = ["windows"]
+
+# 手動／hook 觸發重算（例如 plugharbor 的 herdr-parent-tag.py 補標 parent_pane 之後：寫 metadata 本身不會觸發事件）
+[[actions]]
+id = "refresh"
+title = "重算側欄狀態與樹狀排序"
+contexts = ["global"]
+platforms = ["macos", "linux"]
+command = ["sh", "-c", "PATH=/opt/homebrew/bin:/usr/local/bin:$PATH exec node apply.mjs"]
+
+[[actions]]
+id = "refresh-windows"
+title = "重算側欄狀態與樹狀排序"
+contexts = ["global"]
+platforms = ["windows"]
+command = ["node", "apply.mjs"]

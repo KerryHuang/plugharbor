@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "autoCompactWindow": 400000,
+  "env": {
+    "CLAUDE_CODE_FORCE_TERMINAL_IMAGES": "1"
+  },
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -fr /)",
+      "Bash(rm -r /)",
+      "Bash(rm -rf / *)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -fr ~)",
+      "Bash(rm -r ~)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf ${HOME})",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf ..)",
+      "Bash(diskpart *)",
+      "Bash(format *)",
+      "Bash(mkfs *)",
+      "Bash(shutdown *)"
+    ],
+    "ask": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r *)",
+      "Bash(rm -f -r *)",
+      "Bash(rm -r -f *)",
+      "Bash(dotnet ef database drop *)",
+      "Bash(dotnet ef migrations remove *)"
+    ],
+    "defaultMode": "auto"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh",
+    "padding": 0
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$HOME/.claude/hooks/herdr-parent-tag.py\"; done; exit 0'",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$HOME/.claude/hooks/herdr-parent-tag.py\"; done; exit 0'",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  },
+  "skillOverrides": {
+    "handoff": "off",
+    "toolkit:handoff": "off",
+    "ai-radar": "off",
+    "research:ai-radar": "off"
+  }
+}

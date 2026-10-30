@@ -1,0 +1,56 @@
+onboarding = false
+
+[terminal]
+# 新 pane 一律開在 workspace 根。
+# 這不只是方便：從未在 Claude Code 開過的目錄，claude --bg / herdr agent start
+# 起的 worker 會卡在啟動對話框（macOS 是 MCP 授權、Windows 是資料夾信任），
+# 而背景 worker 沒有人能回答那個對話框，於是永遠 state=blocked。
+new_cwd = "~"
+
+[ui.sidebar.agents]
+# 每筆兩行：herdr 內建 state_icon＋ $where_<狀態>（tab 名稱，同 tab 多 pane 時帶序號）／終端機標題
+# 標題前綴由 Claude Code 自己畫：執行中是轉動的 ◐◑◒◓，閒置是 ✳——這是 0.8.0 起唯一的動畫來源
+# $tree 由 plugins/sidebar 依 launcher 寫的 parent token 算出（子智慧體掛在 launcher 底下），一般 agent 為空
+rows = [
+  [
+    { token = "$tree", dim = true },
+    "state_icon",
+    # tab 名稱依狀態上色：同一時間只有一個 $where_<狀態> 有值
+    { token = "$where_blocked", fg = "#ff5f87", bold = true },
+    { token = "$where_working", fg = "#f9e2af", bold = true },
+    { token = "$where_done", fg = "#a6e3a1", bold = true },
+    { token = "$where_idle", fg = "#a6adc8" },
+    { token = "$where_unknown", fg = "#fab387" },
+  ],
+  [{ token = "terminal_title", fg = "#8b91a8" }, { token = "agent", fg = "#89b4fa", rules = [{ equals = "claude", ignore_case = true, hide = true }, { equals = "pi", ignore_case = true, hide = true }, { starts_with = "★", hide = true }] }],
+]
+
+[ui.sidebar.spaces]
+# 跟 agent 列同一套：第 1 行 state_icon＋workspace 名稱，依整體狀態上色；第 2 行各狀態 agent 數＋分支
+# $space_<狀態>、$count_<狀態> 由 plugins/sidebar 回報
+rows = [
+  [
+    "state_icon",
+    { token = "$space_blocked", fg = "#ff5f87", bold = true },
+    { token = "$space_working", fg = "#f9e2af", bold = true },
+    { token = "$space_done", fg = "#a6e3a1", bold = true },
+    { token = "$space_idle", fg = "#a6adc8" },
+    { token = "$space_unknown", fg = "#a6adc8" },
+  ],
+  [
+    { token = "$count_blocked", fg = "#ff5f87", bold = true },
+    { token = "$count_working", fg = "#f9e2af" },
+    { token = "$count_done", fg = "#a6e3a1" },
+    { token = "$count_idle", fg = "#a6adc8" },
+    { token = "$count_unknown", fg = "#fab387" },
+    { token = "branch", fg = "#8b91a8" }, "git_status",
+  ],
+]
+
+[ui.toast]
+# 只在 blocked（等你回應）／done（完成）通知；目前看著的 tab 不跳，狀態維持過 delay 才響。
+# macOS 用 terminal（OSC 9 請 Ghostty 代發，來源 Ghostty、點了回到終端）；system 在 macOS 沒裝 terminal-notifier 時
+# 走 osascript，來源顯示成「指令編寫程式」。Windows（Zed 內建終端機）用 system，來源 herdr.exe。
+# 只有聲音沒有橫幅：macOS 先查專注模式；Windows 先查自動勿擾「玩遊戲時」（Zed 被當成遊戲）——2026-10-23 兩台各中一次
+# toolkit 的 notification.sh 在 herdr pane 裡會讓位給這裡，避免重複
+delivery = "terminal"
