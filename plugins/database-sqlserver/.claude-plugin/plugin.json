@@ -1,0 +1,9 @@
+{
+  "name": "database-sqlserver",
+  "description": "SQL Server 資料庫能力 — table/view 撰寫慣例、TableDescription 文件生成、EF Core migration 工具與疑難排解。",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

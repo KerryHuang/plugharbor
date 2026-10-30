@@ -1,0 +1,22 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 本機外洩黑名單（含公司資訊，絕不可提交）
+.leak-denylist
+
+# 私有設計文件與 SDD 工作檔，不可提交
+.private/
+.superpowers/

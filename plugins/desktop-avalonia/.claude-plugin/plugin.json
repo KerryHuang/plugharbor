@@ -1,0 +1,9 @@
+{
+  "name": "desktop-avalonia",
+  "description": "Avalonia 桌面 .NET 能力 — MVVM 慣例、跨平台路徑處理、桌面應用建置與發佈。",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

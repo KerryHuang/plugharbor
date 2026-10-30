@@ -1,0 +1,9 @@
+{
+  "name": "ui-ux",
+  "description": "UI/UX 設計知識庫 — 風格系統、版面配置、互動慣例、資訊呈現，供介面設計與審查取用。",
+  "version": "0.1.1",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "backend-dotnet",
+  "description": ".NET Clean Architecture 後端能力 — CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD，含 architect/developer/reviewer/tester agents。",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

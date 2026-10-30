@@ -1,0 +1,63 @@
+/* 操作手冊 PDF 列印樣式
+   給 build-manual-pdf.py 使用。改版面只需要改這個檔，不必動 Python。*/
+
+@page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+* { box-sizing: border-box; }
+body { font-family: "PingFang TC","Hiragino Sans GB","Heiti TC",sans-serif;
+       font-size: 10.5pt; line-height: 1.75; color: #1a1a1a; margin: 0; }
+
+/* 封面 */
+.cover { padding-top: 52mm; text-align: center; page-break-after: always; }
+.cover .brand { font-size: 13pt; letter-spacing: .3em; color: #1a4d8f; margin-bottom: 6mm; }
+.cover h1 { font-size: 30pt; color: #1a4d8f; border: none; margin: 0 0 4mm;
+            letter-spacing: .05em; page-break-before: avoid; }
+.cover .code { font-size: 12pt; color: #666; letter-spacing: .2em; margin-bottom: 18mm; }
+.cover .rule { width: 42mm; height: 3px; background: #1a4d8f; margin: 0 auto 18mm; }
+.cover table { font-size: 10pt; border-collapse: collapse; margin: 0 auto; width: auto; }
+.cover td { padding: 2mm 8mm; border: none; color: #444; }
+.cover td:first-child { color: #888; text-align: right; }
+
+/* 目錄 */
+.toc-page { page-break-before: always; page-break-after: always; }
+.toc-page h2 { font-size: 18pt; color: #1a4d8f; border-bottom: 2px solid #1a4d8f;
+               padding-bottom: 3mm; margin-bottom: 6mm; }
+.toc ul { list-style: none; padding-left: 0; margin: 0; }
+.toc > ul > li { margin: 3mm 0; font-weight: 600; font-size: 11.5pt; }
+.toc ul ul { padding-left: 7mm; margin: 1.5mm 0; }
+.toc ul ul li { font-weight: 400; font-size: 10pt; margin: 1mm 0; color: #555; }
+.toc a { color: inherit; text-decoration: none; }
+
+/* 內文標題 */
+h1 { font-size: 19pt; color: #1a4d8f; border-bottom: 2.5px solid #1a4d8f;
+     padding-bottom: 2.5mm; margin: 0 0 6mm; page-break-before: always; page-break-after: avoid; }
+h2 { font-size: 14pt; color: #1a4d8f; margin: 8mm 0 3mm; page-break-after: avoid;
+     border-left: 4px solid #1a4d8f; padding-left: 3mm; }
+h3 { font-size: 12pt; color: #222; margin: 6mm 0 2.5mm; page-break-after: avoid;
+     background: #eef3fa; padding: 2mm 3mm; border-radius: 2px; }
+p { margin: 2.5mm 0; }
+
+/* 圖片：整張不被切斷 */
+img { max-width: 100%; display: block; margin: 3mm auto 2mm;
+      border: 1px solid #d0d0d0; border-radius: 3px; }
+p:has(img) { page-break-inside: avoid; text-align: center; }
+
+/* 表格 */
+table { border-collapse: collapse; width: 100%; margin: 3mm 0 4mm;
+        font-size: 9.5pt; page-break-inside: avoid; }
+th { background: #1a4d8f; color: #fff; font-weight: 600; }
+th, td { border: 1px solid #c8d4e3; padding: 2mm 3mm; text-align: left; vertical-align: top; }
+tbody tr:nth-child(even) { background: #f6f9fc; }
+
+/* 說明 / 警告區塊 */
+blockquote { margin: 3mm 0; padding: 2.5mm 4mm; background: #fff9e6;
+             border-left: 4px solid #e0a800; page-break-inside: avoid; }
+blockquote p { margin: 1mm 0; }
+
+code { background: #eef1f4; padding: .5mm 1.5mm; border-radius: 2px;
+       font-family: "SF Mono",Menlo,monospace; font-size: 9pt; }
+ol, ul { margin: 2.5mm 0; padding-left: 6mm; }
+li { margin: 1.5mm 0; }
+hr { border: none; border-top: 1px solid #dde3ea; margin: 6mm 0; }
+strong { color: #1a1a1a; }
+blockquote strong { color: #b8002a; }
+td strong, th strong { color: #b8002a; }

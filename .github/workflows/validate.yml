@@ -1,0 +1,33 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Marketplace 驗證（版號、frontmatter、交互引用、README 清單、外洩樣式）
+        run: python scripts/ci/validate.py
+
+      - name: Plugin 腳本測試
+        run: |
+          pip install pyyaml
+          status=0
+          for t in $(git ls-files 'plugins/**/test_*.py'); do
+            echo "::group::$t"
+            python "$t" || status=1
+            echo "::endgroup::"
+          done
+          exit $status

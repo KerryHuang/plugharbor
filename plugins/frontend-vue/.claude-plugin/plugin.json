@@ -1,0 +1,9 @@
+{
+  "name": "frontend-vue",
+  "description": "Vue 3 + TypeScript + Quasar 前端能力 — 架構分層、composable 抽取、Chrome DevTools 除錯、i18n、OpenSpec 工作流，含 code-reviewer/test-engineer agents。",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}
