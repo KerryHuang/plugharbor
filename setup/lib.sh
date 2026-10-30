@@ -10,10 +10,10 @@ setup/herdr/hooks/herdr-parent-tag.py|hooks/herdr-parent-tag.py|file'
 
 SIDEBAR_DIR="$REPO_DIR/setup/herdr/plugins/sidebar"
 
-# 找真的跑得起來的 python（Windows 的 python3 可能是 Store 捷徑，command -v 找得到卻不能執行）
+# 找真的跑得起來的 python 3.6+（Windows 的 python3 可能是 Store 捷徑，command -v 找得到卻不能執行；python 可能是 2.x）
 PY=""
-for c in python python3; do
-  if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi
+for c in python3 python; do
+  if "$c" -c 'import sys; sys.exit(sys.version_info < (3, 6))' >/dev/null 2>&1; then PY="$c"; break; fi
 done
 
 ph_all_plugins() {
@@ -26,7 +26,7 @@ ph_all_plugins() {
 # 要裝的 plugin：PLUGHARBOR_PLUGINS="toolkit research" 覆寫，沒設（或空字串）就全部
 ph_plugins() {
   if [ -n "${PLUGHARBOR_PLUGINS:-}" ]; then
-    printf '%s\n' $PLUGHARBOR_PLUGINS
+    ( set -f; printf '%s\n' $PLUGHARBOR_PLUGINS )  # 只按空白切字，不展開萬用字元
   else
     ph_all_plugins
   fi

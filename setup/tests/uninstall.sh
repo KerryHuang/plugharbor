@@ -19,6 +19,7 @@ echo "使用者自改" > "$C/rules/dotnet.md"
 python3 - "$C/settings.json" <<'PY'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p, encoding="utf-8")); d["foo"] = "bar"
+d["hooks"]["PreToolUse"].append({"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 /opt/other/herdr-parent-tag.py"}]})
 json.dump(d, open(p, "w", encoding="utf-8"), indent=2)
 PY
 mkdir -p "$C/backups/plugharbor-20260101-000000"; echo "# 舊備份" > "$C/backups/plugharbor-20260101-000000/CLAUDE.md"
@@ -41,7 +42,12 @@ OUT="$(run uninstall.sh)" || fail "uninstall exit 非 0：$OUT"
 [ ! -e "$C/hooks/herdr-parent-tag.py" ] || fail "未移除 herdr-parent-tag.py"
 grep -q "使用者自改" "$C/rules/dotnet.md" || fail "使用者改過的檔案不該被移除"
 grep -q '"foo": "bar"' "$C/settings.json" || fail "settings.json 其他內容被動過"
-if grep -q 'herdr-parent-tag' "$C/settings.json"; then fail "hook 檔已移除，settings 的 herdr-parent-tag 條目應一併移除"; fi
+if grep -q '\.claude/hooks/herdr-parent-tag' "$C/settings.json"; then fail "hook 檔已移除，settings 的 herdr-parent-tag 條目應一併移除"; fi
+grep -q '/opt/other/herdr-parent-tag.py' "$C/settings.json" || fail "別的路徑的 herdr-parent-tag.py 條目不該移除"
+ls "$C"/backups/plugharbor-uninstall-*/settings.json >/dev/null 2>&1 || fail "settings.json 改動前未備份"
+ls "$C"/backups/plugharbor-uninstall-*/codex/hooks.json >/dev/null 2>&1 || fail "Codex hooks.json 改動前未備份"
+PB="$(ls "$C"/backups/plugharbor-uninstall-*/pi/settings.json 2>/dev/null | head -1)"
+[ -n "$PB" ] && grep -q 'plugins/toolkit' "$PB" || fail "pi settings 改動前未備份原檔"
 [ -f "$C/backups/plugharbor-20260101-000000/CLAUDE.md" ] || fail "既有備份不該被移除"
 [ -d "$C/projects/demo/memory" ] || fail "repo 不管的目錄不該被移除"
 [ ! -e "$H/.codex/AGENTS.md" ] || fail "adapter manifest 的檔案未移除"

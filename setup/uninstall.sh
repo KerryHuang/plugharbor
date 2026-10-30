@@ -80,14 +80,17 @@ fi
 # ---------- settings.json：hook 檔已移除就拿掉指向它的條目（PreToolUse 跑到不存在的腳本會擋下 Bash） ----------
 if [ ! -e "$TARGET/hooks/herdr-parent-tag.py" ] && [ -f "$TARGET/settings.json" ]; then
   PYTHONUTF8=1 "$PY" - "$TARGET/settings.json" "$BACKUP" <<'PYEOF' || FAILS=$((FAILS + 1))
-import json, os, shutil, sys
+import json, os, re, shutil, sys
 path, backup = sys.argv[1], sys.argv[2]
+HOME = os.path.expanduser("~")
+OURS = re.compile(r"(?:~|\$HOME|\$\{HOME\}|" + re.escape(HOME) + r"|" + re.escape(HOME.replace("\\", "/")) + r")"
+                  r"[/\\]+\.claude[/\\]+hooks[/\\]+herdr-parent-tag\.py(?![\w.])")
 try:
     cur = json.load(open(path, encoding="utf-8"))
 except ValueError as e:
     print(f"FAIL: settings.json 不是合法 JSON，未清理：{e}"); sys.exit(1)
 hooks = cur.get("hooks") if isinstance(cur.get("hooks"), dict) else {}
-mine = lambda h: isinstance(h, dict) and "herdr-parent-tag.py" in (h.get("command") or "")
+mine = lambda h: isinstance(h, dict) and bool(OURS.search(h.get("command") or ""))
 touched = False
 for event in list(hooks):
     groups = hooks[event] if isinstance(hooks[event], list) else []
@@ -116,9 +119,9 @@ PYEOF
 fi
 
 # ---------- adapter 副本（~/.codex/plugharbor-manifest.json）與 Codex hooks.json 的條目 ----------
-PYTHONUTF8=1 "$PY" - "$HOME" <<'PYEOF' || FAILS=$((FAILS + 1))
-import hashlib, json, os, sys
-home = sys.argv[1]
+PYTHONUTF8=1 "$PY" - "$HOME" "$BACKUP" <<'PYEOF' || FAILS=$((FAILS + 1))
+import hashlib, json, os, shutil, sys
+home, backup = sys.argv[1], sys.argv[2]
 mpath = os.path.join(home, ".codex", "plugharbor-manifest.json")
 if os.path.exists(mpath):
     state = json.load(open(mpath, encoding="utf-8"))
@@ -148,26 +151,30 @@ if os.path.exists(hpath):
             if keep: groups_by_event[event] = keep
             else: del groups_by_event[event]
     if touched:
+        os.makedirs(os.path.join(backup, "codex"), exist_ok=True)
+        shutil.copy2(hpath, os.path.join(backup, "codex", "hooks.json"))
         open(hpath, "w", encoding="utf-8", newline="\n").write(json.dumps(data, indent=2) + "\n")
-        print("移除: .codex/hooks.json 的 plugharbor 條目")
+        print(f"移除: .codex/hooks.json 的 plugharbor 條目（原檔備份在 {backup}/codex/hooks.json）")
 PYEOF
 
 # ---------- pi packages 裡指向 plugharbor plugin 的項目 ----------
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
 if [ -f "$PI_SETTINGS" ]; then
   for p in $PLUGINS; do echo "$REPO_DIR/plugins/$p"; done | PYTHONUTF8=1 "$PY" -c '
-import json, os, sys
-path = sys.argv[1]; start = os.path.dirname(path)
+import json, os, shutil, sys
+path, backup = sys.argv[1], sys.argv[2]; start = os.path.dirname(path)
 cur = json.load(open(path, encoding="utf-8"))
 def norm(x): return os.path.normcase(os.path.normpath(x))
 ours = {norm(l.strip()) for l in sys.stdin if l.strip()}
 pkgs = cur.get("packages", [])
 keep = [x for x in pkgs if not (isinstance(x, str) and norm(os.path.join(start, x)) in ours)]
 if len(keep) != len(pkgs):
+    os.makedirs(os.path.join(backup, "pi"), exist_ok=True)
+    shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     cur["packages"] = keep
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
     print(f"移除: ~/.pi/agent/settings.json 的 {len(pkgs) - len(keep)} 個 plugharbor package")
-' "$PI_SETTINGS" || FAILS=$((FAILS + 1))
+' "$PI_SETTINGS" "$BACKUP" || FAILS=$((FAILS + 1))
 fi
 
 if [ "$FAILS" -gt 0 ]; then echo "完成，但有 $FAILS 個步驟失敗（見上方 FAIL）"; exit 1; fi

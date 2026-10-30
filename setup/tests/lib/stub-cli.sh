@@ -12,6 +12,8 @@ for c in "$@"; do
 #!/usr/bin/env bash
 name="$(basename "$0")"
 echo "$name $*" >> "$STUB_LOG"
+# $STUB_STATE/fail 每一行是一條要失敗的完整指令
+if [ -f "$STUB_STATE/fail" ] && grep -qxF "$name $*" "$STUB_STATE/fail"; then exit 1; fi
 case "$name $*" in
   "claude plugin marketplace list --json") cat "$STUB_STATE/claude-mkt" 2>/dev/null || echo '[]' ;;
   "claude plugin list --json") cat "$STUB_STATE/claude-list" 2>/dev/null || echo '[]' ;;

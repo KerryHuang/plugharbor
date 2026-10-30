@@ -13,7 +13,7 @@ BASE_PATH="$STUB:$TOOLS:/usr/bin:/bin"
 hashes() { (cd "$1" && find . -type f | LC_ALL=C sort | while IFS= read -r f; do cksum "$f"; done); }
 run() {  # $1=HOME，其餘為 install.sh 參數
   local h="$1"; shift
-  HOME="$h" PATH="$BASE_PATH" PLUGHARBOR_PLUGINS="${PLUGINS-toolkit research}" bash "$INSTALL" "$@"
+  HOME="$h" PATH="${RUN_PATH:-$BASE_PATH}" PLUGHARBOR_PLUGINS="${PLUGINS-toolkit research}" bash "$INSTALL" "$@"
 }
 
 # ---------- 1) 舊 hook、重複 skill／agent、kerry.sidebar、codex 版號 ----------
@@ -21,14 +21,19 @@ H="$TMP/h1"; mkdir -p "$H/.claude/skills/config-doctor" "$H/.claude/agents"
 echo "舊版" > "$H/.claude/skills/config-doctor/SKILL.md"
 echo "舊版" > "$H/.claude/agents/skill-reviewer.md"
 mkdir -p "$H/.claude/skills/my-own"; echo x > "$H/.claude/skills/my-own/SKILL.md"
-cat > "$H/.claude/settings.json" <<'JSON'
+old_settings() {  # $1=settings.json 路徑：含舊 claude-home hook，也含名字相近但不該動的
+  cat > "$1" <<'JSON'
 {"model":"my-model","permissions":{"deny":["Custom(x)"]},
  "hooks":{"PreToolUse":[
    {"matcher":"Bash","hooks":[{"type":"command","command":"sh -c 'exec python3 \"$HOME/.claude/hooks/guard.py\"'"}]},
-   {"matcher":"Agent","hooks":[{"type":"command","command":"python3 $HOME/.claude/hooks/agent-model-guard.py"},{"type":"command","command":"my-agent-hook.sh"}]}],
+   {"matcher":"Agent","hooks":[{"type":"command","command":"python3 $HOME/.claude/hooks/agent-model-guard.py"},{"type":"command","command":"my-agent-hook.sh"}]},
+   {"matcher":"Edit","hooks":[{"type":"command","command":"python3 ~/.claude/hooks/guard.pyx"},{"type":"command","command":"python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\""}]}],
   "Notification":[{"hooks":[{"type":"command","command":"bash ~/.claude/hooks/notification.sh notify"}]}],
   "Stop":[{"hooks":[{"type":"command","command":"python3 \"$HOME/.claude/hooks/feedback-reminder.py\""}]},{"hooks":[{"type":"command","command":"/opt/my/stop"}]}]}}
 JSON
+}
+old_settings "$H/.claude/settings.json"
+mkdir -p "$H/.codex"; echo '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"my-codex-stop"}]}]}}' > "$H/.codex/hooks.json"
 TOOLKIT_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO_DIR/plugins/toolkit/.claude-plugin/plugin.json" | head -1)"
 cat > "$STUB_STATE/codex-list" <<EOF
 Marketplace \`plugharbor\`
@@ -53,9 +58,11 @@ C="$H/.claude"
 [ -f "$C/statusline.sh" ]                || fail "statusline.sh 未安裝"
 [ -f "$C/hooks/herdr-parent-tag.py" ]    || fail "herdr-parent-tag.py 未安裝"
 # 舊 hook 移除、備份存在、本機自加的保留、herdr-parent-tag 補上
-for old in guard.py agent-model-guard.py notification.sh feedback-reminder.py; do
-  if grep -q "$old" "$C/settings.json"; then fail "舊 hook $old 未移除"; fi
+for old in 'exec python3' agent-model-guard.py notification.sh feedback-reminder.py; do
+  if grep -qF "$old" "$C/settings.json"; then fail "舊 hook $old 未移除"; fi
 done
+grep -q 'guard.pyx' "$C/settings.json" || fail "guard.pyx 不是舊 hook，不該移除"
+grep -q 'CLAUDE_PROJECT_DIR/.claude/hooks/guard.py' "$C/settings.json" || fail "專案層的 guard.py 不該移除"
 grep -q 'my-agent-hook.sh' "$C/settings.json" || fail "同組裡本機自加的 hook 被移除"
 grep -q '/opt/my/stop'     "$C/settings.json" || fail "本機自加的 Stop hook 被移除"
 grep -q '"my-model"'       "$C/settings.json" || fail "settings 合併弄丟既有值"
@@ -77,6 +84,10 @@ grep -qx "claude plugin install toolkit@plugharbor --scope user" "$STUB_LOG" || 
 grep -qx "claude plugin install research@plugharbor --scope user" "$STUB_LOG" || fail "claude 未安裝 research"
 if grep -q "codex plugin add toolkit@plugharbor" "$STUB_LOG"; then fail "codex 版號相同不該重裝 toolkit"; fi
 grep -qx "codex plugin add research@plugharbor" "$STUB_LOG" || fail "codex 版號不同應重裝 research"
+[ "$(grep -n 'codex plugin marketplace upgrade plugharbor' "$STUB_LOG" | cut -d: -f1)" -lt "$(grep -n 'codex plugin add research' "$STUB_LOG" | cut -d: -f1)" ] \
+  || fail "codex 重裝前應先 marketplace upgrade"
+grep -q 'my-codex-stop' "$H/.codex/hooks.json" || fail "Codex hooks.json 使用者的條目被移除"
+ls "$C"/backups/plugharbor-*/codex/hooks.json >/dev/null 2>&1 || fail "Codex hooks.json 改動前未備份"
 echo "$OUT" | grep -q 'UP-TO-DATE: codex toolkit' || fail "codex 版號相同應印 UP-TO-DATE"
 if grep -q "codex plugin marketplace add" "$STUB_LOG"; then fail "codex 已有 plugharbor marketplace 不該再 add"; fi
 if grep -q "agy plugin install $REPO_DIR/plugins/toolkit" "$STUB_LOG"; then fail "agy 版號相同（CRLF 輸出）不該重裝 toolkit"; fi
@@ -129,6 +140,8 @@ REL_TK="$(sed -n 's/^ *"\(\.\.[^"]*plugins\/toolkit\)",*$/\1/p' "$P")"
 ABS_TK="$(python3 -c 'import os,sys;print(os.path.normpath(os.path.join(sys.argv[1], sys.argv[2])))' "$H/.pi/agent" "$REL_TK")"
 [ -n "$REL_TK" ] && [ "$ABS_TK" = "$REPO_DIR/plugins/toolkit" ] || fail "pi packages 未加指向 toolkit 的相對路徑：$(cat "$P")"
 [ "$(head -2 "$P" | tail -1 | tr -d ' ')" = '"packages":[' ] || fail "pi settings 鍵順序被改：$(cat "$P")"
+PB="$(ls "$H"/.claude/backups/plugharbor-*/pi/settings.json 2>/dev/null | head -1)"
+[ -n "$PB" ] && grep -q 'npm:keep-me' "$PB" && ! grep -q 'plugins/toolkit' "$PB" || fail "pi settings 改動前未備份原檔"
 cp "$P" "$TMP/pi1"; run "$H" >/dev/null
 cmp -s "$P" "$TMP/pi1" || fail "pi packages 重跑不冪等"
 rm "$STUB/pi"
@@ -152,4 +165,67 @@ PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
 N_ALL="$(ls -d "$REPO_DIR"/plugins/*/.claude-plugin | wc -l | tr -d ' ')"
 [ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = "$N_ALL" ] || fail "預設應裝全部 $N_ALL 個 plugin"
 
-echo "PASS: install.sh（8 組）"
+# ---------- 9) 沒有 claude：舊 hook 保留並印 STALE（沒有 toolkit 替代就不拿掉 guard） ----------
+NOCLAUDE="$TMP/stub-noclaude"
+bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$NOCLAUDE" "$TOOLS" codex agy herdr
+H="$TMP/h5"; mkdir -p "$H/.claude"; old_settings "$H/.claude/settings.json"
+OUT="$(RUN_PATH="$NOCLAUDE:$TOOLS:/usr/bin:/bin" run "$H")" || fail "沒有 claude 時 exit 非 0"
+echo "$OUT" | grep -q '^SKIP: claude' || fail "沒有 claude 應印 SKIP: claude"
+grep -q 'agent-model-guard.py' "$H/.claude/settings.json" || fail "沒有 claude 時不該移除舊 guard hook"
+echo "$OUT" | grep -q 'STALE: *settings.json hooks.PreToolUse agent-model-guard.py' || fail "沒有 claude 時應印 STALE：$OUT"
+if ls -d "$H"/.claude/backups/plugharbor-* >/dev/null 2>&1; then fail "沒清理就不該產生備份"; fi
+
+# ---------- 10) 沒選 toolkit：舊 hook 保留 ----------
+H="$TMP/h6"; mkdir -p "$H/.claude"; old_settings "$H/.claude/settings.json"
+OUT="$(PLUGINS="research" run "$H")" || fail "只裝 research 時 exit 非 0"
+grep -q 'agent-model-guard.py' "$H/.claude/settings.json" || fail "沒裝 toolkit 時不該移除舊 guard hook"
+echo "$OUT" | grep -q '^STALE: ' || fail "沒裝 toolkit 時應印 STALE"
+
+# ---------- 11) claude 裝 toolkit 失敗：舊 hook 保留、exit 1 ----------
+export STUB_STATE="$TMP/state-fail"; mkdir -p "$STUB_STATE"
+echo "claude plugin install toolkit@plugharbor --scope user" > "$STUB_STATE/fail"
+H="$TMP/h7"; mkdir -p "$H/.claude"; old_settings "$H/.claude/settings.json"
+if OUT="$(run "$H")"; then fail "claude 安裝失敗時應 exit 1"; fi
+echo "$OUT" | grep -q '^FAIL: claude plugin install toolkit' || fail "沒印 claude 安裝失敗：$OUT"
+grep -q 'agent-model-guard.py' "$H/.claude/settings.json" || fail "toolkit 沒裝好就不該移除舊 guard hook"
+
+# ---------- 12) claude 升級：版號相同 UP-TO-DATE、不同先 marketplace update 再 plugin update ----------
+export STUB_STATE="$TMP/state-up"; mkdir -p "$STUB_STATE"
+echo '[{"name": "plugharbor", "source": "directory"}]' > "$STUB_STATE/claude-mkt"
+printf '[{"id": "toolkit@plugharbor", "version": "%s", "scope": "user"},\n {"id": "research@plugharbor", "version": "0.0.1", "scope": "user"},\n {"id": "research@plugharbor", "version": "9.9.9", "scope": "project"}]\n' "$TOOLKIT_VER" > "$STUB_STATE/claude-list"
+H="$TMP/h8"; mkdir -p "$H/.claude"; old_settings "$H/.claude/settings.json"; : > "$STUB_LOG"
+OUT="$(run "$H")" || fail "claude 升級情境 exit 非 0：$OUT"
+if grep -q 'claude plugin marketplace add' "$STUB_LOG"; then fail "已有 marketplace 不該再 add"; fi
+echo "$OUT" | grep -q "UP-TO-DATE: claude toolkit $TOOLKIT_VER" || fail "claude 版號相同應 UP-TO-DATE"
+if grep -q 'claude plugin \(install\|update\) toolkit' "$STUB_LOG"; then fail "claude 版號相同不該重裝 toolkit"; fi
+grep -qx 'claude plugin update research@plugharbor --scope user' "$STUB_LOG" || fail "claude 版號不同應 update research"
+[ "$(grep -n '^claude plugin marketplace update plugharbor$' "$STUB_LOG" | cut -d: -f1)" -lt "$(grep -n '^claude plugin update research' "$STUB_LOG" | cut -d: -f1)" ] \
+  || fail "claude update 前應先 marketplace update"
+if grep -q 'agent-model-guard.py' "$H/.claude/settings.json"; then fail "toolkit 已是最新也算裝好，應移除舊 hook"; fi
+# marketplace 更新失敗：只警告，照樣 update
+echo "claude plugin marketplace update plugharbor" > "$STUB_STATE/fail"; : > "$STUB_LOG"
+OUT="$(run "$H")" || fail "marketplace update 失敗不該讓 install 失敗：$OUT"
+echo "$OUT" | grep -q '^WARN: claude plugin marketplace update plugharbor' || fail "marketplace update 失敗應印 WARN"
+grep -qx 'claude plugin update research@plugharbor --scope user' "$STUB_LOG" || fail "marketplace update 失敗後仍應 update"
+export STUB_STATE="$TMP/state"
+
+# ---------- 13) python 偵測：先 python3、要 3.6 以上 ----------
+REAL_PY="$(command -v python3)"
+PYS="$TMP/pys"; mkdir -p "$PYS"
+printf '#!/bin/sh\nexit 1\n' > "$PYS/python3"
+printf '#!/bin/sh\nexec "%s" "$@"\n' "$REAL_PY" > "$PYS/python"
+chmod +x "$PYS/python3" "$PYS/python"
+GOT="$(PATH="$PYS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
+[ "$GOT" = python ] || fail "python3 壞掉時應改用 python，實得「$GOT」"
+# 版本檢查失敗（例如 python 2.x）就不採用
+printf '#!/bin/sh\ncase "$2" in *version_info*) exit 1 ;; esac\nexec "%s" "$@"\n' "$REAL_PY" > "$PYS/python"
+GOT="$(PATH="$PYS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
+if [ "$GOT" = python ]; then fail "版本檢查沒過的 python 不該採用"; fi
+GOT="$(PATH="$STUB:$TOOLS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
+[ "$GOT" = python3 ] || fail "python3 正常時應優先用 python3，實得「$GOT」"
+
+# ---------- 14) PLUGHARBOR_PLUGINS 有萬用字元或不存在的名字：拒絕 ----------
+H="$TMP/h9"; mkdir -p "$H"
+if (cd "$REPO_DIR/plugins" && PLUGINS='*' run "$H" >/dev/null); then fail "PLUGHARBOR_PLUGINS='*' 應被拒絕"; fi
+
+echo "PASS: install.sh（14 組）"

@@ -10,6 +10,12 @@
 | `herdr/` | herdr 設定、側欄 plugin、pi 擴充 | herdr／pi 各自的設定目錄 |
 | `tests/` | `statusline.sh`，CI 會跑 | |
 
+## install.sh 的升級與舊 hook
+
+- 版號不同才重裝；重裝前先更新 marketplace（claude `plugin marketplace update plugharbor`、codex `plugin marketplace upgrade plugharbor`），失敗只印 WARN。
+  這段只用 stub 測過，真 CLI 的升級行為在切換（cutover）步驟實機驗證。
+- 舊 claude-home 的 guard 等 hook 只在 claude 的 toolkit plugin 這次裝好（或已是最新）後才備份移除；沒裝 claude、沒選 toolkit 或安裝失敗，只印 `STALE:`。
+
 ## settings 範本的 hooks
 
 大部分 hook（guard、通知、feedback 等）已由 `plugins/toolkit/hooks/hooks.json` 註冊，範本裡不再放。

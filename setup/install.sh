@@ -19,11 +19,19 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$TARGET/backups/plugharbor-$STAMP"
 DIFFS=0; FAILS=0
 PLUGINS="$(ph_plugins)"
+while IFS= read -r p; do
+  [ -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ] || { echo "FAIL: 找不到 plugin「$p」（PLUGHARBOR_PLUGINS）"; exit 2; }
+done <<< "$PLUGINS"
 
 note_diff() { echo "$1"; DIFFS=$((DIFFS + 1)); }
-run() {  # 執行 CLI 指令；失敗只記下，繼續做其他步驟
+LAST_OK=0
+run() {  # 執行 CLI 指令；失敗只記下（LAST_OK=0），繼續做其他步驟
   echo "RUN:  $*"
-  if "$@"; then :; else echo "FAIL: $*"; FAILS=$((FAILS + 1)); fi
+  if "$@"; then LAST_OK=1; else LAST_OK=0; echo "FAIL: $*"; FAILS=$((FAILS + 1)); fi
+}
+backup_once() {  # $1=原檔 $2=備份目錄下的相對路徑；同一次執行只留第一份
+  [ -f "$1" ] && [ ! -e "$BACKUP/$2" ] || return 0
+  mkdir -p "$(dirname "$BACKUP/$2")"; cp "$1" "$BACKUP/$2"
 }
 
 install_file() {  # $1=來源絕對路徑  $2=目標相對路徑
@@ -62,15 +70,17 @@ while IFS='|' read -r from to kind; do
   if [ "$kind" = "dir" ]; then install_dir "$REPO_DIR/$from" "$to"; else install_file "$REPO_DIR/$from" "$to"; fi
 done <<< "$PH_ENTRIES"
 
-# ---------- 2、3) settings 合併＋舊 hook 清理 ----------
-if [ -n "$PY" ]; then
-  set +e
-  SETTINGS_OUT="$(PYTHONUTF8=1 "$PY" - "$REPO_DIR/setup/config/claude-settings.template.json" "$TARGET/settings.json" "$FORCE" "$CHECK" "$BACKUP" <<'PYEOF'
+# ---------- 2) settings 合併；3) 的舊 hook 清理等 claude 裝好 toolkit 之後才做 ----------
+# 模式：check（只報）、merge（範本合併）、clean（備份後移除舊 hook）、stale（只印舊 hook）
+SETTINGS_PY="$(cat <<'PYEOF'
 import json, os, re, shutil, sys
 MANAGED = ("statusLine",)   # 以範本為準（--force 才換）
 TEMPLATE_HOOKS = "hooks"     # 範本的 hook 依腳本檔名認同一筆，缺就補
-LEGACY = re.compile(r"\.claude[/\\]+hooks[/\\]+(?:(?:guard|agent-model-guard|ask-question-guard|auto-session-title|"
-                    r"feedback-capture|feedback-reminder|context-size-reminder)\.py|notification\.sh)")
+HOME = os.path.expanduser("~")
+# 只認 HOME 底下 .claude/hooks/ 的舊 claude-home 腳本；專案層（$CLAUDE_PROJECT_DIR/.claude/hooks）不算
+HOME_PREFIX = r"(?:~|\$HOME|\$\{HOME\}|" + re.escape(HOME) + r"|" + re.escape(HOME.replace("\\", "/")) + r")"
+LEGACY = re.compile(HOME_PREFIX + r"[/\\]+\.claude[/\\]+hooks[/\\]+(?:(?:guard|agent-model-guard|ask-question-guard|"
+                    r"auto-session-title|feedback-capture|feedback-reminder|context-size-reminder)\.py|notification\.sh)(?![\w.])")
 
 def key(cmd):
     m = re.findall(r"[\w.-]+\.(?:py|sh|ps1)", cmd or "")
@@ -79,12 +89,20 @@ def key(cmd):
 def owned(group, keys):
     return any(key(h.get("command")) in keys for h in group.get("hooks", []))
 
-tpl_path, path, force, check, backup = sys.argv[1], sys.argv[2], sys.argv[3] == "1", sys.argv[4] == "1", sys.argv[5]
+mode, tpl_path, path, force, backup = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == "1", sys.argv[5]
 tpl = json.load(open(tpl_path, encoding="utf-8"))
 try:
     cur = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
 except ValueError as e:
-    print(f"FAIL: settings.json 不是合法 JSON，未合併：{e}"); sys.exit(1)
+    print(f"FAIL: settings.json 不是合法 JSON，未處理：{e}"); sys.exit(1)
+
+def write(obj, msg):
+    body = json.dumps(obj, ensure_ascii=False, indent=2) + "\n"
+    old = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    if body != old:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        open(path, "w", encoding="utf-8", newline="\n").write(body)
+        print(msg)
 
 # 舊 claude-home hook：同組裡本機自加的保留，只拿掉舊條目；被清空的組與事件一併移除
 stale = []
@@ -107,9 +125,12 @@ for event in list(hooks):
         else:
             del hooks[event]
 
-if check:
+if mode in ("check", "stale"):
+    why = "install 裝好 claude 的 toolkit 後會備份並移除" if mode == "check" else "未移除：這次沒有裝好 claude 的 toolkit plugin，移除會失去 guard"
     for s in stale:
-        print(f"STALE:   settings.json {s}（舊 claude-home hook，install 會備份後移除）")
+        print(f"STALE:   settings.json {s}（舊 claude-home hook；{why}）")
+    if mode == "stale":
+        sys.exit(0)
     def walk(t, c, p0):
         for k, val in t.items():
             if not p0 and (k in MANAGED or k == TEMPLATE_HOOKS):
@@ -141,11 +162,15 @@ if check:
                 print(f"DIFF:    settings.json hooks.{event} {label}（與範本不同或重複，--force 以範本為準）")
     sys.exit(0)
 
-if stale and os.path.exists(path):
-    os.makedirs(backup, exist_ok=True)
-    shutil.copy2(path, os.path.join(backup, "settings.json"))
-    print("CLEAN: settings.json 移除舊 claude-home hook：" + "、".join(stale) + f"（原檔備份在 {backup}/settings.json）")
+if mode == "clean":
+    if stale:
+        os.makedirs(backup, exist_ok=True)
+        shutil.copy2(path, os.path.join(backup, "settings.json"))
+        write(cur, "CLEAN: settings.json 移除舊 claude-home hook：" + "、".join(stale) + f"（原檔備份在 {backup}/settings.json）")
+    sys.exit(0)
 
+# mode == "merge"：用未清理的原始內容合併，舊 hook 留給 clean 處理
+cur = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
 def merge(template, current):
     for k, val in template.items():
         if k not in current:
@@ -171,23 +196,28 @@ for event, groups in tpl.get(TEMPLATE_HOOKS, {}).items():
             curg[:] = [g for g in curg if g.get("hooks")] + [tg]
 
 merged = merge({k: v for k, v in tpl.items() if k not in MANAGED and k != TEMPLATE_HOOKS}, cur)
-os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-body = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
-old = open(path, encoding="utf-8").read() if os.path.exists(path) else None
-if body != old:
-    open(path, "w", encoding="utf-8", newline="\n").write(body)
-    print("OK:   settings.json（合併；statusLine／herdr-parent-tag hook " + ("以範本為準）" if force else "只補缺，--force 才以範本為準）"))
+write(merged, "OK:   settings.json（合併；statusLine／herdr-parent-tag hook " + ("以範本為準）" if force else "只補缺，--force 才以範本為準）"))
 PYEOF
 )"
+settings_py() {  # $1=模式；輸出照印，check 模式計入差異數
+  local out rc
+  [ -n "$PY" ] || return 0
+  set +e
+  out="$(PYTHONUTF8=1 "$PY" -c "$SETTINGS_PY" "$1" "$REPO_DIR/setup/config/claude-settings.template.json" "$TARGET/settings.json" "$FORCE" "$BACKUP")"
   rc=$?
   set -e
-  if [ -n "$SETTINGS_OUT" ]; then
-    echo "$SETTINGS_OUT"
-    if [ "$CHECK" -eq 1 ]; then DIFFS=$((DIFFS + $(printf '%s\n' "$SETTINGS_OUT" | wc -l))); fi
+  if [ -n "$out" ]; then
+    echo "$out"
+    if [ "$1" = check ]; then DIFFS=$((DIFFS + $(printf '%s\n' "$out" | wc -l))); fi
   fi
   [ "$rc" -eq 0 ] || FAILS=$((FAILS + 1))
+}
+if [ -z "$PY" ]; then
+  echo "WARN: 找不到能執行的 python 3，settings.json 未合併、舊 hook 未清理"
+elif [ "$CHECK" -eq 1 ]; then
+  settings_py check
 else
-  echo "WARN: 找不到能執行的 python，settings.json 未合併、舊 hook 未清理"
+  settings_py merge
 fi
 
 # ---------- 4) 跟 plugharbor plugin 同名的 user 層 skill／agent ----------
@@ -215,20 +245,35 @@ for p in $PLUGINS; do
 done
 
 # ---------- 5、6) 各 CLI 註冊 plugin；版號相同就不重裝 ----------
-# $1=CLI  $2=plugin  $3=已安裝版號  其餘＝安裝指令
+REFRESHED=" "
+refresh_marketplace() {  # 版號不同、重裝前先更新 marketplace 目錄（每個 CLI 一次）；失敗只警告
+  case "$REFRESHED" in *" $1 "*) return 0 ;; esac
+  REFRESHED="$REFRESHED$1 "
+  case "$1" in
+    claude) set -- claude plugin marketplace update plugharbor ;;
+    codex) set -- codex plugin marketplace upgrade plugharbor ;;
+    *) return 0 ;;
+  esac
+  echo "RUN:  $*"
+  "$@" || echo "WARN: $* 失敗，照舊重裝"
+}
+# $1=CLI  $2=plugin  $3=已安裝版號  其餘＝安裝指令；LAST_OK=1 表示裝好或已是最新
 sync_plugin() {
   local cli="$1" p="$2" cur="$3" want
   shift 3
   want="$(ph_version "$p")"
+  LAST_OK=0
   if [ -n "$cur" ] && [ "$cur" = "$want" ]; then
-    echo "UP-TO-DATE: $cli $p $want"
+    echo "UP-TO-DATE: $cli $p $want"; LAST_OK=1
   elif [ "$CHECK" -eq 1 ]; then
     if [ -n "$cur" ]; then note_diff "OUTDATED: $cli $p $cur → $want"; else note_diff "MISSING: $cli $p"; fi
   else
+    [ -z "$cur" ] || refresh_marketplace "$cli"
     run "$@"
   fi
 }
 
+TOOLKIT_OK=0
 if command -v claude >/dev/null 2>&1; then
   out="$(claude plugin marketplace list --json 2>/dev/null | tr -d '\r')" || out=""
   if ! printf '%s\n' "$out" | ph_claude_has_marketplace; then
@@ -242,9 +287,15 @@ if command -v claude >/dev/null 2>&1; then
     else
       sync_plugin claude "$p" "" claude plugin install "$p@plugharbor" --scope user
     fi
+    [ "$p" != toolkit ] || TOOLKIT_OK="$LAST_OK"
   done
 else
   echo "SKIP: claude（未安裝）"
+fi
+
+# 3) 舊 claude-home hook（guard 等）只在 claude 的 toolkit 裝好後移除；否則只提示，免得 guard 消失卻沒有替代
+if [ -n "$PY" ] && [ "$CHECK" -eq 0 ]; then
+  if [ "$TOOLKIT_OK" -eq 1 ]; then settings_py clean; else settings_py stale; fi
 fi
 
 if command -v codex >/dev/null 2>&1; then
@@ -284,8 +335,8 @@ $REPO_DIR/plugins/$p"
   done
   set +e
   PI_OUT="$(printf '%s\n' "$PI_DIRS" | PYTHONUTF8=1 "$PY" -c '
-import json, os, sys
-start, check = sys.argv[1], sys.argv[2] == "1"
+import json, os, shutil, sys
+start, check, backup = sys.argv[1], sys.argv[2] == "1", sys.argv[3]
 path = os.path.join(start, "settings.json")
 try:
     cur = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
@@ -307,9 +358,12 @@ for a in added:
     print(("MISSING: pi package " if check else "OK:   pi package ") + a)
 if added and not check:
     cur["packages"] = pkgs + added
+    if os.path.exists(path):
+        os.makedirs(os.path.join(backup, "pi"), exist_ok=True)
+        shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     os.makedirs(start, exist_ok=True)
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
-' "$HOME/.pi/agent" "$CHECK")"
+' "$HOME/.pi/agent" "$CHECK" "$BACKUP")"
   rc=$?
   set -e
   if [ -n "$PI_OUT" ]; then
@@ -322,6 +376,7 @@ fi
 # ---------- herdr：換掉舊的 kerry.sidebar；config.toml 各機器不同，只提示不覆蓋 ----------
 if command -v herdr >/dev/null 2>&1; then
   out="$(herdr plugin list 2>/dev/null | tr -d '\r')" || out=""
+  # kerry.sidebar 是 plugharbor 之前（claude-home 時代）的舊 herdr plugin id，這裡遷移成 plugharbor.sidebar
   if printf '%s\n' "$out" | grep -q '^- kerry\.sidebar '; then
     if [ "$CHECK" -eq 1 ]; then note_diff "STALE: herdr kerry.sidebar（install 會 unlink，改 link plugharbor.sidebar）"; else run herdr plugin unlink kerry.sidebar; fi
   fi
@@ -344,10 +399,17 @@ fi
 if [ "$CHECK" -eq 1 ]; then
   :
 elif command -v node >/dev/null 2>&1; then
+  # adapter 會合併 ~/.codex/hooks.json（含使用者自己的 hook）；內容有變才把原檔留進備份
+  CODEX_HOOKS="$HOME/.codex/hooks.json"; CODEX_HOOKS_ORIG=""
+  if [ -f "$CODEX_HOOKS" ]; then CODEX_HOOKS_ORIG="$(mktemp)"; cp "$CODEX_HOOKS" "$CODEX_HOOKS_ORIG"; fi
   if node "$REPO_DIR/setup/adapters/sync-user.mjs" --install --quiet --repo "$REPO_DIR"; then
     echo "OK:   adapter（Codex／pi／agy user 層副本）"
   else
     echo "FAIL: adapter（setup/adapters/sync-user.mjs）"; FAILS=$((FAILS + 1))
+  fi
+  if [ -n "$CODEX_HOOKS_ORIG" ]; then
+    cmp -s "$CODEX_HOOKS_ORIG" "$CODEX_HOOKS" || backup_once "$CODEX_HOOKS_ORIG" codex/hooks.json
+    rm -f "$CODEX_HOOKS_ORIG"
   fi
 else
   echo "SKIP: node（未安裝；Codex／pi／agy 的 user 層規則副本未產生，裝好 node 後重跑）"
