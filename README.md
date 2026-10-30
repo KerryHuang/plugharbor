@@ -1,20 +1,41 @@
 # plugharbor
 
-一個給 Claude Code 用的多外掛 marketplace，收斂日常開發從需求到出版的共通做法：
-上游 SDLC、跨語言工作流、.NET 後端、Vue 前端、SQL Server、UI/UX、Avalonia 桌面。
+所有 AI 工作模式的唯一來源：11 個 plugin（工作流、hooks、guard、reviewer、寫作、研究、兒童介面規範）加上 user 層設定（`setup/`），
+同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
 ## 安裝
 
-```bash
-# 1. 註冊 marketplace（只需一次）
-claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
+新機器一行安裝（clone 到 `~/plugharbor`，再執行 `setup/install.sh`，自動偵測有裝的 CLI）：
 
-# 2. 安裝需要的外掛
+```bash
+curl -fsSL https://raw.githubusercontent.com/KerryHuang/plugharbor/main/setup/bootstrap.sh | bash
+```
+
+只想用 Claude Code 的 plugin、不要 user 層設定：
+
+```bash
+claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
 claude plugin install sa-flow@plugharbor
 claude plugin install dev-flow@plugharbor
 ```
 
-安裝後 skills 會自動被 Claude Code 發現，用 `/` 或自然語言觸發即可；agents 則由主流程按需求派工。
+安裝後 skills 會自動被發現，用 `/` 或自然語言觸發即可；agents 由主流程按需求派工。
+`install.sh` 的行為與 user 層設定見 [setup/README.md](./setup/README.md)，各 CLI 的差異見 [docs/agent-parity.md](./docs/agent-parity.md)。
+
+### 新機器清單
+
+`bootstrap.sh` 只管 plugharbor 本身；認證或機器特定的項目刻意不管，照順序手動做：
+
+1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（可選，只用於 `settings.json` 合併，沒有就跳過並 WARN，補裝後重跑）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
+2. **一行安裝**：上面的 `curl … | bash`。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 只裝部分 plugin；`install.sh --check` 只比對不改。
+3. **其他 marketplace**（Claude Code 登入後）：`claude plugin install superpowers@claude-plugins-official`；其餘依需要。
+4. **通用 MCP**（金鑰與登入各自處理，不入版控）：例如 `claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest`。
+5. **終端工具**（macOS，選用）：`brew install herdr`（有裝 herdr，install.sh 會連結側欄 plugin）；用 graphify skill 才需要 `uv tool install graphifyy`。
+6. **herdr 設定**：`setup/herdr/config.toml` 不會自動覆蓋，對照後手動改 `~/.config/herdr/config.toml`（`new_cwd` 等各機器不同）。有用 pi 的話，把 `setup/herdr/pi/herdr-tree.ts` 加進 `~/.pi/agent/settings.json` 的 `extensions`。
+7. **Codex**：第一次跑完 install 後，在 Codex 執行 `/hooks` 信任新註冊的 hook，否則不會執行。
+8. **開發機**（要改 plugin 才需要）：`git config core.hooksPath scripts/hooks`；`.leak-denylist` 從自己的備份放回 repo 根目錄，否則 pre-commit 的外洩掃描少一層。
+
+之後升級：`bash ~/plugharbor/setup/bootstrap.sh`（pull 後重跑 install；版號變了才重裝）。
 
 ## 外掛一覽
 
