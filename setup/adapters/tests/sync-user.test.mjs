@@ -4,7 +4,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { syncUser, installSupport } from '../sync-user.mjs'
+import { syncUser, installSupport, manifestKey } from '../sync-user.mjs'
+import { notificationScript } from '../notify.mjs'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { inspectCommand } from '../tool-policy.mjs'
 
 const fixture = () => {
@@ -283,4 +286,57 @@ test('invalid scoped rule selectors fail closed without emitting an always-on ru
       assert.throws(() => readFileSync(join(agy(home), 'rules/scoped.md')), /ENOENT/)
     } finally { done(home, repo) }
   }
+})
+
+test('manifestKey normalizes Windows separators', () => {
+  assert.equal(manifestKey('.codex\\agents\\a.toml'), '.codex/agents/a.toml')
+  assert.equal(manifestKey('.codex/AGENTS.md'), '.codex/AGENTS.md')
+})
+
+test('legacy manifest with backslash keys is still migrated', () => {
+  const { home, repo } = fixture()
+  try {
+    mkdirSync(join(home, '.agents/skills/x'), { recursive: true })
+    writeFileSync(join(home, '.agents/skills/x/SKILL.md'), 'old')
+    mkdirSync(join(home, '.codex'), { recursive: true })
+    writeFileSync(join(home, '.codex/claude-home-manifest.json'), JSON.stringify({ files: { '.agents\\skills\\x\\SKILL.md': sha('old') } }))
+    syncUser({ home, repo })
+    assert.ok(!existsSync(join(home, '.agents/skills/x/SKILL.md')))
+  } finally { done(home, repo) }
+})
+
+test('CLI --install reports kept legacy files, and --repo needs a value', () => {
+  const { home, repo } = fixture()
+  try {
+    mkdirSync(join(home, '.agents/skills/edited'), { recursive: true })
+    mkdirSync(join(home, '.codex'), { recursive: true })
+    writeFileSync(join(home, '.agents/skills/edited/SKILL.md'), 'user modified')
+    writeFileSync(join(home, '.codex/claude-home-manifest.json'), JSON.stringify({ files: { '.agents/skills/edited/SKILL.md': sha('original') } }))
+    const cli = fileURLToPath(new URL('../sync-user.mjs', import.meta.url))
+    const env = { ...process.env, HOME: home, USERPROFILE: home, PATH: '/nonexistent' }
+    const run = args => spawnSync(process.execPath, [cli, ...args], { env, encoding: 'utf8' })
+    const r = run(['--install', '--repo', repo])
+    assert.equal(r.status, 0, r.stderr)
+    assert.ok(r.stderr.includes('.agents/skills/edited/SKILL.md'), r.stderr)
+    assert.equal(readFileSync(join(home, '.agents/skills/edited/SKILL.md'), 'utf8'), 'user modified')
+    const bad = run(['--repo'])
+    assert.notEqual(bad.status, 0)
+    assert.ok(bad.stderr.includes('--repo'))
+  } finally { done(home, repo) }
+})
+
+test('notification script resolves from the recorded repo, then legacy path, else null', () => {
+  const { home, repo } = fixture()
+  try {
+    assert.equal(notificationScript(home), null)
+    mkdirSync(join(home, '.claude/hooks'), { recursive: true })
+    writeFileSync(join(home, '.claude/hooks/notification.sh'), '')
+    assert.equal(notificationScript(home), join(home, '.claude/hooks/notification.sh'))
+    mkdirSync(join(home, '.codex/support/plugharbor'), { recursive: true })
+    writeFileSync(join(home, '.codex/support/plugharbor/repo'), repo)
+    assert.equal(notificationScript(home), join(home, '.claude/hooks/notification.sh'), 'repo script missing -> legacy')
+    mkdirSync(join(repo, 'plugins/toolkit/hooks'), { recursive: true })
+    writeFileSync(join(repo, 'plugins/toolkit/hooks/notification.sh'), '')
+    assert.equal(notificationScript(home), join(repo, 'plugins/toolkit/hooks/notification.sh'))
+  } finally { done(home, repo) }
 })

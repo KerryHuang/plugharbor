@@ -9,6 +9,8 @@ import { execFileSync } from 'node:child_process'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const digest = body => createHash('sha256').update(body).digest('hex')
+// manifest 的 key 一律用 '/'，Windows 的反斜線在產生與讀取時都轉掉。
+export const manifestKey = p => p.replace(/\\/g, '/')
 const read = path => existsSync(path) ? readFileSync(path, 'utf8') : ''
 const split = raw => {
   const text = raw.replace(/\r\n/g, '\n')
@@ -88,6 +90,7 @@ const SUPPORT = '.codex/support/plugharbor'
 function ownership(home) {
   const path = join(home, MANIFEST)
   const state = read(path) ? JSON.parse(read(path)) : { files: {}, mcpNames: [] }
+  state.files = Object.fromEntries(Object.entries(state.files ?? {}).map(([k, v]) => [manifestKey(k), v]))
   const changed = []
   const kept = []
   const desired = new Set()
@@ -95,7 +98,8 @@ function ownership(home) {
   const legacyPath = join(home, LEGACY_MANIFEST)
   if (existsSync(legacyPath)) {
     const legacy = JSON.parse(read(legacyPath))
-    for (const [rel, hash] of Object.entries(legacy.files ?? {})) {
+    for (const [raw, hash] of Object.entries(legacy.files ?? {})) {
+      const rel = manifestKey(raw)
       const target = join(home, rel)
       if (!existsSync(target)) continue
       if (digest(readFileSync(target)) !== hash) { kept.push(rel); continue }
@@ -111,7 +115,7 @@ function ownership(home) {
   return {
     state, changed, kept,
     put(to, body) {
-      const rel = relative(home, to)
+      const rel = manifestKey(relative(home, to))
       desired.add(rel)
       const current = existsSync(to) ? readFileSync(to) : null
       const expected = Buffer.from(body)
@@ -219,7 +223,7 @@ export function installSupport({ home = homedir(), repo = resolve(here, '../..')
   const currentProfile = read(profile)
   const stateAt = currentProfile.indexOf('\n[hooks.state]')
   if (stateAt >= 0 && currentProfile.slice(0, stateAt).trimEnd() === base.trimEnd()) {
-    owned.state.files[relative(home, profile)] = digest(currentProfile)
+    owned.state.files[manifestKey(relative(home, profile))] = digest(currentProfile)
     owned.put(profile, currentProfile)
   } else owned.put(profile, base)
   const hookPath = join(home, '.codex/hooks.json')
@@ -263,13 +267,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const install = args.includes('--install')
     const at = args.indexOf('--repo')
     const repo = at >= 0 ? resolve(args[at + 1] ?? '') : resolve(here, '../..')
+    if (at >= 0 && (!args[at + 1] || args[at + 1].startsWith('--'))) throw new Error('用法：sync-user.mjs --install [--quiet] [--repo <dir>]（--repo 需要路徑）')
     let mcpNames
+    const kept = []
     if (install) {
-      installSupport({ repo })
+      kept.push(...installSupport({ repo }).kept)
       // codex 未安裝或失敗時沿用 manifest 內記錄的清單。
       try { mcpNames = JSON.parse(execFileSync('codex', ['mcp', 'list', '--json'], { encoding: 'utf8' })).map(x => x.name) } catch {}
     }
-    const { changed, kept } = syncUser({ repo, mcpNames })
+    const result = syncUser({ repo, mcpNames })
+    const changed = result.changed
+    kept.push(...result.kept)
     if (!args.includes('--quiet')) console.log(`user 副本已同步：${changed.length} 個檔案。`)
     if (kept.length) console.error(`舊 claude-home 副本已被修改，保留未刪：\n${kept.map(k => '  ' + k).join('\n')}`)
   } catch (error) { console.error(error.message); process.exitCode = 1 }
