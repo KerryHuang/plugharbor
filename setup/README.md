@@ -1,6 +1,6 @@
 # setup：plugin 帶不了的 user 層設定
 
-`setup/install.sh`（另一個 task 提供）會把這裡的東西裝進 `~/.claude/`。
+`setup/install.sh [--check] [--force] [--yes]` 會把這裡的東西裝進 `~/.claude/`，並替有裝的 CLI（claude、codex、agy、pi、herdr）註冊 plugin；`setup/uninstall.sh` 只移除它放進去的東西。
 
 | 目錄 | 內容 | 裝到 |
 |---|---|---|
