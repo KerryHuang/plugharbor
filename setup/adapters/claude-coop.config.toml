@@ -1,0 +1,4 @@
+# 本機 CLI 協作 profile；不更改桌面 app 的模型選擇。
+# 2026-10-06 由 codex debug models 核對 CLI 可用目錄。
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
