@@ -1,0 +1,9 @@
+{
+  "name": "kid-ui",
+  "description": "兒童介面規範——設計新畫面時的通用規範（文字、念題、點擊回饋、彈窗、返回／關閉、主題配色、版面尺寸）與唯讀審查清單",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

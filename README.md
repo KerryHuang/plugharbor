@@ -30,6 +30,7 @@ claude plugin install dev-flow@plugharbor
 | [toolkit](./plugins/toolkit/README.md) | 0.1.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.1.0 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
+| [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |
 
 ### skills 與 agents
 
@@ -45,6 +46,7 @@ claude plugin install dev-flow@plugharbor
 | toolkit | `agent-dispatch` `agent-mesh-check` `config-doctor` `context-diet` `feedback-review` `handoff` `tidy-memory` | `claudemd-reviewer` `hook-reviewer` `rule-reviewer` `skill-reviewer` `subagent-reviewer` |
 | research | `ai-radar` `graphify` | — |
 | blog | `blog-capture` `publish-check` `write-post` | — |
+| kid-ui | `auditing-kid-ui` `designing-kid-ui` | — |
 
 ## 典型動線
 
