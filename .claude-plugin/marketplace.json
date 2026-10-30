@@ -78,6 +78,24 @@
       "author": {
         "name": "KerryHuang"
       }
+    },
+    {
+      "name": "research",
+      "source": "./plugins/research",
+      "description": "探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達（含採納待辦對帳）",
+      "version": "0.1.0",
+      "author": {
+        "name": "KerryHuang"
+      }
+    },
+    {
+      "name": "blog",
+      "source": "./plugins/blog",
+      "description": "部落格寫作流程——收素材（blog-capture）、寫白話初稿（write-post）、上線前檢查（publish-check）",
+      "version": "0.1.0",
+      "author": {
+        "name": "KerryHuang"
+      }
     }
   ]
 }

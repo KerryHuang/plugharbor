@@ -1,0 +1,9 @@
+{
+  "name": "research",
+  "description": "探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達（含採納待辦對帳）",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

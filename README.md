@@ -28,6 +28,8 @@ claude plugin install dev-flow@plugharbor
 | [ui-ux](./plugins/ui-ux/README.md) | 0.1.1 | UI/UX 設計知識庫——風格系統、版面、配色、互動慣例、資訊呈現 |
 | [desktop-avalonia](./plugins/desktop-avalonia/README.md) | 0.1.0 | Avalonia 桌面 .NET——MVVM 慣例、跨平台路徑、建置與發佈 |
 | [toolkit](./plugins/toolkit/README.md) | 0.1.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截 |
+| [research](./plugins/research/README.md) | 0.1.0 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
+| [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 
 ### skills 與 agents
 
@@ -41,6 +43,8 @@ claude plugin install dev-flow@plugharbor
 | ui-ux | `ui-ux-pro-max` | — |
 | desktop-avalonia | `avalonia-mvvm` `cross-platform` `desktop-build-publish` | — |
 | toolkit | `agent-dispatch` `agent-mesh-check` `config-doctor` `context-diet` `feedback-review` `handoff` `tidy-memory` | `claudemd-reviewer` `hook-reviewer` `rule-reviewer` `skill-reviewer` `subagent-reviewer` |
+| research | `ai-radar` `graphify` | — |
+| blog | `blog-capture` `publish-check` `write-post` | — |
 
 ## 典型動線
 
