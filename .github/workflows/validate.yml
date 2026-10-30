@@ -31,3 +31,15 @@ jobs:
             echo "::endgroup::"
           done
           exit $status
+
+      - name: Hook 測試（pytest 與 shell）
+        run: |
+          pip install pytest
+          python -m pytest plugins/toolkit/hooks/tests -v
+          status=0
+          for t in $(git ls-files 'plugins/**/tests/*.sh'); do
+            echo "::group::$t"
+            bash "$t" || status=1
+            echo "::endgroup::"
+          done
+          exit $status

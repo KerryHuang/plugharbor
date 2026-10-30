@@ -1,0 +1,9 @@
+{
+  "name": "toolkit",
+  "description": "通用 hooks 與分層 guard——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 大小提醒、git 紅線攔截",
+  "version": "0.1.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}
