@@ -216,13 +216,13 @@ printf '#!/bin/sh\nexit 1\n' > "$PYS/python3"
 printf '#!/bin/sh\nexec "%s" "$@"\n' "$REAL_PY" > "$PYS/python"
 chmod +x "$PYS/python3" "$PYS/python"
 GOT="$(PATH="$PYS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
-[ "$GOT" = python ] || fail "python3 壞掉時應改用 python，實得「$GOT」"
+[ "$GOT" = python ] || fail "python3 壞掉時應改用 python，實得「${GOT}」"
 # 版本檢查失敗（例如 python 2.x）就不採用
 printf '#!/bin/sh\ncase "$2" in *version_info*) exit 1 ;; esac\nexec "%s" "$@"\n' "$REAL_PY" > "$PYS/python"
 GOT="$(PATH="$PYS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
 if [ "$GOT" = python ]; then fail "版本檢查沒過的 python 不該採用"; fi
 GOT="$(PATH="$STUB:$TOOLS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_DIR/setup/lib.sh"; echo "$PY"')"
-[ "$GOT" = python3 ] || fail "python3 正常時應優先用 python3，實得「$GOT」"
+[ "$GOT" = python3 ] || fail "python3 正常時應優先用 python3，實得「${GOT}」"
 
 # ---------- 14) PLUGHARBOR_PLUGINS 有萬用字元或不存在的名字：拒絕 ----------
 H="$TMP/h9"; mkdir -p "$H"

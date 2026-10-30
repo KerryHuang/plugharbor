@@ -25,7 +25,7 @@ jobs:
         run: |
           pip install pyyaml
           status=0
-          for t in $(git ls-files 'plugins/**/test_*.py'); do
+          for t in $(git ls-files 'plugins/**/test_*.py' ':!:plugins/toolkit/hooks/tests/*'); do
             echo "::group::$t"
             python "$t" || status=1
             echo "::endgroup::"
@@ -45,7 +45,7 @@ jobs:
           pip install pytest
           python -m pytest plugins/toolkit/hooks/tests -v
           status=0
-          for t in $(git ls-files 'plugins/**/tests/*.sh'); do
+          for t in $(git ls-files 'plugins/**/tests/*.sh' ':!:**/tests/lib/*'); do
             echo "::group::$t"
             bash "$t" || status=1
             echo "::endgroup::"
@@ -55,7 +55,7 @@ jobs:
       - name: Setup 腳本測試
         run: |
           status=0
-          for t in $(git ls-files 'setup/tests/*.sh'); do
+          for t in $(git ls-files 'setup/tests/*.sh' ':!:setup/tests/lib/*'); do
             echo "::group::$t"
             bash "$t" || status=1
             echo "::endgroup::"

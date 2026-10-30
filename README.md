@@ -26,13 +26,14 @@ claude plugin install dev-flow@plugharbor
 
 `bootstrap.sh` 只管 plugharbor 本身；認證或機器特定的項目刻意不管，照順序手動做：
 
-1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（可選，只用於 `settings.json` 合併，沒有就跳過並 WARN，補裝後重跑）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
+1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（toolkit 所有 hook 含 guard、pi packages 註冊與 `settings.json` 合併都需要；沒有的話 install.sh 會 WARN，但 hook 會靜默放行、guard 形同沒有，務必先裝）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
 2. **一行安裝**：上面的 `curl … | bash`。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 只裝部分 plugin；`install.sh --check` 只比對不改。
 3. **其他 marketplace**（Claude Code 登入後）：`claude plugin install superpowers@claude-plugins-official`；其餘依需要。
 4. **通用 MCP**（金鑰與登入各自處理，不入版控）：例如 `claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest`。
 5. **終端工具**（macOS，選用）：`brew install herdr`（有裝 herdr，install.sh 會連結側欄 plugin）；用 graphify skill 才需要 `uv tool install graphifyy`。
 6. **herdr 設定**：`setup/herdr/config.toml` 不會自動覆蓋，對照後手動改 `~/.config/herdr/config.toml`（`new_cwd` 等各機器不同）。有用 pi 的話，把 `setup/herdr/pi/herdr-tree.ts` 加進 `~/.pi/agent/settings.json` 的 `extensions`。
-7. **Codex**：第一次跑完 install 後，在 Codex 執行 `/hooks` 信任新註冊的 hook，否則不會執行。
+7. **pi 的 user 層規則**（有用 pi 才需要）：adapter 只產生 `APPEND_SYSTEM.md`，`~/.claude/rules` 要靠外部的 pi-code 套件（其 `claude-rules.ts`）載入。依該套件文件，把 pi-code 加進 `~/.pi/agent/settings.json` 的 `packages`，否則 pi 讀不到 rules。
+8. **Codex**：第一次跑完 install 後，在 Codex 執行 `/hooks` 信任新註冊的 hook，否則不會執行。
 8. **開發機**（要改 plugin 才需要）：`git config core.hooksPath scripts/hooks`；`.leak-denylist` 從自己的備份放回 repo 根目錄，否則 pre-commit 的外洩掃描少一層。
 
 之後升級：`bash ~/plugharbor/setup/bootstrap.sh`（pull 後重跑 install；版號變了才重裝）。

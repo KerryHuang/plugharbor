@@ -20,7 +20,7 @@ BACKUP="$TARGET/backups/plugharbor-$STAMP"
 DIFFS=0; FAILS=0
 PLUGINS="$(ph_plugins)"
 while IFS= read -r p; do
-  [ -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ] || { echo "FAIL: 找不到 plugin「$p」（PLUGHARBOR_PLUGINS）"; exit 2; }
+  [ -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ] || { echo "FAIL: 找不到 plugin「${p}」（PLUGHARBOR_PLUGINS）"; exit 2; }
 done <<< "$PLUGINS"
 
 note_diff() { echo "$1"; DIFFS=$((DIFFS + 1)); }

@@ -206,7 +206,7 @@ def load_denylist() -> list[re.Pattern]:
 
 def check_leaks() -> None:
     deny = load_denylist()
-    scan_roots = [ROOT / "plugins", ROOT / "README.md", ROOT / ".claude-plugin", ROOT / ".claude", ROOT / "scripts", ROOT / "setup", ROOT / "docs"]
+    scan_roots = [ROOT / "plugins", ROOT / "README.md", ROOT / ".claude-plugin", ROOT / ".claude", ROOT / "scripts", ROOT / "setup", ROOT / "docs", ROOT / "CLAUDE.md", ROOT / "AGENTS.md", ROOT / "LICENSE", ROOT / ".github"]
     files = []
     for r in scan_roots:
         files += [r] if r.is_file() else list(text_files(r)) if r.exists() else []
