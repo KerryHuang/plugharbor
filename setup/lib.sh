@@ -70,5 +70,6 @@ for x in items if isinstance(items, list) else []:
 }
 
 # codex 有沒有設定 plugharbor marketplace（看 plugin list 的 section 標題）
-ph_codex_has_marketplace() { grep -q '^Marketplace `plugharbor`'; }
-ph_claude_has_marketplace() { grep -q '"name"[[:space:]]*:[[:space:]]*"plugharbor"'; }
+# 不用 grep -q：它找到就提早結束，輸出很長時上游 printf 收到 SIGPIPE，pipefail 下整條 pipe 算失敗
+ph_codex_has_marketplace() { grep '^Marketplace `plugharbor`' >/dev/null; }
+ph_claude_has_marketplace() { grep '"name"[[:space:]]*:[[:space:]]*"plugharbor"' >/dev/null; }

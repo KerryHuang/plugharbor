@@ -228,4 +228,11 @@ GOT="$(PATH="$STUB:$TOOLS:/usr/bin:/bin" REPO_DIR="$REPO_DIR" bash -c '. "$REPO_
 H="$TMP/h9"; mkdir -p "$H"
 if (cd "$REPO_DIR/plugins" && PLUGINS='*' run "$H" >/dev/null); then fail "PLUGHARBOR_PLUGINS='*' 應被拒絕"; fi
 
-echo "PASS: install.sh（14 組）"
+# ---------- 15) marketplace 偵測：輸出很長（真實 codex plugin list 數百行）時，pipefail 下不能因 SIGPIPE 誤判沒有 ----------
+. "$REPO_DIR/setup/lib.sh"
+BIG="$(printf 'Marketplace `plugharbor`\n'; for i in $(seq 1 3000); do printf 'filler-%s@other  not installed  https://example.invalid/some/long/path/%s\n' "$i" "$i"; done)"
+printf '%s\n' "$BIG" | ph_codex_has_marketplace || fail "codex 輸出很長時偵測不到 plugharbor marketplace"
+BIGJ="$(printf '[{"name": "plugharbor"}'; for i in $(seq 1 3000); do printf ',{"name": "filler-%s", "source": "https://example.invalid/long/path/%s"}' "$i" "$i"; done; printf ']')"
+printf '%s\n' "$BIGJ" | ph_claude_has_marketplace || fail "claude 輸出很長時偵測不到 plugharbor marketplace"
+
+echo "PASS: install.sh（15 組）"

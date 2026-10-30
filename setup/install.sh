@@ -377,10 +377,10 @@ fi
 if command -v herdr >/dev/null 2>&1; then
   out="$(herdr plugin list 2>/dev/null | tr -d '\r')" || out=""
   # kerry.sidebar 是 plugharbor 之前（claude-home 時代）的舊 herdr plugin id，這裡遷移成 plugharbor.sidebar
-  if printf '%s\n' "$out" | grep -q '^- kerry\.sidebar '; then
+  if printf '%s\n' "$out" | grep '^- kerry\.sidebar ' >/dev/null; then
     if [ "$CHECK" -eq 1 ]; then note_diff "STALE: herdr kerry.sidebar（install 會 unlink，改 link plugharbor.sidebar）"; else run herdr plugin unlink kerry.sidebar; fi
   fi
-  if printf '%s\n' "$out" | grep -q '^- plugharbor\.sidebar '; then
+  if printf '%s\n' "$out" | grep '^- plugharbor\.sidebar ' >/dev/null; then
     echo "UP-TO-DATE: herdr plugharbor.sidebar"
   elif [ "$CHECK" -eq 1 ]; then
     note_diff "MISSING: herdr plugharbor.sidebar"

@@ -61,7 +61,7 @@ if command -v agy >/dev/null 2>&1; then
 fi
 if command -v herdr >/dev/null 2>&1; then
   out="$(herdr plugin list 2>/dev/null | tr -d '\r')" || out=""
-  if printf '%s\n' "$out" | grep -q '^- plugharbor\.sidebar '; then run herdr plugin unlink plugharbor.sidebar; fi
+  if printf '%s\n' "$out" | grep '^- plugharbor\.sidebar ' >/dev/null; then run herdr plugin unlink plugharbor.sidebar; fi
 fi
 
 # ---------- ~/.claude 的檔案 ----------
