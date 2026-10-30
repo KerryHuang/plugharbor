@@ -6,7 +6,7 @@
 // 重複回報無副作用，所以每次全量重算，不追蹤哪些已補過。
 // 用 node 寫、不依賴 sh／jq，macOS 與 Windows 共用同一份；參數一律以陣列傳給 herdr，不經 shell（emoji、中文才不會被拆壞）。
 // 另外把子智慧體掛在 launcher 底下：launcher 在子 pane 寫 parent_pane（dispatch-worker），或 pi 子智慧體寫 parent_sid
-// 對到 parent pane 上的 pi_sid（setup/herdr/pi/herdr-tree.ts）。這裡算出 $tree（├─ └─）與排序鍵 order，
+// 對到 parent pane 上的 pi_sid（setup/herdr/pi/herdr-tree.ts）。這裡算出樹線（├─ └─，接在 $where_<狀態> 開頭）與排序鍵 order，
 // 再用 agent.view.set 依 order 排 Agents 清單（socket 方法，CLI 送不了）。
 import { execFileSync } from 'node:child_process'
 import { createConnection } from 'node:net'
@@ -63,7 +63,7 @@ agents.filter(a => !parentOf(a))
 const treeTokens = a => {
   const t = tree.get(a.pane_id)
   return [...(t ? ['--token', `order=${t.order}`] : ['--clear-token', 'order']),
-    ...(t?.indent ? ['--token', `tree=${t.indent}`] : ['--clear-token', 'tree'])]
+    '--clear-token', 'tree']  // 舊版的獨立 $tree token，樹線已併進 $where_<狀態>
 }
 
 // pane 外框也標 ★（同 dispatch-worker 的 herdr_layout.py）：只加不拿，已是 ★ 開頭的不動
@@ -81,6 +81,9 @@ for (const group of byTab.values()) {
     // state_icon 後面 herdr 只接一個空格，不插「 · 」，所以顯示成「● ★ 名稱」。
     // 星號用 Font Awesome 的 U+F005（Nerd Font，同 pi-straw-boss）；pane 外框維持 herdr_layout.py 的 Unicode ★
     if (kids.has(a.pane_id)) where = `\uF005 ${where}`
+    // 樹線放進名稱開頭、不另開 token：herdr 在相鄰 token 間固定插「 · 」，只有 state_icon 後面是單一空格
+    const indent = tree.get(a.pane_id)?.indent
+    if (indent) where = `${indent} ${where}`
     run(['pane', 'report-metadata', a.pane_id, '--source', 'plugharbor-sidebar', '--clear-state-labels',
       '--clear-token', 'main',
       '--clear-token', 'where', ...stateTokens('where', a.agent_status, where), ...treeTokens(a)])

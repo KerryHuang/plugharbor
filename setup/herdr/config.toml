@@ -10,10 +10,9 @@ new_cwd = "~"
 [ui.sidebar.agents]
 # 每筆兩行：herdr 內建 state_icon＋ $where_<狀態>（tab 名稱，同 tab 多 pane 時帶序號）／終端機標題
 # 標題前綴由 Claude Code 自己畫：執行中是轉動的 ◐◑◒◓，閒置是 ✳——這是 0.8.0 起唯一的動畫來源
-# $tree 由 plugins/sidebar 依 launcher 寫的 parent token 算出（子智慧體掛在 launcher 底下），一般 agent 為空
+# 子智慧體的樹線（└─）由 plugins/sidebar 直接寫進 $where_<狀態> 開頭：獨立 token 擺在 state_icon 前，herdr 會硬插「 · 」
 rows = [
   [
-    { token = "$tree", dim = true },
     "state_icon",
     # tab 名稱依狀態上色：同一時間只有一個 $where_<狀態> 有值
     { token = "$where_blocked", fg = "#ff5f87", bold = true },
