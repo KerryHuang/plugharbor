@@ -4,11 +4,14 @@
 Claude 開 worker 的寫法很多（dispatch-worker 的 pane split、自己組 tab create＋agent start、變數帶 pane id），
 看指令解析抓不全，所以改成比對：Pre 記下現有 pane，Post 把多出來的 pane 寫 parent_pane=$HERDR_PANE_ID，
 再呼叫側欄 plugin（plugharbor.sidebar）的 refresh 動作重算樹（寫 metadata 本身不會觸發 plugin）。
-只在 HERDR_ENV=1 且指令提到 herdr 時動作；任何失敗都放行，不擋 Bash。
+只在 HERDR_ENV=1 且指令真的呼叫開 pane 的 herdr 子指令時動作；任何失敗都放行，不擋 Bash。
+只認「指令提到 herdr」會誤掛：grep／heredoc 裡出現 herdr 字樣的指令（subagent 也繼承 HERDR_PANE_ID）跑的那幾秒，
+使用者自己開的 tab 也會被當成這個 session 的 worker。
 限制：run_in_background 的指令 Post 會先回來，那時還沒開出的 pane 標不到。
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -16,6 +19,7 @@ from pathlib import Path
 
 SOURCE = "claude-parent-tag"
 SNAP_DIR = Path(tempfile.gettempdir()) / "herdr-parent-tag"
+SPAWN = re.compile(r"\bherdr\b.*?\b(pane\s+split|tab\s+create|workspace\s+create|worktree\s+(create|open))\b")
 
 
 def herdr(*args: str) -> str:
@@ -37,7 +41,7 @@ def main() -> int:
         return 0
     me = os.environ.get("HERDR_PANE_ID")
     cmd = (payload.get("tool_input") or {}).get("command") or ""
-    if os.environ.get("HERDR_ENV") != "1" or not me or "herdr" not in cmd:
+    if os.environ.get("HERDR_ENV") != "1" or not me or not SPAWN.search(cmd):
         return 0
     snap = SNAP_DIR / f"{payload.get('tool_use_id', 'none')}.json"
     try:
