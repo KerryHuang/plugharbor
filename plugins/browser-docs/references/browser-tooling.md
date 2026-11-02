@@ -68,7 +68,7 @@ claude-in-chrome 的隔離以 session 的 tab group 為界，同一 session 內�
 | `wait_for` | `{pageId, text: ["儲存成功", "已存檔"], timeout: 10000}`——`text` 是**非空字串陣列**，任一出現即返回；`timeout` 毫秒 | `text` 給單一字串；等 selector 或 URL（不支援，要等元素就輪詢 `take_snapshot`） |
 | `evaluate_script` | `function` 是**函式宣告字串**：`"() => document.title"`、帶元素用 `args: [uid]` 配 `"(el) => el.innerText"`；回傳值要可 JSON 序列化；只讀資料時加 `waitForStableDom: false` | 給一段裸敘述（`document.title`）；回傳 DOM 節點 |
 | `click`／`fill` | 先 `take_snapshot` 取**最新** uid，確認元素可見、不是 disabled 再點；逾時就重新 `take_snapshot` 取新 uid，**不重試同一個 uid** | 拿幾步前的 uid 連點；元素在視窗外硬點 |
-| `fill`（部分 UI 框架的輸入框，例 Quasar） | 空欄＝整欄替換；**有既有值＝附加**（`ab` 填 `X` 變 `abX`）。要改值先 `press_key("Backspace")` 依既有值長度連按清空再 `fill` | `Control+A` 只移游標不選取；`fill("")` 與 `Delete` 都清不掉；用 `evaluate_script` 模擬打字（會誤填全域搜尋框） |
+| `fill`（部分 UI 框架的輸入框，例 Quasar） | 空欄＝整欄替換；**有既有值＝附加**（`ab` 填 `X` 變 `abX`）。要改值先 `press_key("Backspace")` 依既有值長度連按清空再 `fill`（`press_key` 只准用於清空輸入框，不按 Enter 等會送出的鍵；唯讀環境不 `fill`，也就不需要它） | `Control+A` 只移游標不選取；`fill("")` 與 `Delete` 都清不掉；用 `evaluate_script` 模擬打字（會誤填全域搜尋框） |
 
 **可以落檔的參數**：`take_snapshot.filePath`、`take_screenshot.filePath`、`evaluate_script.filePath`、
 `get_network_request.requestFilePath`／`responseFilePath`。大輸出一律落檔再 `grep`，不要回在 context 裡；

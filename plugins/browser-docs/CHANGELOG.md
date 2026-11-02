@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.1.2] - 2026-11-02
+
+- fix: 唯讀環境禁止清單補上 `press_key`（`browser-surveyor` 與 `live-drive` 的 `safety.md`），唯一例外是為 `fill` 清空輸入框，不得按 Enter 等會送出的鍵；`browser-tooling.md` 同步註明。
+
 ## [0.1.1] - 2026-11-02
 
 - fix: `browser-surveyor` 的 tools 補上 `get_network_request`、`get_console_message`、`press_key`（investigate 模式與 `fill` 清空流程需要）；`live-drive` description 去掉 debug-port 說法；修正「四模式」「三條規則」等文字不符。
