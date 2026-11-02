@@ -1,6 +1,6 @@
 # toolkit
 
-通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。另附 7 個 skills 與 5 支 reviewer agents（見下）。
+通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。另附 8 個 skills 與 5 支 reviewer agents（見下）。
 
 ## 安裝
 
@@ -36,9 +36,23 @@ claude plugin install toolkit@plugharbor
 - `git-add-all`（deny）：擋 `git add -A` / `.` / `--all`
 - `git-destructive`（ask）：force push、`reset --hard`、`clean -f`
 
+## retrospective
+
+檢討 agent 工作流程與 plugin 本身（與 `feedback-review` 並列，共用 `references/improvement-loop.md` 的「先驗上一輪、人審、記帳」原則）。
+帳本 `metrics.yml` 與報告放專案內的版控目錄，路徑設在 `.plugharbor/toolkit.yml`：
+
+```yaml
+retrospective:
+  path: docs/retrospective
+  units_glob: "docs/*/*"   # 選填：工作單位目錄樣式
+```
+
+附 `chain_cost.py`：統計某個工作單位花了幾個 session、幾輪、多少 token。只支援 Claude Code，只讀本機 `~/.claude/projects`。
+
 ## 測試
 
 ```bash
 python3 -m pytest plugins/toolkit/hooks/tests -v
+python3 plugins/toolkit/skills/retrospective/scripts/test_chain_cost.py
 for t in plugins/toolkit/hooks/tests/*.sh plugins/toolkit/skills/agent-dispatch/tests/*.sh; do bash "$t" || exit 1; done
 ```

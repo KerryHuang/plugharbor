@@ -9,11 +9,8 @@ description: 處理 hook 收集的「使用者糾正 agent」回饋佇列：驗�
 agent 自記的摩擦（`feedback_queue.py friction`）也進同一個佇列；
 本 skill 是閉環的後半段：**Check 上一輪 → 分群 → 定目標 → 人審 → 改 → 記帳 → 歸檔**。
 
-三條不能破的原則（理由見 `references/principles.md`）：
-
-1. **人審**：每條改動都經使用者核准，不自動套用。
-2. **只增量**：Edit 局部，不整檔重寫；每加一條就附一個可刪或可合併的候選。
-3. **要能驗效**：改動寫進帳本並附驗效訊號，下次回顧先驗它。
+三條不能破的原則——人審、只增量、要能驗效（先驗上一輪、人審、記帳）——與 `retrospective` 共用，
+見 `${CLAUDE_PLUGIN_ROOT}/references/improvement-loop.md`；為什麼這樣設計見 `references/principles.md`。
 
 ## 檔案位置
 
