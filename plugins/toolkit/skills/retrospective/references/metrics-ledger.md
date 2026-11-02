@@ -30,4 +30,5 @@ metrics:
 - `criterion` 必須可觀察、可數（「退回次數」可以，「品質提升」不行）。寫不成 `new_chains` 或 `date` 的指標無法自動到期，改寫成可數的判準。
 - 新增 `new_chains` 指標時，用同一個 `units_glob`（`retrospective.units_glob`，未設定用 `docs/*/*`）算數，並在 `due` 旁留 `units_glob` 以免日後口徑漂移。
 - `verdict`：`pass`｜`fail`｜`side-effect`｜`not-due`。判定後把 `status` 改成對應值；舊的 check 不改。
+- toolkit 的 SessionStart hook `retro-due-reminder.py` 依本檔提醒到期指標，以 `checks` 最後一筆日期為準：之後沒有新工作單位（或 `date` 早於該筆）就不再提醒，所以驗過一定要記 check。
 - 追加後用 `python3 -c 'import yaml,sys;yaml.safe_load(open(sys.argv[1]))' <path>/metrics.yml` 確認解析通過（沒有 PyYAML 時肉眼確認縮排）。

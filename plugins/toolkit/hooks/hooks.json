@@ -97,6 +97,11 @@
             "type": "command",
             "command": "sh -c 'S=\"${CLAUDE_PLUGIN_ROOT}/hooks/feedback-reminder.py\"; [ -f \"$S\" ] || exit 0; for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$S\"; done; exit 0'",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "sh -c 'S=\"${CLAUDE_PLUGIN_ROOT}/hooks/retro-due-reminder.py\"; [ -f \"$S\" ] || exit 0; for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$S\"; done; exit 0'",
+            "timeout": 10
           }
         ]
       }

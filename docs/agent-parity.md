@@ -33,6 +33,7 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
 | `auto-session-title.py` | ✅ UserPromptSubmit | 無：Codex 用自己的 session 標題，可 `/rename`；不為產標題背景啟動 Claude，也不寫 Codex 內部 session DB | 無：未接 agy 的 hook（adapter 只註冊 Stop） | 無：沒有 hook；`setup/herdr/pi/session-title-prompt.md` 只是命名用提示詞，不是 hook |
 | `feedback-capture.py` | ✅ UserPromptSubmit | 無：回饋佇列只在 Claude 收集；未接 Codex 的 UserPromptSubmit | 無 | 無 |
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
+| `retro-due-reminder.py` | ✅ SessionStart `startup` | 無：adapter 未移植；在 Codex 手動跑 retrospective | 無 | 無：pi 沒有 hook 機制 |
 | `context-size-reminder.py` | ✅ Stop | 無：依賴 Claude transcript 格式與 context 級距；Codex 自己管理 context | 無 | 無 |
 | `notification.sh` | ✅ Notification、Stop | ✅ Stop：`notify.mjs` 把 stdin 轉給 repo 內的 `notification.sh`，通知規則只維護一處（無 Notification 事件） | ✅ Stop：同一支 `notify.mjs`，經 `hooks.json` 的 `plugharbor-notify` | 無：pi 沒有 hook 機制 |
 

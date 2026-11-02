@@ -3,6 +3,13 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.4.0] - 2026-11-02
+
+- feat: 新增 SessionStart hook `plugins/toolkit/hooks/retro-due-reminder.py`：讀 `.plugharbor/toolkit.yml` 的 `retrospective.path`，帳本 `metrics.yml` 有 `status: open` 的指標到期（`date` 已到；`new_chains` 依 `units_glob` 以 git 首次 commit 日期計數達標）就提議跑 `toolkit:retrospective`；`checks` 最後一筆不早於最新證據時視為已驗、不再提醒。regex 解析不依賴 PyYAML；沒設定、沒帳本、不是 git repo、解析失敗一律靜默放行。對應 sdlc 2.94.0／2.94.1。
+- feat: `plugins/toolkit/skills/retrospective/SKILL.md` Step 3 改為「判歸屬，再分類」：被檢討的 plugin 照五類處理；專案層／使用者層根因以 `feedback_queue.py friction` 轉交 feedback-review 佇列；記憶類列報告。Step 1 收 feedback-review 轉入的糾正群；`--apply` 只改 plugin 歸屬項；收尾條件加「非 plugin 根因都有去向」。對應 sdlc 2.95.0。
+- feat: `plugins/toolkit/skills/retrospective/references/report-template.md` 新增「轉交」段；`plugins/toolkit/skills/retrospective/references/metrics-ledger.md` 註明提醒以 checks 最後一筆為準。
+- test: 新增 `plugins/toolkit/hooks/tests/test_retro_due_reminder.py`（15 條）；`plugins/toolkit/hooks/tests/test_agent_model_guard.py` 的 python hook 數改為 8。
+
 ## [0.3.3] - 2026-11-02
 
 - test: `plugins/toolkit/skills/agent-dispatch/tests/herdr_layout.sh` 的非 UTF-8 案例改為把未指定 encoding 的 `subprocess.run` 換成 ascii 解碼來模擬，不再靠 `LC_ALL=C`（Linux C locale 下參數「★」本身就編碼不了，CI 誤判失敗）。

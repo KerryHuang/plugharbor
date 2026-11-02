@@ -23,6 +23,7 @@ claude plugin install toolkit@plugharbor
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
+| SessionStart `startup` | `retro-due-reminder.py` | retrospective 待驗指標到期時提議回顧（讀 `.plugharbor/toolkit.yml`，驗過且無新證據不重提） |
 
 所有狀態寫在 `~/.claude/`（`feedback-loop/`、`context-reminder/`、`notification-sound.wav`），不寫進 plugin 目錄。
 

@@ -49,7 +49,7 @@ class AgentModelGuard(unittest.TestCase):
 
 class HooksFailOpen(unittest.TestCase):
     def test_every_python_hook_is_covered(self):
-        self.assertEqual(len(python_hook_commands()), 7)
+        self.assertEqual(len(python_hook_commands()), 8)
 
     def test_missing_script_exits_zero(self):
         # CLAUDE_PLUGIN_ROOT 指向不存在的目錄 → 腳本缺檔 → 必須 exit 0 且無輸出
