@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.0] - 2026-11-02
+
+- feat: 新增 `pdf-converter` skill（PDF 轉 Word／Excel、回轉三軸驗證、範本模式）與 `doc-fidelity-reviewer` agent。
+- feat: 回轉驗證加 LibreOffice 後備：新增 `skills/pdf-converter/scripts/converter_select.py`（`select_converter(env)`，Windows 有 Word 用 Word COM，否則 `soffice --headless --convert-to pdf`）；兩者皆無時 `skills/pdf-converter/scripts/verify_roundtrip.py` 印安裝指引、退出碼 3。
+- feat: `skills/pdf-converter/scripts/verify_roundtrip.py` 的 `word` 子命令 新增 `--allow-degraded`，找不到轉換器時改為只驗文字軸（原本的自動降級改為明確選用）。
+- test: 新增 `skills/pdf-converter/scripts/test_converter_select.py`（以模擬 env 驗證，CI 不需 Word／soffice）。
+
 ## [0.2.0] - 2026-11-02
 
 - feat: 新增 `annotate-screenshot` skill：截圖加框、編號、圖例、遮罩，或以真實片段合成調整後示意圖；輸出 `-annotated.png` 並保留 clean 原圖，可由其他 skill 或 agent 以 Skill 工具叫用。
