@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.1] - 2026-11-02
+
+- fix: Word 已註冊但 pywin32 缺少或啟動失敗時，改用 LibreOffice；兩者都不可用時訊息含 pywin32 與安裝指引。
+- fix: LibreOffice 轉檔逾時或失敗以一行訊息結束（退出碼 2），不再丟 traceback。
+- docs: `pdf-converter` 產出位置措辭改為「由其他 skill 流程呼叫」。
+
 ## [0.3.0] - 2026-11-02
 
 - feat: 新增 `pdf-converter` skill（PDF 轉 Word／Excel、回轉三軸驗證、範本模式）與 `doc-fidelity-reviewer` agent。

@@ -100,6 +100,60 @@ class VerifyIntegrationTest(unittest.TestCase):
         self.assertIn("--headless", cmd)
         self.assertEqual(cmd[cmd.index("--convert-to") + 1], "pdf")
 
+    def _word_fail_args(self):
+        return SimpleNamespace(original="o.pdf", docx="d.docx", outdir=tempfile.mkdtemp(),
+                               text_mode="strict", allow_degraded=False, dpi=150)
+
+    def test_word_fails_falls_back_to_libreoffice(self):
+        env = {"platform": "win32", "word_com": True, "soffice": "C:/lo/soffice.exe"}
+        used = []
+
+        def fake(docx, pdf, converter="word", env=None):
+            used.append(converter)
+            if converter == "word":
+                raise vr.WordUnavailable("ImportError: pywin32")
+            raise StopIteration  # 已走到 libreoffice，停止後續 PDF 比對
+
+        with mock.patch.object(vr, "detect_env", return_value=env), \
+             mock.patch.object(vr, "docx_to_pdf", fake):
+            with self.assertRaises(StopIteration):
+                vr.run_word(self._word_fail_args())
+        self.assertEqual(used, ["word", "libreoffice"])
+
+    def test_word_fails_without_soffice_message(self):
+        env = {"platform": "win32", "word_com": True, "soffice": None}
+        with mock.patch.object(vr, "detect_env", return_value=env), \
+             mock.patch.object(vr, "docx_to_pdf", side_effect=vr.WordUnavailable("x")):
+            with self.assertRaises(cs.ConverterUnavailable) as cm:
+                vr.run_word(self._word_fail_args())
+        self.assertIn("pywin32", str(cm.exception))
+        self.assertIn("LibreOffice", str(cm.exception))
+
+    def test_libreoffice_nonzero_exit(self):
+        with tempfile.TemporaryDirectory() as d, \
+             mock.patch.object(vr.subprocess, "run",
+                               return_value=SimpleNamespace(returncode=1, stderr="boom")):
+            with self.assertRaises(RuntimeError) as cm:
+                vr.docx_to_pdf_libreoffice(str(Path(d, "a.docx")), str(Path(d, "o.pdf")), "/x/soffice")
+        self.assertIn("LibreOffice 轉檔失敗", str(cm.exception))
+        self.assertIn("boom", str(cm.exception))
+
+    def test_libreoffice_no_output_file(self):
+        with tempfile.TemporaryDirectory() as d, \
+             mock.patch.object(vr.subprocess, "run",
+                               return_value=SimpleNamespace(returncode=0, stderr="")):
+            with self.assertRaises(RuntimeError) as cm:
+                vr.docx_to_pdf_libreoffice(str(Path(d, "a.docx")), str(Path(d, "o.pdf")), "/x/soffice")
+        self.assertIn("LibreOffice 轉檔失敗", str(cm.exception))
+
+    def test_libreoffice_timeout(self):
+        with tempfile.TemporaryDirectory() as d, \
+             mock.patch.object(vr.subprocess, "run",
+                               side_effect=subprocess.TimeoutExpired("soffice", 180)):
+            with self.assertRaises(RuntimeError) as cm:
+                vr.docx_to_pdf_libreoffice(str(Path(d, "a.docx")), str(Path(d, "o.pdf")), "/x/soffice")
+        self.assertIn("逾時", str(cm.exception))
+
     def test_run_word_exit_3_path_raises_converter_unavailable(self):
         args = SimpleNamespace(original="o.pdf", docx="d.docx", outdir=tempfile.mkdtemp(),
                                text_mode="strict", allow_degraded=False, dpi=150)

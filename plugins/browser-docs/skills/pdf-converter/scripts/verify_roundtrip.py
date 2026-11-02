@@ -27,7 +27,8 @@ from pathlib import Path
 import fitz
 import numpy as np
 
-from converter_select import (EXIT_UNAVAILABLE, ConverterUnavailable, detect_env,
+from converter_select import (EXIT_UNAVAILABLE, INSTALL_HINT, ConverterUnavailable,
+                              detect_env,
                               select_converter)
 
 # Windows 預設 cp950：印中文會亂碼、印 emoji 直接炸 UnicodeEncodeError。
@@ -54,7 +55,10 @@ def docx_to_pdf_libreoffice(docx_path: str, pdf_out: str, soffice: str):
         profile = Path(tmp, "profile").resolve().as_uri()
         cmd = [soffice, f"-env:UserInstallation={profile}", "--headless",
                "--convert-to", "pdf", "--outdir", tmp, str(Path(docx_path).resolve())]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError("LibreOffice 轉檔逾時（180 秒）；確認沒有殘留的 soffice 行程後重試") from e
         produced = Path(tmp, Path(docx_path).stem + ".pdf")
         if r.returncode != 0 or not produced.exists():
             raise RuntimeError(f"LibreOffice 轉檔失敗（退出碼 {r.returncode}）：{r.stderr.strip()}")
@@ -240,10 +244,18 @@ def run_word(args) -> dict:
     env = detect_env()
     try:
         converter = select_converter(env)
-        docx_to_pdf(args.docx, str(rt_pdf), converter, env)
-    except (ConverterUnavailable, WordUnavailable) as e:
+        try:
+            docx_to_pdf(args.docx, str(rt_pdf), converter, env)
+        except WordUnavailable as e:
+            if not env.get("soffice"):
+                raise ConverterUnavailable(
+                    f"Word 無法使用（{e}）；Windows 需安裝 pywin32（pip install pywin32）並確認 Word 可啟動。"
+                    + INSTALL_HINT) from e
+            print(f"⚠ Word 無法使用（{e}），改用 LibreOffice", file=sys.stderr)
+            docx_to_pdf(args.docx, str(rt_pdf), "libreoffice", env)
+    except ConverterUnavailable as e:
         if not args.allow_degraded:
-            raise ConverterUnavailable(str(e)) from e
+            raise
         return run_word_degraded(args, str(e))
     orig, rt = fitz.open(args.original), fitz.open(str(rt_pdf))
     text = compare_text(orig, rt)
@@ -313,6 +325,9 @@ def main():
     except ConverterUnavailable as e:
         print(str(e), file=sys.stderr)
         sys.exit(EXIT_UNAVAILABLE)
+    except RuntimeError as e:  # 轉檔失敗／逾時：印一行訊息，不丟 traceback
+        print(str(e), file=sys.stderr)
+        sys.exit(2)
     out = Path(args.outdir) / "verify-report.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({"report": str(out), "verdict": report["verdict"],

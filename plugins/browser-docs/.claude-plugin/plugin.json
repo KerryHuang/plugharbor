@@ -1,6 +1,6 @@
 {
   "name": "browser-docs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證",
   "author": {
     "name": "KerryHuang"

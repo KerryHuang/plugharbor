@@ -26,7 +26,7 @@ $ARGUMENTS → <PDF路徑> [--to word|excel] [--template] [--output <路徑>]
 
 ## 產出位置（--output 省略時）
 
-1. **PDF 屬於某功能**（SDLC 流程中呼叫、或能對應到 `{docs-root}/{模組}/{功能}/` 既有功能目錄）→ 輸出至**該功能 docs 目錄**（與 FRD／SAD 同目錄）；來源 PDF 不在 docs 內時一併複製進去。對應不確定就 `AskUserQuestion` 確認目錄——**只在既有目錄中選，不得自建 `{docs-root}` 第一階目錄**（`{docs-root}` 由專案 CLAUDE.md 設定，未設定為 `docs/`）。
+1. **PDF 屬於某功能**（由其他 skill 流程呼叫、或能對應到 `{docs-root}/{模組}/{功能}/` 既有功能目錄）→ 輸出至**該功能 docs 目錄**（與 FRD／SAD 同目錄）；來源 PDF 不在 docs 內時一併複製進去。對應不確定就 `AskUserQuestion` 確認目錄——**只在既有目錄中選，不得自建 `{docs-root}` 第一階目錄**（`{docs-root}` 由專案 CLAUDE.md 設定，未設定為 `docs/`）。
 2. **獨立呼叫且無對應功能** → 與來源 PDF 同目錄同名。
 
 中間產物（layout.json、diff PNG、verify-report）一律在 `.tmp/pdf-converter/{檔名}/`，不進 docs。
