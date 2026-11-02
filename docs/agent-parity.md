@@ -48,8 +48,9 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
 - **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
 - **跨 plugin 依賴**：Claude Code 用 `plugin.json` 的 `dependencies`（裸名稱）：delivery-flow 依賴 browser-docs；sa-flow 依賴 delivery-flow、browser-docs、toolkit。
   Codex、pi 沒有對應機制，靠 `setup/install.sh` 一次裝全部 plugin 滿足依賴。
-- **跨 plugin 叫用只實測 Claude Code**：叫另一個 plugin 的 skill（例如 delivery-flow 的 `manual-explorer` 叫 `browser-docs:annotate-screenshot`）要在 agent 的 `tools` 加 `Skill`；
-  `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以共用素材各放一份。Codex、pi 的跨 plugin 叫用：未實測。
+- **跨 plugin 叫用**：叫另一個 plugin 的 skill（例如 delivery-flow 的 `manual-explorer` 叫 `browser-docs:annotate-screenshot`）要在 agent 的 `tools` 加 `Skill`；
+  `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以共用素材各放一份。
+  Claude Code、Codex、pi 都實測過（2026-11-02）：Codex 從安裝快取讀 skill，pi 從 repo 讀並照 `harness-terms.md` 把 `${CLAUDE_PLUGIN_ROOT}` 換成實際路徑。
 - **Codex hook 需信任**：Codex 以內容雜湊記錄信任，hook 指令一變就失效；install.sh 之後要在 Codex 執行 `/hooks` 重新信任，否則 `tool-policy.mjs` 不會跑。
 - **skillOverrides 對 plugin skill 的 key 寫法未驗證**：settings 範本想關掉 `handoff`、`ai-radar`，實測沒有任何 key 寫法能讓 plugin 的 skill 消失（可能是 `--plugin-dir` 的 inline plugin 不吃 override）。細節與測法見 `setup/README.md`「skillOverrides」。
 - **升級流程只用 stub 測過**：`install.sh` 更新 marketplace 再重裝的行為，真 CLI 的結果在切換步驟才實機驗證。
