@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.0] - 2026-11-02
+
+- feat: 新增 skill `ticket-ops`（票務工具層）：定義建票、改階段、留言、附圖、查詢、blocked-by 六個操作契約，依 `ticket.tool` 載入 Linear 或 GitHub Issues 做法；Jira 只有設定對照範例（未實測），叫用時需使用者確認才繼續。
+- feat: 新增 `plugins/delivery-flow/skills/ticket-ops/scripts/ticket_backend.py`：`stage_to_native` 依 `ticket.states` 把抽象階段轉成 Linear state 名稱或 GitHub label／關閉動作，`github_attach_plan` 產出附圖存放位置與 markdown（GitHub 無官方圖片上傳 API）。
+- fix: `issue-triage` 查既有票與交棒開票改明確叫用 `delivery-flow:ticket-ops`。
+- docs: `plugins/delivery-flow/references/config.md` 的 GitHub 範例 label 改為 `stage:<名稱>` 慣例。
+
 ## [0.2.1] - 2026-11-02
 
 - fix: `issue-triage` 新增讀取 `ticket.tool` 的前置步驟，缺檔或缺鍵（退出碼 2）時依 `references/harness-terms.md` 提問並寫入 `.plugharbor/delivery-flow.yml`；刪除與 report-writer constraints 重複的落檔規則。

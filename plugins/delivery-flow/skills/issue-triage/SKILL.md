@@ -16,7 +16,7 @@ model: sonnet
 ## 0. 輸入與前置
 
 - 取得輸入：會議記錄路徑，或使用者貼入的回饋／需求清單。
-- **讀票務工具設定**：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool`。退出碼 2（缺檔、缺鍵或格式錯誤）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者用哪個票務工具（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`），寫入 `.plugharbor/delivery-flow.yml`，不自行猜。後面查既有票與交棒開票都用這個工具。
+- **讀票務工具設定**：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool`。退出碼 2（缺檔、缺鍵或格式錯誤）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者用哪個票務工具（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`），寫入 `.plugharbor/delivery-flow.yml`，不自行猜。後面查既有票（`delivery-flow:ticket-ops` 的 `query`）與交棒開票（`create`）都走 `delivery-flow:ticket-ops`。
 - **先確認變體與術語**（分類建立在正確前提）：客戶／場域變體（如 B2B vs B2C 版本）、版本命名對照（如標準版／進階版／lite）。不確定就查證或問，勿憑字面分類。
 
 ## 1. 拆解 items
@@ -34,7 +34,7 @@ model: sonnet
 依 `${CLAUDE_PLUGIN_ROOT}/skills/issue-triage/references/classification.md`：
 - **Bug**＝現行功能異常｜**Enhancement**＝改既有｜**Feature**＝全新無實作。
 - **防呆（核心）**：客戶說「缺少」的常已實作（版本差異／capability flag／測試點）→ 標「先實機確認、勿逕自開發」，別當 Feature。
-- **既有票／規格文件對照**：標「需新建」前查 docs＋票務系統（`ticket.tool` 設定的那個，如 Linear、GitHub Issues），避免誤判。
+- **既有票／規格文件對照**：標「需新建」前查 docs＋票務系統（叫用 `delivery-flow:ticket-ops` 的 `query`，查 `ticket.tool` 設定的那個），避免誤判。
 
 ## 4. 待釐清（可選第二意見）
 
@@ -70,7 +70,7 @@ prompt: |
 
 ## 7. 交棒
 
-清單定案（待釐清皆定案）後 → 交棒開票（依 `ticket.tool` 設定的票務工具）；**對齊既有票時以變更需求併入，勿另開重複票**。
+清單定案（待釐清皆定案）後 → 交棒開票（叫用 `delivery-flow:ticket-ops` 的 `create`）；**對齊既有票時以變更需求併入，勿另開重複票**。
 
 ## 收尾條件
 

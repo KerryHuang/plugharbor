@@ -37,17 +37,17 @@ ticket:
 publish-target: file:docs/meetings
 ```
 
-GitHub Issues（狀態用 label，`done`、`canceled` 對應 issue 的 closed）：
+GitHub Issues（狀態用 label `stage:<名稱>`，`done`、`canceled` 改為關閉 issue，對照值僅作記號）：
 
 ```yaml
 ticket:
   tool: github
   repo: example-org/example-repo
   states:
-    backlog: "status: backlog"
-    todo: "status: todo"
-    in-progress: "status: in-progress"
-    in-review: "status: in-review"
+    backlog: "stage:backlog"
+    todo: "stage:todo"
+    in-progress: "stage:in-progress"
+    in-review: "stage:in-review"
     done: closed
     canceled: "closed: not planned"
 ```
