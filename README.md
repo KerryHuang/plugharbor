@@ -42,7 +42,7 @@ claude plugin install dev-flow@plugharbor
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [sa-flow](./plugins/sa-flow/README.md) | 4.0.0 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
+| [sa-flow](./plugins/sa-flow/README.md) | 4.0.1 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
 | [dev-flow](./plugins/dev-flow/README.md) | 0.2.0 | 跨語言開發工作流——git 生命週期、工作編排、context 治理 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
 | [frontend-vue](./plugins/frontend-vue/README.md) | 0.1.0 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |

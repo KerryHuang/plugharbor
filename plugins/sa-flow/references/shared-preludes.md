@@ -52,5 +52,8 @@
 ## PDF 轉檔通則
 一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄。
 
+## 跨 plugin 缺件
+叫用 `delivery-flow:*`、`browser-docs:*`、`toolkit:*` 失敗（找不到 skill）→ 告知使用者安裝對應的 `<plugin>@plugharbor`，不改用近似做法。Claude Code 會依 `dependencies` 自動補裝；Codex、pi 沒有依賴機制，要手動裝。
+
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

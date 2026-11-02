@@ -2,6 +2,16 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+
+## [4.0.1] - 2026-11-02
+
+- fix: `plugins/sa-flow/skills/qa-sweep/SKILL.md` 的待人工字串改成與 `delivery-flow:qa-verify` 實際回報一致（「待人工：票面環境 <名稱> 不在設定」「待人工：票面無可驗預期結果」），qa-sweep 靠字串分類，對不上會歸錯類。
+- fix: `plugins/sa-flow/README.md` 補 `delivery-flow` 的設定檔 `.plugharbor/delivery-flow.yml`（`ticket.tool`、`ticket.team`／`ticket.repo`、`ticket.states`、`qa.environments`），票面模式缺這些設定會直接停。
+- fix: `plugins/sa-flow/agents/scout.md` description 移除「由 delivery-flow:operation-manual 派發」（operation-manual 已改派唯讀 general-purpose，delivery-flow 內沒有派 scout 的地方）。
+- fix: `plugins/sa-flow/references/dispatch-conventions.md`、`plugins/sa-flow/references/verify-against-source.md` 不再拿已移除的 `linear-illustrate`、`linear-*-report`、`linear-daily-report` 當例子，改為泛稱。
+- fix: `plugins/sa-flow/references/shared-preludes.md` 補「叫用 `delivery-flow:*`／`browser-docs:*`／`toolkit:*` 失敗時告知安裝」一行（Codex、pi 沒有依賴機制）。
+- docs: `plugins/sa-flow/CHANGELOG.md` 4.0.0 條目中 `linear-illustrate` 的上傳說明改為實際走 `delivery-flow:ticket-ops` 的 `attach`。
+
 ## [4.0.0] - 2026-11-02
 
 ### BREAKING
@@ -13,7 +23,7 @@
 - `retrospective` → `toolkit:retrospective`（規格鏈成本傳 `--units-glob 'docs/*/*'`）
 - `live-drive` → `browser-docs:live-drive`
 - `pdf-converter` → `browser-docs:pdf-converter`
-- `linear-illustrate` → 無對應 skill；擷取與標註改用 `browser-docs:live-drive` 與 `browser-docs:annotate-screenshot`，上傳走既有 Linear 流程的附件步驟
+- `linear-illustrate` → 無對應 skill；擷取與標註改用 `browser-docs:live-drive` 與 `browser-docs:annotate-screenshot`，上傳走 `delivery-flow:ticket-ops` 的 `attach`（Linear 為三步簽名上傳）
 - `meeting-minutes` → `delivery-flow:meeting-minutes`
 - `interview-prep` → `delivery-flow:interview-prep`
 - `issue-triage` → `delivery-flow:issue-triage`

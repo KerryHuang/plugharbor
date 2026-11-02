@@ -73,7 +73,7 @@ team 取自專案 `CLAUDE.md` 的 `sdlc-linear-teams`（QA／PM／Dev 三列；S
 
 ## S4 逐張測（不並行）
 
-- **部署閘（每張先判）**：類別 3 由 `delivery-flow:qa-verify` Step 0 第 4 點判；類別 4 走案例檔模式、qa-verify 不做版本閘，由本 skill 依該 skill 的 environments.md「版本比對」自己判；Dev 票不一定是直屬子票（Feature 樹是 PM→QA→Dev）——**往下遞迴**找 labels 含 `Backend*`／`Frontend*` 的票取完工留言，每張都已部署才算過。類別 2 照 `backend-verify.md` §3。判出未部署、或使用者在版本閘選「等部署」→ 該票記**未部署**，不動票，換下一張。`delivery-flow:qa-verify` 回報「待人工：票面環境 <slug> 無帳密」→ 該票記待人工（原因照抄），不換環境硬跑：換環境跑的結果會因環境特性 TC BLOCKED，白耗三支 agent 也無法自動結案。
+- **部署閘（每張先判）**：類別 3 由 `delivery-flow:qa-verify` Step 0 第 4 點判；類別 4 走案例檔模式、qa-verify 不做版本閘，由本 skill 依該 skill 的 environments.md「版本比對」自己判；Dev 票不一定是直屬子票（Feature 樹是 PM→QA→Dev）——**往下遞迴**找 labels 含 `Backend*`／`Frontend*` 的票取完工留言，每張都已部署才算過。類別 2 照 `backend-verify.md` §3。判出未部署、或使用者在版本閘選「等部署」→ 該票記**未部署**，不動票，換下一張。`delivery-flow:qa-verify` 回報以「待人工：」開頭（目前有「待人工：票面環境 <名稱> 不在設定」「待人工：票面無可驗預期結果」；另有「無法進入畫面：<環境名> 無帳密」）→ 該票記待人工（原因照抄），不換環境硬跑：換環境跑的結果會因環境特性 TC BLOCKED，白耗三支 agent 也無法自動結案。
 - 工作區：類別 3＝`<ws>/.tmp/qa-verify/<票號小寫>/`、類別 4＝`<ws>/.tmp/qa-verify/<功能碼小寫>/`。**invoke 前**若該工作區已有 `verdict.json`，改名 `verdict.prev.json`——舊結果不可被當成本輪結果。
 - 類別 3（票面模式）：invoke `delivery-flow:qa-verify <票號> --no-comment`。
 - 類別 4（規格模式）：先依 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把該功能 FFS §8 轉成 `<sweep 工作區>/<功能碼小寫>.md`，再 invoke `delivery-flow:qa-verify <sweep 工作區>/<功能碼小寫>.md --no-comment`（工作區檔名即功能碼，結果仍落 `<ws>/.tmp/qa-verify/<功能碼小寫>/`）。

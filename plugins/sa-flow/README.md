@@ -47,6 +47,8 @@ sdlc-spec-rules-since: 2026-10-01
 
 設定鍵沿用 `sdlc-` 前綴：外掛 2.2.0 由 `sdlc` 改名為 `sa-flow` 時刻意不改鍵名，既有專案的 `CLAUDE.md` 不用跟著改。
 
+票務與驗收環境由 `delivery-flow` 的設定檔 `.plugharbor/delivery-flow.yml` 管：`qa-sweep` 類別 3（票面模式）與 `delivery-flow:qa-verify` 需要 `ticket.tool`（`linear`／`github`）、`ticket.team` 或 `ticket.repo`、`ticket.states`，以及 `qa.environments`（可驗收環境與 `writable`）。缺鍵時 skill 會停下來問你並代寫；鍵的說明見 `plugins/delivery-flow/references/config.md`。
+
 ## 前置需求
 
 | 需要 | 用在哪 | 沒有時 |
