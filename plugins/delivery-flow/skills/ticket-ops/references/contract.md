@@ -23,8 +23,10 @@ GitHub 慣例：階段用 label `stage:<名稱>` 表示（`ticket.states` 填 `s
 | `set_stage` | `id`、`stage` | 新階段 | 先轉原生值再套用；規則見各 backend |
 | `comment` | `id`、`body` | 留言 ID／URL | 冪等標記（首行固定字串）由叫用端放進 `body` |
 | `attach` | `id`、`image_path`、`caption` | 內嵌用 markdown | 上傳後把圖內嵌進描述或留言。**回報必須寫明圖實際在哪、連結是否有效**；沒真正附上就明說，不得回報「已附圖」（GitHub：push 前連結是壞的，見 `github.md`，未 push 回報「圖仍在本機 <path>，未附」） |
-| `query` | `filter`（階段、label、parent、更新時間、關鍵字） | 票清單（ID、標題、階段、labels、parent、updatedAt） | 結果大時落檔，回傳路徑 |
+| `query` | `filter`（階段、label、parent、更新時間、建立時間範圍、完成時間範圍、關鍵字） | 票清單（ID、標題、階段、labels、parent、updatedAt、url、`assignee?`、`createdAt?`、`completedAt?`、`priority?`、`dueDate?`） | 結果大時落檔，回傳路徑 |
 | `link_blocked_by` | `id`、`blocker_id` | 是否成功、降級說明 | 見各 backend 的通知語意差異 |
+
+`query` 回傳欄位中 `?` 表示後端有才回；`completedAt` 只在階段為 `done` 時非 null；`priority` 一律正規化為 `urgent`／`high`／`medium`／`low`／`none`。`estimate` 不在契約內。
 
 ## 能力差異摘要
 

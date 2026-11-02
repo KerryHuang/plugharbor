@@ -50,24 +50,24 @@ button.drill.mismatch{color:var(--bad);border-color:var(--bad)}
 
 <script id="drill-data" type="application/json">
 {"delivered":{"label":"上週交付","note":"完成日落在上週窗內，已扣除批次清理","items":[
-{"id":"DEMO-1","title":"訂單匯出加上日期篩選","owner":"範例人員甲","meta":"完成 01-02","url":"https://tracker.example.com/DEMO-1"},
-{"id":"DEMO-2","title":"登入逾時提示改版","owner":"範例人員乙","meta":"完成 01-02"},
-{"id":"DEMO-3","title":"報表欄寬記憶","owner":"範例人員甲","meta":"完成 01-03"}]},
+{"id":"DEMO-1","title":"訂單匯出加上日期篩選","assignee":"範例人員甲","meta":"完成 01-02","url":"https://tracker.example.com/DEMO-1"},
+{"id":"DEMO-2","title":"登入逾時提示改版","assignee":"範例人員乙","meta":"完成 01-02"},
+{"id":"DEMO-3","title":"報表欄寬記憶","assignee":"範例人員甲","meta":"完成 01-03"}]},
 "cleanup":{"label":"批次清理","note":"3 分鐘內成簇且票齡中位數超過 90 天","items":[
-{"id":"DEMO-4","title":"舊流程清單整理","owner":"範例人員丙","meta":"票齡 210 天"},
-{"id":"DEMO-5","title":"過期環境申請","owner":"範例人員丙","meta":"票齡 188 天"}]},
+{"id":"DEMO-4","title":"舊流程清單整理","assignee":"範例人員丙","meta":"票齡 210 天"},
+{"id":"DEMO-5","title":"過期環境申請","assignee":"範例人員丙","meta":"票齡 188 天"}]},
 "created":{"label":"上週新增","note":"建立日落在上週窗內","items":[
-{"id":"DEMO-6","title":"出貨單列印版面","owner":"範例人員乙","meta":"建立 12-30"},
-{"id":"DEMO-7","title":"庫存盤點匯入","owner":"範例人員甲","meta":"建立 12-31"},
-{"id":"DEMO-8","title":"權限群組調整","owner":"範例人員丙","meta":"建立 01-02"},
-{"id":"DEMO-9","title":"通知信範本更新","owner":"範例人員乙","meta":"建立 01-03"}]},
+{"id":"DEMO-6","title":"出貨單列印版面","assignee":"範例人員乙","meta":"建立 12-30"},
+{"id":"DEMO-7","title":"庫存盤點匯入","assignee":"範例人員甲","meta":"建立 12-31"},
+{"id":"DEMO-8","title":"權限群組調整","assignee":"範例人員丙","meta":"建立 01-02"},
+{"id":"DEMO-9","title":"通知信範本更新","assignee":"範例人員乙","meta":"建立 01-03"}]},
 "review":{"label":"等驗收","note":"存量：當下全量，不受窗限制","items":[
-{"id":"DEMO-10","title":"客戶資料合併","owner":"範例人員丁","meta":"停滯 4 工作日"},
-{"id":"DEMO-11","title":"月結報表調整","owner":"範例人員丁","meta":"停滯 2 工作日"},
-{"id":"DEMO-12","title":"批次改價","owner":"範例人員乙","meta":"停滯 9 工作日"}]},
+{"id":"DEMO-10","title":"客戶資料合併","assignee":"範例人員丁","meta":"停滯 4 工作日"},
+{"id":"DEMO-11","title":"月結報表調整","assignee":"範例人員丁","meta":"停滯 2 工作日"},
+{"id":"DEMO-12","title":"批次改價","assignee":"範例人員乙","meta":"停滯 9 工作日"}]},
 "blocked":{"label":"被擋","note":"存量：帶 blocked label 的未完成票","items":[
-{"id":"DEMO-13","title":"前端等報價 API","owner":"範例人員甲","meta":"已等 5 工作日"},
-{"id":"DEMO-14","title":"等客戶提供樣張","owner":"範例人員丙","meta":"已等 11 工作日"}]}}
+{"id":"DEMO-13","title":"前端等報價 API","assignee":"範例人員甲","meta":"已等 5 工作日"},
+{"id":"DEMO-14","title":"等客戶提供樣張","assignee":"範例人員丙","meta":"已等 11 工作日"}]}}
 </script>
 <script>
 (function(){
@@ -84,7 +84,7 @@ button.drill.mismatch{color:var(--bad);border-color:var(--bad)}
       var li = el('li'), id;
       if (it.url) { id = el('a', it.id); id.href = it.url; id.target = '_blank'; id.rel = 'noopener'; } else { id = el('span', it.id); }
       li.appendChild(id); li.appendChild(el('span', it.title));
-      li.appendChild(el('span', [it.owner, it.meta].filter(Boolean).join('｜'))).className = 'meta';
+      li.appendChild(el('span', [it.assignee, it.meta].filter(Boolean).join('｜'))).className = 'meta';
       list.appendChild(li);
     });
     drawer.classList.add('open');

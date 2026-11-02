@@ -1,14 +1,14 @@
 # 查詢策略與口徑
 
-所有查詢都叫用 `delivery-flow:ticket-ops` 的 `query`（篩選：階段、label、parent、更新時間、關鍵字；回傳 ID、標題、階段、labels、parent、updatedAt）。
+所有查詢都叫用 `delivery-flow:ticket-ops` 的 `query`（篩選：階段、label、parent、更新時間、建立時間範圍、完成時間範圍、關鍵字；回傳 ID、標題、階段、labels、parent、updatedAt、url，以及選配的 assignee、createdAt、completedAt、priority、dueDate）。
 
 ## 原則
 
 1. **全量，不抽樣**：要求 ticket-ops 分頁拉完。只取第一頁，數字會系統性偏低。
 2. **大結果落檔**：結果過大時 ticket-ops 會落檔並回傳路徑，改用 jq／python 讀，
    **不要為了塞進對話而砍欄位重試**。落檔與衍生檔一律放 `.tmp/daily-report/`。
-3. **選配欄位**：`query` 的基本欄位之外，後端可能多回 `completedAt`、`createdAt`、`priority`、`dueDate`、`estimate`（Linear 有；GitHub 只有 `closedAt`／`createdAt`，其餘用 label）。
-   有回傳才用，沒有的欄位對應的清單與燈號標「未提供」，**不要拿 `updatedAt` 冒充**。
+3. **選配欄位**：`assignee`、`createdAt`、`completedAt`、`priority`、`dueDate` 由 ticket-ops 依後端能力回傳（GitHub 的 `dueDate` 恆為空）。
+   ticket-ops 未回傳時，對應清單與燈號標「未提供」，完成日不拿 `updatedAt` 冒充。`estimate` 不在契約內。
 
 ## 存量 vs 流量
 
@@ -27,12 +27,12 @@
 
 | key | 定義 | 陷阱 |
 |-----|------|------|
-| `delivered` | 窗內進入 `done`，**扣除批次清理** | 這才是真實交付；沒有 `completedAt` 時用 `updatedAt` 近似並在資料警告註明 |
-| `cleanup` | 同窗內的批次結案 | 分開列，不然虛胖；缺 `completedAt` 時整組標「未偵測」 |
-| `created` | 同窗內新建 | 需要 `createdAt`；缺則標「未提供」 |
+| `delivered` | 窗內進入 `done`，**扣除批次清理** | 這才是真實交付；ticket-ops 未回傳 `completedAt` 時才標「未提供」 |
+| `cleanup` | 同窗內的批次結案 | 分開列，不然虛胖；ticket-ops 未回傳 `completedAt` 時才標「未提供」 |
+| `created` | 同窗內新建 | ticket-ops 未回傳 `createdAt` 時才標「未提供」 |
 | `review_*` | `in-review` 全量存量 | 與流量不同口徑 |
 | `blocked` | 帶 `blocked` label 的未完成票（label 名稱以專案約定為準） | 重點是等幾天，不是幾件；專案沒有此 label 時整組標「未提供」，不要寫成 0 |
-| `new_urgent` | 窗內新建或升級為最高優先的票 | 需要 `priority`；紅燈來源。GitHub 專案用 label 約定 |
+| `new_urgent` | 窗內新建或升級為最高優先的票 | ticket-ops 未回傳 `priority`（或全為 `none`）時才標「未提供」；紅燈來源 |
 | `unblocked` | 窗內脫離被擋狀態 | 綠燈來源，別漏了好消息 |
 
 ## 批次結案偵測

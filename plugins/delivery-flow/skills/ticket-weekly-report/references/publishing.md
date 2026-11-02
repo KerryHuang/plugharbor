@@ -12,14 +12,9 @@
 3. 複製後 `cmp` 比對與來源位元相同，確認內嵌資料與 JS 沒被改動。
 4. 回報每個檔實際落地的路徑。
 
-## HTML 不要放進會過濾 `<script>` 的服務
-
-可點數字的抽屜靠 `<script>`。HedgeDoc 一類的筆記服務預設過濾 script，簡報放進去抽屜會整個失效，
-Markdown 兩份才適合送去那裡。簡報 HTML 放能原樣服務靜態檔的地方（repo 的 docs 目錄、靜態站、直接開檔）。
-
 ## 不做的事
 
-本 skill 不 commit、不 push、不寫進票務工具、不發 HedgeDoc。使用者要提交或發布，另行處理；
+本 skill 不 commit、不 push、不寫進票務工具。使用者要提交或發布，另行處理；
 動 git 前依專案的 Git 規則（逐檔 add、確認 staged）。
 
 ## 發布前必驗

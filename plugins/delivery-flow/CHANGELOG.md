@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.4.1] - 2026-11-02
+
+- fix: `plugins/delivery-flow/skills/ticket-ops/references/contract.md` 的 `query` 補 `url`、`assignee?`、`createdAt?`、`completedAt?`（僅 `done`）、`priority?`（正規化為 urgent／high／medium／low／none）、`dueDate?`，篩選加建立與完成時間範圍；`estimate` 不納入。`linear.md`、`github.md` 補對映（GitHub 以 not planned 關閉不算 `completedAt`，`dueDate` 恆為空）。
+- fix: `ticket-daily-report`、`ticket-weekly-report` 移除以 `updatedAt` 近似完成日的退路，ticket-ops 未回傳 `completedAt` 時 delivered、cleanup、lead 標「未提供」；停滯天數仍用 `updatedAt`。
+- fix: `ticket-daily-report` 的 `--out-dir` 不存在時停下回報；`plugins/delivery-flow/skills/ticket-weekly-report/references/publishing.md` 移除過時的 HedgeDoc 段落。
+- test: 新增 `plugins/delivery-flow/skills/ticket-weekly-report/scripts/test_verify_counts.py`（一致、數字不符、按鈕無資料集、資料集未引用四案）。
+
 ## [0.4.0] - 2026-11-02
 
 - feat: 新增 skill `ticket-daily-report`（`plugins/delivery-flow/skills/ticket-daily-report/SKILL.md`）：每日票務進度報表，走看板找卡點、只列今天變壞的事；資料一律經 `delivery-flow:ticket-ops` 的 `query`，前景派發 `delivery-flow:report-writer` 產主報表與票務明細。priority、estimate、dueDate 為選配欄位，dataset 有才呈現；已移除 SA 票樹角色假設。

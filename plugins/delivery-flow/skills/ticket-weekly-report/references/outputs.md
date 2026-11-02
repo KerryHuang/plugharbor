@@ -37,8 +37,8 @@
 版面骨架＝**議程的分鐘預算**：左側標尺標每節佔幾分鐘，加總 30。這個結構裝置編碼的是真實約束，不是裝飾。
 
 **數字可點開**：每個統計數字是 `<button class="drill" data-k="...">`，點擊從底部滑出抽屜，列出 ID／標題／負責人／meta。
-item 有 `url` 才把 ID 做成連結，沒有就顯示純文字（query 不保證回傳 URL，不要自己拼）。
-`priority`、`estimate`、`dueDate` 是選配欄：dataset 有才進 meta，沒有就不顯示該欄。
+負責人取 `assignee`、連結取 `url`；沒有 `url` 就顯示純文字，不自己拼。
+`priority`、`dueDate` 是選配欄：dataset 有才進 meta，沒有就不顯示該欄。
 資料以 `<script id="drill-data" type="application/json">` 內嵌，**不要外部請求**（會議室可能沒網路）；內嵌 JSON 中的 `</` 要寫成 `<\/`。
 抽屜內容一律用 `textContent` 寫入，票標題不當 HTML 解析。
 
@@ -48,7 +48,7 @@ item 有 `url` 才把 ID 做成連結，沒有就顯示純文字（query 不保�
 
 ## 週報文件（Markdown）
 
-用 ```mermaid 圖（GitHub、GitLab、HedgeDoc 原生支援）。四張：
+用 ```mermaid 圖（GitHub、GitLab 原生支援）。四張：
 
 1. **會議流程**：八段議程橫向串接，卡點標紅、臨時動議與待辦標綠
 2. **全線存量**：需求池→待排→進行中→等驗收→完成，被擋的支線用虛線

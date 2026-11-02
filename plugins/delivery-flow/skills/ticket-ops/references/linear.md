@@ -11,7 +11,7 @@
 | `set_stage` | `save_issue(id, state=<狀態 ID>)`；參數名是 `state`，不是 `stateId` |
 | `comment` | `save_comment(issueId, body)`；列既有留言用 `list_comments` |
 | `attach` | 三步簽名上傳，見下 |
-| `query` | `list_issues(query, state, labels, parentId, updatedAt, cursor)`；`hasNextPage` 為真就續抓 |
+| `query` | `list_issues(query, state, labels, parentId, updatedAt, createdAt, completedAt, cursor)`；`hasNextPage` 為真就續抓。時間範圍篩選用 `updatedAt`／`createdAt`／`completedAt`。回傳對映：`completedAt`（僅 `done`）、`createdAt`、`dueDate`、`assignee`、`url` 直接取；`priority` 的 1／2／3／4／0 對映 `urgent`／`high`／`medium`／`low`／`none` |
 | `link_blocked_by` | `save_issue(id, blockedBy=[blocker_id])` |
 
 ## 與 GitHub 不同、最容易踩的行為

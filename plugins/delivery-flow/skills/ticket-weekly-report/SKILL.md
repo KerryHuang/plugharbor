@@ -50,11 +50,10 @@ context: fork
 每一個出現在報表上的統計數字，都必須等於某張票清單的筆數；產出後要程式化複驗，
 不一致就是 bug，不是四捨五入。
 
-### 2. 完成用完成時間，不是 `updatedAt`
+### 2. 完成用 `completedAt`，不是 `updatedAt`
 
 留言、改 label 都會更新 `updatedAt`，週窗用它算「完成」會虛胖數倍。
-`query` 有回傳 `completedAt`（Linear）或 `closedAt`（GitHub）就用；沒有就退回 `updatedAt` 近似，
-並在報表資料警告註明「完成日以更新時間近似，可能偏高」。
+完成只認 ticket-ops `query` 回傳的 `completedAt`；沒有回傳就把 `delivered`、`cleanup`、`lead_*` 標「未提供」，不退回 `updatedAt` 近似。
 
 ### 3. 判斷「缺票」一律另下全量查詢
 
@@ -104,7 +103,7 @@ ID、標題、一句 meta（完成日／停滯天數／期限）；有負責人�
 
 - **批次結案要拆出來**：結案時間相鄰 ≤3 分鐘、簇大小 ≥5、**且該簇票齡中位數 > 90 天**。
   兩條都要。混在一起會讓「本週完成 N 項」被讀成產能。缺精確結案時間就標「未偵測」。
-- **逾期／到期只計未完成**，且需要 `dueDate`（Linear 專屬；GitHub 用專案約定的 label）。沒有此欄就整組標「未提供」。
+- **逾期／到期只計未完成**，且需要 `dueDate`（GitHub 不支援，`dueDate` 恆為空）。沒有此欄就整組標「未提供」。
 - **流動時間只算實際交付**，含清理批次會製造假的長尾。
 
 **歸戶用 label**（專案約定的客戶、模組標籤），不用 project／parent 欄位——後者覆蓋率通常不完整。
@@ -122,7 +121,7 @@ ID、標題、一句 meta（完成日／停滯天數／期限）；有負責人�
 | 禁用 | 一句話理由 |
 |------|-----------|
 | Cycle／Sprint 完成率 | Cycle 常是全票容器不是承諾，完成率長期個位數，無資訊量 |
-| 工時／故事點 | `estimate` 覆蓋率通常偏低，畫出來的數字是編的 |
+| 工時／故事點 | `estimate` 不在 ticket-ops 契約內且覆蓋率通常偏低，畫出來的數字是編的 |
 | 人員票數排名 | 票數 ≠ 工作量，會議上點名會變成防禦性辯論。改報「哪一棒缺人」 |
 
 ### Step 5 — 派 `report-writer` 產三份（**平行**）
@@ -150,7 +149,7 @@ prompt: |
     存量與流量分區塊放並標明口徑
     「本週押三件事」的優先序與待辦負責人留【人工填】——那是判斷不是資料
     首次執行無前次待辦 → 寫「首場週會，無前次待辦可對照」，不要編
-    priority、estimate、dueDate 只在 dataset 有提供時才寫；沒有就寫「未提供」，不寫「無」
+    priority、dueDate 只在 dataset 有提供時才寫；沒有就寫「未提供」，不寫「無」
     簡報 HTML 依 ${CLAUDE_SKILL_DIR}/references/drawer-template.html 的骨架（按鈕 class="drill"、data-k、內嵌 id="drill-data"）
   siblings: |
     {另外兩份的檔名與各自負責的內容}
@@ -197,7 +196,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/verify_counts.py .tmp/weekly-report/slides-{
 
 ### Step 8 — 回報
 
-輸出三份檔案路徑、上週／本週日期範圍、「數字↔清單一致性」複驗結果、dataset 缺哪些選配欄位。
+輸出三份檔案路徑、上週／本週日期範圍、「數字↔清單一致性」複驗結果、dataset 缺哪些選配欄位（`completedAt`、`createdAt`、`priority`、`dueDate`）。
 
 ## 錯誤處理
 
