@@ -54,7 +54,7 @@ claude plugin install dev-flow@plugharbor
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.1 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
-| [delivery-flow](./plugins/delivery-flow/README.md) | 0.5.0 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
+| [delivery-flow](./plugins/delivery-flow/README.md) | 0.6.0 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
 
 ### skills 與 agents
 
@@ -72,7 +72,7 @@ claude plugin install dev-flow@plugharbor
 | blog | `blog-capture` `publish-check` `write-post` | — |
 | kid-ui | `auditing-kid-ui` `designing-kid-ui` | — |
 | browser-docs | `annotate-screenshot` `live-drive` `pdf-converter` | `browser-surveyor` `doc-fidelity-reviewer` |
-| delivery-flow | `interview-prep` `issue-triage` `meeting-minutes` `qa-verify` `ticket-daily-report` `ticket-ops` `ticket-weekly-report` | `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` |
+| delivery-flow | `interview-prep` `issue-triage` `meeting-minutes` `operation-manual` `qa-verify` `ticket-daily-report` `ticket-ops` `ticket-weekly-report` | `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` |
 
 ## 典型動線
 

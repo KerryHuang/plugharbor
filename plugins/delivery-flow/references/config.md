@@ -15,7 +15,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 | `ticket.repo` | GitHub Issues 的 `owner/repo` | 無（`github` 時必填） |
 | `ticket.states` | 抽象階段 → 工具的狀態名（Linear、Jira）或 label（GitHub）對照 | 無（必填） |
 | `publish-target` | 會議記錄等文件的發布位置，`file:<相對目錄>` 或 `hedgedoc:<url>` | 無（必填；詢問時建議 `file:docs/meetings`） |
-| `manual-brand` | 操作手冊的品牌設定（名稱、色票等） | 無 |
+| `manual-brand` | 操作手冊封面的品牌文字（字串）。`--brand` 優先；留空或不設則封面不印品牌 | 無（選填） |
 | `qa.environments` | `qa-verify` 可驗收的環境清單，每項 `{name, url, writable}`；`writable` 為 true 才允許建資料與送出 | 無（`qa-verify` 必填） |
 
 抽象階段固定為 `backlog`、`todo`、`in-progress`、`in-review`、`done`、`canceled`；skill 只用這些名字，由 `ticket.states` 轉成工具上的實際名稱。

@@ -2,6 +2,17 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.6.0] - 2026-11-02
+
+- feat: 新增 skill `operation-manual`（`plugins/delivery-flow/skills/operation-manual/SKILL.md`）：實機探索、標註截圖、撰寫、審查、出 PDF／PPTX／Word 的操作手冊流程，並把探索中發現的規格落差依類型分流。環境讀 `qa.environments`（只用 `writable: true`），登入帳密放 `.plugharbor/qa.local.md`。
+- feat: 新增 agent `plugins/delivery-flow/agents/manual-explorer.md`、`plugins/delivery-flow/agents/manual-writer.md`、`plugins/delivery-flow/agents/manual-reviewer.md`。`manual-explorer` 的 `tools` 加上 `Skill`，標註改叫用 `browser-docs:annotate-screenshot`，不再以路徑引用 browser-docs 的 annotate.py。
+- feat: 新增 references `plugins/delivery-flow/skills/operation-manual/references/`：annotation-dispatch、build-deliverables、exploration-checklist、gaps-triage、red-flags、run-log 由既有流程改寫；manual-style-guide、skeleton-manual、skeleton-slides 以虛構產品重寫，保留圖文比、模式純度、caption 對帳等結構規則。
+- feat: 新增產線腳本 `plugins/delivery-flow/scripts/`：`build-manual-pdf.py`、`build-manual-docx.sh`、`prep-docx-cover.py`、`make-docx-reference.py`、`build-deck.sh`、`check-deck-overflow.py`、`check-inventory-rects.py`、`text-image-ratio.py`、`ensure-tools.sh`、`manual-print.css`、`manual-reference.docx`（由 `make-docx-reference.py` 重新生成，作者與公司欄位為空）。
+- feat: 封面品牌參數化：`build-manual-pdf.py`、`build-manual-docx.sh`、`prep-docx-cover.py` 接 `--brand`；未給則讀設定 `manual-brand`（`plugins/delivery-flow/scripts/manual_brand.py`），都沒有就不印任何品牌。`plugins/delivery-flow/references/config.md` 說明 `manual-brand` 為字串。
+- fix: inventory 的 `rect` 改為 `[x0, y0, x1, y1]`（CSS px），與 `browser-docs` 標註 spec 的 `box` 同格式；`check-inventory-rects.py` 同步改驗 x1 > x0、y1 > y0 與圖面範圍。
+- fix: `ensure-tools.sh` 新增 Pillow 檢查，並移除 `.python-path` 與 mkdocs 環境假設，一律用 `python3`；Chrome 偵測改為內嵌的存在檢查，找不到時指向 `browser-docs:live-drive`。
+- test: 新增 `plugins/delivery-flow/scripts/test_manual_brand.py`（品牌來源優先序、PDF 封面、denylist 與 docx metadata 檢查，無 `.leak-denylist` 時只略過該項）與 `plugins/delivery-flow/scripts/test_check_inventory_rects.py`，直接執行 `python3 <檔>`。
+
 ## [0.5.0] - 2026-11-02
 
 - feat: 新增 skill `qa-verify`（`plugins/delivery-flow/skills/qa-verify/SKILL.md`）：依驗收案例檔或票號做實機 E2E 驗收，派 `qa-planner`、`qa-fixture`、`qa-runner-ui` 三個 agent，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對並產 `qa-report.md`；讀票（`get`）與回票（`comment`）一律經 `delivery-flow:ticket-ops`。
