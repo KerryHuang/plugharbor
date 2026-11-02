@@ -43,4 +43,6 @@
 
 - `herdr/pi/herdr-tree.ts` 重排子智慧體所在 tab：跑 toolkit 的 `herdr_layout.py`（路徑由同目錄 `layout-path.ts` 從 repo 往上找；
   `HERDR_TREE_LAYOUT=<python 腳本路徑>` 可覆寫，呼叫方式 `python3 <腳本> --main <pane_id>`）。找不到腳本只印警告、不重排，沒有內建版型。
+  重排由子智慧體在自己的新 pane 裡執行，pi-herdr-agents 不把父 pi 的環境變數帶過去：覆寫要放在 herdr 新 pane 的 shell 環境（如 shell rc 的 `export`），
+  `HERDR_TREE_LAYOUT=… pi` 無效；警告寫到子智慧體的 stderr，會被 pi 的 TUI 蓋掉。
 - 側欄 plugin id 為 `plugharbor.sidebar`；`herdr-parent-tag.py` 依這個 id 呼叫 refresh 動作。
