@@ -16,6 +16,7 @@ model: sonnet
 ## 0. 輸入與前置
 
 - 取得輸入：會議記錄路徑，或使用者貼入的回饋／需求清單。
+- **讀票務工具設定**：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool`。退出碼 2（缺檔、缺鍵或格式錯誤）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者用哪個票務工具（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`），寫入 `.plugharbor/delivery-flow.yml`，不自行猜。後面查既有票與交棒開票都用這個工具。
 - **先確認變體與術語**（分類建立在正確前提）：客戶／場域變體（如 B2B vs B2C 版本）、版本命名對照（如標準版／進階版／lite）。不確定就查證或問，勿憑字面分類。
 
 ## 1. 拆解 items
@@ -59,10 +60,7 @@ prompt: |
   siblings: 無
 ```
 
-落檔規則見下。
-**落檔預設**：放專案既有文件目錄中對應的模組／功能位置；沒有對應位置（如單一客戶的導入回饋）→ 先問使用者放哪。**不得在 docs 第一階新建目錄**（依 shared-preludes §Step 0.5）：
-- 統計摘要 → §1 已實作防呆表 → Bug／Enhancement／Feature 三分類表 → 待釐清表 → 既有票對照 → 建議下一步。
-- 每表含**優先順序／已完成**欄；**同模組相鄰**；ID 連續（如 ENH-01…）。
+**落檔預設**：放專案既有文件目錄中對應的模組／功能位置；沒有對應位置（如單一客戶的導入回饋）→ 先問使用者放哪。**不得在 docs 第一階新建目錄**（依 shared-preludes §Step 0.5）。章節順序與欄位見 `table-format.md`。
 
 ## 6. PO 逐項裁決迭代
 

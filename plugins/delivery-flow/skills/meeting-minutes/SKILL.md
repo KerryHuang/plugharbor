@@ -41,11 +41,11 @@ model: sonnet
 8. **議程**（可省）：附「略過」選項 + Other。
 9. **參考資料 / 上次會議**（可省）：附「略過」選項 + Other。
 
-可省欄位一律附「略過」。即時模式在**建骨架檔前**收；事後模式可在整理階段一併補。議程／驗收範圍／出席等，若使用者貼**圖或表格**，擷取內容填入對應章節（見 conventions §6）。
+可省欄位一律附「略過」。即時模式在**建骨架檔前**收；事後模式可在整理階段一併補。議程／驗收範圍／出席等，若使用者貼**圖或表格**，擷取內容填入對應章節（見 `${CLAUDE_PLUGIN_ROOT}/skills/meeting-minutes/references/recording-conventions.md` §6）。
 
-> **落檔位置**：讀 `publish-target`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get publish-target`，預設 `file:docs/meetings`）。
+> **落檔位置**：讀 `publish-target`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get publish-target`；建議值 `file:docs/meetings`）。
 > `file:<目錄>` → 落在該目錄；`hedgedoc:<url>` → 本機仍先落檔（目錄問使用者，建議 `docs/meetings`），再依 §3.3 發布。
-> 退出碼 2（缺檔或缺鍵）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（預設選 `file:docs/meetings`），寫入 `.plugharbor/delivery-flow.yml`（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`）。
+> 退出碼 2（缺檔或缺鍵）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（預選 `file:docs/meetings`），寫入 `.plugharbor/delivery-flow.yml`（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`）。
 > 會議記錄常含談話內容，是否進版控由專案決定；不確定時提醒使用者先確認 `.gitignore`。
 
 ## 2A. 即時記錄流程（逐步落檔）
@@ -58,7 +58,7 @@ model: sonnet
    - **狀態標註**：每條依性質標 `缺陷 / 待確認 / 下一階段交付`（改善需求為預設、可不標），用詞精準勿混用。
    - **文句品質（核心）**：**不照口語／條列原樣搬**，改寫成清楚、完整、一般人一看就懂的「現況 → 期望」句式（例：「訂單日期往上」→「查詢區把訂單日期欄位移到最上方，方便優先使用」）；抓意思、不臆造未提到的事實。
    - **改寫清楚 ≠ 夾帶推論**：每條先問「事實來源是會中哪段話、哪位與會者說的」。有來源就大膽改寫清楚；沒來源的（記錄人的推論、假設情境、自己想到的追問、手冊／提案對照）一律集中到文末「**內部備註（非會議內容）**」。提問澄清時不用與會者沒提過的概念造選項，否則答案會被當成會議結論寫回去。兩種失敗都會發生：假設情境寫進條目，與會者看了說「這樣寫會有疑慮」；改回逐字還原又嫌「不夠清楚」——有來源才改寫，沒來源就放備註。
-4. **中途整理／去重（可隨時觸發）**：使用者說「整理一版／去重」時，依 conventions §4 做跨模組去重、合併同題衝突、交叉引用因果，並簡述異動；不進整理階段、不寫摘要。
+4. **中途整理／去重（可隨時觸發）**：使用者說「整理一版／去重」時，依 `${CLAUDE_PLUGIN_ROOT}/skills/meeting-minutes/references/recording-conventions.md` §4 做跨模組去重、合併同題衝突、交叉引用因果，並簡述異動；不進整理階段、不寫摘要。
 5. 使用者說「散會 / 結束 / 整理」→ 進入 §3（回填同一檔）。
 
 ## 2B. 事後整理流程
@@ -101,7 +101,7 @@ prompt: |
 依範本區塊產出 / 回填（**文句品質同 §2A.3：全部改寫成清楚易讀、現況→期望的句式，不照口語原樣搬**）：
 
 - **結論與決議**（置頂，一段 ≤3 句）：整場決議與重點，結論先講。
-- **待辦表格**（緊接結論）：任務 / 負責人 / 完成時間 / 狀態；**依狀態標籤分流**（缺陷→修復、下一階段交付→next-phase backlog、待確認→釐清、改善→評估），見 conventions §5。
+- **待辦表格**（緊接結論）：任務 / 負責人 / 完成時間 / 狀態；**依狀態標籤分流**（缺陷→修復、下一階段交付→next-phase backlog、待確認→釐清、改善→評估），見 `${CLAUDE_PLUGIN_ROOT}/skills/meeting-minutes/references/recording-conventions.md` §5。
 - **過程紀錄**（後置）：逐議題的結論、重要意見、擱置 / 待追蹤。
 
 ### 3.2 第二意見審閱（可選）
@@ -111,7 +111,7 @@ prompt: |
 
 ### 3.3 發布（依 `publish-target`）
 
-- `file:<目錄>`（預設）：檔案已落在該目錄就是交付，**不問、不發布到別處**。
+- `file:<目錄>`：檔案已落在該目錄就是交付，**不問、不發布到別處**。
 - `hedgedoc:<url>`：需自架 HedgeDoc。本機檔案寫入成功後，用 `AskUserQuestion` 問要不要發布（預設「發布」，另附「不發布」）——
   會議記錄常含談話內容，**不靜默送出**。使用者說要，才依 `${CLAUDE_PLUGIN_ROOT}/skills/meeting-minutes/references/hedgedoc-publish.md` 發布**整份會議記錄**（與本機檔內容一致，
   不另做精簡版）。發布失敗不阻斷落檔，也不回頭改已寫好的檔。

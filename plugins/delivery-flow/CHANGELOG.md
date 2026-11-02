@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.2.1] - 2026-11-02
+
+- fix: `issue-triage` 新增讀取 `ticket.tool` 的前置步驟，缺檔或缺鍵（退出碼 2）時依 `references/harness-terms.md` 提問並寫入 `.plugharbor/delivery-flow.yml`；刪除與 report-writer constraints 重複的落檔規則。
+- fix: `publish-target` 沒有內建預設值，`meeting-minutes` 與 `references/config.md` 的「預設」改為建議值；`meeting-minutes` 的 conventions 引用補完整路徑 `plugins/delivery-flow/skills/meeting-minutes/references/recording-conventions.md`。
+
 ## [0.2.0] - 2026-11-02
 
 - feat: 新增 skill `meeting-minutes`：即時記錄與會後整理；落檔與發布位置讀 `publish-target`（`file:<目錄>` 存本機為預設，`hedgedoc:<url>` 需自架且尚未實測）；補回「內部備註（非會議內容）」規則，記錄人的推論與假設情境不混進會議條目；第二意見審閱改為通用的唯讀 subagent。

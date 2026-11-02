@@ -1,6 +1,6 @@
 {
   "name": "delivery-flow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型",
   "author": {
     "name": "KerryHuang"
