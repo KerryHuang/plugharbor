@@ -3,6 +3,8 @@
 所有 AI 工作模式的唯一來源：13 個 plugin（工作流、hooks、guard、reviewer、寫作、研究、兒童介面規範）加上 user 層設定（`setup/`），
 同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
+plugin 分兩層：工具類（toolkit、research、browser-docs、dev-flow）裝在 user 層，每個專案都有；其餘 9 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+
 ## 安裝
 
 新機器一行安裝（clone 到 `~/plugharbor`，再執行 `setup/install.sh`，自動偵測有裝的 CLI）：
@@ -15,8 +17,8 @@ curl -fsSL https://raw.githubusercontent.com/KerryHuang/plugharbor/main/setup/bo
 
 ```bash
 claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
-claude plugin install sa-flow@plugharbor
-claude plugin install dev-flow@plugharbor
+claude plugin install dev-flow@plugharbor                 # user 層
+cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案層，只在這個專案啟用
 ```
 
 安裝後 skills 會自動被發現，用 `/` 或自然語言觸發即可；agents 由主流程按需求派工。
@@ -27,7 +29,8 @@ claude plugin install dev-flow@plugharbor
 `bootstrap.sh` 只管 plugharbor 本身；認證或機器特定的項目刻意不管，照順序手動做：
 
 1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（toolkit 所有 hook 含 guard、pi packages 註冊與 `settings.json` 合併都需要；沒有的話 install.sh 會 WARN，但 hook 會靜默放行、guard 形同沒有，務必先裝）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
-2. **一行安裝**：上面的 `curl … | bash`。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 只裝部分 plugin；`install.sh --check` 只比對不改。
+2. **一行安裝**：上面的 `curl … | bash`，裝 user 層 4 個 plugin。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 改 user 層要裝哪些；`install.sh --check` 只比對不改。
+   **專案層**：在常用專案各跑一次 `bash ~/plugharbor/setup/install-project.sh <專案根> sa-flow delivery-flow …`（預設只自己用，`--shared` 寫進專案設定與團隊共用）。
 3. **其他 marketplace**（Claude Code 登入後）：`claude plugin install superpowers@claude-plugins-official`；其餘依需要。
 4. **通用 MCP**（金鑰與登入各自處理，不入版控）：例如 `claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest`。
 5. **終端工具**（macOS，選用）：`brew install herdr`（有裝 herdr，install.sh 會連結側欄 plugin）；用 graphify skill 才需要 `uv tool install graphifyy`。

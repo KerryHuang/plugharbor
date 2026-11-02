@@ -79,7 +79,7 @@ if echo "$OUT" | grep -q 'DUP: skills/my-own'; then fail "非 plugharbor 的 ski
 [ -f "$C/skills/config-doctor/SKILL.md" ] || fail "沒 --yes 不該搬走 config-doctor"
 # CLI
 echo "$OUT" | grep -q '^SKIP: pi' || fail "沒有 pi 應印 SKIP: pi"
-grep -qx "claude plugin marketplace add $REPO_DIR" "$STUB_LOG" || fail "claude 未註冊 marketplace"
+grep -qx "claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git" "$STUB_LOG" || fail "claude 應以 GitHub 來源註冊 marketplace"
 grep -qx "claude plugin install toolkit@plugharbor --scope user" "$STUB_LOG" || fail "claude 未安裝 toolkit"
 grep -qx "claude plugin install research@plugharbor --scope user" "$STUB_LOG" || fail "claude 未安裝 research"
 if grep -q "codex plugin add toolkit@plugharbor" "$STUB_LOG"; then fail "codex 版號相同不該重裝 toolkit"; fi
@@ -159,11 +159,14 @@ OUT="$(run "$H")" || fail "沒有 herdr 時 exit 非 0"
 echo "$OUT" | grep -q '^SKIP: herdr' || fail "沒有 herdr 應印 SKIP: herdr"
 mv "$TMP/herdr.off" "$STUB/herdr"
 
-# ---------- 8) 預設裝全部 plugin ----------
+# ---------- 8) 預設只裝 user 層 4 個 ----------
 H="$TMP/h4"; mkdir -p "$H"; : > "$STUB_LOG"
 PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
-N_ALL="$(ls -d "$REPO_DIR"/plugins/*/.claude-plugin | wc -l | tr -d ' ')"
-[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = "$N_ALL" ] || fail "預設應裝全部 $N_ALL 個 plugin"
+[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 4 ] || fail "預設應只裝 user 層 4 個：$(grep '^claude plugin install ' "$STUB_LOG")"
+for p in toolkit research browser-docs dev-flow; do
+  grep -qx "claude plugin install $p@plugharbor --scope user" "$STUB_LOG" || fail "預設應裝 user 層 $p"
+done
+if grep -q '^claude plugin install sa-flow' "$STUB_LOG"; then fail "專案層 sa-flow 不該裝到 user 層"; fi
 
 # ---------- 9) 沒有 claude：舊 hook 保留並印 STALE（沒有 toolkit 替代就不拿掉 guard） ----------
 NOCLAUDE="$TMP/stub-noclaude"
@@ -191,7 +194,7 @@ grep -q 'agent-model-guard.py' "$H/.claude/settings.json" || fail "toolkit 沒�
 
 # ---------- 12) claude 升級：版號相同 UP-TO-DATE、不同先 marketplace update 再 plugin update ----------
 export STUB_STATE="$TMP/state-up"; mkdir -p "$STUB_STATE"
-echo '[{"name": "plugharbor", "source": "directory"}]' > "$STUB_STATE/claude-mkt"
+echo '[{"name": "plugharbor", "source": "git", "url": "https://github.com/KerryHuang/plugharbor.git"}]' > "$STUB_STATE/claude-mkt"
 printf '[{"id": "toolkit@plugharbor", "version": "%s", "scope": "user"},\n {"id": "research@plugharbor", "version": "0.0.1", "scope": "user"},\n {"id": "research@plugharbor", "version": "9.9.9", "scope": "project"}]\n' "$TOOLKIT_VER" > "$STUB_STATE/claude-list"
 H="$TMP/h8"; mkdir -p "$H/.claude"; old_settings "$H/.claude/settings.json"; : > "$STUB_LOG"
 OUT="$(run "$H")" || fail "claude 升級情境 exit 非 0：$OUT"
@@ -235,4 +238,51 @@ printf '%s\n' "$BIG" | ph_codex_has_marketplace || fail "codex 輸出很長時�
 BIGJ="$(printf '[{"name": "plugharbor"}'; for i in $(seq 1 3000); do printf ',{"name": "filler-%s", "source": "https://example.invalid/long/path/%s"}' "$i" "$i"; done; printf ']')"
 printf '%s\n' "$BIGJ" | ph_claude_has_marketplace || fail "claude 輸出很長時偵測不到 plugharbor marketplace"
 
-echo "PASS: install.sh（15 組）"
+# ---------- 16) 舊的本機目錄 marketplace：先 remove 再以 GitHub 來源重加 ----------
+export STUB_STATE="$TMP/state-dir"; mkdir -p "$STUB_STATE"
+echo '[{"name": "plugharbor", "source": "directory", "path": "/old/clone"}]' > "$STUB_STATE/claude-mkt"
+H="$TMP/h10"; mkdir -p "$H"; : > "$STUB_LOG"
+OUT="$(run "$H")" || fail "目錄來源遷移 exit 非 0：$OUT"
+RM="$(grep -n '^claude plugin marketplace remove plugharbor$' "$STUB_LOG" | cut -d: -f1)"
+AD="$(grep -n '^claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git$' "$STUB_LOG" | cut -d: -f1)"
+[ -n "$RM" ] && [ -n "$AD" ] && [ "$RM" -lt "$AD" ] || fail "目錄來源應先 remove 再加 GitHub 來源：$(cat "$STUB_LOG")"
+OUT="$(run "$H" --check)" || fail "--check exit 非 0"
+echo "$OUT" | grep -q 'STALE: claude marketplace plugharbor' || fail "--check 應報目錄來源 STALE：$OUT"
+export STUB_STATE="$TMP/state"
+
+# ---------- 17) 專案層 plugin 裝在 user 層：四個 CLI 都移除；專案 scope 不動；PLUGHARBOR_PLUGINS 指定的保留 ----------
+bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
+export STUB_STATE="$TMP/state-proj"; mkdir -p "$STUB_STATE"
+echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
+printf '[{"id": "sa-flow@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "kid-ui@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
+{
+  echo 'Marketplace `plugharbor`'
+  echo "sa-flow@plugharbor   installed, enabled  1.0.0    $REPO_DIR/plugins/sa-flow"
+  echo "kid-ui@plugharbor    not installed       1.0.0    $REPO_DIR/plugins/kid-ui"
+} > "$STUB_STATE/codex-list"
+printf 'Installed plugins:\n- sa-flow (enabled, 1.0.0)\n' > "$STUB_STATE/agy-list"
+H="$TMP/h11"; mkdir -p "$H/.pi/agent"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/sa-flow"),d),os.path.relpath(os.path.join(r,"plugins/toolkit"),d)]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
+OUT="$(run "$H" --check)" || fail "--check exit 非 0"
+for x in "claude sa-flow" "claude blog" "codex sa-flow" "agy sa-flow" "pi sa-flow"; do
+  echo "$OUT" | grep -q "STALE: ${x}（專案層" || fail "--check 應報 STALE: ${x}：$OUT"
+done
+cmp -s "$H/.pi/agent/settings.json" "$TMP/pi-before" || fail "--check 不該改 pi settings"
+: > "$STUB_LOG"
+OUT="$(PLUGINS="toolkit research blog" run "$H")" || fail "移除專案層 exit 非 0：$OUT"
+grep -qx 'claude plugin uninstall sa-flow@plugharbor --scope user' "$STUB_LOG" || fail "claude 應移除 user 層 sa-flow"
+if grep -q 'claude plugin uninstall blog' "$STUB_LOG"; then fail "PLUGHARBOR_PLUGINS 指定的 blog 不該移除"; fi
+if grep -q 'uninstall kid-ui' "$STUB_LOG"; then fail "local scope 的 kid-ui 不該動"; fi
+grep -qx 'codex plugin remove sa-flow@plugharbor' "$STUB_LOG" || fail "codex 應移除 sa-flow"
+if grep -q 'codex plugin remove kid-ui' "$STUB_LOG"; then fail "codex 沒裝的 kid-ui 不該移除"; fi
+grep -qx 'agy plugin uninstall sa-flow' "$STUB_LOG" || fail "agy 應移除 sa-flow"
+P="$H/.pi/agent/settings.json"
+if grep -q 'plugins/sa-flow' "$P"; then fail "pi packages 應移除 sa-flow：$(cat "$P")"; fi
+grep -q 'npm:keep-me' "$P" && grep -q 'plugins/toolkit' "$P" || fail "pi packages 其他項目被動到：$(cat "$P")"
+ls "$H"/.claude/backups/plugharbor-*/pi/settings.json >/dev/null 2>&1 || fail "pi settings 移除前未備份"
+rm "$STUB/pi"
+export STUB_STATE="$TMP/state"
+
+echo "PASS: install.sh（17 組）"
+

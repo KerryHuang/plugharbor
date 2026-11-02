@@ -25,6 +25,7 @@
 ## 驗證
 
 commit 前執行 `python3 scripts/ci/validate.py`（版號一致、frontmatter、交互引用、README 清單、外洩樣式）。
+Claude Code 從 GitHub 取 plugin：改完要 push＋bump 才生效，push 前用 `claude --plugin-dir plugins/<name>` 實測。
 CI（`.github/workflows/validate.yml`）另跑 plugin 腳本測試、`node --test`、toolkit hook 測試（pytest 與 shell）、`setup/tests/*.sh`。
 本機啟用 pre-commit：`git config core.hooksPath scripts/hooks`。
 

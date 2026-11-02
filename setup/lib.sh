@@ -23,13 +23,26 @@ ph_all_plugins() {
   done
 }
 
-# 要裝的 plugin：PLUGHARBOR_PLUGINS="toolkit research" 覆寫，沒設（或空字串）就全部
+# 分層：工具類裝 user 層（每個專案都有），其餘是專案層，由 setup/install-project.sh 依專案安裝
+PH_USER_PLUGINS="toolkit research browser-docs dev-flow"
+# Claude Code 的 marketplace 來源（git，與 bootstrap.sh 同一變數）
+PH_REPO_URL="${PLUGHARBOR_REPO:-https://github.com/KerryHuang/plugharbor.git}"
+
+# 要裝到 user 層的 plugin：PLUGHARBOR_PLUGINS="toolkit research" 覆寫，沒設（或空字串）就是 PH_USER_PLUGINS
 ph_plugins() {
   if [ -n "${PLUGHARBOR_PLUGINS:-}" ]; then
     ( set -f; printf '%s\n' $PLUGHARBOR_PLUGINS )  # 只按空白切字，不展開萬用字元
   else
-    ph_all_plugins
+    printf '%s\n' $PH_USER_PLUGINS
   fi
+}
+
+ph_is_user_plugin() { case " $PH_USER_PLUGINS " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+# 專案層 plugin（全部減去 user 層）
+ph_project_plugins() {
+  local p
+  for p in $(ph_all_plugins); do ph_is_user_plugin "$p" || echo "$p"; done
 }
 
 ph_version() {  # $1=plugin；讀 .claude-plugin/plugin.json 的 version
@@ -73,3 +86,17 @@ for x in items if isinstance(items, list) else []:
 # 不用 grep -q：它找到就提早結束，輸出很長時上游 printf 收到 SIGPIPE，pipefail 下整條 pipe 算失敗
 ph_codex_has_marketplace() { grep '^Marketplace `plugharbor`' >/dev/null; }
 ph_claude_has_marketplace() { grep '"name"[[:space:]]*:[[:space:]]*"plugharbor"' >/dev/null; }
+
+# claude plugin marketplace list --json：plugharbor 是本機目錄來源（舊的就地載入）就成功
+ph_claude_mkt_is_dir() {
+  [ -n "$PY" ] || { cat >/dev/null; return 1; }
+  "$PY" -c '
+import json, sys
+try:
+    items = json.load(sys.stdin)
+except Exception:
+    items = []
+sys.exit(0 if any(isinstance(x, dict) and x.get("name") == "plugharbor" and x.get("source") == "directory"
+                  for x in (items if isinstance(items, list) else [])) else 1)
+'
+}

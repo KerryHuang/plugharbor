@@ -19,6 +19,11 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$TARGET/backups/plugharbor-$STAMP"
 DIFFS=0; FAILS=0
 PLUGINS="$(ph_plugins)"
+# 專案層 plugin 不該留在 user 層（PLUGHARBOR_PLUGINS 明確指定的除外）
+REMOVE=""
+for p in $(ph_project_plugins); do
+  case " $(echo $PLUGINS) " in *" $p "*) ;; *) REMOVE="$REMOVE $p" ;; esac
+done
 while IFS= read -r p; do
   [ -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ] || { echo "FAIL: 找不到 plugin「${p}」（PLUGHARBOR_PLUGINS）"; exit 2; }
 done <<< "$PLUGINS"
@@ -244,6 +249,12 @@ for p in $PLUGINS; do
   done
 done
 
+# 專案層 plugin 從 user 層移除；$1=CLI $2=plugin，其餘＝移除指令
+stale_remove() {
+  local cli="$1" p="$2"; shift 2
+  if [ "$CHECK" -eq 1 ]; then note_diff "STALE: ${cli} ${p}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）"; else run "$@"; fi
+}
+
 # ---------- 5、6) 各 CLI 註冊 plugin；版號相同就不重裝 ----------
 REFRESHED=" "
 refresh_marketplace() {  # 版號不同、重裝前先更新 marketplace 目錄（每個 CLI 一次）；失敗只警告
@@ -276,10 +287,21 @@ sync_plugin() {
 TOOLKIT_OK=0
 if command -v claude >/dev/null 2>&1; then
   out="$(claude plugin marketplace list --json 2>/dev/null | tr -d '\r')" || out=""
-  if ! printf '%s\n' "$out" | ph_claude_has_marketplace; then
-    if [ "$CHECK" -eq 1 ]; then note_diff "MISSING: claude marketplace plugharbor"; else run claude plugin marketplace add "$REPO_DIR"; fi
+  if printf '%s\n' "$out" | ph_claude_mkt_is_dir; then
+    # 舊版用本機目錄（就地載入）；改成 git 來源，remove 會一併解除其 plugin，下面重裝
+    if [ "$CHECK" -eq 1 ]; then
+      note_diff "STALE: claude marketplace plugharbor（本機目錄來源，install 會改成 ${PH_REPO_URL}）"
+    else
+      run claude plugin marketplace remove plugharbor
+      run claude plugin marketplace add "$PH_REPO_URL"
+    fi
+  elif ! printf '%s\n' "$out" | ph_claude_has_marketplace; then
+    if [ "$CHECK" -eq 1 ]; then note_diff "MISSING: claude marketplace plugharbor"; else run claude plugin marketplace add "$PH_REPO_URL"; fi
   fi
   out="$(claude plugin list --json 2>/dev/null | tr -d '\r')" || out=""
+  for p in $REMOVE; do
+    [ -z "$(printf '%s\n' "$out" | ph_claude_ver "$p")" ] || stale_remove claude "$p" claude plugin uninstall "$p@plugharbor" --scope user
+  done
   for p in $PLUGINS; do
     cur="$(printf '%s\n' "$out" | ph_claude_ver "$p")"
     if [ -n "$cur" ]; then
@@ -306,6 +328,9 @@ if command -v codex >/dev/null 2>&1; then
   for p in $PLUGINS; do
     sync_plugin codex "$p" "$(printf '%s\n' "$out" | ph_codex_ver "$p")" codex plugin add "$p@plugharbor"
   done
+  for p in $REMOVE; do
+    [ -z "$(printf '%s\n' "$out" | ph_codex_ver "$p")" ] || stale_remove codex "$p" codex plugin remove "$p@plugharbor"
+  done
 else
   echo "SKIP: codex（未安裝）"
 fi
@@ -314,6 +339,9 @@ if command -v agy >/dev/null 2>&1; then
   out="$(agy plugin list 2>/dev/null | tr -d '\r')" || out=""
   for p in $PLUGINS; do
     sync_plugin agy "$p" "$(printf '%s\n' "$out" | ph_agy_ver "$p")" agy plugin install "$REPO_DIR/plugins/$p"
+  done
+  for p in $REMOVE; do
+    [ -z "$(printf '%s\n' "$out" | ph_agy_ver "$p")" ] || stale_remove agy "$p" agy plugin uninstall "$p"
   done
 else
   echo "SKIP: agy（未安裝）"
@@ -337,6 +365,9 @@ $REPO_DIR/plugins/$p"
   PI_OUT="$(printf '%s\n' "$PI_DIRS" | PYTHONUTF8=1 "$PY" -c '
 import json, os, shutil, sys
 start, check, backup = sys.argv[1], sys.argv[2] == "1", sys.argv[3]
+remove = {}  # 正規化絕對路徑 → plugin 名
+for d in sys.argv[4].split():
+    remove[os.path.normcase(os.path.normpath(d))] = os.path.basename(d)
 path = os.path.join(start, "settings.json")
 try:
     cur = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
@@ -344,7 +375,13 @@ except ValueError as e:
     print(f"FAIL: {path} 不是合法 JSON，未更新：{e}"); sys.exit(1)
 pkgs = cur.get("packages", [])
 def norm(x): return os.path.normcase(os.path.normpath(x))
-have = {norm(os.path.join(start, x)) for x in pkgs if isinstance(x, str) and not x.startswith(("npm:", "git:", "http"))}
+def local(x): return isinstance(x, str) and not x.startswith(("npm:", "git:", "http"))
+stale = [x for x in pkgs if local(x) and norm(os.path.join(start, x)) in remove]
+for x in stale:
+    name = remove[norm(os.path.join(start, x))]
+    print(f"STALE: pi {name}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）" if check else f"OK:   pi package 移除 {x}（專案層）")
+pkgs = [x for x in pkgs if x not in stale]
+have = {norm(os.path.join(start, x)) for x in pkgs if local(x)}
 added = []
 for d in (l.strip() for l in sys.stdin):
     if not d or norm(d) in have:
@@ -356,14 +393,14 @@ for d in (l.strip() for l in sys.stdin):
     added.append(rel.replace(os.sep, "/"))
 for a in added:
     print(("MISSING: pi package " if check else "OK:   pi package ") + a)
-if added and not check:
+if (added or stale) and not check:
     cur["packages"] = pkgs + added
     if os.path.exists(path):
         os.makedirs(os.path.join(backup, "pi"), exist_ok=True)
         shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     os.makedirs(start, exist_ok=True)
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
-' "$HOME/.pi/agent" "$CHECK" "$BACKUP")"
+' "$HOME/.pi/agent" "$CHECK" "$BACKUP" "$(for p in $REMOVE; do printf '%s ' "$REPO_DIR/plugins/$p"; done)")"
   rc=$?
   set -e
   if [ -n "$PI_OUT" ]; then

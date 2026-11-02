@@ -47,6 +47,7 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
   新 plugin（toolkit、research、blog、kid-ui、browser-docs、delivery-flow）都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
 - **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
+- **分層安裝**：user 層 4 個（toolkit、research、browser-docs、dev-flow）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 只替 Claude Code（`--scope local`／`project`）與 pi（專案 `.pi/settings.json`）安裝。Codex、agy 沒有專案範圍，不提供專案層 plugin。
 - **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
   delivery-flow 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；sa-flow 叫用 delivery-flow／browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
 - **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；

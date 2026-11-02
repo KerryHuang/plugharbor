@@ -1,6 +1,29 @@
 # setup：plugin 帶不了的 user 層設定
 
-`setup/install.sh [--check] [--force] [--yes]` 會把這裡的東西裝進 `~/.claude/`，並替有裝的 CLI（claude、codex、agy、pi、herdr）註冊 plugin；`setup/uninstall.sh` 只移除它放進去的東西。
+`setup/install.sh [--check] [--force] [--yes]` 會把這裡的東西裝進 `~/.claude/`，並替有裝的 CLI（claude、codex、agy、pi、herdr）註冊 user 層 plugin；`setup/uninstall.sh` 只移除它放進去的東西。
+
+## plugin 分層
+
+- **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、dev-flow）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
+- **專案層**（其餘 9 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
+
+  ```bash
+  setup/install-project.sh [--shared] [--check] <專案根> <plugin…>
+  ```
+
+  | CLI | 預設（只自己用） | `--shared`（進 git，團隊共用） |
+  |---|---|---|
+  | Claude Code | `plugin install --scope local` | 專案 scope 登記 marketplace 後 `plugin install --scope project` |
+  | pi | 寫 `<專案>/.pi/settings.json` 的 packages，並加進 `.git/info/exclude` | 略過 |
+  | Codex、agy | 略過 | 略過 |
+
+  Codex、agy 沒有專案範圍，專案層 plugin 在這兩個 CLI 不提供。pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
+- 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項。
+
+## Claude Code 的 marketplace 來源
+
+Claude Code 的 `plugharbor` marketplace 指向 GitHub（`PLUGHARBOR_REPO`，預設 `https://github.com/KerryHuang/plugharbor.git`），是快取副本：push 並 bump 版號後，`install.sh` 或 `claude plugin marketplace update plugharbor` 才拿得到新版。
+舊的本機目錄來源（就地載入、版號不起作用）會被 install.sh 移除後改成 GitHub 來源。改 plugin 時，push 前用 `claude --plugin-dir plugins/<name>` 測。Codex 仍從 clone 快照安裝，pi、agy 讀 clone。
 
 | 目錄 | 內容 | 裝到 |
 |---|---|---|

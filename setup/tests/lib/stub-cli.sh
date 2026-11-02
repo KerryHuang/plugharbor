@@ -12,6 +12,7 @@ for c in "$@"; do
 #!/usr/bin/env bash
 name="$(basename "$0")"
 echo "$name $*" >> "$STUB_LOG"
+[ -z "${STUB_CWD_LOG:-}" ] || echo "$name $* @ $PWD" >> "$STUB_CWD_LOG"
 # $STUB_STATE/fail 每一行是一條要失敗的完整指令
 if [ -f "$STUB_STATE/fail" ] && grep -qxF "$name $*" "$STUB_STATE/fail"; then exit 1; fi
 case "$name $*" in
