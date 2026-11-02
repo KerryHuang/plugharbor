@@ -14,18 +14,19 @@
  * 第一個 turn 時使用者訊息還沒進 branch，所以在 input 事件拿原文就產（不等回覆）；agent_end 再從 branch 補一次。
  * 已有名稱（含 /name）或子智慧體不做。
  * 版面（仿 Claude 的 herdr 派工版型）：pi-herdr-agents 設 panes.mode="split" 後子智慧體從 parent pane 切出，
- * 子智慧體啟動時重排（主 session 最大、標 ★）：環境變數 HERDR_TREE_LAYOUT 指向自訂重排腳本
- * （python3 <腳本> --main <parent pane>）就用它；沒設就用內建版型（主 session 佔左半、worker 在右半等高堆疊）；同 tab 超過 6 個就把自己搬到新 tab。
+ * 子智慧體啟動時重排（主 session 最大、標 ★）：跑 toolkit 的 herdr_layout.py（python3 <腳本> --main <parent pane>），
+ * 路徑由 layout-path.ts 解出，HERDR_TREE_LAYOUT 可覆寫；找不到腳本只印警告、不重排（沒有內建版型）；同 tab 超過 6 個就把自己搬到新 tab。
  * 平行啟動時以 lock 目錄排隊，避免兩支 layout 同時搬 pane。不在同一個 tab（worktree、grouped／tab 模式）就不動。
  * 掛載：~/.pi/agent/settings.json 的 "extensions"。不在 herdr 裡（HERDR_ENV≠1）什麼都不做。
  */
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { uuidv7 } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { resolveLayout } from "./layout-path.ts";
 
 const SOURCE = "plugharbor-herdr-tree";
 const herdr = process.env.HERDR_BIN_PATH || "herdr";
@@ -35,8 +36,6 @@ const run = (args: string[]) =>
     execFile(herdr, args, { encoding: "utf8", timeout: 5000 }, (e, out) => (e ? fail(e) : done(out))));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// 自訂重排腳本（選填）；沒設就用下面的內建版型
-const LAYOUT = process.env.HERDR_TREE_LAYOUT;
 const MAX_WORKERS = 6;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const runPy = (args: string[]) =>
@@ -57,26 +56,13 @@ async function withTabLock(tab: string, fn: () => Promise<void>) {
   }
 }
 
-/** 內建預設版型：worker 全搬到暫存 tab，再依序放回——第一個在主 session 右半，其餘在右半往下切成等高 */
-async function defaultLayout(main: string) {
-  const panes: any[] = JSON.parse(await run(["pane", "layout", "--pane", main]))?.result?.layout?.panes ?? [];
-  const workers = panes.map((p) => p.pane_id as string).filter((p) => p !== main);
-  const n = workers.length;
-  if (!n) return;
-  const tab = JSON.parse(await run(["pane", "get", main]))?.result?.pane?.tab_id;
-  const move = async (pane: string, tabId: string, target: string, dir: string, ratio: number) =>
-    JSON.parse(await run(["pane", "move", pane, "--tab", tabId, "--split", dir, "--target-pane", target,
-      "--ratio", String(ratio), "--no-focus"]));
-  const hold = JSON.parse(await run(["pane", "move", workers[0], "--new-tab", "--label", "layout-hold", "--no-focus"]))
-    ?.result?.move_result?.pane?.tab_id;
-  for (const w of workers.slice(1)) await move(w, hold, workers[0], "right", 0.5);
-  await move(workers[0], tab, main, "right", 0.5);
-  for (let i = 1; i < n; i++) await move(workers[i], tab, workers[i - 1], "down", 1 / (n - i + 1));
-}
-
-/** 子智慧體：重排 parent 所在的 tab（自訂腳本或內建版型） */
+/** 子智慧體：重排 parent 所在的 tab（跑 herdr_layout.py；找不到腳本只警告，不重排） */
 async function arrange(self: string, parentSid: string, name: string | undefined) {
-  if (LAYOUT && !existsSync(LAYOUT)) return;
+  const layout = resolveLayout();
+  if (!layout) {
+    console.warn("herdr-tree：找不到 herdr_layout.py（可設 HERDR_TREE_LAYOUT），不重排版面");
+    return;
+  }
   const agents = JSON.parse(await run(["agent", "list"]))?.result?.agents ?? [];
   const parent = agents.find((a: any) => a.tokens?.pi_sid === parentSid)?.pane_id;
   if (!parent) return;
@@ -90,8 +76,7 @@ async function arrange(self: string, parentSid: string, name: string | undefined
       await run(["pane", "move", self, "--new-tab", "--label", name || "agents", "--no-focus"]);
       return;
     }
-    if (LAYOUT) await runPy([LAYOUT, "--main", parent]);
-    else await defaultLayout(parent);
+    await runPy([layout, "--main", parent]);
   });
 }
 

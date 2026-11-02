@@ -41,6 +41,6 @@
 
 ## herdr
 
-- `herdr/pi/herdr-tree.ts` 重排子智慧體所在 tab：設環境變數 `HERDR_TREE_LAYOUT=<python 腳本路徑>` 用自訂重排腳本
-  （呼叫方式 `python3 <腳本> --main <pane_id>`）；沒設就用內建版型（主 session 左半、worker 在右半等高堆疊）。
+- `herdr/pi/herdr-tree.ts` 重排子智慧體所在 tab：跑 toolkit 的 `herdr_layout.py`（路徑由同目錄 `layout-path.ts` 從 repo 往上找；
+  `HERDR_TREE_LAYOUT=<python 腳本路徑>` 可覆寫，呼叫方式 `python3 <腳本> --main <pane_id>`）。找不到腳本只印警告、不重排，沒有內建版型。
 - 側欄 plugin id 為 `plugharbor.sidebar`；`herdr-parent-tag.py` 依這個 id 呼叫 refresh 動作。
