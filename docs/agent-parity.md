@@ -43,12 +43,15 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
 
 - **pi 載入不到多數舊 plugin**：legacy 的 7 個 plugin（sa-flow、dev-flow、backend-dotnet、frontend-vue、database-sqlserver、ui-ux、desktop-avalonia）
   只有 sa-flow 有 `package.json`，pi 才載入得到它；其餘 6 個 pi 看不到（install.sh 會印 `SKIP: pi <name>（沒有 pi package 設定）`）。
-  新 plugin（toolkit、research、blog、kid-ui）都有 `package.json`。
+  新 plugin（toolkit、research、blog、kid-ui、browser-docs、delivery-flow）都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
-- **sa-flow 與 toolkit 的 `agent-model-guard` 重複註冊**：兩者都在 PreToolUse `Agent` 掛了 agent-model-guard，同時安裝時會跑兩次；
-  它只補預設模型、冪等，無害。
+- **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
+- **跨 plugin 依賴**：Claude Code 用 `plugin.json` 的 `dependencies`（裸名稱）：delivery-flow 依賴 browser-docs；sa-flow 依賴 delivery-flow、browser-docs、toolkit。
+  Codex、pi 沒有對應機制，靠 `setup/install.sh` 一次裝全部 plugin 滿足依賴。
+- **跨 plugin 叫用只實測 Claude Code**：叫另一個 plugin 的 skill（例如 delivery-flow 的 `manual-explorer` 叫 `browser-docs:annotate-screenshot`）要在 agent 的 `tools` 加 `Skill`；
+  `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以共用素材各放一份。Codex、pi 的跨 plugin 叫用：未實測。
 - **Codex hook 需信任**：Codex 以內容雜湊記錄信任，hook 指令一變就失效；install.sh 之後要在 Codex 執行 `/hooks` 重新信任，否則 `tool-policy.mjs` 不會跑。
 - **skillOverrides 對 plugin skill 的 key 寫法未驗證**：settings 範本想關掉 `handoff`、`ai-radar`，實測沒有任何 key 寫法能讓 plugin 的 skill 消失（可能是 `--plugin-dir` 的 inline plugin 不吃 override）。細節與測法見 `setup/README.md`「skillOverrides」。
 - **升級流程只用 stub 測過**：`install.sh` 更新 marketplace 再重裝的行為，真 CLI 的結果在切換步驟才實機驗證。
 - **herdr 子智慧體版型只有 toolkit 腳本一種來源**：pi 的 `herdr-tree.ts` 與 Claude 派工（agent-dispatch）共用 `plugins/toolkit/skills/agent-dispatch/scripts/herdr_layout.py`，
-  不再有 pi 專用的內建版型。pi 要載入的是 repo 內的 `herdr-tree.ts`（從 repo 往上找腳本）；單獨複製到別處就找不到腳本，只印警告、不重排，可用 `HERDR_TREE_LAYOUT` 指定。
+  不再有 pi 專用的內建版型，主 pane 永遠最大。腳本由 `setup/herdr/pi/layout-path.ts` 解出：先看 `HERDR_TREE_LAYOUT` 覆寫，再由真實路徑（realpath）往上找 toolkit 的腳本，都沒有就印警告、不重排。
