@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.4.0] - 2026-11-02
+
+- feat: 新增 skill `ticket-daily-report`（`plugins/delivery-flow/skills/ticket-daily-report/SKILL.md`）：每日票務進度報表，走看板找卡點、只列今天變壞的事；資料一律經 `delivery-flow:ticket-ops` 的 `query`，前景派發 `delivery-flow:report-writer` 產主報表與票務明細。priority、estimate、dueDate 為選配欄位，dataset 有才呈現；已移除 SA 票樹角色假設。
+- feat: 新增 skill `ticket-weekly-report`（`plugins/delivery-flow/skills/ticket-weekly-report/SKILL.md`）：每週進度報表，產出會議簡報 HTML、週報、票務明細三份；簡報數字可點開抽屜（骨架 `plugins/delivery-flow/skills/ticket-weekly-report/references/drawer-template.html`），發布前以 `plugins/delivery-flow/skills/ticket-weekly-report/scripts/verify_counts.py` 複驗數字與清單一致。
+- feat: 兩個 skill 以 `--out-dir` 取代原本的 Linear Document 發布，預設只留在 `.tmp/`，不寫入票務工具。
+
 ## [0.3.1] - 2026-11-02
 
 - fix: `ticket-ops` 移除 gist 附圖路線（`gh gist create` 不收二進位檔，佔位流程可能漏出壞連結），`github_attach_plan(repo, image_path)` 只保留存進 repo 的做法。

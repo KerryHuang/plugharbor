@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>週會簡報 2026-01-05（範例資料）</title>
+<style>
+:root{--bg:#fff;--fg:#1d2330;--mute:#5b6577;--line:#d9deea;--accent:#1f5fd6;--bad:#c62828;--panel:#f5f7fb}
+@media (prefers-color-scheme:dark){:root{--bg:#14181f;--fg:#e6e9f0;--mute:#9aa4b8;--line:#2c3443;--accent:#6ea2ff;--bad:#ff7b72;--panel:#1c2230}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,"Noto Sans TC",sans-serif;padding:24px 16px 120px;max-width:880px;margin-inline:auto}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:28px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.sub{color:var(--mute);margin:0 0 16px}
+.stats{display:flex;flex-wrap:wrap;gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:120px}
+.stat .lbl{display:block;color:var(--mute);font-size:.85rem}
+button.drill{font:inherit;font-size:1.6rem;font-weight:700;color:var(--accent);background:none;border:0;border-bottom:2px dashed var(--accent);padding:0 2px;cursor:pointer}
+button.drill.mismatch{color:var(--bad);border-color:var(--bad)}
+#drawer{position:fixed;left:0;right:0;bottom:0;max-height:60vh;overflow:auto;background:var(--panel);border-top:2px solid var(--accent);padding:12px 16px 20px;transform:translateY(100%);transition:transform .2s}
+#drawer.open{transform:none}
+#drawer h3{margin:0 0 4px;font-size:1rem}#drawer .note{color:var(--mute);font-size:.85rem;margin:0 0 8px}
+#drawer ul{list-style:none;margin:0;padding:0}
+#drawer li{display:grid;grid-template-columns:7em 1fr auto;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+#drawer li a{color:var(--accent);text-decoration:none}
+#drawer .meta{color:var(--mute);font-size:.85rem}
+#close{position:absolute;top:8px;right:12px;font:inherit;background:none;border:1px solid var(--line);color:var(--fg);border-radius:6px;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>週會簡報</h1>
+<p class="sub">週會日 2026-01-05｜上週 12/29–01/04｜範例資料，非真實票</p>
+
+<h2>上週定調（流量）</h2>
+<div class="stats">
+  <div class="stat"><span class="lbl">交付</span><button class="drill" data-k="delivered">3</button></div>
+  <div class="stat"><span class="lbl">批次清理</span><button class="drill" data-k="cleanup">2</button></div>
+  <div class="stat"><span class="lbl">新增</span><button class="drill" data-k="created">4</button></div>
+</div>
+
+<h2>全線存量（當下全量）</h2>
+<div class="stats">
+  <div class="stat"><span class="lbl">等驗收</span><button class="drill" data-k="review">3</button></div>
+  <div class="stat"><span class="lbl">被擋</span><button class="drill" data-k="blocked">2</button></div>
+</div>
+
+<aside id="drawer" aria-live="polite" role="region" aria-label="明細">
+  <button id="close" type="button">關閉</button>
+  <h3 id="d-title"></h3><p class="note" id="d-note"></p><ul id="d-list"></ul>
+</aside>
+
+<script id="drill-data" type="application/json">
+{"delivered":{"label":"上週交付","note":"完成日落在上週窗內，已扣除批次清理","items":[
+{"id":"DEMO-1","title":"訂單匯出加上日期篩選","owner":"範例人員甲","meta":"完成 01-02","url":"https://tracker.example.com/DEMO-1"},
+{"id":"DEMO-2","title":"登入逾時提示改版","owner":"範例人員乙","meta":"完成 01-02"},
+{"id":"DEMO-3","title":"報表欄寬記憶","owner":"範例人員甲","meta":"完成 01-03"}]},
+"cleanup":{"label":"批次清理","note":"3 分鐘內成簇且票齡中位數超過 90 天","items":[
+{"id":"DEMO-4","title":"舊流程清單整理","owner":"範例人員丙","meta":"票齡 210 天"},
+{"id":"DEMO-5","title":"過期環境申請","owner":"範例人員丙","meta":"票齡 188 天"}]},
+"created":{"label":"上週新增","note":"建立日落在上週窗內","items":[
+{"id":"DEMO-6","title":"出貨單列印版面","owner":"範例人員乙","meta":"建立 12-30"},
+{"id":"DEMO-7","title":"庫存盤點匯入","owner":"範例人員甲","meta":"建立 12-31"},
+{"id":"DEMO-8","title":"權限群組調整","owner":"範例人員丙","meta":"建立 01-02"},
+{"id":"DEMO-9","title":"通知信範本更新","owner":"範例人員乙","meta":"建立 01-03"}]},
+"review":{"label":"等驗收","note":"存量：當下全量，不受窗限制","items":[
+{"id":"DEMO-10","title":"客戶資料合併","owner":"範例人員丁","meta":"停滯 4 工作日"},
+{"id":"DEMO-11","title":"月結報表調整","owner":"範例人員丁","meta":"停滯 2 工作日"},
+{"id":"DEMO-12","title":"批次改價","owner":"範例人員乙","meta":"停滯 9 工作日"}]},
+"blocked":{"label":"被擋","note":"存量：帶 blocked label 的未完成票","items":[
+{"id":"DEMO-13","title":"前端等報價 API","owner":"範例人員甲","meta":"已等 5 工作日"},
+{"id":"DEMO-14","title":"等客戶提供樣張","owner":"範例人員丙","meta":"已等 11 工作日"}]}}
+</script>
+<script>
+(function(){
+  var data = JSON.parse(document.getElementById('drill-data').textContent);
+  var drawer = document.getElementById('drawer');
+  var tTitle = document.getElementById('d-title'), tNote = document.getElementById('d-note'), list = document.getElementById('d-list');
+  function el(tag, text){ var e = document.createElement(tag); if (text) e.textContent = text; return e; }
+  function open(key){
+    var d = data[key]; if (!d) return;
+    tTitle.textContent = d.label + '（' + d.items.length + '）';
+    tNote.textContent = d.note || '';
+    list.textContent = '';
+    d.items.forEach(function(it){
+      var li = el('li'), id;
+      if (it.url) { id = el('a', it.id); id.href = it.url; id.target = '_blank'; id.rel = 'noopener'; } else { id = el('span', it.id); }
+      li.appendChild(id); li.appendChild(el('span', it.title));
+      li.appendChild(el('span', [it.owner, it.meta].filter(Boolean).join('｜'))).className = 'meta';
+      list.appendChild(li);
+    });
+    drawer.classList.add('open');
+  }
+  document.querySelectorAll('button.drill').forEach(function(b){
+    var d = data[b.dataset.k], shown = parseInt(b.textContent.replace(/\D/g, ''), 10);
+    if (!d || (!isNaN(shown) && shown !== d.items.length)) {
+      b.classList.add('mismatch');
+      b.title = d ? '顯示 ' + shown + '，清單實為 ' + d.items.length : '找不到資料集';
+    }
+    b.addEventListener('click', function(){ open(b.dataset.k); });
+  });
+  document.getElementById('close').addEventListener('click', function(){ drawer.classList.remove('open'); });
+})();
+</script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型。
 
-目前版本提供骨架、共用 references、設定載入、`report-writer` agent，以及票務工具層、會議記錄、訪談準備、issue 分流四個 skill；其餘流程 skill 陸續加入。
+目前版本提供骨架、共用 references、設定載入、`report-writer` agent，以及票務工具層、日報週報、會議記錄、訪談準備、issue 分流六個 skill；其餘流程 skill 陸續加入。
 
 ## 安裝
 
@@ -33,6 +33,8 @@ python3 scripts/config.py get ticket.tool   # 退出碼 2，stderr 一行建檔�
 | 類型 | 名稱 | 說明 |
 |------|------|------|
 | skill | `ticket-ops` | 票務工具層：Linear、GitHub Issues 的建票、改階段、留言、附圖、查詢、blocked-by；Jira 僅設定範例 |
+| skill | `ticket-daily-report` | 每日票務進度報表：走看板找卡點、只列今天變壞的事；資料經 `ticket-ops` 的 `query`，成品存 `.tmp/` 或 `--out-dir` |
+| skill | `ticket-weekly-report` | 每週票務進度報表：週會簡報 HTML（數字可點開明細）、週報、票務明細三份，發布前複驗數字與清單一致 |
 | skill | `meeting-minutes` | 即時記錄或會後整理會議記錄；依 `publish-target` 存本機或發布到自架 HedgeDoc |
 | skill | `interview-prep` | 多場素材彙整成已知／未知盤點，或產出訪談大綱；每條標已確認／待確認／可能推測並附出處 |
 | skill | `issue-triage` | 回饋逐項對照現況 codebase，分類 Bug／Enhancement／Feature 並標既有票，產出可開票的問題清單 |
