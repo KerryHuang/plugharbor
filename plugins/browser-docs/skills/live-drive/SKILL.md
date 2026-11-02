@@ -1,6 +1,6 @@
 ---
 name: live-drive
-description: "透過 debug-port Chrome＋chrome-devtools MCP 操作執行中的系統：重現問題、跑 e2e、探索現況；正式環境禁止異動操作。觸發：「重現這個 bug」「用實機操作」「跑一次 e2e」。"
+description: "透過 chrome-devtools MCP（`--isolated`）操作執行中的系統：重現問題、跑 e2e、探索現況；正式環境禁止異動操作。觸發：「重現這個 bug」「用實機操作」「跑一次 e2e」。"
 argument-hint: "<investigate|e2e|explore> [目標/URL]"
 ---
 
@@ -31,7 +31,7 @@ $ARGUMENTS → <mode> [目標/URL]
    (如「先讀 `.claude/live-drive.local.md`」) → ② repo 根的 `CLAUDE.local.md`。
    **兩者都要實際 `ls` 驗存在**,不要憑慣例假設檔名。
 2. **確認模式與目標**:模式缺 → `AskUserQuestion`(附推薦,見輸入參數表);目標/URL 缺 →
-   讀 Step 1 定位到的設定檔,仍無以文字詢問(自由文字輸入)。
+   讀 Task 0 第 1 項定位到的設定檔,仍無以文字詢問(自由文字輸入)。
 3. 若 TodoWrite 可用,建任務清單:1. 安全判定 2. 派工 3. 判讀與交棒。
 
 > **主 session 不載入瀏覽器工具、不開瀏覽器。** 連線、登入、操作、截圖全部由
@@ -126,5 +126,5 @@ network 原文 Read 進主 context(隔離失效)、**跳過 Step 1 安全判定�
 
 - `${CLAUDE_PLUGIN_ROOT}/agents/browser-surveyor.md` — 實機勘察 agent(Step 2 派它;環境安全在其定義內獨立再判一次)
 - [browser-bootstrapping.md](references/browser-bootstrapping.md) — MCP 連線、連線排錯、登入、截圖落地
-- [modes.md](references/modes.md) — 四模式觀察重點與產出模板
+- [modes.md](references/modes.md) — 三模式觀察重點與產出模板
 - [safety.md](references/safety.md) — 環境判定與唯讀降級

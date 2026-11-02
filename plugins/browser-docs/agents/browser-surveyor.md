@@ -1,7 +1,7 @@
 ---
 name: browser-surveyor
 description: 實機畫面勘察：走到指定畫面，記錄欄位／預設值／驗證訊息／console／network 並截圖落證據檔。只觀察不解讀、不寫規格。由 browser-docs:live-drive 或其他需要實機蒐證的 skill 派發，不主動觸發。
-tools: Read, Write, Glob, Grep, Bash, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__list_network_requests
+tools: Read, Write, Glob, Grep, Bash, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__get_console_message
 model: sonnet
 maxTurns: 150
 color: cyan

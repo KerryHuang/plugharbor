@@ -3,7 +3,7 @@
 ## 連線
 
 MCP 註冊一律 `chrome-devtools-mcp --isolated`——標準與 Codex 寫法見
-`${CLAUDE_PLUGIN_ROOT}/references/browser-setup.md`；隔離模型與同 session 三條規則見
+`${CLAUDE_PLUGIN_ROOT}/references/browser-setup.md`；隔離模型與同 session 四條規則見
 `${CLAUDE_PLUGIN_ROOT}/references/browser-tooling.md`。
 
 起手 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/browser-doctor.py`，非 `OK` 就停：它會印標準註冊寫法，

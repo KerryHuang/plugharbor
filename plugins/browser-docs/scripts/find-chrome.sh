@@ -4,10 +4,8 @@
 #   . "$(dirname "$0")/find-chrome.sh"
 #   CHROME=$(find_chrome) || { echo "找不到 Chrome"; exit 1; }
 #
-# 為什麼要有這支：ensure-tools.sh 與 build-deck.sh 原本各自寫死
-# `/Applications/Google Chrome.app`，同事在 Windows 跑就誤報缺 Chrome
-# （實際裝在 `/c/Program Files/Google/Chrome/Application/chrome.exe`）。
-# 同一個 bug 出現在兩支腳本，所以抽出來一處維護。
+# 為什麼要有這支：各腳本原本自己寫死 `/Applications/Google Chrome.app`，在 Windows 就誤報缺 Chrome
+# （實際裝在 `/c/Program Files/Google/Chrome/Application/chrome.exe`），所以抽出來一處維護。
 
 find_chrome() {
   # 1) 呼叫端已指定就直接用

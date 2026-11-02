@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.1.1] - 2026-11-02
+
+- fix: `browser-surveyor` 的 tools 補上 `get_network_request`、`get_console_message`、`press_key`（investigate 模式與 `fill` 清空流程需要）；`live-drive` description 去掉 debug-port 說法；修正「四模式」「三條規則」等文字不符。
+
 ## [0.1.0] - 2026-11-02
 
 - feat: 新 plugin。`live-drive` skill（investigate／e2e／explore 三模式，主 session 不開瀏覽器，全派 agent）、`browser-surveyor` agent（survey／capture／investigate／measure，含純 icon 按鈕的找法）。
