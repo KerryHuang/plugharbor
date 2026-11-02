@@ -257,7 +257,7 @@ export function installSupport({ home = homedir(), repo = resolve(here, '../..')
   }, null, 2) + '\n')
   owned.save()
   // Codex 以內容雜湊記錄 hook 信任；指令一變就失效，不提示的話 Git guard 會靜默不跑。
-  if (retrust.length) console.error(`Codex hook 已${[...new Set(retrust)].join('、')}新增或更新：請在 Codex 執行 /hooks 重新信任，否則該 hook 不會執行。`)
+  if (retrust.length) console.error(`Codex 的 ${[...new Set(retrust)].join('、')} hook 已新增或更新：請在 Codex 執行 /hooks 重新信任，否則該 hook 不會執行。`)
   return { changed: owned.changed, kept: owned.kept }
 }
 

@@ -160,7 +160,7 @@ PYEOF
 # ---------- pi packages 裡指向 plugharbor plugin 的項目 ----------
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
 if [ -f "$PI_SETTINGS" ]; then
-  for p in $PLUGINS; do echo "$REPO_DIR/plugins/$p"; done | PYTHONUTF8=1 "$PY" -c '
+  for p in $PLUGINS; do ph_native_path "$REPO_DIR/plugins/$p"; done | PYTHONUTF8=1 "$PY" -c '
 import json, os, shutil, sys
 path, backup = sys.argv[1], sys.argv[2]; start = os.path.dirname(path)
 cur = json.load(open(path, encoding="utf-8"))
@@ -174,7 +174,7 @@ if len(keep) != len(pkgs):
     cur["packages"] = keep
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
     print(f"移除: ~/.pi/agent/settings.json 的 {len(pkgs) - len(keep)} 個 plugharbor package")
-' "$PI_SETTINGS" "$BACKUP" || FAILS=$((FAILS + 1))
+' "$(ph_native_path "$PI_SETTINGS")" "$(ph_native_path "$BACKUP")" || FAILS=$((FAILS + 1))
 fi
 
 if [ "$FAILS" -gt 0 ]; then echo "完成，但有 $FAILS 個步驟失敗（見上方 FAIL）"; exit 1; fi

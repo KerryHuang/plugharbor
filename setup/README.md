@@ -35,7 +35,8 @@ Claude Code 的 `plugharbor` marketplace 指向 GitHub（`PLUGHARBOR_REPO`，預
 
 ## install.sh 的升級與舊 hook
 
-- 版號不同才重裝；重裝前先更新 marketplace（claude `plugin marketplace update plugharbor`、codex `plugin marketplace upgrade plugharbor`），失敗只印 WARN。
+- 版號不同才重裝；claude 重裝前先 `plugin marketplace update plugharbor`，失敗只印 WARN。codex 的 marketplace 是本機 clone 目錄，`plugin add` 直接讀，不需要（也無法）`marketplace upgrade`。
+- pi 的路徑交給 python 前，Git Bash 上（有 `cygpath`）先轉成 `C:/...`，Windows 原生 python 才認得。
   這段只用 stub 測過，真 CLI 的升級行為在切換（cutover）步驟實機驗證。
 - 舊 claude-home 的 guard 等 hook 只在 claude 的 toolkit plugin 這次裝好（或已是最新）後才備份移除；沒裝 claude、沒選 toolkit 或安裝失敗，只印 `STALE:`。
 

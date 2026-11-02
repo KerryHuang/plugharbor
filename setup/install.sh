@@ -262,7 +262,6 @@ refresh_marketplace() {  # 版號不同、重裝前先更新 marketplace 目錄�
   REFRESHED="$REFRESHED$1 "
   case "$1" in
     claude) set -- claude plugin marketplace update plugharbor ;;
-    codex) set -- codex plugin marketplace upgrade plugharbor ;;
     *) return 0 ;;
   esac
   echo "RUN:  $*"
@@ -356,7 +355,7 @@ else
   for p in $PLUGINS; do
     if grep -q '"pi"' "$REPO_DIR/plugins/$p/package.json" 2>/dev/null; then
       PI_DIRS="$PI_DIRS
-$REPO_DIR/plugins/$p"
+$(ph_native_path "$REPO_DIR/plugins/$p")"
     else
       echo "SKIP: pi ${p}（沒有 pi package 設定）"
     fi
@@ -400,7 +399,7 @@ if (added or stale) and not check:
         shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     os.makedirs(start, exist_ok=True)
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
-' "$HOME/.pi/agent" "$CHECK" "$BACKUP" "$(for p in $REMOVE; do printf '%s ' "$REPO_DIR/plugins/$p"; done)")"
+' "$(ph_native_path "$HOME/.pi/agent")" "$CHECK" "$(ph_native_path "$BACKUP")" "$(for p in $REMOVE; do printf '%s ' "$(ph_native_path "$REPO_DIR/plugins/$p")"; done)")"
   rc=$?
   set -e
   if [ -n "$PI_OUT" ]; then

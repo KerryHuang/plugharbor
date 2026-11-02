@@ -34,7 +34,16 @@ printf 'PLUGIN  STATUS  VERSION  SOURCE\nresearch@plugharbor  installed, enabled
 printf 'Installed plugins:\n- toolkit (enabled, 0.1.0)\n' > "$STUB_STATE/agy-list"
 printf -- '- plugharbor.sidebar (Sidebar) enabled [local:/x]\n' > "$STUB_STATE/herdr-list"
 : > "$STUB_LOG"
+# Git Bash（有 cygpath）：從 stdin 交給 python 的 plugin 路徑不會被 MSYS 自動轉換，要先轉成 C:/ 形式
+cat > "$STUB/cygpath" <<'SH'
+#!/usr/bin/env bash
+[ "$1" = "-m" ] && shift
+echo "cygpath -m $1" >> "$STUB_LOG"
+printf '%s\n' "$1"
+SH
+chmod +x "$STUB/cygpath"
 OUT="$(run uninstall.sh)" || fail "uninstall exit 非 0：$OUT"
+grep -qx "cygpath -m $REPO_DIR/plugins/toolkit" "$STUB_LOG" || fail "pi package 路徑應先經 cygpath -m 轉換"
 
 [ ! -e "$C/CLAUDE.md" ]               || fail "未移除與 repo 一致的 CLAUDE.md"
 [ ! -e "$C/rules/git-safety.md" ]     || fail "未移除與 repo 一致的 rule"

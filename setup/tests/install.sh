@@ -84,8 +84,8 @@ grep -qx "claude plugin install toolkit@plugharbor --scope user" "$STUB_LOG" || 
 grep -qx "claude plugin install research@plugharbor --scope user" "$STUB_LOG" || fail "claude 未安裝 research"
 if grep -q "codex plugin add toolkit@plugharbor" "$STUB_LOG"; then fail "codex 版號相同不該重裝 toolkit"; fi
 grep -qx "codex plugin add research@plugharbor" "$STUB_LOG" || fail "codex 版號不同應重裝 research"
-[ "$(grep -n 'codex plugin marketplace upgrade plugharbor' "$STUB_LOG" | cut -d: -f1)" -lt "$(grep -n 'codex plugin add research' "$STUB_LOG" | cut -d: -f1)" ] \
-  || fail "codex 重裝前應先 marketplace upgrade"
+# codex 的 marketplace 是本機目錄（plugin add 直接讀 clone），upgrade 只對 git 來源有效，呼叫必失敗
+if grep -q 'codex plugin marketplace upgrade' "$STUB_LOG"; then fail "codex 本機目錄 marketplace 不該呼叫 upgrade"; fi
 grep -q 'my-codex-stop' "$H/.codex/hooks.json" || fail "Codex hooks.json 使用者的條目被移除"
 ls "$C"/backups/plugharbor-*/codex/hooks.json >/dev/null 2>&1 || fail "Codex hooks.json 改動前未備份"
 echo "$OUT" | grep -q 'UP-TO-DATE: codex toolkit' || fail "codex 版號相同應印 UP-TO-DATE"
@@ -284,5 +284,20 @@ ls "$H"/.claude/backups/plugharbor-*/pi/settings.json >/dev/null 2>&1 || fail "p
 rm "$STUB/pi"
 export STUB_STATE="$TMP/state"
 
-echo "PASS: install.sh（17 組）"
+# ---------- 18) Git Bash（有 cygpath）：交給 Windows 原生 python 的 pi 路徑要先轉成 C:/ 形式 ----------
+bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
+cat > "$STUB/cygpath" <<'SH'
+#!/usr/bin/env bash
+[ "$1" = "-m" ] && shift
+echo "cygpath -m $1" >> "$STUB_LOG"
+printf '%s\n' "$1"
+SH
+chmod +x "$STUB/cygpath"
+H="$TMP/h12"; mkdir -p "$H/.pi/agent"; : > "$STUB_LOG"
+run "$H" >/dev/null || fail "有 cygpath 的 install exit 非 0"
+grep -qx "cygpath -m $H/.pi/agent" "$STUB_LOG" || fail "pi 設定目錄應先經 cygpath -m 轉換：$(grep cygpath "$STUB_LOG")"
+grep -qx "cygpath -m $REPO_DIR/plugins/toolkit" "$STUB_LOG" || fail "pi package 路徑應先經 cygpath -m 轉換"
+rm "$STUB/pi" "$STUB/cygpath"
+
+echo "PASS: install.sh（18 組）"
 

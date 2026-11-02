@@ -7,7 +7,7 @@ plugharbor 同時服務 Claude Code、Codex、pi、agy。來源只有一份（�
 | CLI | plugin（skills／agents） | user 層規則 | hooks | 更新方式 |
 |---|---|---|---|---|
 | Claude Code | marketplace `plugharbor`，`claude plugin install <name>@plugharbor` | `~/.claude/CLAUDE.md`、`shared/`、`rules/`（install.sh 複製） | plugin 內 `hooks/hooks.json` 自動註冊；herdr 的 `herdr-parent-tag` 在 settings 範本 | `claude plugin marketplace update plugharbor`，install.sh 版號不同時自動做 |
-| Codex | `codex plugin add <name>@plugharbor` | adapter 產生 `~/.codex/AGENTS.md`、`~/.codex/agents`（reviewer 轉 TOML，read-only sandbox） | adapter 合併進 `~/.codex/hooks.json`；另外 Codex 也會載入 plugin 內的 `hooks/hooks.json`（toolkit 的 hooks，需經 `/hooks` 信任，見下） | 快照安裝；`codex plugin marketplace upgrade plugharbor` 後重裝 |
+| Codex | `codex plugin add <name>@plugharbor` | adapter 產生 `~/.codex/AGENTS.md`、`~/.codex/agents`（reviewer 轉 TOML，read-only sandbox） | adapter 合併進 `~/.codex/hooks.json`；另外 Codex 也會載入 plugin 內的 `hooks/hooks.json`（toolkit 的 hooks，需經 `/hooks` 信任，見下） | 快照安裝；marketplace 指向本機 clone，pull 後重跑 install.sh（版號不同才重裝） |
 | agy | `agy plugin install <repo>/plugins/<name>` | adapter 產生 `plugharbor-home` plugin（`rules/plugharbor-root.md`，`trigger: always_on`；path-scoped rule 轉 globs） | 該 plugin 根目錄的 `hooks.json` | 快照安裝；重跑 install.sh |
 | pi | 只有 `package.json` 帶 `pi` 欄位的 plugin 會寫進 `~/.pi/agent/settings.json` 的 packages | `~/.pi/agent/APPEND_SYSTEM.md`；`~/.claude/rules` 需外部 pi-code 套件（`claude-rules.ts`）載入，須先把 pi-code 加進 `~/.pi/agent/settings.json` 的 `packages` | 無（見下） | 重跑 install.sh |
 

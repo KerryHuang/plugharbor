@@ -79,4 +79,18 @@ echo "$OUT" | grep -q 'MISSING: claude sa-flow' || fail "--check 應報 MISSING�
 if grep -q 'claude plugin install' "$STUB_LOG"; then fail "--check 不該安裝"; fi
 [ ! -e "$P6/.pi/settings.json" ] || fail "--check 不該寫 pi 設定"
 
-echo "PASS: install-project.sh（6 組）"
+# ---------- 7) Git Bash（有 cygpath）：交給 Windows 原生 python 的路徑要先轉成 C:/ 形式 ----------
+cat > "$STUB/cygpath" <<'SH'
+#!/usr/bin/env bash
+[ "$1" = "-m" ] && shift
+echo "cygpath -m $1" >> "$STUB_LOG"
+printf '%s\n' "$1"
+SH
+chmod +x "$STUB/cygpath"
+P7="$(newproj p7)"; : > "$STUB_LOG"
+run "$P7" sa-flow >/dev/null || fail "有 cygpath 的 install-project exit 非 0"
+grep -qx "cygpath -m $P7/.pi/settings.json" "$STUB_LOG" || fail "pi 設定檔路徑應先經 cygpath -m 轉換：$(grep cygpath "$STUB_LOG")"
+grep -qx "cygpath -m $REPO_DIR/plugins/sa-flow" "$STUB_LOG" || fail "pi package 路徑應先經 cygpath -m 轉換"
+rm "$STUB/cygpath"
+
+echo "PASS: install-project.sh（7 組）"

@@ -104,7 +104,7 @@ fi
 # ---------- pi：專案 .pi/settings.json 的 packages（絕對路徑，只限 local） ----------
 PI_PKGS=""
 for p in $PLUGINS; do
-  grep -q '"pi"' "$REPO_DIR/plugins/$p/package.json" 2>/dev/null && PI_PKGS="$PI_PKGS $REPO_DIR/plugins/$p"
+  grep -q '"pi"' "$REPO_DIR/plugins/$p/package.json" 2>/dev/null && PI_PKGS="$PI_PKGS $(ph_native_path "$REPO_DIR/plugins/$p")"
 done
 if [ -z "$PI_PKGS" ]; then
   :
@@ -137,7 +137,7 @@ if add and not check:
         json.dump(d, f, ensure_ascii=False, indent=2); f.write("\n")
     for p in add: print(f"OK:   pi {os.path.basename(p)}")
 sys.exit(2 if add and check else 0)
-' "$ROOT/.pi/settings.json" "$CHECK" "$PI_PKGS" && rc=0 || rc=$?
+' "$(ph_native_path "$ROOT/.pi/settings.json")" "$CHECK" "$PI_PKGS" && rc=0 || rc=$?
   case "$rc" in 0) ;; 2) DIFFS=$((DIFFS + 1)) ;; *) FAILS=$((FAILS + 1)) ;; esac
   if [ "$CHECK" -eq 0 ] && [ "$rc" -eq 0 ]; then
     ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""

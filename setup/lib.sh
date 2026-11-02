@@ -16,6 +16,11 @@ for c in python3 python; do
   if "$c" -c 'import sys; sys.exit(sys.version_info < (3, 6))' >/dev/null 2>&1; then PY="$c"; break; fi
 done
 
+# 交給 python 的路徑：Git Bash 的 /c/Users/... 在 Windows 原生 python 會被當成 \c\Users，有 cygpath 就先轉成 C:/Users/...
+ph_native_path() {
+  if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s\n' "$1"; fi
+}
+
 ph_all_plugins() {
   local f
   for f in "$REPO_DIR"/plugins/*/.claude-plugin/plugin.json; do
