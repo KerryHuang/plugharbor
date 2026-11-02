@@ -16,6 +16,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 | `ticket.states` | 抽象階段 → 工具的狀態名（Linear、Jira）或 label（GitHub）對照 | 無（必填） |
 | `publish-target` | 會議記錄等文件的發布位置，`file:<相對目錄>` 或 `hedgedoc:<url>` | 無（必填；詢問時建議 `file:docs/meetings`） |
 | `manual-brand` | 操作手冊的品牌設定（名稱、色票等） | 無 |
+| `qa.environments` | `qa-verify` 可驗收的環境清單，每項 `{name, url, writable}`；`writable` 為 true 才允許建資料與送出 | 無（`qa-verify` 必填） |
 
 抽象階段固定為 `backlog`、`todo`、`in-progress`、`in-review`、`done`、`canceled`；skill 只用這些名字，由 `ticket.states` 轉成工具上的實際名稱。
 
@@ -64,6 +65,24 @@ ticket:
     in-review: In Review
     done: Done
     canceled: Won't Do
+```
+
+## qa.environments
+
+`qa-verify` 的環境可寫性只看這個鍵，不看網址、不查任何環境表。判準是**環境歸屬**：團隊自有、資料可任意異動的測試環境設 `writable: true`；含真實客戶資料（或自正式環境還原）的環境設 `false`。不在清單上的環境一律視為不可寫。
+
+```yaml
+qa:
+  environments:
+    - {name: dev, url: "https://dev.example.test/", writable: true}
+    - {name: customer-copy, url: "https://copy.example.test/", writable: false}
+```
+
+登入帳密不進設定檔，放專案根的 `.plugharbor/qa.local.md`（本機檔，須加進 `.gitignore`），一個環境兩行：
+
+```
+dev-username: qa-user
+dev-password: <密碼>
 ```
 
 ## 跨 plugin 依賴的決定

@@ -28,7 +28,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
 | `jira` | **先告知「Jira 只有設定對照範例（`${CLAUDE_SKILL_DIR}/references/jira-example.md`），沒有實測過的實作」，使用者明確確認要繼續才往下**；確認後依範例與 Jira MCP／REST 自行對映，結果標「未實測」 |
 | 其他值 | 停下，列出合法值請使用者更正設定 |
 
-操作名稱、參數與回傳一律以 `${CLAUDE_SKILL_DIR}/references/contract.md` 為準：`create`、`set_stage`、`comment`、`attach`、`query`、`link_blocked_by`。
+操作名稱、參數與回傳一律以 `${CLAUDE_SKILL_DIR}/references/contract.md` 為準：`create`、`set_stage`、`comment`、`attach`、`query`、`get`、`link_blocked_by`。
 
 ## 2. 執行
 

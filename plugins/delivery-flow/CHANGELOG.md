@@ -2,6 +2,16 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.5.0] - 2026-11-02
+
+- feat: 新增 skill `qa-verify`（`plugins/delivery-flow/skills/qa-verify/SKILL.md`）：依驗收案例檔或票號做實機 E2E 驗收，派 `qa-planner`、`qa-fixture`、`qa-runner-ui` 三個 agent，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對並產 `qa-report.md`；讀票（`get`）與回票（`comment`）一律經 `delivery-flow:ticket-ops`。
+- feat: 新增中性驗收案例格式 `plugins/delivery-flow/skills/qa-verify/references/acceptance-format.md`（markdown 或 YAML，欄位 `id`、`title`、`preconditions[]`、`steps[]`、`expected[]`、`channel?`），`plugins/delivery-flow/skills/qa-verify/scripts/validate.py` 新增 `acceptance` 模式驗證；plan 的來源改為 `meta.規格.案例檔`，移除對特定規格文件章節的依賴。
+- feat: 新增 agent `plugins/delivery-flow/agents/qa-planner.md`、`plugins/delivery-flow/agents/qa-fixture.md`、`plugins/delivery-flow/agents/qa-runner-ui.md`；環境可寫性改讀設定 `qa.environments`（`{name, url, writable}`），登入帳密放 `.plugharbor/qa.local.md`，不再查環境表或公司資料。
+- feat: `ticket-ops` 契約新增第七個操作 `get`（單張票的標題、body、階段、labels、parent、children、url、updatedAt），`plugins/delivery-flow/skills/ticket-ops/references/linear.md`、`github.md` 補對映（GitHub 的 parent 讀 body 的 `parent: #n`，children 讀 task list）。
+- fix: fixtures 的 `環境.依據` 改為必填、`環境.查證` 改為選填且限 SELECT／WITH 唯讀查詢（禁中途分號與寫入字）；markdown 案例檔解析改為非案例 `##` 行結束目前案例，缺標題、未知區段會報錯，支援全形冒號、通道轉小寫、圍欄與 BOM；YAML 語法錯誤印單行錯誤不拋 traceback。
+- docs: `plugins/delivery-flow/references/config.md` 新增 `qa.environments` 鍵與範例。
+- test: 新增 `plugins/delivery-flow/skills/qa-verify/scripts/test_validate.py`、`test_judge.py`、`test_report.py`（含 `test_neutral_format_minimal`），直接執行 `python3 <檔>`。
+
 ## [0.4.1] - 2026-11-02
 
 - fix: `plugins/delivery-flow/skills/ticket-ops/references/contract.md` 的 `query` 補 `url`、`assignee?`、`createdAt?`、`completedAt?`（僅 `done`）、`priority?`（正規化為 urgent／high／medium／low／none）、`dueDate?`，篩選加建立與完成時間範圍；`estimate` 不納入。`linear.md`、`github.md` 補對映（GitHub 以 not planned 關閉不算 `completedAt`，`dueDate` 恆為空）。

@@ -11,6 +11,7 @@
 | `comment` | `gh issue comment N --repo R --body-file F` |
 | `attach` | 見下 |
 | `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 200`；時間範圍用 `--search "created:>=… closed:>=…"` |
+| `get` | `gh issue view N --repo R --json number,title,body,state,stateReason,labels,url,updatedAt`；`children` 解析 body 內 `- [ ] #n`／`- [x] #n` 項目的 n；`parent` 取 body 內 `parent: #n` 那一行（父子票慣例見下），沒有就是 null；`stage` 由 `stage:*` label 與 `state` 還原 |
 | `link_blocked_by` | 見下 |
 
 `query` 欄位對映：`closedAt` 且 `stateReason` 為 `COMPLETED` 才填 `completedAt`；以 not planned 關閉的票 `completedAt` 為 null，不算交付。`createdAt`、`url` 直接取；`assignee` 取 `assignees` 陣列第一位的 `login`，陣列為空則 null。`priority` 取自 label `priority:<level>`（level 為 urgent／high／medium／low），無此 label 為 `none`。`dueDate` 恆為 null（GitHub 不支援）。
