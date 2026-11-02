@@ -1,0 +1,114 @@
+/* neutral-style.css — 無品牌的預設風格。系統字型、無外部資源。
+   換設計系統：只覆寫下面 :root 的變數（或整段換掉），元件 class 不必動。 */
+:root {
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-alt: #f0f2f5;
+  --text: #1f2430;
+  --text-muted: #5d6677;
+  --border: #d5d9e0;
+  --accent: #2f5fd0;
+  --accent-text: #ffffff;
+  --danger: #b3261e;
+  --success-bg: #e3f4e8; --success-fg: #1b6b34;
+  --warn-bg: #fff1d6;    --warn-fg: #8a5a00;
+  --danger-bg: #fde4e2;  --danger-fg: #a1241c;
+  --info-bg: #e3ecfb;    --info-fg: #234a9e;
+  --neutral-bg: #e9ebef; --neutral-fg: #4a5262;
+  --radius: 6px;
+  --gap: 12px;
+  --fs: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171d; --surface: #1c2028; --surface-alt: #232833;
+    --text: #e6e9ef; --text-muted: #9aa3b2; --border: #343b49;
+    --accent: #7ba2ff; --accent-text: #0e1320; --danger: #ff8a80;
+    --success-bg: #17301f; --success-fg: #7fd69a;
+    --warn-bg: #3a2c10;    --warn-fg: #f0c36b;
+    --danger-bg: #3d1b19;  --danger-fg: #ff9d95;
+    --info-bg: #1a2742;    --info-fg: #9dbcff;
+    --neutral-bg: #2a303c; --neutral-fg: #b6bdca;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: var(--fs)/1.5 var(--font-sans); background: var(--bg); color: var(--text); }
+
+/* 版型：頂欄＋側欄＋內容 */
+.topbar { display: flex; align-items: center; gap: var(--gap); padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.topbar .title { font-weight: 600; }
+.layout { display: flex; min-height: calc(100vh - 49px); }
+.sidebar { width: 200px; flex: none; padding: 12px 8px; background: var(--surface); border-right: 1px solid var(--border); }
+.sidebar a { display: block; padding: 8px 12px; border-radius: var(--radius); color: var(--text); text-decoration: none; cursor: pointer; }
+.sidebar a:hover { background: var(--surface-alt); }
+.sidebar a.active { background: var(--accent); color: var(--accent-text); }
+.content { flex: 1; min-width: 0; padding: 16px 20px; }
+.screen { display: none; }
+.screen.active { display: block; }
+a { color: var(--accent); }
+h1 { font-size: 20px; margin: 0 0 12px; }
+h2 { font-size: 16px; margin: 0 0 8px; }
+
+/* 卡片、工具列 */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: var(--gap); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: var(--gap); margin-bottom: var(--gap); }
+.toolbar .spacer { flex: 1; }
+
+/* 表單 */
+fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin: 0 0 var(--gap); }
+legend { padding: 0 6px; font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.field label { font-size: 12px; color: var(--text-muted); }
+.field .req::before { content: "* "; color: var(--danger); }
+.field .hint { font-size: 12px; color: var(--text-muted); }
+.field .error { font-size: 12px; color: var(--danger); }
+.row { display: flex; flex-wrap: wrap; gap: var(--gap); margin-bottom: var(--gap); }
+input, select, textarea { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 8px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input.invalid { border-color: var(--danger); }
+
+/* 按鈕 */
+.btn { font: inherit; padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+.btn:hover { background: var(--surface-alt); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* 表格 */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { background: var(--surface-alt); font-weight: 600; font-size: 12px; color: var(--text-muted); }
+tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-alt) 45%, transparent); }
+tbody tr:hover { background: var(--surface-alt); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.id { font-family: var(--font-mono); }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); padding: 8px 4px; color: var(--text-muted); }
+
+/* 狀態 chip：文字一定要有，不只靠顏色 */
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--neutral-bg); color: var(--neutral-fg); }
+.chip.success { background: var(--success-bg); color: var(--success-fg); }
+.chip.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.chip.danger { background: var(--danger-bg); color: var(--danger-fg); }
+.chip.info { background: var(--info-bg); color: var(--info-fg); }
+
+/* 空狀態、提示、彈窗 */
+.empty { padding: 40px 16px; text-align: center; color: var(--text-muted); }
+.alert { padding: 10px 12px; border-radius: var(--radius); margin-bottom: var(--gap); background: var(--info-bg); color: var(--info-fg); }
+.alert.danger { background: var(--danger-bg); color: var(--danger-fg); }
+.alert.warn { background: var(--warn-bg); color: var(--warn-fg); }
+dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); padding: 20px; max-width: 480px; }
+dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* 設計說明面板（原型頂部可收合） */
+details.notes { margin: 0 0 var(--gap); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; }
+details.notes summary { cursor: pointer; font-weight: 600; }
+details.notes h3 { font-size: 13px; margin: 12px 0 4px; }
+
+@media (max-width: 720px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: auto; display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+}

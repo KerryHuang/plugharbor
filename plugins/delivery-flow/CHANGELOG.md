@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.7.0] - 2026-11-02
+
+- feat: 新增 skill `prototype-html`（`plugins/delivery-flow/skills/prototype-html/SKILL.md`）：把需求描述做成單檔、可點切換多畫面的 HTML 原型。需求有歧義時停下來用具體例子問；使用者給設計系統（URL 或檔案）就照它做，沒給就用無品牌的預設風格；資料照使用者樣本的組合，沒有樣本就用寫實組合加假識別值；不綁任何資料庫工具。
+- feat: 新增 references `plugins/delivery-flow/skills/prototype-html/references/assembly-guide.md`（組裝與自我驗證）、`plugins/delivery-flow/skills/prototype-html/references/neutral-style.css`（系統字型、CSS 變數可覆寫、亮暗色、無外部資源）、`plugins/delivery-flow/skills/prototype-html/references/mock-data.md`（仿真資料規則）。
+- feat: 新增 `plugins/delivery-flow/skills/prototype-html/references/field-layout-criteria.md`：表單欄位版面判準，保留 NN/g、Baymard、GOV.UK、WCAG 出處，去掉內部畫面代號、客戶數字與票號。
+
 ## [0.6.0] - 2026-11-02
 
 - feat: 新增 skill `operation-manual`（`plugins/delivery-flow/skills/operation-manual/SKILL.md`）：實機探索、標註截圖、撰寫、審查、出 PDF／PPTX／Word 的操作手冊流程，並把探索中發現的規格落差依類型分流。環境讀 `qa.environments`（只用 `writable: true`），登入帳密放 `.plugharbor/qa.local.md`。
