@@ -1,6 +1,9 @@
 import json, pathlib, subprocess, sys, tempfile, unittest
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:  # CI 只裝 PyYAML
+    Image = None
 
 HERE = pathlib.Path(__file__).parent
 SCRIPT = HERE / "annotate.py"
@@ -23,6 +26,7 @@ def run(tmp, base_color, ops, extra=None, paint=None):
     return r, out
 
 
+@unittest.skipIf(Image is None, "未安裝 Pillow，略過標註測試")
 class AnnotateTest(unittest.TestCase):
     def test_rect_draws_red_border_and_leaves_rest(self):
         with tempfile.TemporaryDirectory() as t:
