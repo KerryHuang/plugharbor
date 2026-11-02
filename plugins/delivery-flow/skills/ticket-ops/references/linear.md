@@ -7,7 +7,7 @@
 
 | 操作 | 工具 |
 |---|---|
-| `create` | `save_issue(team, title, description, state, labels, parentId)`；沒有 `id` 即建新票 |
+| `create` | `save_issue(team, title, description, state, labels, parentId)`；沒有 `id` 即建新票。`state` 同 `set_stage`，用先查到的狀態 ID，不用名稱 |
 | `set_stage` | `save_issue(id, state=<狀態 ID>)`；參數名是 `state`，不是 `stateId` |
 | `comment` | `save_comment(issueId, body)`；列既有留言用 `list_comments` |
 | `attach` | 三步簽名上傳，見下 |

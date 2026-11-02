@@ -33,18 +33,17 @@ GitHub 沒有穩定可用的 CLI 級 blocked-by 欄位，採慣例：
 
 ## 附圖
 
-GitHub 沒有官方的圖片上傳 API（網頁拖放走的是未公開端點，`gh` 與 REST 都不支援）。退路：
+GitHub 沒有官方的圖片上傳 API（網頁拖放走的是未公開端點，`gh` 與 REST 都不支援）。唯一做法是把圖存進 repo，用連結內嵌。連結**只有檔案 push 到預設分支後才有效**，所以步驟不可跳：
 
-```bash
-cd ${CLAUDE_SKILL_DIR}/scripts && python3 -c "import json,ticket_backend as t; print(json.dumps(t.github_attach_plan('<owner/repo>', '<圖檔路徑>', 'commit'), ensure_ascii=False))"
-```
+1. 取得計畫：`cd ${CLAUDE_SKILL_DIR}/scripts && python3 -c "import json,ticket_backend as t; print(json.dumps(t.github_attach_plan('<owner/repo>', '<圖檔路徑>'), ensure_ascii=False))"`，得 `{"method":"commit","location","markdown"}`。
+2. 把圖複製到 repo 的 `location`（`.github/ticket-assets/<檔名>`）。
+3. commit（逐檔 `git add`）。
+4. **徵得使用者確認後** push 到預設分支（會往 repo 加檔案、公開或對所有有權限者可見）。
+5. push 成功才把 `markdown` 貼進 issue 描述或留言。
 
-`github_attach_plan` 回 `{"method", "location", "markdown"}`：
+硬規則：push 沒發生或使用者拒絕時，不貼 markdown（會是壞圖），回報「圖仍在本機 <path>，未附」。不得在 push 成功以外的情況回報「已附圖」；回報要寫明圖的實際位置與連結是否有效。
 
-- `commit`（預設）：圖存進 repo 的 `.github/ticket-assets/<檔名>`，`markdown` 是指向該檔的圖片連結。要先把檔案 commit 並 push 到預設分支，連結才有效；commit 前先跟使用者確認，因為會往 repo 加檔案。
-- `gist`：`gh gist create <檔案>`，把回傳的 raw URL 替換 `markdown` 裡的佔位字串 `gist:<檔名>`。
-
-限制：私有 repo 的連結只有登入且有權限的人看得到圖；兩種做法都會留下公開或 repo 內的檔案，敏感截圖不要用 gist（預設為 secret gist，知道網址的人仍可看）。把 `markdown` 放進 issue 描述或留言。
+限制：私有 repo 的連結只有登入且有權限的人看得到圖。
 
 ## 其他落差
 

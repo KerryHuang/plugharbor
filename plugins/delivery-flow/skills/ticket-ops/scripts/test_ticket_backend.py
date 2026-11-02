@@ -64,20 +64,17 @@ class AttachPlan(unittest.TestCase):
     def test_commit_plan_location_in_markdown(self):
         p = tb.github_attach_plan("example-org/example-repo", "/tmp/shot one.png")
         self.assertEqual(p["method"], "commit")
-        self.assertTrue(p["location"])
-        self.assertIn(p["location"], p["markdown"])
+        self.assertEqual(p["location"], ".github/ticket-assets/shot-one.png")
         self.assertIn("example-org/example-repo", p["markdown"])
-        self.assertNotIn(" ", p["location"])
+        self.assertNotIn(" ", p["markdown"])
 
-    def test_gist_fallback_reports_location(self):
-        p = tb.github_attach_plan("example-org/example-repo", "/tmp/a.png", method="gist")
-        self.assertEqual(p["method"], "gist")
-        self.assertTrue(p["location"])
-        self.assertIn(p["location"], p["markdown"])
-
-    def test_bad_method(self):
-        with self.assertRaises(ValueError):
-            tb.github_attach_plan("o/r", "a.png", method="ftp")
+    def test_special_filename_is_url_encoded(self):
+        p = tb.github_attach_plan("o/r", "/tmp/截圖 (1)#a.png")
+        url = p["markdown"].split("](", 1)[1].rstrip(")")
+        self.assertIn("%E6%88%AA%E5%9C%96-%281%29%23a.png", url)
+        self.assertTrue(url.endswith("?raw=true"))
+        self.assertNotIn("#", url)
+        self.assertNotIn("(", url)
 
 
 class Cli(unittest.TestCase):

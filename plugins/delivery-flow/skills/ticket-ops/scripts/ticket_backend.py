@@ -7,6 +7,7 @@
 import json
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 from config import ConfigMissing, load_config, require  # noqa: E402
@@ -40,18 +41,13 @@ def stage_to_native(cfg: dict, stage: str) -> dict:
     raise ValueError(f"不支援的 ticket.tool：{tool}（linear、github；jira 僅有設定範例）")
 
 
-def github_attach_plan(repo: str, image_path: str, method: str = "commit") -> dict:
-    """GitHub 沒有官方圖片上傳 API：把圖存進 repo（預設）或 gist，再以 markdown 連結內嵌。"""
+def github_attach_plan(repo: str, image_path: str) -> dict:
+    """GitHub 沒有官方圖片上傳 API：圖存進 repo 的 ASSET_DIR，以 markdown 連結內嵌。
+    連結只有在檔案 push 到預設分支後才有效。"""
     name = Path(image_path).name.replace(" ", "-")
-    if method == "commit":
-        location = f"{ASSET_DIR}/{name}"
-        url = f"https://github.com/{repo}/blob/HEAD/{location}?raw=true"
-        return {"method": method, "location": location, "markdown": f"![{name}]({url})"}
-    if method == "gist":
-        location = f"gist:{name}"
-        # gist 建好後才有 raw URL，先留佔位字串
-        return {"method": method, "location": location, "markdown": f"![{name}]({location})"}
-    raise ValueError(f"未知附圖方式 {method!r}，合法值：commit、gist")
+    location = f"{ASSET_DIR}/{name}"
+    url = f"https://github.com/{repo}/blob/HEAD/{quote(location)}?raw=true"
+    return {"method": "commit", "location": location, "markdown": f"![{name}]({url})"}
 
 
 def main(argv):

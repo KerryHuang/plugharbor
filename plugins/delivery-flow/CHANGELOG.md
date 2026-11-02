@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.1] - 2026-11-02
+
+- fix: `ticket-ops` 移除 gist 附圖路線（`gh gist create` 不收二進位檔，佔位流程可能漏出壞連結），`github_attach_plan(repo, image_path)` 只保留存進 repo 的做法。
+- fix: `attach` 契約改為必須回報圖實際位置與連結是否有效；GitHub 須 push 到預設分支（經使用者確認）才貼連結，否則回報「圖仍在本機 <path>，未附」。
+- fix: 附圖連結的檔名做 URL 編碼；`plugins/delivery-flow/skills/ticket-ops/references/linear.md` 說明 `create` 的 `state` 與 `set_stage` 一樣用 ID。
+
 ## [0.3.0] - 2026-11-02
 
 - feat: 新增 skill `ticket-ops`（票務工具層）：定義建票、改階段、留言、附圖、查詢、blocked-by 六個操作契約，依 `ticket.tool` 載入 Linear 或 GitHub Issues 做法；Jira 只有設定對照範例（未實測），叫用時需使用者確認才繼續。

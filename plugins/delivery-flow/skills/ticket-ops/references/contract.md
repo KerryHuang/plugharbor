@@ -22,7 +22,7 @@ GitHub 慣例：階段用 label `stage:<名稱>` 表示（`ticket.states` 填 `s
 | `create` | `title`、`body`、`parent?`、`labels?`、`stage?` | 票 ID、URL | `parent` 為父票 ID；`stage` 預設 `backlog` |
 | `set_stage` | `id`、`stage` | 新階段 | 先轉原生值再套用；規則見各 backend |
 | `comment` | `id`、`body` | 留言 ID／URL | 冪等標記（首行固定字串）由叫用端放進 `body` |
-| `attach` | `id`、`image_path`、`caption` | 內嵌用 markdown | 上傳後把圖內嵌進描述或留言 |
+| `attach` | `id`、`image_path`、`caption` | 內嵌用 markdown | 上傳後把圖內嵌進描述或留言。**回報必須寫明圖實際在哪、連結是否有效**；沒真正附上就明說，不得回報「已附圖」（GitHub：push 前連結是壞的，見 `github.md`，未 push 回報「圖仍在本機 <path>，未附」） |
 | `query` | `filter`（階段、label、parent、更新時間、關鍵字） | 票清單（ID、標題、階段、labels、parent、updatedAt） | 結果大時落檔，回傳路徑 |
 | `link_blocked_by` | `id`、`blocker_id` | 是否成功、降級說明 | 見各 backend 的通知語意差異 |
 
@@ -33,5 +33,5 @@ GitHub 慣例：階段用 label `stage:<名稱>` 表示（`ticket.states` 填 `s
 | 階段 | team 自訂 state（先查 ID） | `stage:*` label＋open／closed |
 | 父子票 | `parentId`，子票進度自動 rollup | 內文 task list（`- [ ] #n`）；rollup 弱 |
 | blocked-by | 原生 `blockedBy`，blocker 完成時推通知 | 內文 `blocked-by: #n` 慣例，無通知 |
-| 附圖 | 三步簽名上傳 | 無官方 API，圖存 repo 或 gist 再貼連結 |
+| 附圖 | 三步簽名上傳 | 無官方 API，圖存 repo、push 後再貼連結 |
 | priority／estimate／dueDate | 原生欄位 | 無，需要時用 label |
