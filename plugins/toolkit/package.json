@@ -1,7 +1,9 @@
 {
   "name": "toolkit",
-  "version": "0.1.0",
+  "private": true,
+  "description": "toolkit plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
   "license": "MIT",
+  "keywords": ["pi-package", "toolkit"],
   "pi": {
     "skills": ["./skills"]
   }

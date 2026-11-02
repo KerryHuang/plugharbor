@@ -3,6 +3,8 @@
 
 「動過」＝session（含其 subagent）任一工具呼叫的參數裡出現該單位目錄字串（如 `docs/demo/report`）。
 單位目錄由 `--units-glob` 決定（預設 `docs/*/*`，每個 `*` 代表一層目錄名）。
+樣式尾端的 `/` 會自動去掉；比對時要求單位目錄之後接 `/`，所以只認落在單位目錄**之內**的路徑（`docs/demo/report/x.md`），
+只出現目錄本身（`docs/demo/report`，後面沒有 `/`）的呼叫不算動過。
 輪數只算使用者親手送出的訊息：不含工具結果、背景任務通知、isMeta 注入。
 token＝input＋cache 建立＋cache 讀取＋output，同一 message.id 的串流重複列只算一次，subagent 併入母 session。
 同一 session 還動過別的單位 → 標「多單位」，並依「工具呼叫碰到各單位的次數」按比例分攤輪數與 token

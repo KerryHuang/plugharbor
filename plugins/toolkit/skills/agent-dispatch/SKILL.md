@@ -45,6 +45,7 @@ argument-hint: "[對象] <任務>"
    - `herdr agent list` 數活著的 worker；已有 3 個以上，用 AskUserQuestion 問使用者要照派、排隊，還是改派 subagent。
    - herdr 沒裝、或升級後指令回 `protocol_mismatch`：見 reference「安裝與升級」。
    - herdr 指令不加 `2>/dev/null`，錯誤全在 stderr。
+   - 在 herdr pane 裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*` 環境變數，否則會蓋掉真正主 session 的回報。
    - **不要在 Claude Code 內啟 herdr server**：`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。
    - 對象是 claude 時，cwd 必須是 Claude Code 開過、通過信任對話框的目錄，否則 worker 卡在對話框沒人能答。檢查腳本見 reference；不通過就請使用者先在該目錄開一次 Claude Code。
 1. 在專案的暫存區開一個工作目錄，把 prompt 寫成檔案。prompt 必須寫明：
@@ -86,7 +87,7 @@ argument-hint: "[對象] <任務>"
    | `protocol_mismatch` | 不重派，worker 多半還活著；請使用者在 worker 都 idle 時重啟 server（reference「安裝與升級」） |
 
    claude worker 回到 idle、結果還沒到、context 已超過 250K：由你發動中途交接（寫交接檔 → `/clear` → 接續），步驟與 prompt 見 reference。正在 working 或 blocked 時不插話。
-5. 收工：讀完結果檔，`herdr pane close <pane_id>`，再跑一次 `herdr_layout.py --main "$HERDR_PANE_ID"` 重排。只關自己在第 2 步開的 pane，不用「清單上沒別人」推論安全，也不要 `herdr workspace close`（會連使用者與你一起關）。在 herdr pane 裡跑的拋棄式 `claude -p` 要先濾掉 `HERDR_*` 環境變數，否則會蓋掉真正主 session 的回報。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
+5. 收工：讀完結果檔，`herdr pane close <pane_id>`，再跑一次 `herdr_layout.py --main "$HERDR_PANE_ID"` 重排。只關自己在第 2 步開的 pane，不用「清單上沒別人」推論安全，也不要 `herdr workspace close`（會連使用者與你一起關）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
 
 ## 參考
 

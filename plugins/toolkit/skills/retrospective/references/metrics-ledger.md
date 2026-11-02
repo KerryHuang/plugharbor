@@ -18,7 +18,7 @@ metrics:
     layer: demo-plugin            # 被改的 plugin 或層級
     metric: 審查回合數
     criterion: 下 5 個工作單位的審查退回次數平均 ≤ 1
-    due: {new_chains: 5, since: "2026-01-05"}
+    due: {new_chains: 5, since: "2026-01-05", units_glob: "docs/*/*"}
     if_not: 回退審查閘門，改查退回原因
     status: open
     checks:

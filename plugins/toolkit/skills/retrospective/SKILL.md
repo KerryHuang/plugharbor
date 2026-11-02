@@ -46,7 +46,7 @@ retrospective:
 閉環原則見 improvement-loop.md 第 1 節。
 
 1. 讀 `{retrospective.path}/metrics.yml`（格式見 [references/metrics-ledger.md](references/metrics-ledger.md)）所有 `status: open` 的待驗指標。檔案不存在＝首次回顧，直接進 Step 1。
-2. 逐條看 `due` 是否到期：`date` 比今天；`new_chains` 用 `units_glob` 數 `since` 之後新增的工作單位（以目錄在 git 的首次 commit 日期計）。
+2. 逐條看 `due` 是否到期：`date` 比今天；`new_chains` 用該條 `due` 裡記的 `units_glob`（沒記才用設定值）數 `since` 之後新增的工作單位（以目錄在 git 的首次 commit 日期計）。
    **未到期不判定**，只追加一筆 `verdict: not-due` 並寫目前進度。
 3. **到期的逐條判定**：生效／未生效／有副作用，**每條附本次的具體證據**，不寫「應該有效」；
    判定追加到該條 `checks`、改 `status`，舊的 check 不改。
