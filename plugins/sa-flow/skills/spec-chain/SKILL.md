@@ -16,7 +16,7 @@ herdr 通用操作一律依 `toolkit:agent-dispatch`（長任務模式）；機�
 
 任務清單：判現況、定路由、派工、盯狀態、驗收、回報。
 
-- `test "${HERDR_ENV:-}" = 1` 不成立 → 停下告訴使用者，改照 handoff-protocol.md 單 session 接棒（不套 agent-dispatch「留在本 session 做」的退路，PM 不實作）。
+- 沒裝 toolkit（無 `toolkit:agent-dispatch`），或 `test "${HERDR_ENV:-}" = 1` 不成立 → 停下告訴使用者，改照 handoff-protocol.md 單 session 接棒（不套 agent-dispatch「留在本 session 做」的退路，PM 不實作）。
 - 成立再 `herdr status`：exit 127 → 停下請使用者依 `toolkit:agent-dispatch` 的 herdr-long-task.md「安裝與升級」安裝，或改單 session 跑，不自己繞；`server_not_running` → 依同檔起 server（不要在 Claude Code 內起）。
 - 🔴 接著跑 `scripts/pm_resume.py` 對帳 `{功能目錄}/analysis/_pm-run.json`，不憑記憶重建進度（PM 會被壓縮、中斷）。檔案不存在 = 第一輪。指令見 worker-protocol.md「執行狀態與續跑」。
 

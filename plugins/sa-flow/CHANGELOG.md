@@ -3,6 +3,12 @@
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [4.1.0] - 2026-11-02
+
+- feat: 不再依賴其他 plugin，單獨安裝即可使用：`plugins/sa-flow/.claude-plugin/plugin.json` 移除 `dependencies`；`plugins/sa-flow/references/shared-preludes.md`「跨 plugin 缺件」改為「可選依賴」對照表（qa-verify、report-writer、interview-prep、ticket-daily-report、browser-surveyor、live-drive、pdf-converter、agent-dispatch、retrospective 沒裝時各自的降級做法）。
+- feat: 呼叫點補退路——`plugins/sa-flow/skills/qa-sweep/SKILL.md`（沒裝 delivery-flow 只跑類別 2）、`plugins/sa-flow/skills/dev-readiness/SKILL.md` 與 `plugins/sa-flow/skills/verifying-specs/SKILL.md`（主 session 自己寫報告）、`plugins/sa-flow/skills/requirement/SKILL.md`／`plugins/sa-flow/skills/system-analysis/SKILL.md`／`plugins/sa-flow/skills/specify-frontend/SKILL.md`（跳過畫面勘察）、`plugins/sa-flow/skills/spec-chain/SKILL.md` 與 `plugins/sa-flow/references/advisor-discussion.md`（沒裝 toolkit 同不在 herdr）。
+- docs: `plugins/sa-flow/README.md` 前置需求表與「可選搭配的 plugin」改寫。
+
 ## [4.0.2] - 2026-11-02
 
 - fix: `plugins/sa-flow/skills/spec-chain/scripts/pm_resume.py` 讀 `herdr agent list` 時指定 `encoding="utf-8"`；Windows 預設 cp950，agent 名稱含中文或 emoji 時對帳崩潰（對應 sdlc 2.95.1）。

@@ -99,7 +99,7 @@ FFS 須含「功能代碼綁定」段落：route ↔ 代碼對應、綁定方式
 依 `${CLAUDE_PLUGIN_ROOT}/references/ui-analysis-guide.md`「前置條件與偵測」：
 
 - **`analysis/ui-survey.md` 已涵蓋且未過期** → 直接讀用作為 §2 欄位表的取材來源，**不重問 URL、不重跑勘察**
-- **未涵蓋** → `AskUserQuestion`（`提供系統 URL 做現有畫面分析（推薦）` / `跳過，依 FRD/BFS 推導`）；選提供 → 派 `browser-docs:browser-surveyor` 勘察（派工樣板見 `references/browser-survey-dispatch.md`），它落檔 `analysis/ui-survey.md` 後作為 §2 輸入
+- **未涵蓋** → `AskUserQuestion`（`提供系統 URL 做現有畫面分析（推薦）` / `跳過，依 FRD/BFS 推導`）；選提供 → 派 `browser-docs:browser-surveyor` 勘察（沒裝 browser-docs 就不問 URL，直接標「未取得畫面證據」依 FRD/BFS 推導）（派工樣板見 `references/browser-survey-dispatch.md`），它落檔 `analysis/ui-survey.md` 後作為 §2 輸入
 - **勘察失敗**（agent 回報連不上）→ 請使用者照 `browser-docs:live-drive` 的 browser-doctor 起手檢查印出的標準寫法改註冊後重啟 session；不阻斷本 skill——標記「未取得畫面證據」續行，§2 改依 FRD/BFS 推導並在該節註明
 
 > **主 session 不開瀏覽器。** DOM snapshot 與截圖對「寫 FFS」毫無用處卻會擠爆 context——你要的是 `ui-survey.md` 裡的欄位表。**不要 Read 截圖進 context**。

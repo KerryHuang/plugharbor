@@ -15,15 +15,15 @@ claude plugin install sa-flow
 claude plugin install superpowers
 ```
 
-## 依賴的 plugin
+## 可選搭配的 plugin
 
-4.0.0 起，通用工具已抽到其他 plugin，裝 sa-flow 需一併安裝：
+sa-flow 單獨安裝就能用。下列 plugin 有裝會多出對應功能，沒裝時各步驟降級（對照表見 `references/shared-preludes.md`「可選依賴」）：
 
-- `delivery-flow`：`qa-verify`、`report-writer`、`interview-prep`、`ticket-daily-report` 等
-- `browser-docs`：`browser-surveyor`、`live-drive`、`pdf-converter`、`annotate-screenshot`
-- `toolkit`：`agent-dispatch`（herdr 派工）、`retrospective`
+- `delivery-flow`：`qa-verify`（qa-sweep 類別 3／4、完工驗收）、`report-writer`（就緒度與驗證報告；沒裝由主 session 自己寫）、`interview-prep`、`ticket-daily-report`
+- `browser-docs`：`browser-surveyor`、`live-drive`（畫面勘察；沒裝就跳過）、`pdf-converter`
+- `toolkit`：`agent-dispatch`（herdr 派工；沒裝改單 session 或 subagent）、`retrospective`
 
-`plugin.json` 的 `dependencies` 欄位宣告這三個名稱（Claude Code 會一併安裝）；Codex 與 pi 沒有對應欄位，需自行安裝，`setup/install.sh` 會裝全部 plugin。
+`setup/install.sh` 預設裝全部 plugin。
 
 ## 專案設定
 
@@ -47,12 +47,13 @@ sdlc-spec-rules-since: 2026-10-01
 
 設定鍵沿用 `sdlc-` 前綴：外掛 2.2.0 由 `sdlc` 改名為 `sa-flow` 時刻意不改鍵名，既有專案的 `CLAUDE.md` 不用跟著改。
 
-票務與驗收環境由 `delivery-flow` 的設定檔 `.plugharbor/delivery-flow.yml` 管：`qa-sweep` 類別 3（票面模式）與 `delivery-flow:qa-verify` 需要 `ticket.tool`（`linear`／`github`）、`ticket.team` 或 `ticket.repo`、`ticket.states`，以及 `qa.environments`（可驗收環境與 `writable`）。缺鍵時 skill 會停下來問你並代寫；鍵的說明見 `plugins/delivery-flow/references/config.md`。
+有裝 delivery-flow 時，票務與驗收環境由它的設定檔 `.plugharbor/delivery-flow.yml` 管（沒裝則 qa-sweep 只跑類別 2）：`qa-sweep` 類別 3（票面模式）與 `delivery-flow:qa-verify` 需要 `ticket.tool`（`linear`／`github`）、`ticket.team` 或 `ticket.repo`、`ticket.states`，以及 `qa.environments`（可驗收環境與 `writable`）。缺鍵時 skill 會停下來問你並代寫；鍵的說明見 `plugins/delivery-flow/references/config.md`。
 
 ## 前置需求
 
 | 需要 | 用在哪 | 沒有時 |
 |---|---|---|
+| `delivery-flow`、`browser-docs`、`toolkit`（plugharbor 其他 plugin，皆可選） | qa-verify 驗收、report-writer 產報告、畫面勘察、PDF 轉檔、herdr 派工 | 各功能降級，對照見 `references/shared-preludes.md`「可選依賴」 |
 | Python 3（`python3` 或 `python`） | verifying-specs、spec-chain 等 skill 附的腳本 | 用到腳本的步驟會失敗 |
 | [herdr](https://herdr.dev)（終端 agent 多工器） | `spec-chain`、顧問討論的 pane 模式（經 `toolkit:agent-dispatch`） | `spec-chain` 改成單 session 逐棒接手（見 `references/handoff-protocol.md`）；顧問討論改用 subagent 模式 |
 | Linear MCP | `linear-*`、`qa-sweep`、各規格 skill 的開票與回票 | 開票、回票步驟跳過 |

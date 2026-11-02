@@ -77,7 +77,7 @@ agent 定義原本寫「回到 live 畫面重做，不要在 PNG 上疊圖」。
 繞過是對的——rect 既已前置採集進 inventory，回 live 重現狀態
 只剩成本沒有收益。**但因為沒人承認這條路，也就沒人替它配工具**，
 於是撞上色彩管理位移：CSS 指定 `#3467A9`、截圖出來是 `(65,102,164)`，
-遮罩跟底色差一截，重做約 20 分鐘。而 `browser-docs:annotate-screenshot`
+遮罩跟底色差一截，重做約 20 分鐘。而 `${CLAUDE_PLUGIN_ROOT}/scripts/annotate.py`
 早有參數化的 PIL 標註器——**手冊流程重新發明了它**。
 
 > **規範跟實務背離時，先問為什麼被繞過，不要加強制。**
@@ -85,7 +85,7 @@ agent 定義原本寫「回到 live 畫面重做，不要在 PNG 上疊圖」。
 ## 遮罩與紅框相交（僅在走備案遮罩時）
 
 > **預設不遮罩**——敏感值在 S2a 截圖前就換成假資料了（見
-> `browser-docs:annotate-screenshot` 的「前置：個資」）。
+> `${CLAUDE_PLUGIN_ROOT}/references/anonymize-before-capture.md`）。
 > 遮罩只用於 JS 改不到的 canvas／SVG 文字與圖片型內容。本節講的是那些情況。
 
 同一張圖既要遮罩又要標註時，**先算兩組矩形有沒有相交**，再動手。

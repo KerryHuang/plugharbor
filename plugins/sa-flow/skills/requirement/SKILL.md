@@ -83,7 +83,7 @@ $ARGUMENTS → [--change] {需求描述}
 |---|---|---|---|---|
 | **A** | `sa-flow:scout` | 既有規格書／Entity／Controller／Handler＋舊系統業務規則 | `analysis/background-scan.yml` | 一律 |
 | **B** | `sa-flow:scout`（DB 結構模式） | 資料表結構 | `analysis/db-analysis.yml` | 需求涉及既有資料表，且有唯讀 DB 查詢工具 |
-| **C** | `browser-docs:browser-surveyor` | 現有畫面與操作動線 | `analysis/ui-survey.md` | 需求涉及既有功能，使用者提供 URL，且有瀏覽器工具 |
+| **C** | `browser-docs:browser-surveyor` | 現有畫面與操作動線 | `analysis/ui-survey.md` | 需求涉及既有功能，使用者提供 URL，有瀏覽器工具，且已裝 browser-docs（沒裝就跳過，標「未取得畫面證據」） |
 
 **完整派工 prompt、觸發判準、失敗處置** → `references/background-dispatch.md`
 （派工前讀該檔，`{功能目錄}` 一律展開成絕對路徑）。C 路啟動前先確認 `ui-survey.md` 是否已涵蓋——

@@ -140,7 +140,7 @@ R6 文件資訊版本≠CHANGELOG 最高版本——**每筆 CRITICAL，原樣�
 
 **先判讀再派工**：五個維度回來的是缺失清單，**「整體可否開發」的結論只有主 session 判得出來**
 （agent 被明令不得下此結論）。判定結論、複核量化斷言、決定每條缺失的等級之後，
-再派 `delivery-flow:report-writer` 產出報告檔。
+再派 `delivery-flow:report-writer` 產出報告檔（沒裝 delivery-flow 就由主 session 依同一 template 自己寫（沒裝的退路見 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md`「可選依賴」））。
 
 ```
 subagent_type: "delivery-flow:report-writer"

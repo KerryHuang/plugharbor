@@ -13,10 +13,8 @@ claude plugin install delivery-flow@plugharbor
 
 ## 依賴
 
-需要 `browser-docs`（實機驅動、截圖標註、PDF 轉檔）。
-
-- **Claude Code**：`plugin.json` 宣告 `dependencies: ["browser-docs"]`，安裝與更新時自動補裝並啟用。
-- **Codex、pi**：沒有依賴機制，需一併安裝 `browser-docs`。`setup/install.sh` 預設安裝全部 plugin，會一起裝好。
+不依賴其他 plugin，單獨安裝即可使用。截圖標註器（`scripts/annotate.py`）與截圖前換假資料（`references/anonymize-before-capture.md`、`scripts/anonymize-page.js`）與 browser-docs 各放一份，`scripts/test_harness_terms_sync.py` 驗兩份逐位元相同。
+有裝 browser-docs 時，文件中「參考 browser-docs:live-drive」的環境說明可多一層參考，沒裝不影響流程。
 
 ## 設定
 
@@ -41,7 +39,7 @@ python3 scripts/config.py get ticket.tool   # 退出碼 2，stderr 一行建檔�
 | skill | `operation-manual` | 操作手冊與教育訓練簡報：實機探索、標註截圖、撰寫、審查，產 PDF／PPTX／Word；規格落差依類型分流。封面品牌讀 `--brand` 或設定 `manual-brand`，都沒有就不印；第一次使用先跑 `scripts/ensure-tools.sh` |
 | skill | `prototype-html` | 需求描述產出單檔、可點切換多畫面的 HTML 原型；可套用使用者的設計系統（URL 或檔案），沒給就用無品牌的 `neutral-style.css`；資料用寫實組合加假識別值；需求有歧義時先用具體例子問 |
 | skill | `issue-triage` | 回饋逐項對照現況 codebase，分類 Bug／Enhancement／Feature 並標既有票，產出可開票的問題清單 |
-| agent | `manual-explorer` | 用瀏覽器逐畫面記錄可操作元素與預設值到 inventory 並截乾淨圖；第二模式叫用 `browser-docs:annotate-screenshot` 加紅框；不寫手冊 |
+| agent | `manual-explorer` | 用瀏覽器逐畫面記錄可操作元素與預設值到 inventory 並截乾淨圖；第二模式用 `scripts/annotate.py` 加紅框；不寫手冊 |
 | agent | `manual-writer` | 讀 inventory 與截圖清單，依範本產手冊 markdown 與 Marp 簡報；不開瀏覽器 |
 | agent | `manual-reviewer` | 操作手冊交付前七項審查（圖文比、內部資訊、個資、圖片完整、與 inventory 一致、模式純度、整批一致）；唯讀 |
 | agent | `qa-planner` | 讀驗收案例或票面，開畫面對欄位，產可執行的 plan；不執行、不判定 |

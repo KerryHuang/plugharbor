@@ -2,7 +2,7 @@
 """marketplace 內容驗證：CI 與 pre-commit 共用。只用標準函式庫。
 
 檢查項目：
-  1. 版號一致：plugin.json ＝ marketplace.json ＝ 根 README 版本欄 ＝ CHANGELOG 最新條目
+  1. 版號一致：plugin.json ＝ marketplace.json ＝ 根 README 版本欄 ＝ CHANGELOG 最新條目；plugin 不得宣告 dependencies
   2. frontmatter：skill／agent 必有 name、description；description 不得用 `|` 區塊
   3. 交互引用：references／templates／scripts／agents 路徑與 `<plugin>:<skill>` 指向實際存在
   4. README 清單：根 README「skills 與 agents」表與實際目錄一致
@@ -72,7 +72,10 @@ def check_versions(market: dict, readme: str) -> None:
         if not pj.exists():
             err(".claude-plugin/marketplace.json", f"{name} 的 source 找不到 plugin.json")
             continue
-        pver = json.loads(pj.read_text(encoding="utf-8")).get("version")
+        pdata = json.loads(pj.read_text(encoding="utf-8"))
+        pver = pdata.get("version")
+        if pdata.get("dependencies") or entry.get("dependencies"):
+            err(pj, "不得宣告 dependencies：每個 plugin 要能單獨安裝使用，跨 plugin 叫用改成可選並寫退路")
         if pver != ver:
             err(pj, f"version {pver} ≠ marketplace.json 的 {ver}")
         row = re.search(rf"^\|\s*\[{re.escape(name)}\]\([^)]*\)\s*\|\s*([^|]+?)\s*\|", readme, re.M)

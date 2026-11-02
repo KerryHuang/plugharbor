@@ -1,10 +1,9 @@
 {
   "name": "sa-flow",
   "description": "SDLC 上游規格鏈 — 需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析。",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "author": {
     "name": "KerryHuang"
   },
-  "license": "MIT",
-  "dependencies": ["delivery-flow", "browser-docs", "toolkit"]
+  "license": "MIT"
 }

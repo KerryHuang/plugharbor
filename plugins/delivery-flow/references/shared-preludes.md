@@ -42,8 +42,8 @@
 ## Step 0.5: 落檔位置
 產出放專案既有的目錄慣例；會議記錄的位置看 `publish-target`（見 `config.md`）。**不自建第一階目錄**，都不適用就問使用者。
 
-## 跨 plugin 缺件
-叫用 `browser-docs:*` 失敗（找不到 skill）→ 告知使用者安裝 `browser-docs@plugharbor`，不改用近似做法。Claude Code 會依 `dependencies` 自動補裝；Codex、pi 沒有依賴機制，要手動裝。
+## 跨 plugin
+本 plugin 不依賴其他 plugin。文件中提到 `browser-docs:*` 的地方都是「有裝才參考」，沒裝照本 plugin 的步驟做即可；標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。
 
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

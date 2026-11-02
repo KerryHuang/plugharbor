@@ -23,7 +23,7 @@ OUTDIR=$(cd "$2" && pwd)
 NAME=$(basename "${SRC%.md}")
 BASE="$OUTDIR/$NAME"
 
-# Chrome：CHROME_PATH 優先，其次常見安裝位置（偵測細節見 browser-docs:live-drive）
+# Chrome：CHROME_PATH 優先，其次常見安裝位置（有裝 browser-docs 的話，偵測細節見 browser-docs:live-drive）
 if [ -z "$CHROME_PATH" ] || [ ! -e "$CHROME_PATH" ]; then
   CHROME_PATH=""
   for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \

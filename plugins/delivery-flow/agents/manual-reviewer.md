@@ -59,7 +59,7 @@ grep -nE "需求文件|功能規格書|[A-Z]{2,}-[0-9]+|[a-z_]+\.[a-z_]+_(no|id|
 ⚠ **不採信探索者的宣稱。** 它說「全部確認過」只代表它驗了自己知道要驗的東西——
 曾有探索者確實逐張看了人名，卻整批漏掉導覽列的租戶名稱。
 
-**現行做法是截圖前用 JS 換假資料，不是事後遮罩**（流程見 `browser-docs:annotate-screenshot` 的「前置：個資」，
+**現行做法是截圖前用 JS 換假資料，不是事後遮罩**（流程見 `${CLAUDE_PLUGIN_ROOT}/references/anonymize-before-capture.md`，
 撰寫規範見 `${CLAUDE_PLUGIN_ROOT}/skills/operation-manual/references/manual-style-guide.md`）。所以你要查的是：
 
 | 查什麼 | 不過的樣子 |

@@ -46,7 +46,7 @@ subagent 模式把 `pane_id`／`session` 換成 `agent_id`。
 
 ## pane 模式（預設）
 
-前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`HERDR_ENV=1`、cwd 檢查）；不成立 → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
+前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`HERDR_ENV=1`、cwd 檢查）；沒裝 toolkit 或不成立 → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
 
 開 pane 與起顧問：
 

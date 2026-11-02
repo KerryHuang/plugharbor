@@ -8,6 +8,7 @@ description: 批次撈 Linear 指派給我的待測票，交 delivery-flow:qa-ve
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 編排者：撈票、分類、測、寫回 Linear。**測試本身交 `delivery-flow:qa-verify`**（UI；規格模式先依 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把 FFS §8 轉成驗收案例檔）或 `references/backend-verify.md`（純後端），本 skill 不判定 TC。
+沒裝 delivery-flow：類別 3／4 記「待人工：未安裝 delivery-flow」，只跑類別 2（沒裝的退路見 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md`「可選依賴」）。
 `<ws>`＝workspace 根字面絕對路徑；工作區 `<ws>/.tmp/<YYYYMMDD>-qa-sweep/`，`sweep.yml` 記每張票的類別與結果。
 
 ```

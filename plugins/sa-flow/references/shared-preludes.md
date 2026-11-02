@@ -50,10 +50,20 @@
 唯一定義在 `consultant-desk.md`。
 
 ## PDF 轉檔通則
-一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄。
+一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄；沒裝見下節「可選依賴」。
 
-## 跨 plugin 缺件
-叫用 `delivery-flow:*`、`browser-docs:*`、`toolkit:*` 失敗（找不到 skill）→ 告知使用者安裝對應的 `<plugin>@plugharbor`，不改用近似做法。Claude Code 會依 `dependencies` 自動補裝；Codex、pi 沒有依賴機制，要手動裝。
+## 可選依賴
+sa-flow 單獨安裝就能用；`delivery-flow`、`browser-docs`、`toolkit` 都是可選。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有，派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
+
+| 用到 | 哪裡 | 沒裝時 |
+|---|---|---|
+| `delivery-flow:qa-verify` | qa-sweep 類別 3／4、規格鏈完工驗收 | qa-sweep 這兩類記「待人工：未安裝 delivery-flow」，類別 2（純後端）照跑；FFS §8 仍可轉成案例檔交使用者手動驗 |
+| `delivery-flow:report-writer` | dev-readiness、verifying-specs 產報告 | 主 session 依同一份 template 與彙整檔自己寫報告 |
+| `delivery-flow:interview-prep`、`ticket-daily-report` | explore 的前置建議、開關票查詢 | 不建議、不查，照原流程 |
+| `browser-docs:browser-surveyor`、`live-drive` | requirement／system-analysis／specify-frontend 的 C 路畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依 FRD／BFS 推導 |
+| `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
+| `toolkit:agent-dispatch` | spec-chain、顧問討論的 herdr pane 模式 | 同「不在 herdr」：spec-chain 改單 session 逐棒接手（handoff-protocol.md），顧問討論改 subagent 模式 |
+| `toolkit:retrospective` | dev-feedback、預算放行的轉交 | 列在本 skill 報告的建議裡，不轉交 |
 
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

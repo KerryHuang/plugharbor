@@ -1,7 +1,7 @@
 ---
 name: manual-explorer
 description: 操作手冊探索：用瀏覽器逐畫面記錄可操作元素／預設值／驗證訊息到 inventory.yml 並截乾淨圖；第二模式回頭加紅框重拍。不寫手冊。由 operation-manual 派發，不主動觸發。
-tools: Read, Write, Bash, Skill, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__type_text, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_console_messages
+tools: Read, Write, Bash, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__type_text, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_console_messages
 model: sonnet
 maxTurns: 300
 color: cyan
@@ -204,10 +204,9 @@ color: cyan
 
 **預設在 clean PNG 上用 PIL 疊，不要回 live 重做。**
 
-用 `Skill` 工具叫用 `browser-docs:annotate-screenshot`，把 clean 截圖路徑、標註意圖與座標交給它
-（`${CLAUDE_PLUGIN_ROOT}` 到不了其他 plugin 的檔案，所以不要自己去找 annotate.py 或 spec 文件）。
+寫 spec.json（放 scratchpad）後執行 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/annotate.py" <spec.json>`（需 Pillow）。
 座標用 spec 的 `box: [x0, y0, x1, y1]`（影像 px，與 inventory 的 `rect` 同格式，DPR 2 先乘 2）；
-`mask`／`rect`／`label`／`badge` 等 op 的格式由該 skill 說明。
+`mask`／`rect`／`label`／`badge` 等 op 的格式、色彩慣例見 `${CLAUDE_PLUGIN_ROOT}/references/annotate-spec.md`。
 
 座標的合法來源只有兩個：**inventory `可標註元素` 裡探索時記下的 `rect`**，
 或當下 live DOM 的矩形。目視估位置、用等距推算列高，一律不接受。
@@ -234,7 +233,7 @@ CSS 指定 #3467A9  →  截圖出來的像素是 (65,102,164)
 ```
 
 採樣色號是對的，輸出卻不對，遮罩跟底色差一截，一眼看得出被塗過。
-`browser-docs:annotate-screenshot` 的 `mask` op 直接改像素，並自動取樣框四周底色，沒有這個問題。
+`annotate.py` 的 `mask` op 直接改像素，並自動取樣框四周底色，沒有這個問題。
 
 **驗收看輸出像素，不看輸入色號**：遮罩框內取一點、框外取一點，兩者 RGB 必須相等。
 
@@ -299,8 +298,7 @@ CSS 指定 #3467A9  →  截圖出來的像素是 (65,102,164)
 設備代號與名稱、單據編號、型號、品項名稱、流程說明、群組名稱、功能代碼（畫面標示的程式代碼）
 **一律不換**——它們不是個資，換掉手冊就失真。
 
-做法與工具由 `browser-docs:annotate-screenshot` 的「前置：個資」說明（它指向 anonymize-before-capture.md 與
-anonymize-page.js，叫用該 skill 即可取得）。四個關鍵：
+做法與工具見 `${CLAUDE_PLUGIN_ROOT}/references/anonymize-before-capture.md`（工具 `${CLAUDE_PLUGIN_ROOT}/scripts/anonymize-page.js`）。四個關鍵：
 
 1. **靠 class 分群找，不要靠文字特徵猜。** 實測用「中文 2–4 字」猜姓名，
    出現頻率前 12 名全是「閒置」「型號」「出貨」「庫存」這類業務詞，真姓名一個都沒中；
@@ -350,7 +348,7 @@ anonymize-page.js，叫用該 skill 即可取得）。四個關鍵：
 - **手冊圖不用 `badge`＋`legend`**：legend 會把圖加高，同一批圖尺寸就不一致，審查會退；
   輸出尺寸必須等於底圖（曾有四張改用 legend，S6 以整批尺寸不一退件）
 - 標籤是**重點提醒**不是欄位名（寫「公司別自動帶入」而不是「公司別」）
-- 標註產出存成 `aNN-*.png`（由 `browser-docs:annotate-screenshot` 在 clean PNG 上疊出），**clean 版保留不覆蓋**
+- 標註產出存成 `aNN-*.png`（由 `annotate.py` 在 clean PNG 上疊出），**clean 版保留不覆蓋**
 
 ## 截圖命名
 

@@ -24,7 +24,7 @@ py_install() {
 }
 
 # 1) Chrome —— 手冊 PDF 列印與 Marp 都要用。偵測邏輯與 browser-docs 的 find-chrome.sh 同源，
-#    這裡只做存在檢查；找不到時照 browser-docs:live-drive 的環境說明處理，或設 CHROME_PATH。
+#    這裡只做存在檢查；找不到時設 CHROME_PATH（有裝 browser-docs 可參考 browser-docs:live-drive 的環境說明）。
 CHROME=""
 for c in "$CHROME_PATH" \
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -36,7 +36,7 @@ done
 if [ -n "$CHROME" ]; then
   say "Chrome" "✅  ($CHROME)"
 else
-  say "Chrome" "❌ 找不到。請安裝 Google Chrome，或設 CHROME_PATH（細節見 browser-docs:live-drive）"; MISSING=1
+  say "Chrome" "❌ 找不到。請安裝 Google Chrome，或設 CHROME_PATH"; MISSING=1
 fi
 
 # 2) node / npx —— Marp 簡報
@@ -60,7 +60,7 @@ else
 fi
 
 # 4) python 套件 —— markdown：build-manual-pdf.py；PyMuPDF：手冊頁碼、簡報溢出檢查；
-#    Pillow：annotate-screenshot（browser-docs）疊框用
+#    Pillow：scripts/annotate.py 疊框用
 if [ -z "$PY" ]; then
   say "python3" "❌ 缺"; MISSING=1
 else

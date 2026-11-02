@@ -81,7 +81,7 @@ B1 空值/必填、B2 邊界值與精度、B3 唯一性(含已刪除)、**B4 狀
 ## Task 5: 產就緒度報告
 
 **先判讀再派工**：就緒度結論（✅／⚠️／❌）由主 session 判定——agent 只回各組的覆蓋矩陣，
-**整體是否可進開發只有彙整後才判得出來**。判定完成後派 `report-writer` 產出報告檔：
+**整體是否可進開發只有彙整後才判得出來**。判定完成後派 `report-writer` 產出報告檔（沒裝 delivery-flow 就由主 session 依同一 template 自己寫（沒裝的退路見 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md`「可選依賴」））：
 
 ```
 subagent_type: "delivery-flow:report-writer"

@@ -125,12 +125,11 @@ class ScriptsSanity(unittest.TestCase):
     def test_ensure_tools_checks_pillow(self):
         self.assertTrue("PIL:pillow" in (HERE / "ensure-tools.sh").read_text(encoding="utf-8"), "ensure-tools.sh 沒檢查 Pillow")
 
-    def test_no_cross_plugin_script_reference(self):
-        needle = "CLAUDE_PLUGIN_ROOT}/scripts/" + "annotate.py"  # 拆開寫，避免本檔自己命中 grep
-        for p in PLUGIN.rglob("*.md"):
-            if "CHANGELOG" in p.name:
-                continue
-            self.assertNotIn(needle, p.read_text(encoding="utf-8"), str(p))
+    def test_annotator_is_bundled(self):
+        # delivery-flow 要能單獨安裝：文件引用的標註器與換假資料工具必須在本 plugin 內
+        for rel in ("scripts/annotate.py", "scripts/anonymize-page.js",
+                    "references/annotate-spec.md", "references/anonymize-before-capture.md"):
+            self.assertTrue((PLUGIN / rel).is_file(), rel)
 
 
 class MissingDependencyHint(unittest.TestCase):

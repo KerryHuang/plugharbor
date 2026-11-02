@@ -47,10 +47,10 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
   新 plugin（toolkit、research、blog、kid-ui、browser-docs、delivery-flow）都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
 - **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
-- **跨 plugin 依賴**：Claude Code 用 `plugin.json` 的 `dependencies`（裸名稱）：delivery-flow 依賴 browser-docs；sa-flow 依賴 delivery-flow、browser-docs、toolkit。
-  Codex、pi 沒有對應機制，靠 `setup/install.sh` 一次裝全部 plugin 滿足依賴。
-- **跨 plugin 叫用**：叫另一個 plugin 的 skill（例如 delivery-flow 的 `manual-explorer` 叫 `browser-docs:annotate-screenshot`）要在 agent 的 `tools` 加 `Skill`；
-  `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以共用素材各放一份。
+- **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
+  delivery-flow 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；sa-flow 叫用 delivery-flow／browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
+- **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；
+  `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以必要的共用素材各放一份。
   Claude Code、Codex、pi 都實測過（2026-11-02）：Codex 從安裝快取讀 skill，pi 從 repo 讀並照 `harness-terms.md` 把 `${CLAUDE_PLUGIN_ROOT}` 換成實際路徑。
 - **Codex hook 需信任**：Codex 以內容雜湊記錄信任，hook 指令一變就失效；install.sh 之後要在 Codex 執行 `/hooks` 重新信任，否則 `tool-policy.mjs` 不會跑。
 - **skillOverrides 對 plugin skill 的 key 寫法未驗證**：settings 範本想關掉 `handoff`、`ai-radar`，實測沒有任何 key 寫法能讓 plugin 的 skill 消失（可能是 `--plugin-dir` 的 inline plugin 不吃 override）。細節與測法見 `setup/README.md`「skillOverrides」。

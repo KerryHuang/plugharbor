@@ -3,6 +3,12 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.8.0] - 2026-11-02
+
+- feat: 不再依賴 browser-docs，單獨安裝即可使用：`plugins/delivery-flow/.claude-plugin/plugin.json` 移除 `dependencies`；截圖標註器 `plugins/delivery-flow/scripts/annotate.py`、`plugins/delivery-flow/scripts/anonymize-page.js`、`plugins/delivery-flow/references/annotate-spec.md`、`plugins/delivery-flow/references/anonymize-before-capture.md` 從 browser-docs 複製一份。
+- refactor: `plugins/delivery-flow/agents/manual-explorer.md` 改直接跑本 plugin 的 `annotate.py`（`tools` 移除 `Skill`）；`plugins/delivery-flow/skills/operation-manual/SKILL.md`、`plugins/delivery-flow/agents/manual-reviewer.md`、`plugins/delivery-flow/skills/operation-manual/references/manual-style-guide.md`、`plugins/delivery-flow/skills/operation-manual/references/annotation-dispatch.md` 的個資與標註引用改指本 plugin 的副本；其餘 browser-docs 提及（含 `plugins/delivery-flow/references/shared-preludes.md`「跨 plugin」節）改為「有裝才參考」。
+- test: `plugins/delivery-flow/scripts/test_harness_terms_sync.py` 改為驗 5 份共用檔與 browser-docs 逐位元相同。`plugins/delivery-flow/scripts/test_manual_brand.py` 的「不得引用 annotate.py」改為「標註器與換假資料工具必須在本 plugin 內」。
+
 ## [0.7.2] - 2026-11-02
 
 GitHub 沙盒實測日報／週報、Linear 個人 workspace 實測後修正：

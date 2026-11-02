@@ -117,10 +117,10 @@ S4 拒產張數寫備註——不記就看不出趨勢。歷次紀錄與好模�
 
 ### S2a 實機探索（`manual-explorer`，mode=explore）
 
-先確認 chrome-devtools MCP 就緒：`list_pages` 要能回、且 MCP 以 `--isolated` 註冊；不通就停，請使用者改用 `npx -y chrome-devtools-mcp@latest --isolated` 註冊後重啟 session（`browser-docs:live-drive` 起手的檢查步驟會跑 doctor 並印出各 CLI 的標準寫法）。
+先確認 chrome-devtools MCP 就緒：`list_pages` 要能回、且 MCP 以 `--isolated` 註冊；不通就停，請使用者改用 `npx -y chrome-devtools-mcp@latest --isolated` 註冊後重啟 session（有裝 browser-docs 的話，`browser-docs:live-drive` 起手的檢查步驟會跑 doctor 並印出各 CLI 的標準寫法）。
 
 > **瀏覽器工具**：agent 固定 `chrome-devtools`（`--isolated`）；`claude-in-chrome` 只給主 session
-> 人機互動，見 `browser-docs` 的 browser-tooling.md。截圖要**指定檔名**、**fullPage**、精確視窗尺寸。
+> 人機互動，有裝 browser-docs 可參考它的 browser-tooling.md。截圖要**指定檔名**、**fullPage**、精確視窗尺寸。
 
 輸入：URL、登入資訊、路由清單、**分支清單**、功能名稱、`isolated_context: manual-<功能碼>-<分組>`
 輸出：`.tmp/operation-manual/{功能}/inventory.yml`、`screenshots/`（clean）、`gaps.yml`
@@ -138,7 +138,7 @@ inventory 必須帶回兩塊給下游用：
 探索檢查表（三態定義、必記項目、常漏清單、事故細節）見 [references/exploration-checklist.md](references/exploration-checklist.md)。
 🔴 **客戶環境一律在截圖前用 JS 把敏感值換成假資料，不要事後遮罩**——遮罩會連版面一起蓋掉。
 **只換姓名、客戶／租戶名稱、金額**；設備代號與名稱、單據編號、品項、流程說明**不換**，換掉手冊就失真。
-工具與流程見 `browser-docs:annotate-screenshot` 的「前置：個資」（它指向 anonymize-before-capture.md 與 anonymize-page.js）。
+工具與流程見 `${CLAUDE_PLUGIN_ROOT}/references/anonymize-before-capture.md`（工具 `${CLAUDE_PLUGIN_ROOT}/scripts/anonymize-page.js`）。
 inventory 範例值一律寫佔位符（`<員工姓名>`）——中間產物會被後續每一棒讀進 context。
 
 ### S2b 規格與 DB 蒐證（蒐證 agent，與 S2a 同時派）
@@ -163,8 +163,8 @@ inventory 範例值一律寫佔位符（`<員工姓名>`）——中間產物會
 
 #### 這一棒不做量測，也不回 live 重拍
 
-**預設在 clean PNG 上用 PIL 疊**：agent 叫用 `browser-docs:annotate-screenshot` skill（標註器與 spec 格式都在
-那邊，本 plugin 不放副本；agent 的 `tools` 必須含 `Skill`）。spec 的座標欄位是 `box: [x0, y0, x1, y1]`，單位是影像 px，
+**預設在 clean PNG 上用 PIL 疊**：agent 跑 `${CLAUDE_PLUGIN_ROOT}/scripts/annotate.py <spec.json>`
+（spec 格式見 `${CLAUDE_PLUGIN_ROOT}/references/annotate-spec.md`；與 browser-docs 各放一份，內容相同）。spec 的座標欄位是 `box: [x0, y0, x1, y1]`，單位是影像 px，
 DPR 2 的截圖要把 inventory 的 `rect`（CSS px）每個數字乘 2。座標來自 inventory 的
 `可標註元素` 或 live DOM，**不從 PNG 目測、不用等距推算**；派工時把該組要用到的
 `rect` 一併貼進去。只有兩種情況要回 live——inventory 沒記到那個元素，
