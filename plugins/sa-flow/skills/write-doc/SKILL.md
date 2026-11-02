@@ -1,6 +1,6 @@
 ---
 name: write-doc
-description: "手動把一份文件寫入磁碟：詢問路徑與內容後寫檔。用於使用者口述或手邊已有內容要落檔；規格鏈四大棒（FRD／SAD／BFS／FFS）由 spec-writer agent 直接寫入指定路徑，不經此。"
+description: "詢問路徑與內容後，把一份文件寫入磁碟。Use when 使用者口述或手邊已有內容要落檔：「寫成檔案」「存成文件」「write-doc」。規格鏈四大棒（FRD／SAD／BFS／FFS）由 spec-writer agent 直接寫入指定路徑，不經此。"
 argument-hint: "[目標路徑]"
 model: haiku
 ---

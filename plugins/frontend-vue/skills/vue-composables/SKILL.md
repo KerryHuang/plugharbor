@@ -1,6 +1,6 @@
 ---
 name: vue-composables
-description: 把業務邏輯從 Vue 元件抽成可復用 composable 的設計模式——單一職責、reactive 參數、side effect 隔離、清楚的介面型別。Use when extracting business logic >50 lines or creating reusable composables；觸發：「抽 composable」「這段邏輯太長要拆」「可復用的 hook」「composable 設計」。
+description: 把業務邏輯從 Vue 元件抽成可復用 composable 的設計模式——單一職責、reactive 參數、side effect 隔離、清楚的介面型別。Use when extracting business logic over 50 lines or creating reusable composables；觸發：「抽 composable」「這段邏輯太長要拆」「可復用的 hook」「composable 設計」。
 ---
 
 # Vue Composables Specialist

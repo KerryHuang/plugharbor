@@ -34,7 +34,7 @@ clean 截圖一律留 `.tmp/`。真正的關卡是 **git**——檔案在工作�
 
 專案的操作手冊範本——`操作手冊撰寫範本.md`（體例與撰寫規範）、`_骨架_操作手冊.md`、`_骨架_簡報.md`，
 慣例放在 `{docs-root}/操作手冊/_範本/`（或專案 CLAUDE.md 指定處）；參考實作是專案內一份已交付的手冊。
-**找不到範本就問使用者**（提供位置，或確認以 [manual-style-guide.md](references/manual-style-guide.md) 為準），不自創體例。
+**找不到範本就問使用者**（提供位置，或確認以 [manual-style-guide.md](references/manual-style-guide.md) 為準，骨架用 [skeleton-manual.md](references/skeleton-manual.md)／[skeleton-slides.md](references/skeleton-slides.md)），不自創體例。
 環境清單讀設定 `qa.environments`（鍵說明見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`），登入帳密在 `.plugharbor/qa.local.md`（本機檔，未納版控）。
 
 **寫作前一定要讀範本規範**——體例、圖文比、用語標記、不放內部資訊都在那裡，

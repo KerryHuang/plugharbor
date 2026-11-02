@@ -2,6 +2,9 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.1.1] - 2026-11-02
+
+- docs: `dev-feedback` 的 description 補上做什麼（追回開票規格、只做減法）；`write-doc` 補觸發語。
 
 ## [4.1.0] - 2026-11-02
 

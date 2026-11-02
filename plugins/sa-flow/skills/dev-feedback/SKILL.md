@@ -1,6 +1,6 @@
 ---
 name: dev-feedback
-description: "依 sa-flow 開的票實作或驗收時撞到摩擦：「這張票寫太多」「票面的技術指示跟實作對不上」「票面的介面說明已過期」「QA 情境跑不到」「dev-feedback」。"
+description: "把 sa-flow 票面的摩擦追回產生它的那行開票規格，提出刪減清單（只做減法，--apply 才執行）。Use when 依 sa-flow 開的票實作或驗收時撞到摩擦：「這張票寫太多」「票面的技術指示跟實作對不上」「票面的介面說明已過期」「QA 情境跑不到」「dev-feedback」。"
 argument-hint: "[--apply] {票號}"
 model: sonnet
 ---

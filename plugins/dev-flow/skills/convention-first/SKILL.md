@@ -1,6 +1,6 @@
 ---
 name: convention-first
-description: 適用於在既有 codebase 撰寫任何新元件（class / module / handler / component 等）、審查程式碼是否引入新風格、判斷「該自己發揮還是模仿既有寫法」。先 grep 既有實作當樣板，禁止單方面引入新模式。慣例 > 創新。觸發語：「這樣寫對嗎」「有沒有既有寫法」「該模仿哪個」「引入新 pattern」「convention first」「follow existing pattern」。
+description: 適用於在既有 codebase 撰寫任何新元件（class / module / handler / component 等）、審查程式碼是否引入新風格、判斷「該自己發揮還是模仿既有寫法」。先 grep 既有實作當樣板，禁止單方面引入新模式。慣例優先於創新。觸發語：「這樣寫對嗎」「有沒有既有寫法」「該模仿哪個」「引入新 pattern」「convention first」「follow existing pattern」。
 when_to_use: 新增任何元件前必先檢視；reviewer 審查時反向應用（看到新風格反問是否有既有樣板）
 ---
 

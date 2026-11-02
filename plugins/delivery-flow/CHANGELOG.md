@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.8.1] - 2026-11-02
+
+- docs: `qa-verify` 的 description 觸發語改用 `[案例檔]`／`[票號]`，不再用角括號。
+- docs: `operation-manual` SKILL.md 直接連到 `skeleton-manual.md`／`skeleton-slides.md`（參照只往下一層）。
 
 ## [0.8.0] - 2026-11-02
 

@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.2.1] - 2026-11-02
+
+- docs: `convention-first`、`tmp-scratch` 的 description 拿掉角括號（Claude Code 清單會顯示成 `&lt;`）。
+
 ## [0.2.0] - 2026-10-22
 
 - feat: 新增 `submodule-relay` skill——子模組 commit→push→上層 pointer bump 接力；`M` 方向判讀（index 落後才 bump、超前要 pull、未推遠端與分叉不動）；禁根目錄 `submodule update --recursive`；push 失敗不得接 bump；pull／rebase 後驗領先 commit 與 pointer。子模組清單一律從 `.gitmodules` 讀。

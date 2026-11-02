@@ -11,7 +11,7 @@
       "name": "sa-flow",
       "source": "./plugins/sa-flow",
       "description": "SDLC 上游規格鏈 — 需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析",
-      "version": "4.1.0",
+      "version": "4.1.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -20,7 +20,7 @@
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "跨語言開發工作流 — git 生命週期、工作編排、context 治理",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -38,7 +38,7 @@
       "name": "frontend-vue",
       "source": "./plugins/frontend-vue",
       "description": "Vue 3 + TypeScript + Quasar 前端 — 架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec 工作流",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -47,7 +47,7 @@
       "name": "database-sqlserver",
       "source": "./plugins/database-sqlserver",
       "description": "SQL Server 資料庫 — table/view 慣例、TableDescription 生成、EF Core migration 工具與疑難排解",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -119,7 +119,7 @@
       "name": "delivery-flow",
       "source": "./plugins/delivery-flow",
       "description": "專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "author": {
         "name": "KerryHuang"
       }

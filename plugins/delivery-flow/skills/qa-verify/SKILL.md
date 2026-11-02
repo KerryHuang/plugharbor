@@ -1,6 +1,6 @@
 ---
 name: qa-verify
-description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收案例檔（markdown 或 YAML，格式見 acceptance-format.md）或票號（從票面重現步驟產案例），派 agent 對實機逐條驗，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對，產 qa-report.md 與規格校正清單，有票號則回票。觸發：「驗收 <案例檔>」「qa-verify <票號>」「這支功能開發完了幫我驗」。不開 Bug 票（處置欄由人填）。
+description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收案例檔（markdown 或 YAML，格式見 acceptance-format.md）或票號（從票面重現步驟產案例），派 agent 對實機逐條驗，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對，產 qa-report.md 與規格校正清單，有票號則回票。觸發：「驗收 [案例檔]」「qa-verify [票號]」「這支功能開發完了幫我驗」。不開 Bug 票（處置欄由人填）。
 ---
 
 # qa-verify — 驗收案例 → 實機 E2E 驗收
