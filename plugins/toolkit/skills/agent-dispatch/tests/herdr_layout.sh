@@ -55,13 +55,25 @@ set +e; run 7; rc=$?; set -e
 grep -q '請開新 tab' "$TMP/out.7"; check "7 workers：提示第 7 個起開新 tab" $?
 ! grep -q 'pane move' "$TMP/log.7"; check "7 workers：不搬動任何 pane" $?
 
-# 非 UTF-8 locale（如 Windows cp950）：herdr 輸出含中文／emoji 仍要能解析
+# 預設編碼不是 UTF-8（如 Windows cp950）：herdr 輸出含中文／emoji 仍要能解析。
+# 不靠 locale 模擬（Linux C locale 連參數都編碼不了），改成沒指定 encoding 的 subprocess.run 一律用 ascii 解碼。
 export STUB_LOG="$TMP/log.u" STUB_WORKERS=1 STUB_LABEL="派工 🚀"
 : > "$STUB_LOG"
 set +e
-PATH="$TMP:$PATH" LC_ALL=C LANG=C PYTHONCOERCECLOCALE=0 PYTHONUTF8=0 python3 "$SCRIPT" --main M --label demo > "$TMP/out.u" 2>&1
+PATH="$TMP:$PATH" python3 - "$SCRIPT" > "$TMP/out.u" 2>&1 <<'PY'
+import runpy, subprocess, sys
+_run = subprocess.run
+def run(*a, **k):
+    if k.get("text") and "encoding" not in k:
+        k["encoding"] = "ascii"
+    return _run(*a, **k)
+subprocess.run = run
+script = sys.argv[1]
+sys.argv = [script, "--main", "M", "--label", "demo"]
+runpy.run_path(script, run_name="__main__")
+PY
 rc=$?
 set -e
-check "非 UTF-8 locale：herdr 輸出含中文／emoji 不崩潰" "$rc"
+check "非 UTF-8 預設編碼：herdr 輸出含中文／emoji 不崩潰" "$rc"
 
 exit $fail
