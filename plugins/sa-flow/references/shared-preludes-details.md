@@ -185,5 +185,5 @@ docs 與程式碼同 repo 時略過。docs 在獨立 repo 時，開工前先 pul
 
 ## PDF 轉檔通則
 
-任何 PDF→Word／Excel 一律 `sa-flow:pdf-converter`，不得土法手轉。產出 .docx／.xlsx 放該功能 docs 目錄
+任何 PDF→Word／Excel 一律 `browser-docs:pdf-converter`，不得土法手轉。產出 .docx／.xlsx 放該功能 docs 目錄
 （與 FRD 同目錄）並隨 docs 版控；來源 PDF 一併複製；中間產物放 `.tmp/pdf-converter/`。

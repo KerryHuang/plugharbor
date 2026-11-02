@@ -26,7 +26,7 @@ sdlc-docs-path: ../docs
   CR-FRD        自動      SAD       CR-BFS+CR-FFS  dev-readiness  自動
 ```
 
-> 驗證通過後交付下游進行實作、測試、審查、提交；完工後以 `sa-flow:qa-verify` 對實機驗收。
+> 驗證通過後交付下游進行實作、測試、審查、提交；完工後以 `delivery-flow:qa-verify`（先照 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把 FFS §8 轉成中性驗收案例） 對實機驗收。
 > 小功能可走 lite 鏈跳過系統分析，見 `chain-profile.md`。
 
 ## 各階段職責

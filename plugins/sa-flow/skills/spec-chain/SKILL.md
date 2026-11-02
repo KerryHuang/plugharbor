@@ -9,15 +9,15 @@ argument-hint: "[票號或功能描述]"
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 PM **不實作**：不寫 FRD／SAD／BFS／FFS、不改程式碼、不碰程式碼 submodule／大型 repo 檔案（進去會載入大量 repo 規則，需要時派 subagent 取摘要）、不代 worker 答使用者、不跨機派工。只做：判規模與路由 → 派工 → 盯狀態 → 驗收。交棒點（硬性停點 vs 可自動接棒）以 `${CLAUDE_PLUGIN_ROOT}/references/handoff-protocol.md` 為準。
-herdr 通用操作一律依 `sa-flow:dispatch-worker`；機制細節（`_pm-run.json`、prompt 模板、驗收指令）見 [references/worker-protocol.md](references/worker-protocol.md)。
+herdr 通用操作一律依 `toolkit:agent-dispatch`（長任務模式）；機制細節（`_pm-run.json`、prompt 模板、驗收指令）見 [references/worker-protocol.md](references/worker-protocol.md)。
 `$ARGUMENTS` = `[票號或功能描述]`，未給時從對話推斷並確認。
 
 ## Task 0：前置
 
 任務清單：判現況、定路由、派工、盯狀態、驗收、回報。
 
-- `test "${HERDR_ENV:-}" = 1` 不成立 → 停下告訴使用者，改照 handoff-protocol.md 單 session 接棒（不套 dispatch-worker「留在本 session 做」的退路，PM 不實作）。
-- 成立再 `herdr status`：exit 127 → 停下請使用者依 `${CLAUDE_PLUGIN_ROOT}/skills/dispatch-worker/references/commands.md` 安裝，或改單 session 跑，不自己繞；`server_not_running` → 依同檔「安裝與起 server」起 server（不要在 Claude Code 內起）。
+- `test "${HERDR_ENV:-}" = 1` 不成立 → 停下告訴使用者，改照 handoff-protocol.md 單 session 接棒（不套 agent-dispatch「留在本 session 做」的退路，PM 不實作）。
+- 成立再 `herdr status`：exit 127 → 停下請使用者依 `toolkit:agent-dispatch` 的 herdr-long-task.md「安裝與升級」安裝，或改單 session 跑，不自己繞；`server_not_running` → 依同檔起 server（不要在 Claude Code 內起）。
 - 🔴 接著跑 `scripts/pm_resume.py` 對帳 `{功能目錄}/analysis/_pm-run.json`，不憑記憶重建進度（PM 會被壓縮、中斷）。檔案不存在 = 第一輪。指令見 worker-protocol.md「執行狀態與續跑」。
 
 ## Task 1：判現況（PM 自己做）
@@ -44,13 +44,13 @@ herdr 通用操作一律依 `sa-flow:dispatch-worker`；機制細節（`_pm-run.
 
 ## Task 3：派工
 
-- **派 session**：依 dispatch-worker Step 0～4。cwd 一律專案根（不要拿 submodule 目錄）。prompt 模板見 worker-protocol.md，必含：貼上 `decisions.md`「決策／選定」兩欄並標「已拍板、不要重問」（無 `decisions.md` 則寫明本棒建檔從 D-001 起）、讀哪幾份文件哪幾章（走 `sa-flow:spec-docs`）、「本棒跑完就停，不接下一棒」（可接棒時 PM 驗收後另開新 worker，每棒從乾淨 context 起跑）、回報走落檔 ＋ `SendMessage`（驗收只看檔案）。
+- **派 session**：依 `toolkit:agent-dispatch` 長任務第 0～3 步。cwd 一律專案根（不要拿 submodule 目錄）。prompt 模板見 worker-protocol.md，必含：貼上 `decisions.md`「決策／選定」兩欄並標「已拍板、不要重問」（無 `decisions.md` 則寫明本棒建檔從 D-001 起）、讀哪幾份文件哪幾章（走 `sa-flow:spec-docs`）、「本棒跑完就停，不接下一棒」（可接棒時 PM 驗收後另開新 worker，每棒從乾淨 context 起跑）、回報走落檔 ＋ `SendMessage`（驗收只看檔案）。
 - 🔴 派工後立刻寫 `_pm-run.json` 一列 `dispatched` 並更新 `watch`，不只記在 context。只寫此檔，不寫 `_context.yml`。
 - **派 subagent**（`Agent`）：prompt 必含回報格式（只回摘要與結論，不貼原始碼全文）與邊界（只讀不改，發現該改處回報位置理由）。
 
 ## Task 4：盯狀態
 
-依 dispatch-worker Step 5。產出檔存在 → Task 5；不存在 → 照 Step 5「done／idle」那列判讀，不關 pane。停點提醒一行附棒名與 `pane_id`，提醒後不再介入、不代答（需人裁決才升級成 session）。量 worker context 用 `scripts/ctx.py`（用法見 worker-protocol.md）；PM 自己的數字是移動標的，報數字標明量測時點。
+依 `toolkit:agent-dispatch` 長任務第 4 步。產出檔存在 → Task 5；不存在 → 照該步「done／idle」那列判讀，不關 pane。停點提醒一行附棒名與 `pane_id`，提醒後不再介入、不代答（需人裁決才升級成 session）。量 worker context 用 `scripts/ctx.py`（用法見 worker-protocol.md）；PM 自己的數字是移動標的，報數字標明量測時點。
 
 ## Task 5：驗收（必要職責）
 
@@ -62,7 +62,7 @@ herdr 通用操作一律依 `sa-flow:dispatch-worker`；機制細節（`_pm-run.
 4. 跑機械閘 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-propagation.py {功能目錄}`：exit 非 0 照輸出先回派修，通過才進第 5 項。它擋 R1～R4 決策傳播、R5 暫定標記（`狀態`＝暫定的 D，正文要寫「（暫定，D-xxx 待確認）」）、R6 文件資訊版本＝CHANGELOG 最高版本，這三類靠讀正文抓不完（實測驗收後窄修回派 86 則，暫定漏標 31、版本不同步 29）。
 5. worker 宣稱依循的上游決策確實存在：派 subagent 比對，只收「宣稱｜D 編號｜有無」表。
 
-驗收完把 `_pm-run.json` 該棒改 `verified` 或 `rejected`。`verified` 就依 dispatch-worker Step 6 關該 pane 並重排；可自動接棒且續行條件全滿足 → 回 Task 3 派下一棒新 worker，否則停下回報。
+驗收完把 `_pm-run.json` 該棒改 `verified` 或 `rejected`。`verified` 就依 `toolkit:agent-dispatch` 長任務第 5 步關該 pane 並重排；可自動接棒且續行條件全滿足 → 回 Task 3 派下一棒新 worker，否則停下回報。
 有問題 → 回派同一個 worker 修（`herdr agent prompt`），派窄任務（明說改哪幾處），不重跑整支 skill、不自己改；回派後不等回報，直接重驗檔案。
 🔴 最後一步是重新掛上等待並更新 `watch`（背景等待返回即結束，曾漏掉 27 分鐘無人看守）；要不要掛只看 `herdr agent list` 該 worker 的 pane 還在不在。
 

@@ -155,5 +155,5 @@ Linear 票與規格／分析文件要能互相找到，`qa-verify`、`qa-sweep` 
 - **開文件相關的票時**：票面註明對應文件路徑（`linear-create` 的「參考文件」表）。
 - **文件裡**：記所屬票號——檔頭註記，或 CR 文件用票號檔名後綴（`{功能}_功能調整{前端／後端}規格書_{票號}.md`，`consolidate-docs` 以 `*_{票號}.md` 比對）。
 - **票進入 Done**：跑 `sa-flow:consolidate-docs`，把票號後綴的變更文件合併回主規格並刪除票號來源檔。
-- 開立／關閉狀態看 `sa-flow:linear-daily-report`，**不要**另外維護手動票號清單。
+- 開立／關閉狀態看 `delivery-flow:ticket-daily-report`，**不要**另外維護手動票號清單。
 - 檔名慣例以 docs repo 的 `README.md`「文件命名規則」為準（有的話）。

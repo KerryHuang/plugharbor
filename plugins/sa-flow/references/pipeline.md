@@ -19,7 +19,7 @@ brainstorming 步驟 1~8（設計文件確認）→ 手動暫停
          ↓ 使用者手動接續
 sa-flow:explore（可選）→ sa-flow:requirement → system-analysis → specify-backend → specify-frontend → dev-readiness → verifying-specs → linear-create
          ↓
-superpowers:writing-plans（手動執行）→ 實作段 → sa-flow:qa-verify
+superpowers:writing-plans（手動執行）→ 實作段 → delivery-flow:qa-verify（先轉 FFS §8）
 ```
 
 ---
@@ -47,7 +47,7 @@ lite       ... → requirement ────────────────�
 ┌─────────────────────────────────────────────────────────┐
 │                   UPSTREAM PHASE (sa-flow)                 │
 │                                                         │
-│  [ sa-flow:interview-prep ]（可選，需求還很零碎時）          │
+│  [ delivery-flow:interview-prep ]（可選，需求還很零碎時）    │
 │       模式 A：多場會議／訪談 → 已知未知盤點 ＋ Top 5      │
 │       模式 B：產《需求訪談大綱》→ 訪談後回灌模式 A        │
 │       輸出：{名稱}_需求彙整.md／_訪談大綱_{受訪者}.md      │
@@ -107,10 +107,10 @@ lite       ... → requirement ────────────────�
 └─────────────────────────────────────────────────────────┘
                ↓
 ┌─────────────────────────────────────────────────────────┐
-│                   ACCEPTANCE (sa-flow)                     │
+│                   ACCEPTANCE (delivery-flow)                │
 │                                                         │
-│  [ sa-flow:qa-verify ]                                     │
-│       Dev 完工後依 FFS §8 對實機逐條驗收                 │
+│  [ delivery-flow:qa-verify ]                               │
+│       Dev 完工後先依 ffs8-to-acceptance 轉 FFS §8，再對實機驗收 │
 │       輸出：qa-report.md ＋ 規格校正清單                 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -180,7 +180,7 @@ lite       ... → requirement ────────────────�
 | `sa-flow:dev-readiness` | FFS 已完成 | `sa-flow:verifying-specs` |
 | `sa-flow:verifying-specs` | dev-readiness 通過 | `sa-flow:linear-create`（尚未開票時）→ `superpowers:writing-plans` |
 | `sa-flow:linear-create` | 驗證通過 | `superpowers:writing-plans` |
-| `sa-flow:qa-verify` | Dev 完工（ticket 進 Done／PR 合併） | 規格校正清單回寫規格 |
+| `delivery-flow:qa-verify` | Dev 完工（ticket 進 Done／PR 合併） | 規格校正清單回寫規格 |
 | `sa-flow:linear-reply` | `linear-create` 已完成，票上有未回覆問題 | `sa-flow:verifying-specs`（自動觸發） |
 | `sa-flow:linear-triage` | 已有 Linear 票，要判型決定走向 | Feature→`sa-flow:requirement`；Bug→`sa-flow:linear-create`（開修復子票） |
 
@@ -188,7 +188,7 @@ lite       ... → requirement ────────────────�
 
 | Plugin | 職責 | Skills |
 |--------|------|--------|
-| **sa-flow** | 文件產出（upstream phase）與驗收 | explore, interview-prep, requirement, system-analysis, specify-backend, specify-frontend, dev-readiness, verifying-specs, linear-triage, linear-create, linear-reply, qa-verify, foxpro-analyzer |
+| **sa-flow** | 文件產出（upstream phase）與驗收 | explore, requirement, system-analysis, specify-backend, specify-frontend, dev-readiness, verifying-specs, linear-triage, linear-create, linear-reply, qa-sweep, foxpro-analyzer |
 | **superpowers** | 流程驅動（process & implementation） | brainstorming, writing-plans, subagent-driven-development, verification-before-completion, requesting-code-review, finishing-a-development-branch |
 
 ## 全鏈效率通則

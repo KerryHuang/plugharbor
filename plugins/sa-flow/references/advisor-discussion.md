@@ -46,7 +46,7 @@ subagent 模式把 `pane_id`／`session` 換成 `agent_id`。
 
 ## pane 模式（預設）
 
-前置判定依 `sa-flow:dispatch-worker` Step 0（`HERDR_ENV=1`、cwd 檢查）；不成立 → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
+前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`HERDR_ENV=1`、cwd 檢查）；不成立 → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
 
 開 pane 與起顧問：
 
@@ -58,7 +58,7 @@ herdr agent start advisor-data --kind claude --pane <data pane_id> -- --agent sa
 herdr agent list                                             # 取兩者的 agent_session.value 寫進 _run.json
 ```
 
-- pane_id 讀法與孤兒 pane 處理依 `sa-flow:dispatch-worker` Step 2～3。
+- pane_id 讀法與孤兒 pane 處理依 `toolkit:agent-dispatch` 長任務第 2 步。
 - `--agent sa-flow:…` 會套用該 agent 的工具白名單與 model（顧問沒有 `AskUserQuestion`、沒有寫檔工具），不會自己停下來等人。
 - 每一則送題的開頭都寫 `lens:`，不只寫在開場——顧問 context 被壓縮後仍知道自己是哪個視角。
 
@@ -69,7 +69,7 @@ herdr agent prompt <pane_id> "$(cat <絕對路徑>/r2-to-flow.md)" --wait --time
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對路徑>/r2-flow.md
 ```
 
-- 送題寫檔依 `sa-flow:dispatch-worker` Step 1（**不含結果檔**：顧問以 `--agent` 起、沒有寫檔工具），等待依 Step 4（`--wait` 不加 `--until`）。
+- 送題寫檔依 `toolkit:agent-dispatch` 長任務第 1 步（**不含結果檔**：顧問以 `--agent` 起、沒有寫檔工具），等待依第 3 步（`--wait` 不加 `--until`）。
   完成判準是 `advisor_last_reply.py` exit 0 且取到文字，不是結果檔。
 - 同一輪兩位顧問的送題互不相依時，在同一則訊息平行送出；爭點進入循序回應（見 consultant-desk 第 3 步）時，先送 A、取回 A 的回應，再連同它送 B。
 - 開發中要用工作區未發布的 agent 定義：`agent start` 的參數加 `--plugin-dir <plugins/sa-flow 的絕對路徑>`。
@@ -86,7 +86,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對�
 
 | 情境 | 處置 |
 |------|------|
-| `--wait` 逾時，或顧問停在畫面上等輸入 | 依 `sa-flow:dispatch-worker` Step 5：逾時不重送不關 pane；等輸入就提醒使用者 attach，不代答 |
+| `--wait` 逾時，或顧問停在畫面上等輸入 | 依 `toolkit:agent-dispatch` 長任務第 4 步：逾時不重送不關 pane；等輸入就提醒使用者 attach，不代答 |
 | 顧問 pane 不見了 | 重開 pane 起同一個 agent，送題附上 `lens` 與它先前所有 `open-*.md`／`r*-*.md`，輪數不重算 |
 | subagent 續接失敗 | 重派，prompt 附上 `lens` 與它先前所有回應檔 |
 | 主線 context 被壓縮 | 先讀 `_run.json` 與最後一輪的檔案再續，不重問已結案爭點 |
@@ -94,7 +94,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對�
 ## 收尾
 
 1. 所有爭點結案、交使用者的題目都答完並寫回 `consultant-notes.md` 之後，才關顧問。
-2. pane 模式依 `sa-flow:dispatch-worker` Step 6 逐個關顧問 pane。
+2. pane 模式依 `toolkit:agent-dispatch` 長任務第 5 步逐個關顧問 pane。
 3. `_run.json` 標 `"finished": true`。
 
 ## consultant-notes.md 追加格式

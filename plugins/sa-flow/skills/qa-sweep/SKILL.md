@@ -1,13 +1,13 @@
 ---
 name: qa-sweep
-description: 批次撈 Linear 指派給我的待測票，交 qa-verify（UI）或後端驗證後依結果寫回狀態、通知父票或開 Dev 子票。觸發：「掃待測票」「qa-sweep」「把待測的票跑一輪」。
+description: 批次撈 Linear 指派給我的待測票，交 delivery-flow:qa-verify（UI，FFS §8 先轉中性驗收格式）或後端驗證後依結果寫回狀態、通知父票或開 Dev 子票。觸發：「掃待測票」「qa-sweep」「把待測的票跑一輪」。
 ---
 
 # qa-sweep — 待測票批次驗收
 
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-編排者：撈票、分類、測、寫回 Linear。**測試本身交 `qa-verify`**（UI）或 `references/backend-verify.md`（純後端），本 skill 不判定 TC。
+編排者：撈票、分類、測、寫回 Linear。**測試本身交 `delivery-flow:qa-verify`**（UI；規格模式先依 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把 FFS §8 轉成驗收案例檔）或 `references/backend-verify.md`（純後端），本 skill 不判定 TC。
 `<ws>`＝workspace 根字面絕對路徑；工作區 `<ws>/.tmp/<YYYYMMDD>-qa-sweep/`，`sweep.yml` 記每張票的類別與結果。
 
 ```
@@ -60,7 +60,7 @@ team 取自專案 `CLAUDE.md` 的 `sdlc-linear-teams`（QA／PM／Dev 三列；S
 4. **自動測-規格**：**Feature 根票**（labels 含 `Feature` 且沒有 `parentId`），依 `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md`「票↔文件雙向註記」反查得到 FFS §8。
 5. 都不符 → 待人工。
 
-**部署狀態不在 S2 判**：版本閘要逐張遞迴找 Dev 票完工留言再比對環境，成本高且 `qa-verify` Step 0 本來就會做；改在 S4 逐張判（見下）。`--dry-run` 因此不含「未部署」，摘要註明「部署狀態未判」。
+**部署狀態不在 S2 判**：版本閘要逐張遞迴找 Dev 票完工留言再比對環境，成本高且 `delivery-flow:qa-verify` Step 0 本來就會做；改在 S4 逐張判（見下）。`--dry-run` 因此不含「未部署」，摘要註明「部署狀態未判」。
 
 用 `AskUserQuestion`（multiSelect）列出類別 2／3／4 的票（票號＋標題＋類別），讓使用者勾本輪要跑的；待人工只列不選。`--dry-run` 列完即結束。
 
@@ -73,11 +73,13 @@ team 取自專案 `CLAUDE.md` 的 `sdlc-linear-teams`（QA／PM／Dev 三列；S
 
 ## S4 逐張測（不並行）
 
-- **部署閘（每張先判）**：類別 3／4 由 `qa-verify` Step 0 第 5 點判；Dev 票不一定是直屬子票（Feature 樹是 PM→QA→Dev）——**往下遞迴**找 labels 含 `Backend*`／`Frontend*` 的票取完工留言，每張都已部署才算過。類別 2 照 `backend-verify.md` §3。判出未部署、或使用者在版本閘選「等部署」→ 該票記**未部署**，不動票，換下一張。qa-verify 回報「待人工：票面環境 <slug> 無帳密」→ 該票記待人工（原因照抄），不換環境硬跑：換環境跑的結果會因環境特性 TC BLOCKED，白耗三支 agent 也無法自動結案。
+- **部署閘（每張先判）**：類別 3 由 `delivery-flow:qa-verify` Step 0 第 4 點判；類別 4 走案例檔模式、qa-verify 不做版本閘，由本 skill 依該 skill 的 environments.md「版本比對」自己判；Dev 票不一定是直屬子票（Feature 樹是 PM→QA→Dev）——**往下遞迴**找 labels 含 `Backend*`／`Frontend*` 的票取完工留言，每張都已部署才算過。類別 2 照 `backend-verify.md` §3。判出未部署、或使用者在版本閘選「等部署」→ 該票記**未部署**，不動票，換下一張。`delivery-flow:qa-verify` 回報「待人工：票面環境 <slug> 無帳密」→ 該票記待人工（原因照抄），不換環境硬跑：換環境跑的結果會因環境特性 TC BLOCKED，白耗三支 agent 也無法自動結案。
 - 工作區：類別 3＝`<ws>/.tmp/qa-verify/<票號小寫>/`、類別 4＝`<ws>/.tmp/qa-verify/<功能碼小寫>/`。**invoke 前**若該工作區已有 `verdict.json`，改名 `verdict.prev.json`——舊結果不可被當成本輪結果。
-- 類別 3：invoke `sa-flow:qa-verify <票號> --from-ticket --no-comment`；類別 4：`sa-flow:qa-verify <票號> --no-comment`。留言由 S5 統一貼（qa-verify 的 `--linear` 摘要在 `<工作區>/linear-comment.md`）。
+- 類別 3（票面模式）：invoke `delivery-flow:qa-verify <票號> --no-comment`。
+- 類別 4（規格模式）：先依 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把該功能 FFS §8 轉成 `<sweep 工作區>/<功能碼小寫>.md`，再 invoke `delivery-flow:qa-verify <sweep 工作區>/<功能碼小寫>.md --no-comment`（工作區檔名即功能碼，結果仍落 `<ws>/.tmp/qa-verify/<功能碼小寫>/`）。
+- 留言由 S5 統一貼，內容取 `<工作區>/ticket-comment.md`（`--no-comment` 時 qa-verify 寫入的 `--comment` 摘要）。
 - 類別 2：照 `references/backend-verify.md`，結果在 `<sweep 工作區>/<票號小寫>-backend.yml`。
-- qa-verify 第一閘停下問使用者時照答；選「先校正規格／歸待人工」→ 該票記待人工，換下一張。
+- `delivery-flow:qa-verify` 第一閘停下問使用者時照答；選「先校正規格／歸待人工」→ 該票記待人工，換下一張。
 - 環境中斷（瀏覽器／DB 查詢工具／Linear 連不上）→ 停整批，跳 S6 摘要。
 
 **結果可用**：`verdict.json`（或 backend.yml）本輪有產出，且 `總計` 六個值相加＝`plan.yml` cases 數（backend.yml 為 cases 數）。不可用 → 該票記待人工（原因「結果不可用」）。
@@ -89,7 +91,7 @@ team 取自專案 `CLAUDE.md` 的 `sdlc-linear-teams`（QA／PM／Dev 三列；S
 
 **類別 3／4 嚴格 PASS → 自動**（先改狀態、後留言：狀態沒改成功就不留「已 Done」的話）：
 1. 原票 `save_issue` 狀態＝通過；失敗 → 記摘要，本票不留言。
-2. 原票 `save_comment`：標記行（PASS）＋`linear-comment.md` 內容。
+2. 原票 `save_comment`：標記行（PASS）＋`ticket-comment.md` 內容。
 3. 有 `parentId` → 父票 `save_comment`：父票標記行＋「<票號> 驗收通過，<PASS 數> 條 TC 全過」。**父票狀態不動**（由規則二推）。
 
 **待人工**：原票 `save_comment` 標記行（待人工）＋原因一句；不改狀態。
@@ -110,8 +112,8 @@ team 取自專案 `CLAUDE.md` 的 `sdlc-linear-teams`（QA／PM／Dev 三列；S
 
 ## 收尾
 
-- 本輪起的 Chrome 照 `qa-verify` 收尾規則關閉並驗證。
-- 摘要回報後刪 `<ws>/.tmp/<YYYYMMDD>-qa-sweep/`；`qa-verify` 的工作區由它自己的規則處理。
+- 本輪起的 Chrome 照 `delivery-flow:qa-verify` 收尾規則關閉並驗證。
+- 摘要回報後刪 `<ws>/.tmp/<YYYYMMDD>-qa-sweep/`；`delivery-flow:qa-verify` 的工作區由它自己的規則處理。
 
 ## 不做
 

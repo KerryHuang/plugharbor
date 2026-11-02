@@ -18,7 +18,7 @@ model: sonnet
 > 產出一律是**減法**：刪一段規格、收窄一條豁免、把取材章改指到正確位置。
 > 「再加一條檢查」不是本 skill 的產出——那只是把干擾從票面搬到開票流程。
 
-> 與 `retrospective` 的分工：retrospective 回顧整條規格鏈、全 plugin、五類改進；
+> 與 `toolkit:retrospective` 的分工：retrospective 回顧整條規格鏈、全 plugin、五類改進；
 > dev-feedback 只處理「票面 ↔ 實作」這一個接縫。
 
 ## 輸入參數

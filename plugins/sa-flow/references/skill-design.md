@@ -245,4 +245,4 @@ Claude Code 的 PreToolUse hook **只把 exit 2（或 JSON `permissionDecision`�
 - 測試要含「壞掉的直譯器」（PATH 放 exit 9009 的假 `python3`）與 `PYTHONIOENCODING=cp950` 兩種情境。
 - 改了 hook 的 command 字串，既有 session 不會重新載入；實機驗證要開新 session。
 
-反過來，**補值類 hook**（如 `hooks/agent-model-guard.py` 替未指定 model 的通用 subagent 補 `sonnet`）失敗時本來就該 fail-open：補不到值只是退回預設行為，不該擋住派工。
+反過來，**補值類 hook**（如 toolkit 的 `hooks/agent-model-guard.py` 替未指定 model 的通用 subagent 補 `sonnet`）失敗時本來就該 fail-open：補不到值只是退回預設行為，不該擋住派工。

@@ -2,6 +2,50 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.0.0] - 2026-11-02
+
+### BREAKING
+- 通用工具抽到 `toolkit`、`browser-docs`、`delivery-flow` 三個 plugin；sa-flow 只留 SDLC 上游規格鏈。移除 12 個 skill、9 個 agent，叫用名稱一律改成下表的新位置。
+- 新增 `dependencies`：`delivery-flow`、`browser-docs`、`toolkit`，裝 sa-flow 需一併安裝（Codex、pi 沒有對應欄位，需自行安裝）。
+
+### 移除的 skill（新位置）
+- `dispatch-worker` → `toolkit:agent-dispatch`（長任務模式）
+- `retrospective` → `toolkit:retrospective`（規格鏈成本傳 `--units-glob 'docs/*/*'`）
+- `live-drive` → `browser-docs:live-drive`
+- `pdf-converter` → `browser-docs:pdf-converter`
+- `linear-illustrate` → 無對應 skill；擷取與標註改用 `browser-docs:live-drive` 與 `browser-docs:annotate-screenshot`，上傳走既有 Linear 流程的附件步驟
+- `meeting-minutes` → `delivery-flow:meeting-minutes`
+- `interview-prep` → `delivery-flow:interview-prep`
+- `issue-triage` → `delivery-flow:issue-triage`
+- `linear-daily-report` → `delivery-flow:ticket-daily-report`
+- `linear-weekly-report` → `delivery-flow:ticket-weekly-report`
+- `qa-verify` → `delivery-flow:qa-verify`（改吃中性驗收案例格式）
+- `operation-manual` → `delivery-flow:operation-manual`
+
+### 移除的 agent（新位置）
+- `browser-surveyor` → `browser-docs:browser-surveyor`
+- `doc-fidelity-reviewer` → `browser-docs:doc-fidelity-reviewer`
+- `report-writer` → `delivery-flow:report-writer`
+- `manual-explorer` → `delivery-flow:manual-explorer`
+- `manual-writer` → `delivery-flow:manual-writer`
+- `manual-reviewer` → `delivery-flow:manual-reviewer`
+- `qa-planner` → `delivery-flow:qa-planner`
+- `qa-fixture` → `delivery-flow:qa-fixture`
+- `qa-runner-ui` → `delivery-flow:qa-runner-ui`
+
+### 移除的附屬檔案
+- 只被上述項目使用的 scripts、references、templates 隨之移除：`scripts/` 的 annotate、anonymize-page、browser-doctor（含測試）、build-deck、build-manual-docx、build-manual-pdf、check-deck-overflow、check-inventory-rects、ensure-tools、find-chrome、make-docx-reference、manual-print.css、manual-reference.docx、prep-docx-cover、text-image-ratio；`references/` 的 annotate-spec、anonymize-before-capture、browser-lock-protocol、browser-setup、browser-tooling、report-calendar；`templates/` 的 interview-outline、meeting-minutes、requirement-synthesis。
+- `hooks/hooks.json`、`hooks/agent-model-guard.py` 與其測試移除：`toolkit` 已註冊同一個 hook。
+
+### 新增
+- `references/ffs8-to-acceptance.md`：FFS §8 的每個 TC 轉成中性驗收案例格式（id、前置條件、步驟、預期結果、通道）的對照與範例。規格鏈的驗收入口改成「先照此轉檔，再叫用 `delivery-flow:qa-verify`」。
+
+### 變更
+- `qa-sweep`：類別 4（規格模式）先轉檔再交 `delivery-flow:qa-verify`，並自己做版本閘；類別 3 叫用方式與留言檔名（`ticket-comment.md`）配合新 qa-verify。
+- `requirement`、`system-analysis`、`specify-frontend`：勘察畫面改派 `browser-docs:browser-surveyor`；`dev-readiness`、`verifying-specs`：報告撰寫改派 `delivery-flow:report-writer`；`spec-chain`、顧問討論 pane 模式改依 `toolkit:agent-dispatch`。
+- `linear-create`、`linear-triage`、`linear-reply` 只更新引用，名稱與流程不變。
+- `spec-chain/references/worker-protocol.md` 派工 prompt 模板的 `sdlc:{skill 名稱}` 改為 `sa-flow:{skill 名稱}`。
+
 ## [3.1.0] - 2026-10-22
 
 ### 新增

@@ -74,7 +74,7 @@ prompt: |
 `analysis/ui-survey.md` 已涵蓋且未過期 → 直接讀用，**不重派**。
 
 ```
-subagent_type: "sa-flow:browser-surveyor"
+subagent_type: "browser-docs:browser-surveyor"
 prompt: |
   mode: survey
   url: {系統 URL}

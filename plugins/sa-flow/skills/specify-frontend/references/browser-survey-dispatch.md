@@ -1,11 +1,11 @@
 # 視覺分析派工樣板（browser-surveyor）
 
-`specify-frontend` Step 4 的 `sa-flow:browser-surveyor` 派工 prompt。
+`specify-frontend` Step 4 的 `browser-docs:browser-surveyor` 派工 prompt。
 
 `{}` 為呼叫端填入值；所有路徑一律展開成**絕對路徑**。
 
 ```
-subagent_type: "sa-flow:browser-surveyor"
+subagent_type: "browser-docs:browser-surveyor"
 prompt: |
   mode: survey
   url: {使用者提供的 URL}

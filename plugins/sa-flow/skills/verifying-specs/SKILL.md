@@ -140,10 +140,10 @@ R6 文件資訊版本≠CHANGELOG 最高版本——**每筆 CRITICAL，原樣�
 
 **先判讀再派工**：五個維度回來的是缺失清單，**「整體可否開發」的結論只有主 session 判得出來**
 （agent 被明令不得下此結論）。判定結論、複核量化斷言、決定每條缺失的等級之後，
-再派 `sa-flow:report-writer` 產出報告檔。
+再派 `delivery-flow:report-writer` 產出報告檔。
 
 ```
-subagent_type: "sa-flow:report-writer"
+subagent_type: "delivery-flow:report-writer"
 prompt: |
   report_type: verification
   out_path: {報告絕對路徑}

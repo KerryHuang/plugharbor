@@ -14,7 +14,7 @@ model: sonnet
 
 > **需求模糊、概念未定？** 建議改用 `superpowers:brainstorming` 進行完整設計探索。
 >
-> **素材還很零碎、連該問什麼都不確定？** 先跑 `sa-flow:interview-prep`——把多場會議／訪談
+> **素材還很零碎、連該問什麼都不確定？** 先跑 `delivery-flow:interview-prep`——把多場會議／訪談
 > 彙整成已知未知盤點，或產訪談大綱去補資料，回來再跑六維。
 
 ## 輸入參數

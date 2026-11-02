@@ -53,7 +53,7 @@ $ARGUMENTS → [功能名稱或 FRD 路徑]
 |---|---|---|---|
 | **A** | `sa-flow:scout` | 既有程式碼（3.1）＋ 跨模組影響（3.3） | `analysis/reuse-scan.yml` |
 | **B** | `sa-flow:scout`（DB 結構模式，需有唯讀 DB 查詢工具） | DB 結構與 FK（3.2） | `analysis/db-analysis.yml` |
-| **C** | `sa-flow:browser-surveyor` | 現有畫面與 API（3.4，條件觸發） | `analysis/ui-survey.md` |
+| **C** | `browser-docs:browser-surveyor` | 現有畫面與 API（3.4，條件觸發） | `analysis/ui-survey.md` |
 
 > ⚠ **A 路的 3.1 與 3.3 必須同一次派工**（都寫 `reuse-scan.yml`，拆兩個 agent 會互相覆蓋，
 > 是本步驟唯一的串接理由）；同 session 可平行派多個瀏覽器 agent，各給不同 `isolated_context`。

@@ -1,6 +1,6 @@
 # 後端驗證（qa-sweep 類別 2）
 
-純後端／Job 的 Bug 票沒有畫面，`qa-verify` 不打 API（M3），由 qa-sweep 主 session 驗。**結果一律進 S5 確認批，不自動改狀態。**
+純後端／Job 的 Bug 票沒有畫面，`delivery-flow:qa-verify` 不打 API（M3），由 qa-sweep 主 session 驗。**結果一律進 S5 確認批，不自動改狀態。**
 
 ## 1. 取 TC
 
@@ -25,7 +25,7 @@
 
 ## 3. 部署確認
 
-後端版本端點的版號常常**不能**對到 commit。能對到就照 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/environments.md`「版本比對（後端）」判；對不到就改用行為證據：新端點打不存在的 id 看是否回 handler 的 JSON 404；Job 類看修正後才會出現的 DB 狀態。判不出 → 該票歸未部署。
+後端版本端點的版號常常**不能**對到 commit。能對到就照 `delivery-flow:qa-verify` 的 environments.md「版本比對（後端）」判；對不到就改用行為證據：新端點打不存在的 id 看是否回 handler 的 JSON 404；Job 類看修正後才會出現的 DB 狀態。判不出 → 該票歸未部署。
 
 ## 4. 驗證
 
@@ -47,4 +47,4 @@ cases:
     結果: PASS
 ```
 
-`總計` 鍵與 `qa-verify` 的 `verdict.json` 相同，S4 嚴格 PASS 判定共用。報告不含內網 IP（同 qa-verify Step 6 檢查）。
+`總計` 鍵與 `delivery-flow:qa-verify` 的 `verdict.json` 相同，S4 嚴格 PASS 判定共用。報告不含內網 IP（同 `delivery-flow:qa-verify` Step 6 檢查）。

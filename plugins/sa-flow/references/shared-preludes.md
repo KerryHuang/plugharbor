@@ -50,7 +50,7 @@
 唯一定義在 `consultant-desk.md`。
 
 ## PDF 轉檔通則
-一律 `sa-flow:pdf-converter`，產出放功能 docs 目錄。
+一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄。
 
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

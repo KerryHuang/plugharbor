@@ -67,7 +67,7 @@ FRD 階段只查結構——FRD 不寫資料表結構，這裡查是為了
 `analysis/ui-survey.md` 已涵蓋 → 直接讀用，**不重問 URL、不重跑勘察**。
 
 ```
-subagent_type: "sa-flow:browser-surveyor"
+subagent_type: "browser-docs:browser-surveyor"
 prompt: |
   mode: survey
   url: {使用者提供的 URL}

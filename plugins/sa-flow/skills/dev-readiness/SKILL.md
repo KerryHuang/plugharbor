@@ -84,7 +84,7 @@ B1 空值/必填、B2 邊界值與精度、B3 唯一性(含已刪除)、**B4 狀
 **整體是否可進開發只有彙整後才判得出來**。判定完成後派 `report-writer` 產出報告檔：
 
 ```
-subagent_type: "sa-flow:report-writer"
+subagent_type: "delivery-flow:report-writer"
 prompt: |
   report_type: readiness
   out_path: {功能目錄}/{功能名稱}_就緒度報告.md
