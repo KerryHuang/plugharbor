@@ -27,4 +27,6 @@ got="$(HERDR_TREE_LAYOUT="$0" call)"
 # 呼叫端：null 時 warn 後 return，不重排
 grep -A3 'resolveLayout()' "$TS" | grep -q 'console.warn' && ok "呼叫端 null 時印警告" || ng "呼叫端缺警告"
 
+grep -B1 -A3 'await runPy' "$TS" | grep -q 'try' && grep -A3 'await runPy' "$TS" | grep -q 'catch' && ok "腳本執行失敗有 try/catch 警告" || ng "runPy 缺 try/catch"
+
 [ "$fail" = 0 ]

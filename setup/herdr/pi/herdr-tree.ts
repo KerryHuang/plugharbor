@@ -60,7 +60,8 @@ async function withTabLock(tab: string, fn: () => Promise<void>) {
 async function arrange(self: string, parentSid: string, name: string | undefined) {
   const layout = resolveLayout();
   if (!layout) {
-    console.warn("herdr-tree：找不到 herdr_layout.py（可設 HERDR_TREE_LAYOUT），不重排版面");
+    const o = process.env.HERDR_TREE_LAYOUT;
+    console.warn(`herdr-tree：找不到 herdr_layout.py${o ? `（HERDR_TREE_LAYOUT=${o} 不存在）` : "（可設 HERDR_TREE_LAYOUT）"}，不重排版面`);
     return;
   }
   const agents = JSON.parse(await run(["agent", "list"]))?.result?.agents ?? [];
@@ -76,7 +77,11 @@ async function arrange(self: string, parentSid: string, name: string | undefined
       await run(["pane", "move", self, "--new-tab", "--label", name || "agents", "--no-focus"]);
       return;
     }
-    await runPy([layout, "--main", parent]);
+    try {
+      await runPy([layout, "--main", parent]);
+    } catch (e: any) {
+      console.warn(`herdr-tree：herdr_layout.py 執行失敗，不重排版面：${String(e?.stderr || e?.message || e).trim()}`);
+    }
   });
 }
 
