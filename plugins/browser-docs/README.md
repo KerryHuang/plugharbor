@@ -1,6 +1,6 @@
 # browser-docs
 
-瀏覽器實機操作與文件轉檔。目前提供 Chrome 實機驅動與畫面勘察；截圖標註與脫敏、PDF 轉檔與擬真度驗證會陸續加入。
+瀏覽器實機操作與文件轉檔。目前提供 Chrome 實機驅動、畫面勘察與截圖標註；PDF 轉檔與擬真度驗證會陸續加入。
 
 ## 安裝
 
@@ -15,7 +15,7 @@ claude plugin install browser-docs@plugharbor
 |------|------|------|
 | chrome-devtools MCP | 所有瀏覽器操作 | 一律以 `--isolated` 註冊，標準寫法見 `references/browser-setup.md` |
 | Chrome | MCP 啟動的瀏覽器 | `scripts/find-chrome.sh` 協助找路徑 |
-| Pillow | 截圖標註、擬真度比對（後續加入的功能） | `pip install pillow` |
+| Pillow | 截圖標註（`annotate-screenshot`）、擬真度比對（後續加入的功能） | `pip install pillow` |
 | Word 或 LibreOffice | PDF 轉檔後的回轉驗證（後續加入的功能） | 擇一 |
 
 註冊後重啟 session，再跑：
@@ -31,6 +31,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/browser-doctor.py
 | 名稱 | 類型 | 說明 |
 |------|------|------|
 | `live-drive` | skill | 透過 chrome-devtools MCP 操作執行中的系統：重現問題（investigate）、跑 e2e、探索現況（explore）。正式環境一律唯讀。 |
+| `annotate-screenshot` | skill | 在截圖上畫框、編號、圖例、遮罩，或合成調整後示意圖；輸出 `-annotated.png` 並保留 clean 原圖。截圖前的假資料替換見 `references/anonymize-before-capture.md`。可由其他 skill、agent 叫用。 |
 | `browser-surveyor` | agent | 走到指定畫面，記錄欄位、預設值、驗證訊息、console、network，截圖落證據檔。只觀察不解讀；由 `live-drive` 派發。 |
 
 ## 登入設定

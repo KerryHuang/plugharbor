@@ -53,7 +53,7 @@ claude plugin install dev-flow@plugharbor
 | [research](./plugins/research/README.md) | 0.1.0 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |
-| [browser-docs](./plugins/browser-docs/README.md) | 0.1.2 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
+| [browser-docs](./plugins/browser-docs/README.md) | 0.2.0 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
 
 ### skills 與 agents
 
@@ -70,7 +70,7 @@ claude plugin install dev-flow@plugharbor
 | research | `ai-radar` `graphify` | — |
 | blog | `blog-capture` `publish-check` `write-post` | — |
 | kid-ui | `auditing-kid-ui` `designing-kid-ui` | — |
-| browser-docs | `live-drive` | `browser-surveyor` |
+| browser-docs | `annotate-screenshot` `live-drive` | `browser-surveyor` |
 
 ## 典型動線
 

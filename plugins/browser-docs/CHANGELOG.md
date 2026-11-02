@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.2.0] - 2026-11-02
+
+- feat: 新增 `annotate-screenshot` skill：截圖加框、編號、圖例、遮罩，或以真實片段合成調整後示意圖；輸出 `-annotated.png` 並保留 clean 原圖，可由其他 skill 或 agent 以 Skill 工具叫用。
+- feat: 新增 `scripts/annotate.py`（含 `mask` op）、`scripts/anonymize-page.js`（截圖前換假資料）與 `scripts/test_annotate.py`。
+- docs: 新增 `references/annotate-spec.md`、`references/anonymize-before-capture.md`。
+
 ## [0.1.2] - 2026-11-02
 
 - fix: 唯讀環境禁止清單補上 `press_key`（`browser-surveyor` 與 `live-drive` 的 `safety.md`），唯一例外是為 `fill` 清空輸入框，不得按 Enter 等會送出的鍵；`browser-tooling.md` 同步註明。
