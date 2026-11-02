@@ -20,7 +20,7 @@ MAX_WORKERS = 6
 
 
 def herdr(*args):
-    out = subprocess.run(["herdr", *args], capture_output=True, text=True)
+    out = subprocess.run(["herdr", *args], capture_output=True, text=True, encoding="utf-8")
     try:
         data = json.loads(out.stdout)
     except json.JSONDecodeError:

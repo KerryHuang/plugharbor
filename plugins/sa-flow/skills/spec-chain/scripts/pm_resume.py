@@ -32,7 +32,7 @@ def live_panes():
     """回傳 {pane_id: agent}；herdr 不可用時回 (None, 原因)。"""
     try:
         p = subprocess.run(
-            ["herdr", "agent", "list"], capture_output=True, text=True, timeout=20
+            ["herdr", "agent", "list"], capture_output=True, text=True, encoding="utf-8", timeout=20
         )
     except FileNotFoundError:
         return None, "找不到 herdr 指令"

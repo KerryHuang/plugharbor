@@ -3,6 +3,10 @@
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [4.0.2] - 2026-11-02
+
+- fix: `plugins/sa-flow/skills/spec-chain/scripts/pm_resume.py` 讀 `herdr agent list` 時指定 `encoding="utf-8"`；Windows 預設 cp950，agent 名稱含中文或 emoji 時對帳崩潰（對應 sdlc 2.95.1）。
+
 ## [4.0.1] - 2026-11-02
 
 - fix: `plugins/sa-flow/skills/qa-sweep/SKILL.md` 的待人工字串改成與 `delivery-flow:qa-verify` 實際回報一致（「待人工：票面環境 <名稱> 不在設定」「待人工：票面無可驗預期結果」），qa-sweep 靠字串分類，對不上會歸錯類。

@@ -10,7 +10,7 @@ cat > "$TMP/herdr" <<'STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$STUB_LOG"
 case "$1 $2" in
-  "pane get")    echo '{"result":{"pane":{"tab_id":"t1","label":""}}}' ;;
+  "pane get")    echo "{\"result\":{\"pane\":{\"tab_id\":\"t1\",\"label\":\"${STUB_LABEL:-}\"}}}" ;;
   "tab list")    echo '{"result":{"tabs":[{"tab_id":"t1","label":"demo"}]}}' ;;
   "pane rename") echo '{"result":{}}' ;;
   "pane move")   echo '{"result":{"move_result":{"changed":true,"pane":{"tab_id":"hold"}}}}' ;;
@@ -54,5 +54,14 @@ set +e; run 7; rc=$?; set -e
 [ "$rc" -ne 0 ]; check "7 workers：退出碼非 0" $?
 grep -q '請開新 tab' "$TMP/out.7"; check "7 workers：提示第 7 個起開新 tab" $?
 ! grep -q 'pane move' "$TMP/log.7"; check "7 workers：不搬動任何 pane" $?
+
+# 非 UTF-8 locale（如 Windows cp950）：herdr 輸出含中文／emoji 仍要能解析
+export STUB_LOG="$TMP/log.u" STUB_WORKERS=1 STUB_LABEL="派工 🚀"
+: > "$STUB_LOG"
+set +e
+PATH="$TMP:$PATH" LC_ALL=C LANG=C PYTHONCOERCECLOCALE=0 PYTHONUTF8=0 python3 "$SCRIPT" --main M --label demo > "$TMP/out.u" 2>&1
+rc=$?
+set -e
+check "非 UTF-8 locale：herdr 輸出含中文／emoji 不崩潰" "$rc"
 
 exit $fail
