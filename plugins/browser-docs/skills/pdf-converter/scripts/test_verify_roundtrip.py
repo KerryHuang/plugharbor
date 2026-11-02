@@ -67,6 +67,18 @@ class DocxToPdfTest(unittest.TestCase):
         word.Quit.assert_called_once()
 
 
+class LibreOfficeFailureTest(unittest.TestCase):
+    def test_nonzero_exit_raises_conversion_failed(self):
+        done = SimpleNamespace(returncode=1, stderr="boom")
+        with mock.patch.object(vr.subprocess, "run", return_value=done):
+            with self.assertRaises(vr.ConversionFailed):
+                vr.docx_to_pdf_libreoffice("a.docx", "a.pdf", "soffice")
+
+    def test_other_runtime_error_is_not_conversion_failed(self):
+        # fitz 的損毀 PDF 錯誤是 RuntimeError 子類，不能被 main 誤報成「轉檔失敗」
+        self.assertFalse(issubclass(RuntimeError, vr.ConversionFailed))
+
+
 class DegradedRunTest(unittest.TestCase):
     def _run(self, pdf, docx, text_mode="strict"):
         args = SimpleNamespace(original="o.pdf", docx="d.docx", outdir="out", text_mode=text_mode)

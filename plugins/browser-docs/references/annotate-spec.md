@@ -24,7 +24,7 @@
   `getBoundingClientRect()` 回傳值，三者直接對得上，不需換算。
 - **chrome-devtools 的 `take_screenshot` 不是**——DPR 2 的機器截出來是 CSS px × 2
   （實測 1680×1000 的 viewport 截出 3360×1672）。`getBoundingClientRect()` 給的是 CSS px，
-  **呼叫端要自己先乘好再寫進 spec**。
+  **呼叫端要自己先換好再寫進 spec**，倍率＝影像寬 ÷ `innerWidth`（不要寫死 2，viewport 或 DPR 不同時紅框會畫錯位置）。
 - 批次套用前**先拿一個元素驗映射**：疊一個框、截下來看有沒有套準，再跑其餘的。
   一分鐘的成本，省掉整批重做。
 

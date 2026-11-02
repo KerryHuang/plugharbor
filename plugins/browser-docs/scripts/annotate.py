@@ -8,7 +8,7 @@
 Spec 格式見 `references/annotate-spec.md`（plugin 根的 references/）。
 
 座標一律為**影像 px**。playwright `scale=css` 時影像 px == CSS px；
-Chrome DevTools 在 DPR 2 的機器上截出來是 CSS px × 2，**呼叫端要自己先乘好**。
+Chrome DevTools 在 DPR 2 的機器上截出來是 CSS px × 2，**呼叫端要自己先換好**（倍率＝影像寬 ÷ CSS 寬，不要寫死 2）。
 
 ⚠ 遮罩與紅框都必須畫進像素。用 CSS 疊一層再截圖，色會被色彩管理位移
 （實測輸入 #3467A9、輸出 (65,102,164)），遮罩會跟底色差一截，一眼看得出被塗過。

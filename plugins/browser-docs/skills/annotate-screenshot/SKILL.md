@@ -44,7 +44,7 @@ $ARGUMENTS → <截圖路徑> [標註意圖 | spec.json 路徑]
 
 - 底圖是 clean 版：檔名沒有 `-annotated` 字尾，且尚未畫過任何東西。
 - 批次套用前**先拿一張驗映射**：疊一個框、開圖看套準了再跑其餘的。
-- DPR 2 的截圖（chrome-devtools）座標要先乘 2 再寫進 spec。
+- chrome-devtools 的截圖座標要先換成影像 px 再寫進 spec：倍率＝影像寬 ÷ CSS 寬（`innerWidth`），DPR 2 才是 ×2，不要寫死。
 
 ### 3. 寫 spec 並執行
 
@@ -77,7 +77,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/annotate.py" <spec.json>
 |------|------|
 | `output` 與 `base` 同名 | 會覆寫 clean 圖，無法重標。輸出一律 `-annotated.png` |
 | 肉眼猜座標 | 用 `getBoundingClientRect()` 量；沒有就派 `browser-surveyor` `mode: measure` |
-| DPR 2 截圖用 CSS px 座標 | 影像 px = CSS px × 2，先乘好 |
+| 截圖用 CSS px 座標 | 影像 px = CSS px × 倍率（影像寬 ÷ `innerWidth`；DPR 2 為 2），先換好 |
 | 用 CSS 疊遮罩再截圖 | 色會被色彩管理位移。遮罩一律畫進像素（`mask` op） |
 | 整批遮罩沿用同一個色值 | 底色逐張不同，逐張取色 |
 | 遮罩只看像素統計就放行 | 框偏到空白處統計也會乾淨。開圖放大看 |

@@ -45,6 +45,10 @@ PIXEL_DIFF_THRESHOLD = 40  # 灰階差 > 此值視為相異像素
 DOWNSAMPLE = 4  # 比對前降採樣倍率：150dpi ÷ 4 ≈ 0.68mm 粒度，容忍 1~2px 渲染微移（與版面軸 2mm 容差同級）
 
 
+class ConversionFailed(RuntimeError):
+    """LibreOffice 轉檔失敗或逾時（退出碼 2）；其他 RuntimeError（如 fitz 的損毀 PDF）不在此列。"""
+
+
 class WordUnavailable(RuntimeError):
     """本機沒有 Word COM（非 Windows、未裝 Office 或 pywin32）。"""
 
@@ -58,10 +62,10 @@ def docx_to_pdf_libreoffice(docx_path: str, pdf_out: str, soffice: str):
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
         except subprocess.TimeoutExpired as e:
-            raise RuntimeError("LibreOffice 轉檔逾時（180 秒）；確認沒有殘留的 soffice 行程後重試") from e
+            raise ConversionFailed("LibreOffice 轉檔逾時（180 秒）；確認沒有殘留的 soffice 行程後重試") from e
         produced = Path(tmp, Path(docx_path).stem + ".pdf")
         if r.returncode != 0 or not produced.exists():
-            raise RuntimeError(f"LibreOffice 轉檔失敗（退出碼 {r.returncode}）：{r.stderr.strip()}")
+            raise ConversionFailed(f"LibreOffice 轉檔失敗（退出碼 {r.returncode}）：{r.stderr.strip()}")
         shutil.move(str(produced), str(Path(pdf_out).resolve()))
 
 
@@ -325,7 +329,7 @@ def main():
     except ConverterUnavailable as e:
         print(str(e), file=sys.stderr)
         sys.exit(EXIT_UNAVAILABLE)
-    except RuntimeError as e:  # 轉檔失敗／逾時：印一行訊息，不丟 traceback
+    except ConversionFailed as e:  # 轉檔失敗／逾時：印一行訊息，不丟 traceback
         print(str(e), file=sys.stderr)
         sys.exit(2)
     out = Path(args.outdir) / "verify-report.json"

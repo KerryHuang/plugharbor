@@ -53,7 +53,7 @@ claude-in-chrome 的隔離以 session 的 tab group 為界，同一 session 內�
 
 ## 座標與 DPR
 
-`getBoundingClientRect()` 給 CSS px；emulate `x2` 後截圖是 CSS px ×2（1680×1000 → 3360×2000）。寫進標註規格（annotate spec）前先乘好。
+`getBoundingClientRect()` 給 CSS px；emulate `x2` 後截圖是 CSS px ×2（1680×1000 → 3360×2000）。寫進標註規格（annotate spec）前先換好：倍率＝影像寬 ÷ `innerWidth`，不要寫死 2。
 
 ## `take_screenshot` 的 `filePath` 白名單
 

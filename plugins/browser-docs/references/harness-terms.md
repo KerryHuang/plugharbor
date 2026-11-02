@@ -12,6 +12,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 | Claude Code | Pi |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}` | plugin 根目錄＝SKILL.md 所在目錄往上兩層（`skills/<skill>/SKILL.md` → plugin 根）。Pi 不代換這個變數：寫進工具呼叫或 shell 指令前，先換成絕對路徑；shell 裡的 `${CLAUDE_PLUGIN_ROOT}` 在 Pi 是空字串。 |
+| `${CLAUDE_SKILL_DIR}` | 本 SKILL.md 所在目錄的絕對路徑。Pi 不代換：寫進工具呼叫或 shell 指令前先換成絕對路徑。 |
 | `$ARGUMENTS` | `/skill:<name>` 後面的文字（Pi 把它附在 skill 內容後當使用者請求），沒有就用觸發本 skill 的那則使用者訊息。 |
 | `${CLAUDE_CODE_SESSION_ID}` | Pi 沒有對應值。依賴它的量測（例如讀 Claude transcript 估算 context 用量）在 Pi 上略過，回報時註明「Pi 未量測」。 |
 | `<plugin>:<skill>`、`/<plugin>:<skill>` | Pi skill 名稱不帶 plugin 前綴：`<skill>`，手動觸發用 `/skill:<skill>`。 |
@@ -33,6 +34,8 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 | Claude Code | Pi |
 |---|---|
 | `AskUserQuestion` | `ask_user`。一次呼叫只問一題：多題批次改成同一回合依序多次呼叫；`options` 的 label／description 對應 `title`／`description`；`multiSelect: true` 對應 `allowMultiple: true`；`header` 併入 `context`。「推薦項置首標（推薦）」等規則照舊。 |
+| `Skill` | Pi 沒有 `Skill` 工具：叫用 `<plugin>:<skill>` 時，改讀該 skill 的 SKILL.md（Pi 的 skill 名稱不帶 plugin 前綴）照做。 |
+| `WebFetch`、`WebSearch` | Pi 沒有內建網頁工具：有對應 MCP server 就經 `mcp` gateway 呼叫，沒有就用 `bash` 跑 `curl`，或請使用者貼上內容。 |
 | `TodoWrite`、`TaskCreate` | `todo`（`create`／`update`／`list`）。 |
 | `ToolSearch` | `direct` 工具已直接宣告，看工具清單即可；其餘在 `codemode` 腳本裡用 `await searchTools("<工具名>")` 或 `await describeNamespace("mcp__<server>")` 確認存在；`select:a,b` 逐一確認。 |
 | `ListMcpResourcesTool` | system prompt 的 `mcp_servers` 段列出 `codemode`／`deferred` server；`codemode` 腳本讀 `ALL_TOOLS` 可列全部。判斷條件（如「名稱含 linear」）照舊。 |

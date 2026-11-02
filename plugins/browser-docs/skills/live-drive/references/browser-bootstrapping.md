@@ -14,7 +14,7 @@ MCP 註冊一律 `chrome-devtools-mcp --isolated`——標準與 Codex 寫法見
 ## 登入
 
 每個 session 的 Chrome 是全新的、每個 `isolatedContext` 是全新的 cookie jar，**一定要自己登入**。
-憑證讀 workspace 的 `.claude/live-drive.local.md`（`live-drive-url／username／password`）；
+憑證讀 workspace 的 `.claude/live-drive.local.md`（`live-drive-url`、`live-drive-username`、`live-drive-password`，一行一鍵 `鍵: 值`）；
 登入頁(SSO／表單皆同)：`take_snapshot` 取 uid → `fill` 帳密 → `click` → 驗證回到目標 URL。
 憑證不寫進任何產物。
 

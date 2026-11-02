@@ -1,7 +1,9 @@
 {
   "name": "browser-docs",
-  "version": "0.3.1",
+  "private": true,
+  "description": "browser-docs plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
   "license": "MIT",
+  "keywords": ["pi-package", "browser-docs"],
   "pi": {
     "skills": ["./skills"]
   }

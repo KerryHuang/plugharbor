@@ -2,6 +2,16 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+
+## [0.3.2] - 2026-11-02
+
+- fix: `plugins/browser-docs/skills/pdf-converter/scripts/verify_roundtrip.py` 新增 `ConversionFailed`，只在 LibreOffice 轉檔失敗或逾時時以退出碼 2 結束；原本 `except RuntimeError` 過寬，fitz 的損毀 PDF 錯誤會被誤報成「轉檔失敗」。`plugins/browser-docs/skills/pdf-converter/SKILL.md` 錯誤表補上退出碼 2 的處理，並補測試。
+- fix: 座標換算改為「影像寬 ÷ `innerWidth`」，不再寫死 DPR 2 乘 2（viewport 或 DPR 不同時紅框會畫錯位置）：`plugins/browser-docs/skills/annotate-screenshot/SKILL.md`、`plugins/browser-docs/references/annotate-spec.md`、`plugins/browser-docs/references/browser-tooling.md`、`plugins/browser-docs/scripts/annotate.py`。
+- fix: `plugins/browser-docs/references/harness-terms.md` 補 `${CLAUDE_SKILL_DIR}`、`Skill`、`WebFetch`／`WebSearch` 三列對照（與 `plugins/delivery-flow/references/harness-terms.md` 保持一致）。
+- fix: `plugins/browser-docs/agents/browser-surveyor.md` 與 `plugins/browser-docs/skills/live-drive/references/safety.md` 的 `press_key` 清空輸入框例外改為只適用可寫環境（唯讀環境不 `fill`，也就不需要清空）。
+- fix: `plugins/browser-docs/README.md` 與 `plugins/browser-docs/skills/live-drive/references/browser-bootstrapping.md` 寫出登入設定檔確切鍵名 `live-drive-url`、`live-drive-username`、`live-drive-password`。
+- fix: `plugins/browser-docs/package.json` 移除 `version`（版本只在 `plugins/browser-docs/.claude-plugin/plugin.json` 同步），並新增 `plugins/browser-docs/scripts/test_manifest.py` 防止再次漂移。
+
 ## [0.3.1] - 2026-11-02
 
 - fix: Word 已註冊但 pywin32 缺少或啟動失敗時，改用 LibreOffice；兩者都不可用時訊息含 pywin32 與安裝指引。

@@ -135,6 +135,7 @@ Word 轉換通過驗證後：
 | PDF 加密 | 提示解密後終止 |
 | 全頁掃描且使用者拒絕降級 | 終止，說明不做 OCR 的原因（辨識錯字造成假精確） |
 | Word 與 LibreOffice 皆無（verify 退出碼 3） | 告知使用者安裝 LibreOffice（訊息已附指令）；使用者不裝時加 `--allow-degraded` 重跑：跳過回轉，只以 docx 內文比對文字軸，明告「版面與視覺驗證未執行」 |
+| verify 退出碼 2（LibreOffice 轉檔失敗或逾時） | 讀 stderr 的那一行：逾時就確認沒有殘留的 soffice 行程後重跑；轉檔失敗附 stderr 給使用者，不改走降級（降級只對退出碼 3） |
 | 3 輪驗證未過 | 停止迭代，附 diff 證據交使用者裁決 |
 
 ## References

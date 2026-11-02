@@ -14,7 +14,7 @@
 
 唯讀模式下:
 - **允許**:`new_page` / `navigate_page` / `take_snapshot` / `take_screenshot` / `list_console_messages` / `list_network_requests`。
-- **禁止**:`fill` / `click`(會觸發變更的)/ `press_key` / `drag` / `upload_file` / 任何送出表單的動作。`press_key` 唯一例外:為了接著 `fill` 而清空輸入框(Backspace 這類刪除鍵);絕不按 Enter 或任何會送出、觸發動作的鍵。
+- **禁止**:`fill` / `click`(會觸發變更的)/ `press_key` / `drag` / `upload_file` / 任何送出表單的動作。`press_key` 唯一例外只適用可寫環境:為了接著 `fill` 而清空輸入框(Backspace 這類刪除鍵);唯讀環境一律不按任何鍵(唯讀本來就不 `fill`),任何環境都絕不按 Enter 或會送出、觸發動作的鍵。
 - 需要在正式環境做變更時:`AskUserQuestion` 取得使用者**該次顯式授權**,並只放行被授權的最小動作。
 
 > 純導覽性的 `click`(展開選單、切分頁)與變更性 `click`(送出、刪除)難以自動區分時,**從嚴**:在正式環境先確認再點。

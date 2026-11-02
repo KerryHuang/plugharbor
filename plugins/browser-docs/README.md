@@ -39,7 +39,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/browser-doctor.py
 
 ## 登入設定
 
-`live-drive` 讀 workspace 的 `.claude/live-drive.local.md`（或 `CLAUDE.local.md`）取得 `live-drive-url`、`username`、`password`。此檔勿提交，憑證不會寫進任何產出。
+`live-drive` 讀 workspace 的 `.claude/live-drive.local.md`（或 `CLAUDE.local.md`）取得 `live-drive-url`、`live-drive-username`、`live-drive-password`（一行一鍵，`鍵: 值`）。此檔勿提交，憑證不會寫進任何產出。
 
 ## 其他 CLI
 
