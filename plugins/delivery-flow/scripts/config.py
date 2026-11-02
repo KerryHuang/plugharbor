@@ -2,7 +2,7 @@
 """讀 delivery-flow 的專案設定 `.plugharbor/delivery-flow.yml`。
 
 用法：python3 config.py get <key>   （key 用點號，例如 ticket.tool；以目前目錄為專案根）
-缺檔或缺鍵：退出碼 2，stderr 一行建檔指引。
+缺檔、缺鍵（值為空也算）或檔案格式錯誤（YAML 語法、最上層不是對應、非 UTF-8）：退出碼 2，stderr 一行說明。
 """
 import json
 import sys
@@ -27,6 +27,8 @@ def load_config(root: Path, key: str = "ticket.tool") -> dict:
         raise ConfigMissing("(file)", HINT.format(key=key))
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except UnicodeDecodeError:
+        raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：不是 UTF-8 編碼，請另存為 UTF-8")
     except yaml.YAMLError as e:
         msg = " ".join(str(e).split())
         raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：{msg}")
@@ -43,7 +45,7 @@ def require(cfg: dict, key: str):
         if not isinstance(node, dict) or part not in node:
             raise ConfigMissing(key, HINT.format(key=key))
         node = node[part]
-    if node is None:
+    if node is None or node == "":
         raise ConfigMissing(key, HINT.format(key=key))
     return node
 

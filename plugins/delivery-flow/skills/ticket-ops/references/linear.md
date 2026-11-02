@@ -11,7 +11,7 @@
 | `set_stage` | `save_issue(id, state=<狀態 ID>)`；參數名是 `state`，不是 `stateId` |
 | `comment` | `save_comment(issueId, body)`；列既有留言用 `list_comments` |
 | `attach` | 三步簽名上傳，見下 |
-| `query` | `list_issues(query, state, labels, parentId, updatedAt, createdAt, completedAt, cursor)`；`hasNextPage` 為真就續抓。時間範圍篩選用 `updatedAt`／`createdAt`／`completedAt`。回傳對映：`completedAt`（僅 `done`）、`createdAt`、`dueDate`、`assignee`、`url` 直接取；`priority` 的 1／2／3／4／0 對映 `urgent`／`high`／`medium`／`low`／`none` |
+| `query` | `list_issues(query, state, labels, parentId, updatedAt, createdAt, completedAt, cursor)`；`hasNextPage` 為真就用回傳的 `cursor` 續抓到 `false` 為止；續抓失敗或中途停止時，視同截斷：回傳附「query 完整性：可能截斷（已取 N 筆）」，數字標下限，不得當完整結果。時間範圍篩選用 `updatedAt`／`createdAt`／`completedAt`。回傳對映：`completedAt`（僅 `done`）、`createdAt`、`dueDate`、`assignee`、`url` 直接取；`priority` 的 1／2／3／4／0 對映 `urgent`／`high`／`medium`／`low`／`none`。`階段` 依 `ticket.states` 反查回抽象階段；不在對照表的原生狀態回 `unmapped:<name>`，叫用端列為未分類，不計入任何階段 |
 | `get` | `get_issue(id)`；`children` 取該票的子票（sub-issues）id，`parent` 取 `parentId`（無則 null），`stage` 對映回抽象階段 |
 | `link_blocked_by` | `save_issue(id, blockedBy=[blocker_id])` |
 

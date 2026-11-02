@@ -100,7 +100,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/text-image-ratio.py" <手冊.md>
 
 ### 圖說與 caption 對帳
 
-圖說格式：`![aNN 圖說](images/aNN-英文語意名.png)`，寫「這張圖要看什麼」，不複述標題。
+圖說格式：`![aNN 圖說](images/aNN-英文語意名.png)`，寫「這張圖要看什麼」，不複述標題。圖說裡的方括號一律用全形［］，半形 `[` `]` 會讓 markdown 圖片語法提早結束；檔名只用英文語意名，不含方括號。
 
 **caption 是在標註動手之前寫的**，句型多半是「紅框處為 X、Y、Z」。標註時常有正當理由少框一個（元素當下是 disabled、與遮罩相交），而 caption 不會自己跟著改。所以：
 

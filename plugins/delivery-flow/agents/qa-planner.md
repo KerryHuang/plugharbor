@@ -40,10 +40,10 @@ color: yellow
 1. 開頁前先 `list_pages`：已有同 `isolatedContext` 的頁是上一支的殘留，**不接手**（登入態與版面都不是你建立的），照樣開自己的。`new_page(url, isolatedContext: "<派工給的 isolated_context>", background: true)`，開頁後第一件事 `emulate(pageId, viewport: "1680x1000x2")`——**無條件，沒有「這次不需要」的例外**，做完 `evaluate_script` 讀 `[innerWidth, innerHeight, devicePixelRatio]`。
 2. 每次瀏覽器呼叫都明確帶自己的 `pageId`；看到「Page ids have changed」就重跑 `list_pages` 用 `isolatedContext` 認回自己的頁。
 3. 收尾 `close_page(pageId)` 再 `list_pages` 確認自己的頁已不在；只關自己的、不 kill Chrome。連不上最多試 2 次就停下回報，請呼叫端檢查瀏覽器（見 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/browser-modes.md`）。
-   工具參數寫法（`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加）見 `browser-docs` plugin 的 browser-tooling 參考檔「工具呼叫速查」。
+   工具參數寫法：`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加。
 4. 回傳必含一行 `viewport：emulate 1680x1000x2 → 實讀 [w, h, dpr]；分頁已關：true/false`；帳號密碼絕不寫進輸出檔與回傳（含「登入用 帳號/密碼 成功」這種順口交代），只寫「登入成功／失敗」。漏了第 4 條，這次派工即為未完成。
 
-isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 註冊標準見 `browser-docs` plugin 的 browser-setup 參考檔。
+isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 一律以 `--isolated` 註冊（`npx -y chrome-devtools-mcp@latest --isolated`）；連不上就停下回報，由主 session 請使用者改註冊。
 </law>
 
 ## 輸入（派工 prompt 給）

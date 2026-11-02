@@ -97,6 +97,25 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(r.returncode, 2)
             self.assertEqual(r.stdout.strip(), "")
 
+    def test_empty_string_is_missing(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, 'ticket:\n  tool: ""\n')
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+            self.assertEqual(r.stdout.strip(), "")
+
+    def test_non_utf8_file_is_format_error_without_traceback(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = pathlib.Path(t) / ".plugharbor"
+            d.mkdir()
+            (d / "delivery-flow.yml").write_bytes("ticket:\n  tool: 票\n".encode("big5"))
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertIn("UTF-8", r.stderr)
+
     def test_cli_get_ok(self):
         with tempfile.TemporaryDirectory() as t:
             write_cfg(t, "ticket:\n  tool: github\n")

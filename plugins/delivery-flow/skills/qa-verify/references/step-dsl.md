@@ -67,6 +67,8 @@
 
 例子：`press(值=Enter)`、`press(欄位=備註, 值=Tab)`
 
+**唯讀限制**：`允許寫入: false` 的環境，runner 只執行 Tab、Escape 與清空用的刪除鍵；`press(值=Enter)` 這類會送出表單的按鍵停在按之前，不執行（見 `qa-runner-ui` 的 law）。planner 寫計畫時，唯讀環境的 TC 盡量改寫成「走到送出控制項」而不是按 Enter。
+
 ### observe
 **語意**：觀察并記錄頁面狀態。讀取欄位值、訊息、視覺標記、網路請求等。
 - **欄位**：null

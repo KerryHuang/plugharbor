@@ -42,7 +42,7 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 ## Step 3：fixture
 
 派 `delivery-flow:qa-fixture`（sonnet）：plan、環境名、URL、`<ws>`（登入用），輸出 `fixtures.yml`、isolated_context=qa-fixture。
-回傳 `允許寫入 false` 而使用者要求 CRUD → 告知依據（設定 `qa.environments` 該項 `writable`），不硬寫。
+回傳 `允許寫入 false` 而使用者要求 CRUD → 告知依據（設定 `qa.environments` 該項 `writable`），不硬寫。`允許寫入` 只看設定，與 DB 工具有無無關：沒有 DB 工具只讓 `含個資` 判 `true`、資料斷言回「未查證（無 DB 工具）」。
 
 ## Step 4：runner
 

@@ -275,6 +275,8 @@ def validate_fixtures(doc):
             errs.append(f"{w}: {r} 必須附 值")
         _dict_when_present(errs, f"{w}.值", it.get("值"))
         _str_or_null(errs, f"{w}.查詢", it.get("查詢"))
+        if isinstance(it.get("查詢"), str) and not _readonly_query(it["查詢"]):
+            errs.append(f"{w}.查詢: 必須是以 SELECT 或 WITH 開頭的唯讀查詢，不可含寫入語句")
         _dict_when_present(errs, f"{w}.清理", it.get("清理"))
     return errs
 
@@ -367,6 +369,8 @@ def validate_db_check(doc):
         for i, a in enumerate(items if isinstance(items, list) else []):
             if isinstance(a, dict) and (not isinstance(a.get("查詢"), str) or not a.get("查詢", "").strip()):
                 errs.append(f"rules[{rid}].資料斷言[{i}].查詢: 必須是非空 str（SQL 原文）")
+            elif isinstance(a, dict) and not _readonly_query(a["查詢"]):
+                errs.append(f"rules[{rid}].資料斷言[{i}].查詢: 必須是以 SELECT 或 WITH 開頭的唯讀查詢，不可含寫入語句")
     return errs
 
 

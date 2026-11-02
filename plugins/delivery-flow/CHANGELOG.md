@@ -2,6 +2,22 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+
+## [0.7.1] - 2026-11-02
+
+- fix: `plugins/delivery-flow/agents/qa-runner-ui.md` 唯讀環境（`允許寫入: false`）禁止 `press_key` 按 Enter 或任何會送出的鍵，只准 Tab、Escape 與清空用的刪除鍵；步驟要求按 Enter 時停在按之前。`plugins/delivery-flow/skills/qa-verify/references/step-dsl.md` 的 `press` 節同步註明。
+- fix: `plugins/delivery-flow/agents/qa-fixture.md` 沒有 DB 工具時不再把 `允許寫入` 一律判 false：可寫性只看設定 `qa.environments[].writable`，`writable: true` 時前置資料照常走畫面建立；沒有 DB 工具只讓 `含個資` 判 true、省略 `查證`，資料斷言回報「未查證（無 DB 工具）」。`plugins/delivery-flow/references/config.md`、`plugins/delivery-flow/skills/qa-verify/SKILL.md`、`plugins/delivery-flow/skills/qa-verify/references/environments.md` 同步。
+- fix: `plugins/delivery-flow/skills/ticket-ops/references/github.md` 的 `query` 不再寫死 `--limit 200` 而靜默截斷：改 `--limit 1000`，筆數達上限視為可能截斷，要切時間窗分段合併或改 `gh api --paginate`，仍拿不全就回報「query 完整性：可能截斷」並把數字標為下限。`plugins/delivery-flow/skills/ticket-ops/references/linear.md`、`plugins/delivery-flow/skills/ticket-ops/references/contract.md` 與兩份報表的 `query-strategy.md`（`plugins/delivery-flow/skills/ticket-daily-report/references/query-strategy.md`、`plugins/delivery-flow/skills/ticket-weekly-report/references/query-strategy.md`）同步，報表頂端要有截斷警語。
+- fix: `query` 回傳的階段在 `plugins/delivery-flow/skills/ticket-ops/references/linear.md` 與 `plugins/delivery-flow/skills/ticket-ops/references/github.md` 寫明依 `ticket.states` 反查，不在對照表的原生狀態回 `unmapped:<name>`，叫用端列為未分類。
+- fix: `plugins/delivery-flow/scripts/config.py` 空字串視為缺鍵、非 UTF-8 設定檔改為退出碼 2 的格式錯誤（不再噴 Traceback），docstring 補上格式錯誤也是退出碼 2；補測試。
+- fix: `plugins/delivery-flow/skills/qa-verify/scripts/validate.py` 的 `解析[].查詢` 與 db-check 的 `查詢` 也套用唯讀檢查；補測試。
+- fix: `plugins/delivery-flow/references/harness-terms.md` 補 `${CLAUDE_SKILL_DIR}`、`Skill`、`WebFetch`／`WebSearch` 對照（與 `plugins/browser-docs/references/harness-terms.md` 一致），新增 `plugins/delivery-flow/scripts/test_harness_terms_sync.py` 比對兩份。
+- fix: `plugins/delivery-flow/references/shared-preludes.md` 補「叫用 `browser-docs:*` 失敗時告知安裝」一行。
+- fix: `plugins/delivery-flow/agents/qa-planner.md`、`plugins/delivery-flow/agents/qa-fixture.md`、`plugins/delivery-flow/agents/qa-runner-ui.md`、`plugins/delivery-flow/skills/operation-manual/SKILL.md` 不再用散文指向其他 plugin 的檔案：工具參數速查與 `--isolated` 註冊寫法直接寫進內文。
+- fix: `plugins/delivery-flow/skills/prototype-html/references/neutral-style.css` 加 `color-scheme: light dark`，表單控制項邊框改用 `--control-border`（對 surface 約 4:1，符合 WCAG 1.4.11 的 3:1）；`plugins/delivery-flow/skills/prototype-html/SKILL.md` 的既有原型搜尋改用 `find`（bash 預設沒開 globstar），步驟 8 只對「會改變畫面結構」的待確認逐題問。
+- fix: `plugins/delivery-flow/skills/operation-manual/references/manual-style-guide.md` 圖說的方括號一律用全形，避免 markdown 圖片語法提早結束。
+- fix: `plugins/delivery-flow/package.json` 移除 `version`（版本只在 `plugins/delivery-flow/.claude-plugin/plugin.json` 同步，原本 0.2.1 已漂移），並新增 `plugins/delivery-flow/scripts/test_manifest.py` 防止再次漂移。
+
 ## [0.7.0] - 2026-11-02
 
 - feat: 新增 skill `prototype-html`（`plugins/delivery-flow/skills/prototype-html/SKILL.md`）：把需求描述做成單檔、可點切換多畫面的 HTML 原型。需求有歧義時停下來用具體例子問；使用者給設計系統（URL 或檔案）就照它做，沒給就用無品牌的預設風格；資料照使用者樣本的組合，沒有樣本就用寫實組合加假識別值；不綁任何資料庫工具。

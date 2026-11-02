@@ -5,6 +5,7 @@
 ## 原則
 
 1. **全量，不抽樣**：要求 ticket-ops 分頁拉完。只取第一頁，數字會系統性偏低。
+   ticket-ops 回「query 完整性：可能截斷」時，報表**頂端**用警語標明（「查詢可能被截斷，以下數字為下限」），受影響的數字標「≥」，不當完整結果交出。
 2. **大結果落檔**：結果過大時 ticket-ops 會落檔並回傳路徑，改用 jq／python 讀，
    **不要為了塞進對話而砍欄位重試**。落檔與衍生檔一律放 `.tmp/daily-report/`。
 3. **選配欄位**：`assignee`、`createdAt`、`completedAt`、`priority`、`dueDate` 由 ticket-ops 依後端能力回傳（GitHub 的 `dueDate` 恆為空）。

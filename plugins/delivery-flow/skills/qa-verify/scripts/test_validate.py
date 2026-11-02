@@ -433,6 +433,14 @@ class TestDataAssertionSchema(unittest.TestCase):
         self.assertTrue(any("通道" in e for e in validate_db_check(bad)))
         self.assertTrue(any("查詢" in e for e in validate_db_check(bad)))
 
+    def test_executed_queries_must_be_readonly(self):
+        from validate import validate_db_check, validate_fixtures
+        d = fixtures(); d["解析"][0]["查詢"] = "DELETE FROM WORK_ORDER"
+        self.assertTrue(any("查詢" in e and "唯讀" in e for e in validate_fixtures(d)))
+        bad = {"_meta": {"通道": "[readonly-db demo-staging]"},
+               "rules": {"TC-C-002": [{"目標": "WORK_ORDER.STATUS", "實際": "Y", "查詢": "UPDATE WORK_ORDER SET STATUS='Y'"}]}}
+        self.assertTrue(any("查詢" in e and "唯讀" in e for e in validate_db_check(bad)))
+
     def test_strip_excludes_data_assertions_and_db_targets_lists_them(self):
         from strip_plan import strip, db_targets
         import json

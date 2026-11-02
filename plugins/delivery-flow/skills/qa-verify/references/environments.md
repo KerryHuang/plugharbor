@@ -10,7 +10,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get qa.environments   # 缺：�
 
 - `qa-fixture` 判 `環境.允許寫入`：派工 URL 的 origin（scheme＋host＋port）對到清單上某一項的 `url` origin，取該項 `writable`；對不到 → `false`。`writable` 不是布林值也視為 `false` 並在回傳報告。依據寫進 `環境.依據`（如 `config qa.environments[dev].writable=true`）。不看網址長相、不看 DB 資料量。
 - **不可自行推定授權**：清單標 `writable: false` 的環境要寫入，必須由使用者明示授權並寫進派工；沒帶就維持 `false`。
-- `含個資` 與可寫性是兩個獨立旗標：可寫的環境也可能載著真實客戶資料。有唯讀 DB 查詢工具才能查證；沒有工具一律判 `true`（保守遮罩）並省略 `環境.查證`（`依據` 仍必填，`查證` 不寫敘事）。
+- `含個資` 與可寫性是兩個獨立旗標：可寫的環境也可能載著真實客戶資料。有唯讀 DB 查詢工具才能查證；沒有工具一律判 `true`（保守遮罩）並省略 `環境.查證`（`依據` 仍必填，`查證` 不寫敘事），回報「未查證（無 DB 工具）」。沒有工具**不改變** `允許寫入`：可寫性只看 `writable`，`true` 時前置資料照常走畫面建立。
 - 帳密不在設定檔，見下節。
 
 ## 取帳密

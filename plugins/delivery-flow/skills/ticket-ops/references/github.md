@@ -10,11 +10,20 @@
 | `set_stage` | `gh issue edit N --repo R --add-label … --remove-label …`；`close` 為真時再 `gh issue close N --repo R --reason completed｜"not planned"` |
 | `comment` | `gh issue comment N --repo R --body-file F` |
 | `attach` | 見下 |
-| `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 200`；時間範圍用 `--search "created:>=… closed:>=…"` |
+| `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 1000`；時間範圍用 `--search "created:>=… closed:>=…"`。**不得靜默截斷**，見下「查詢不截斷」。`階段` 由 `stage:*` label 與 `state` 還原，label 不在 `ticket.states` 對照內時回 `unmapped:<name>`（叫用端列為未分類，不計入任何階段） |
 | `get` | `gh issue view N --repo R --json number,title,body,state,stateReason,labels,url,updatedAt`；`children` 解析 body 內 `- [ ] #n`／`- [x] #n` 項目的 n；`parent` 取 body 內 `parent: #n` 那一行（父子票慣例見下），沒有就是 null；`stage` 由 `stage:*` label 與 `state` 還原 |
 | `link_blocked_by` | 見下 |
 
 `query` 欄位對映：`closedAt` 且 `stateReason` 為 `COMPLETED` 才填 `completedAt`；以 not planned 關閉的票 `completedAt` 為 null，不算交付。`createdAt`、`url` 直接取；`assignee` 取 `assignees` 陣列第一位的 `login`，陣列為空則 null。`priority` 取自 label `priority:<level>`（level 為 urgent／high／medium／low），無此 label 為 `none`。`dueDate` 恆為 null（GitHub 不支援）。
+
+## 查詢不截斷
+
+`gh issue list` 不回「還有更多」的訊號，筆數到 `--limit` 就停；帶 `--search` 時走 search API，單次查詢上限 1000 筆。所以：
+
+1. 每次查詢帶 `--limit 1000`，並比對回傳筆數。
+2. 筆數 **< 1000** → 視為完整。筆數 **＝ 1000**（或剛好等於所下的 limit）→ 視為可能截斷，**不得直接使用**：把時間窗對半切（以 `created:A..B` 或 `updated:A..B`），逐段重查再合併，並依票號去重；每一段都 < 1000 才算查完。
+3. 切到單日仍 ≥ 1000，或改不了窗（例如只有存量、沒有時間條件）→ 改 `gh api --paginate "search/issues?q=…"` 逐頁取；仍拿不全就停止，並**在回傳與報表明寫「查詢可能被截斷：實際取得 N 筆，已達上限」**，數字一律標「下限」，不得當完整結果交出。
+4. 回傳要附一行 `query 完整性：完整｜已分段合併（N 段）｜可能截斷`。報表要把這一行帶進來。
 
 階段 label 要先存在：`gh label create "stage:todo" --repo R`（已存在會報錯，忽略即可）。重新開啟已關閉的票改階段時，先 `gh issue reopen`。`body` 一律用 `--body-file`，避免 shell 跳脫。
 

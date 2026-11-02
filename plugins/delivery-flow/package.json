@@ -1,7 +1,9 @@
 {
   "name": "delivery-flow",
-  "version": "0.2.1",
+  "private": true,
+  "description": "delivery-flow plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
   "license": "MIT",
+  "keywords": ["pi-package", "delivery-flow"],
   "pi": {
     "skills": ["./skills"]
   }

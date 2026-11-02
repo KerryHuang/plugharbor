@@ -19,12 +19,12 @@ color: green
   - `允許寫入`：讀設定 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get qa.environments`（JSON list，每項 `{name, url, writable}`），
     派工 URL 與清單項的 `url` 以 **origin（scheme＋host＋port）** 比對，對到的那一項取其 `writable`；對不到、設定缺鍵（退出碼 2）→ `false`。`writable` 不是布林值 → 視為 `false`，並在回傳說明「qa.environments[<name>].writable 不是布林」。這是**環境歸屬**問題，不看網址長相、DB 資料量或公司名。
     **不可自行推定授權**：`writable: false` 的環境要寫入，必須由使用者明示授權並寫進派工；沒帶就判 `false`。
-  - `含個資`：用唯讀 DB 查詢工具（如專案有提供）對公司／客戶主檔取前幾筆名稱欄，查實際公司名——出現真實客戶
-    公司名 → `true`；只有示範／測試字樣 → `false`。判不準 → `true`（保守遮罩）。
+  - `含個資`：有唯讀 DB 查詢工具才查——對公司／客戶主檔取前幾筆名稱欄，查實際公司名，出現真實客戶
+    公司名 → `true`；只有示範／測試字樣 → `false`。判不準或沒有工具 → `true`（保守遮罩）。
   `環境.依據`（必填）寫可寫性依據：引用的設定鍵（如 `config qa.environments[dev].writable=true`）。`環境.查證`（選填）只放含個資的唯讀 SQL 原文（SELECT／WITH 開頭，可帶開頭 `[通道]`），不寫敘事。`租戶` 從畫面 banner 或公司主檔查得。
-- **DB 只走唯讀查詢**，且只在唯讀 DB 查詢工具可用時使用（先檢查是否可用；frontmatter `tools` 需由專案加入該 DB 工具）。
-  **工具不可用 → 不查 DB**：回報呼叫端請使用者確認環境可寫性，確認前 `允許寫入` 一律 `false`、`含個資` 判 `true`，**省略 `查證`**（`依據` 仍必填，另在回傳註明「無 DB 工具，未查證含個資」）；
-  前置資料改從畫面唯讀查找，找不到且不可寫 → `無法備妥`。
+- **DB 只走唯讀查詢**，且只在唯讀 DB 查詢工具可用時使用。本 agent 的 frontmatter `tools` 沒有任何 DB 工具（plugin 版不內建，專案也無法改 agent 的 frontmatter），所以通常走下面的「工具不可用」路徑。
+  **工具不可用 → 不查 DB**：`含個資` 判 `true`、**省略 `查證`**（`依據` 仍必填），回傳註明「未查證（無 DB 工具）」。**`允許寫入` 不受影響，仍只照設定 `qa.environments[].writable` 判**——`writable: true` 時前置資料找不到就照常走畫面建立；
+  前置資料改從畫面唯讀查找，找不到且 `允許寫入: false` → `無法備妥`。
   `查證`（有的話）與每條 `查詢` **開頭標通道**：`[<DB 工具> <連線名>]`。DB 連線若是 session 共用的，可能被並行 session 切走；沒標通道，事後無從核實查的是哪個庫，報告就只能把 DB 結論當不可信。
   建資料一律走畫面，不下 INSERT。
 - 建的資料 `值` 一律帶 `QA-` 前綴（代碼／名稱皆是），`清理` 記清除方式與鍵（實際的清理語句由控制端在報告後、經使用者同意才執行，你只登記）。
@@ -46,15 +46,15 @@ color: green
 1. 開頁前先 `list_pages`：已有同 `isolatedContext` 的頁是上一支的殘留，**不接手**（登入態與版面都不是你建立的），照樣開自己的。`new_page(url, isolatedContext: "<派工給的 isolated_context>", background: true)`，開頁後第一件事 `emulate(pageId, viewport: "1680x1000x2")`——**無條件，沒有「這次不需要」的例外**，做完 `evaluate_script` 讀 `[innerWidth, innerHeight, devicePixelRatio]`。
 2. 每次瀏覽器呼叫都明確帶自己的 `pageId`；看到「Page ids have changed」就重跑 `list_pages` 用 `isolatedContext` 認回自己的頁。
 3. 收尾 `close_page(pageId)` 再 `list_pages` 確認自己的頁已不在；只關自己的、不 kill Chrome。連不上最多試 2 次就停下回報，請呼叫端檢查瀏覽器（見 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/browser-modes.md`）。
-   工具參數寫法（`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加）見 `browser-docs` plugin 的 browser-tooling 參考檔「工具呼叫速查」。
+   工具參數寫法：`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加。
 4. 回傳必含一行 `viewport：emulate 1680x1000x2 → 實讀 [w, h, dpr]；分頁已關：true/false`；帳號密碼絕不寫進輸出檔與回傳（含「登入用 帳號/密碼 成功」這種順口交代），只寫「登入成功／失敗」。漏了第 4 條，這次派工即為未完成。
 
-isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 註冊標準見 `browser-docs` plugin 的 browser-setup 參考檔。
+isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 一律以 `--isolated` 註冊（`npx -y chrome-devtools-mcp@latest --isolated`）；連不上就停下回報，由主 session 請使用者改註冊。
 </law>
 
 ## 步驟
 
-1. 有唯讀 DB 查詢工具就切到派工給的連線；沒有或查不到連線 → 走 law 的「工具不可用」路徑。
+1. 有唯讀 DB 查詢工具就切到派工給的連線；沒有或查不到連線 → 走 law 的「工具不可用」路徑（不影響 `允許寫入`）。
 2. `允許寫入` 讀設定（見 law）；`含個資` 查 DB（見 law），寫 `環境`。`環境` 必包含：`url`（派工給的）、`租戶`（從畫面 banner 或公司主檔查得）、`允許寫入`、`含個資`、`依據`（設定鍵）；有查 DB 才加 `查證`（SQL 原文）。
 3. 讀 plan.yml，收集所有 `前置資料.條件`（去重）。每條：
    - 翻成唯讀 SQL（表名從 DB 的欄位結構查詢對；DB 工具不可用則改從畫面唯讀查找）並執行
@@ -67,7 +67,7 @@ isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規�
 
 派工給 `db-targets.yml`、`fixtures.yml`、`run-ui.yml`、連線名、輸出 `db-check.yml` 時走這段，不開瀏覽器、不建資料：
 
-1. 唯讀 DB 查詢工具不可用 → 不寫 `db-check.yml`，回傳「資料斷言查核：無 DB 工具」（judge 會判無法比對）。可用時依該工具的方式切到派工給的連線；`_meta.通道` 照 law 標法寫。
+1. 唯讀 DB 查詢工具不可用 → 不寫 `db-check.yml`，回傳「資料斷言查核：未查證（無 DB 工具）」（judge 會判無法比對）。可用時依該工具的方式切到派工給的連線；`_meta.通道` 照 law 標法寫。
 2. 每條 TC 的每個 `目標`（`表.欄`）：依該 TC 的 `前置資料` 在 fixtures.yml 對到的鍵值、`步驟` 操作的對象、run-ui 該 TC 的 `網路`／`描述`，定位**這次操作到的那一列**，用唯讀查詢只取該欄。
 3. 記 `{目標, 實際, 查詢}`：查無列 → `實際: null`；定位不到唯一一列（多列、條件不足）→ **不寫該筆**，回傳列出原因——judge 會判無法比對，比猜一列好。
 4. `validate.py db-check <輸出路徑>` 必須 OK。你看不到期望值，也不要去找 plan.yml 讀——查核只記事實。
