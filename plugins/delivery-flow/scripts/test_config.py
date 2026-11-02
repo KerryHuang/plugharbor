@@ -52,6 +52,51 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(r.returncode, 2)
             self.assertNotIn("Traceback", r.stderr)
 
+    def test_missing_file_hint_names_requested_key(self):
+        with tempfile.TemporaryDirectory() as t:
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.team"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertIn("ticket.team", r.stderr)
+
+    def test_yaml_syntax_error(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "ticket: [unclosed\n  tool: : x\n")
+            with self.assertRaises(config.ConfigMissing) as cm:
+                config.load_config(pathlib.Path(t))
+            self.assertIn("格式錯誤", cm.exception.hint)
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertEqual(len(r.stderr.strip().splitlines()), 1)
+
+    def test_non_mapping(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "- a\n- b\n")
+            with self.assertRaises(config.ConfigMissing) as cm:
+                config.load_config(pathlib.Path(t))
+            self.assertIn("格式錯誤", cm.exception.hint)
+            self.assertNotIn("建立", cm.exception.hint)
+
+    def test_empty_file(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "")
+            cfg = config.load_config(pathlib.Path(t))
+            self.assertEqual(cfg, {})
+            with self.assertRaises(config.ConfigMissing):
+                config.require(cfg, "ticket.tool")
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+
+    def test_null_value_is_missing(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "ticket:\n  tool:\n")
+            r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+            self.assertEqual(r.stdout.strip(), "")
+
     def test_cli_get_ok(self):
         with tempfile.TemporaryDirectory() as t:
             write_cfg(t, "ticket:\n  tool: github\n")

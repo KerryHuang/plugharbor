@@ -11,7 +11,7 @@ from pathlib import Path
 import yaml
 
 CONFIG_PATH = Path(".plugharbor") / "delivery-flow.yml"
-HINT = "請在專案根建立 .plugharbor/delivery-flow.yml 並補上 {key}（範例見 references/config.md）"
+HINT = "請在專案根的 .plugharbor/delivery-flow.yml 補上 {key}（範例見 references/config.md）"
 
 
 class ConfigMissing(Exception):
@@ -21,12 +21,20 @@ class ConfigMissing(Exception):
         self.hint = hint
 
 
-def load_config(root: Path) -> dict:
+def load_config(root: Path, key: str = "ticket.tool") -> dict:
     path = Path(root) / CONFIG_PATH
     if not path.is_file():
-        raise ConfigMissing("(file)", HINT.format(key="ticket.tool"))
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    return data if isinstance(data, dict) else {}
+        raise ConfigMissing("(file)", HINT.format(key=key))
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        msg = " ".join(str(e).split())
+        raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：{msg}")
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：最上層必須是 key: value 的對應，不是 {type(data).__name__}")
+    return data
 
 
 def require(cfg: dict, key: str):
@@ -35,6 +43,8 @@ def require(cfg: dict, key: str):
         if not isinstance(node, dict) or part not in node:
             raise ConfigMissing(key, HINT.format(key=key))
         node = node[part]
+    if node is None:
+        raise ConfigMissing(key, HINT.format(key=key))
     return node
 
 
@@ -43,7 +53,7 @@ def main(argv):
         print("用法：config.py get <key>", file=sys.stderr)
         return 2
     try:
-        value = require(load_config(Path.cwd()), argv[2])
+        value = require(load_config(Path.cwd(), argv[2]), argv[2])
     except ConfigMissing as e:
         print(e.hint, file=sys.stderr)
         return 2

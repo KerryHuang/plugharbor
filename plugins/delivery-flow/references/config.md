@@ -1,9 +1,9 @@
 # delivery-flow 設定
 
-專案設定放在專案根的 `.plugharbor/delivery-flow.yml`。缺檔或缺鍵時，skill 以 `scripts/config.py` 讀取並停下，給一行建檔指引：
+專案設定放在專案根的 `.plugharbor/delivery-flow.yml`，由 `scripts/config.py` 讀取。退出碼 2 是「缺檔、缺鍵（值為空也算）或格式錯誤」的訊號：呼叫的 skill 依 `harness-terms.md` 的提問方式問使用者，再把答案寫進該檔，不自行猜值。
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔或缺鍵：退出碼 2，stderr 一行指引
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺鍵或格式錯誤：退出碼 2，stderr 一行說明
 ```
 
 ## 鍵
