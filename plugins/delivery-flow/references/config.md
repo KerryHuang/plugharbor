@@ -38,6 +38,8 @@ ticket:
 publish-target: file:docs/meetings
 ```
 
+新建的 Linear team 預設 workflow 沒有 In Review：先到 team 的 Settings → Workflow 補上，否則改到 `in-review` 時 ticket-ops 會查不到狀態而停下。
+
 GitHub Issues（狀態用 label `stage:<名稱>`，`done`、`canceled` 改為關閉 issue，對照值僅作記號）：
 
 ```yaml

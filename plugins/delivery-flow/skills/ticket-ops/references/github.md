@@ -10,7 +10,7 @@
 | `set_stage` | `gh issue edit N --repo R --add-label … --remove-label …`；`close` 為真時再 `gh issue close N --repo R --reason completed｜"not planned"` |
 | `comment` | `gh issue comment N --repo R --body-file F` |
 | `attach` | 見下 |
-| `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 1000`；時間範圍用 `--search "created:>=… closed:>=…"`。**不得靜默截斷**，見下「查詢不截斷」。`階段` 由 `stage:*` label 與 `state` 還原，label 不在 `ticket.states` 對照內時回 `unmapped:<name>`（叫用端列為未分類，不計入任何階段） |
+| `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,body,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 1000`（`body` 用來解析 `parent: #n`、`blocked-by: #n`）；時間範圍用 `--search "created:A..B"`、`--search "closed:A..B"`、`--search "updated:A..B"`，**一次只放一個時間欄位**——同一個 search 裡的多個條件是 AND，`created:… closed:…` 只會回窗內建立且窗內關閉的票。**不得靜默截斷**，見下「查詢不截斷」。`階段` 由 `stage:*` label 與 `state` 還原，label 不在 `ticket.states` 對照內時回 `unmapped:<name>`（叫用端列為未分類，不計入任何階段） |
 | `get` | `gh issue view N --repo R --json number,title,body,state,stateReason,labels,url,updatedAt`；`children` 解析 body 內 `- [ ] #n`／`- [x] #n` 項目的 n；`parent` 取 body 內 `parent: #n` 那一行（父子票慣例見下），沒有就是 null；`stage` 由 `stage:*` label 與 `state` 還原 |
 | `link_blocked_by` | 見下 |
 

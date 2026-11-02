@@ -18,7 +18,8 @@
 | 用途 | 條件 |
 |------|------|
 | 上週異動全量 | `updatedAt` 在上週窗內 |
-| 上週完成與新增 | `completedAt`、`createdAt` 在上週窗內 |
+| 上週完成 | `completedAt` 在上週窗內（與「新增」分開查，合在同一個查詢會變成 AND） |
+| 上週新增 | `createdAt` 在上週窗內 |
 | 各階段存量 | 依階段分別查（`in-review`、`in-progress`、`todo`、`backlog`）；被擋用 `blocked` label |
 
 **第二批（依第一批結果）**

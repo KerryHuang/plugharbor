@@ -29,11 +29,12 @@
 | key | 定義 | 陷阱 |
 |-----|------|------|
 | `delivered` | 窗內進入 `done`，**扣除批次清理** | 這才是真實交付；ticket-ops 未回傳 `completedAt` 時才標「未提供」 |
+| `delivered_prev_day` | `completedAt` 落在上一個工作日當天的 `delivered`（同樣扣除批次清理） | 「交付停止」燈號與附錄「上一個工作日完成」只看這份，不用窗內的 `delivered`（窗內含今天） |
 | `cleanup` | 同窗內的批次結案 | 分開列，不然虛胖；ticket-ops 未回傳 `completedAt` 時才標「未提供」 |
 | `created` | 同窗內新建 | ticket-ops 未回傳 `createdAt` 時才標「未提供」 |
 | `review_*` | `in-review` 全量存量 | 與流量不同口徑 |
 | `blocked` | 帶 `blocked` label 的未完成票（label 名稱以專案約定為準） | 重點是等幾天，不是幾件；專案沒有此 label 時整組標「未提供」，不要寫成 0 |
-| `new_urgent` | 窗內新建或升級為最高優先的票 | ticket-ops 未回傳 `priority`（或全為 `none`）時才標「未提供」；紅燈來源 |
+| `new_urgent` | 窗內新建或升級為最高優先（`priority` 為 `urgent`，不含 `high`）的票 | ticket-ops 未回傳 `priority`（或全為 `none`）時才標「未提供」；紅燈來源 |
 | `unblocked` | 窗內脫離被擋狀態 | 綠燈來源，別漏了好消息 |
 
 ## 批次結案偵測

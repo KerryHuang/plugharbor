@@ -3,6 +3,16 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.7.2] - 2026-11-02
+
+GitHub 沙盒實測日報／週報、Linear 個人 workspace 實測後修正：
+
+- fix(ticket-ops)：GitHub `query` 一次只放一個時間欄位（同一 search 內是 AND，`created:… closed:…` 會漏掉窗外建立、窗內關閉的票）；`--json` 加 `body` 以解析 `parent`／`blocked-by`
+- fix(ticket-ops)：Linear 時間篩選只收下限、上限由叫用端濾；`get_issue` 不回子票，改用 `list_issues(parentId)`；改描述一律用 `save_issue` 的 `patch`（讀回的描述含 `<linear-image>` 等內部標記，整份重送易壞）
+- docs(config)：新建 Linear team 預設沒有 In Review，要先補
+- fix(ticket-weekly-report)：「上週完成」與「上週新增」拆成兩個查詢；`verify_counts.py` 給了 dataset.json 也驗 HTML 內嵌資料，兩者不同即失敗；票務明細開頭帶「query 完整性」
+- fix(ticket-daily-report)：新增 `delivered_prev_day` 清單供「交付停止」燈號與附錄使用（原本拿含今天的窗內交付判斷）；「最高優先」明定為 `urgent`；附錄資料警告照抄「query 完整性」
+
 ## [0.7.1] - 2026-11-02
 
 - fix: `plugins/delivery-flow/agents/qa-runner-ui.md` 唯讀環境（`允許寫入: false`）禁止 `press_key` 按 Enter 或任何會送出的鍵，只准 Tab、Escape 與清空用的刪除鍵；步驟要求按 Enter 時停在按之前。`plugins/delivery-flow/skills/qa-verify/references/step-dsl.md` 的 `press` 節同步註明。

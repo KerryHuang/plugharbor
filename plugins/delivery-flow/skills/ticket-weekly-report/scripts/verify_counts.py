@@ -2,7 +2,7 @@
 """發布閘門①：驗證簡報上每個可點數字 == 其清單筆數。
 
 用法：verify_counts.py <deck.html> [drill.json]
-  drill.json 省略時從 HTML 內嵌的 <script id="drill-data"> 取。
+  一律驗 HTML 內嵌的 <script id="drill-data">；給了 drill.json 時兩者須相同。
 
 不一致、資料集缺漏、按鈕標籤配對錯誤，任一發生即以 exit code 1 結束。
 """
@@ -22,12 +22,15 @@ DATA = re.compile(r'<script id="drill-data" type="application/json">(.*?)</scrip
 
 def load(html_path, json_path):
     html = open(html_path, encoding="utf-8").read()
-    if json_path:
-        return html, json.load(open(json_path, encoding="utf-8"))
     m = DATA.search(html)
     if not m:
         sys.exit("FAIL: HTML 內找不到 <script id=\"drill-data\">，可點數字不會運作")
-    return html, json.loads(m.group(1).replace("<\\/", "</"))
+    embedded = json.loads(m.group(1).replace("<\\/", "</"))
+    if json_path:
+        # 抽屜顯示的是內嵌資料；與 dataset.json 不同時，對 json 驗過也不代表頁面正確
+        if json.load(open(json_path, encoding="utf-8")) != embedded:
+            sys.exit("FAIL: HTML 內嵌的 drill-data 與 dataset.json 不一致，請重新嵌入")
+    return html, embedded
 
 
 def main():
