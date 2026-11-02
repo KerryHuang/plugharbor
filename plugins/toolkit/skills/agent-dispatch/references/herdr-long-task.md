@@ -2,6 +2,19 @@
 
 SKILL.md 第 4 節的補充。通用操作以官方 `herdr --skill` 為準。
 
+## 安裝與升級
+
+- macOS：`brew install herdr`、`brew services start herdr`。Windows：`powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 | iex"`，從使用者自己的終端機跑 `herdr server &`。
+- `herdr integration install claude`；只有在 herdr pane 裡啟動的 Claude 才被追蹤，主 session 不會出現在 `herdr agent list`。
+- `herdr status` 確認 server 在跑。
+
+升級 herdr 後所有指令回 `protocol_mismatch`：`brew upgrade herdr` 只換 binary，跑中的舊 server 留在記憶體。新 CLI 的私有協定比舊 server 新時，所有 socket API 指令直接回 `protocol_mismatch`，不降級相容；已 attach 的 UI 照常，看不出異狀。Homebrew／mise／Nix 安裝不支援 `herdr update --handoff`，唯一修法是重啟 server，而重啟會終止所有 pane 程序。
+
+- 升級前確認所有 pane 的 agent 都 idle、結果檔已落、worker 沒留半改的檔；升完當下就重啟 server（`herdr server stop` 後重開 `herdr`），不要晚點再重啟。
+- 重啟由使用者在 herdr 外的終端機操作：從 pane 內跑 `herdr server stop` 會連自己一起砍。重啟後 layout 還原，Claude pane 靠 session id 自動 `--resume`，working 中的 agent 會被中斷。
+- 輪詢拿不到 agent 狀態時，先看原始輸出是不是 `protocol_mismatch`，不要當成 worker 消失去重派。
+- 升級前後用 `herdr status server`／`herdr status client` 比 `private_protocol` 與 `private_protocol_compatible`。
+
 ## cwd 信任檢查（對象是 claude）
 
 ```bash
@@ -31,7 +44,7 @@ done
 
 ## 中途交接（claude worker context 過大）
 
-worker 每一輪都整份重送 context，沒人盯就會一路長大。量法：
+worker 每一輪都整份重送 context，沒人盯就會一路長大。量法（印出 token 數）：
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/worker_ctx.py" <agent_session.value>
@@ -60,11 +73,3 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/worker_ctx.py" <agent_session.value>
    ```
 
 交接檔由你收工時一起清，worker 不刪。
-
-## 升級 herdr 後全部指令回 `protocol_mismatch`
-
-`brew upgrade herdr` 只換 binary，跑中的舊 server 還在記憶體，協定不合時所有 socket 指令都回 `protocol_mismatch`，但 worker 其實還活著。修法只有重啟 server，會中斷所有 pane，所以由使用者在 worker 都 idle 時、從 herdr 外的終端機操作。
-
----
-
-主動回報、`--wait` 搭配、cwd 檢查、判讀表與中途交接，改寫自另一個內部 plugin 的 `dispatch-worker` skill（2026-10-29 版）；那邊的版面重排、sidebar metadata、顧問 agent 屬該 plugin 專屬，未移植。

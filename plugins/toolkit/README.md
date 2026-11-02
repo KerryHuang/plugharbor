@@ -40,5 +40,5 @@ claude plugin install toolkit@plugharbor
 
 ```bash
 python3 -m pytest plugins/toolkit/hooks/tests -v
-for t in plugins/toolkit/hooks/tests/*.sh; do bash "$t" || exit 1; done
+for t in plugins/toolkit/hooks/tests/*.sh plugins/toolkit/skills/agent-dispatch/tests/*.sh; do bash "$t" || exit 1; done
 ```
