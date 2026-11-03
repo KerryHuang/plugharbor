@@ -254,11 +254,13 @@ for p in $PLUGINS; do
   done
 done
 
+# 改名後新名的去處：user 層由本腳本裝，專案層要在各專案跑 install-project.sh
+rename_hint() { if ph_is_user_plugin "$1"; then echo "新名照常安裝"; else echo "新名是專案層，改用 setup/install-project.sh 在各專案安裝"; fi; }
 # 專案層 plugin 與改名的舊名從 user 層移除；$1=CLI $2=plugin，其餘＝移除指令
 stale_remove() {
   local cli="$1" p="$2" new; shift 2
   if [ "$CHECK" -eq 0 ]; then run "$@"
-  elif new="$(ph_rename_new "$p")"; then note_diff "RENAME: ${cli} ${p} → ${new}（舊名，install 會卸載，新名照常安裝）"
+  elif new="$(ph_rename_new "$p")"; then note_diff "RENAME: ${cli} ${p} → ${new}（舊名，install 會卸載；$(rename_hint "$new")）"
   else note_diff "STALE: ${cli} ${p}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）"; fi
 }
 
@@ -384,10 +386,12 @@ def norm(x): return os.path.normcase(os.path.normpath(x))
 def local(x): return isinstance(x, str) and not x.startswith(("npm:", "git:", "http"))
 stale = [x for x in pkgs if local(x) and norm(os.path.join(start, x)) in remove]
 renames = dict(r.split(":", 1) for r in sys.argv[5].split() if ":" in r)
+user_layer = set(sys.argv[6].split())
 for x in stale:
     name = remove[norm(os.path.join(start, x))]
     if name in renames:
-        print(f"RENAME: pi {name} → {renames[name]}（舊名，install 會卸載，新名照常安裝）" if check else f"OK:   pi package 移除 {x}（改名為 {renames[name]}）")
+        hint = "新名照常安裝" if renames[name] in user_layer else "新名是專案層，改用 setup/install-project.sh 在各專案安裝"
+        print(f"RENAME: pi {name} → {renames[name]}（舊名，install 會卸載；{hint}）" if check else f"OK:   pi package 移除 {x}（改名為 {renames[name]}；{hint}）")
     else:
         print(f"STALE: pi {name}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）" if check else f"OK:   pi package 移除 {x}（專案層）")
 pkgs = [x for x in pkgs if x not in stale]
@@ -410,7 +414,7 @@ if (added or stale) and not check:
         shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     os.makedirs(start, exist_ok=True)
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
-' "$(ph_native_path "$HOME/.pi/agent")" "$CHECK" "$(ph_native_path "$BACKUP")" "$(for p in $REMOVE; do printf '%s ' "$(ph_native_path "$REPO_DIR/plugins/$p")"; done)" "$PH_RENAMES")"
+' "$(ph_native_path "$HOME/.pi/agent")" "$CHECK" "$(ph_native_path "$BACKUP")" "$(for p in $REMOVE; do printf '%s ' "$(ph_native_path "$REPO_DIR/plugins/$p")"; done)" "$PH_RENAMES" "$PH_USER_PLUGINS")"
   rc=$?
   set -e
   if [ -n "$PI_OUT" ]; then

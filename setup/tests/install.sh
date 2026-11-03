@@ -338,6 +338,11 @@ if grep -q '^claude plugin \(install\|update\) toolkit' "$STUB_LOG"; then fail "
 # ---------- 21) 沒有改名對照（正式值）：不印 RENAME ----------
 OUT="$(run "$TMP/h15" --check)" || fail "無對照 --check exit 非 0"
 if echo "$OUT" | grep -q '^RENAME:'; then fail "沒有對照不該印 RENAME：$OUT"; fi
+# 新名是專案層：訊息要指向 install-project.sh，不能說「新名照常安裝」
+printf '[{"id": "old-blog@plugharbor", "version": "0.9.0", "scope": "user"}]\n' > "$STUB_STATE/claude-list"
+OUT="$(PLUGHARBOR_RENAMES="old-blog:blog" run "$TMP/h15" --check)" || fail "專案層改名 --check exit 非 0"
+echo "$OUT" | grep -q '^RENAME: claude old-blog → blog.*install-project.sh' || fail "專案層新名應指向 install-project.sh：$OUT"
+if echo "$OUT" | grep -q '^RENAME: claude old-blog.*照常安裝'; then fail "專案層新名不該說照常安裝：$OUT"; fi
 rm "$STUB/pi"
 export STUB_STATE="$TMP/state"
 

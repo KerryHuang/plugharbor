@@ -198,8 +198,9 @@ copy_skill() {  # $1=plugin $2=skill
   rm -rf "$d"; cp -R "$REPO_DIR/plugins/$1/skills/$2" "$d"
   ph_native_path "$REPO_DIR/plugins/$1" > "$d/.plugharbor-root"
 }
-same_copy() {  # $1=複本 $2=來源；忽略 .plugharbor-root
-  diff -rq -x .plugharbor-root "$1" "$2" >/dev/null 2>&1
+same_copy() {  # $1=複本 $2=來源 $3=plugin；內容相同且 .plugharbor-root 指向目前的 clone
+  [ "$(cat "$1/.plugharbor-root" 2>/dev/null)" = "$(ph_native_path "$REPO_DIR/plugins/$3")" ] &&
+    diff -rq -x .plugharbor-root "$1" "$2" >/dev/null 2>&1
 }
 EXCLUDES=""
 if [ -z "$PLUGINS" ]; then
@@ -213,6 +214,14 @@ else
   for l in "$AG"/skills/* "$AG"/plugharbor/*; do
     [ -L "$l" ] && [ ! -e "$l" ] && ours_link "$l" || continue
     if [ "$CHECK" -eq 1 ]; then note_diff "BROKEN: ${l}"; else rm -f "$l"; echo "OK:   移除失效 link ${l}"; fi
+  done
+  # 複製模式的複本：.plugharbor-root 指的 plugin 已不存在（clone 裡被移除或改名）
+  for l in "$AG"/skills/*; do
+    [ -d "$l" ] && [ ! -L "$l" ] && [ -f "$l/.plugharbor-root" ] || continue
+    r="$(cat "$l/.plugharbor-root")"
+    [ "$(basename "$(dirname "$r")")" = plugins ] || continue
+    [ ! -d "$REPO_DIR/plugins/$(basename "$r")/skills/$(basename "$l")" ] || continue
+    if [ "$CHECK" -eq 1 ]; then note_diff "BROKEN: ${l}"; else rm -rf "$l"; echo "OK:   移除失效複本 ${l}"; fi
   done
   for p in $PLUGINS; do
     [ -d "$REPO_DIR/plugins/$p/skills" ] || continue
@@ -241,7 +250,7 @@ else
       EXCLUDES="$EXCLUDES .agents/skills/$s"
       if [ -L "$l" ] && [ "$(readlink "$l")" = "$want" ] && [ -e "$l" ]; then
         echo "UP-TO-DATE: link $s"
-      elif [ -d "$l" ] && [ ! -L "$l" ] && same_copy "$l" "$sd"; then
+      elif [ -d "$l" ] && [ ! -L "$l" ] && same_copy "$l" "$sd" "$p"; then
         echo "UP-TO-DATE: link $s"
       elif [ "$CHECK" -eq 1 ]; then
         if [ -d "$l" ] && [ ! -L "$l" ]; then note_diff "DIFF: 複本 ${l} 與 plugharbor 不同"; else note_diff "MISSING: codex/agy link $s"; fi

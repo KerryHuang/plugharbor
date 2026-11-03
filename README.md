@@ -47,7 +47,7 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 |------|------|------|
 | [sa-flow](./plugins/sa-flow/README.md) | 4.1.2 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
 | [dev-flow](./plugins/dev-flow/README.md) | 1.0.0 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版 |
-| [workspace](./plugins/workspace/README.md) | 1.0.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查 |
+| [workspace](./plugins/workspace/README.md) | 1.0.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
 | [frontend-vue](./plugins/frontend-vue/README.md) | 0.2.0 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |
 | [database-sqlserver](./plugins/database-sqlserver/README.md) | 0.1.1 | SQL Server——table/view 撰寫慣例、TableDescription 生成、EF Core migration 與疑難排解 |

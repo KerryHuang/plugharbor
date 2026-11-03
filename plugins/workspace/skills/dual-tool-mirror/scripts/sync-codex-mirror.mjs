@@ -24,6 +24,8 @@ const walk = (root) => {
   const rec = (dir) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name)
+      // plugharbor install-project 複製模式的 skill（有 .plugharbor-root）不歸 mirror 管
+      if (e.isDirectory() && existsSync(join(p, '.plugharbor-root'))) continue
       if (e.isDirectory()) rec(p)
       else if (e.isFile()) out.push(relative(root, p))
     }

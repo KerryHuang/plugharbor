@@ -165,5 +165,16 @@ OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --che
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(f) 重跑 exit 非 0"
 cmp -s "$D/SKILL.md" "$REPO_DIR/plugins/sa-flow/skills/explore/SKILL.md" || fail "(f) 重跑應更新複本"
+# (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除
+echo "/old/clone/plugins/sa-flow" > "$D/.plugharbor-root"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(g) --check exit 非 0"
+echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(g) marker 過期應報 DIFF：$OUT"
+PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(g) 實跑 exit 非 0"
+[ "$(cat "$D/.plugharbor-root")" = "$REPO_DIR/plugins/sa-flow" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
+mkdir -p "$P9f/.agents/skills/gone"; echo x > "$P9f/.agents/skills/gone/SKILL.md"; echo "$REPO_DIR/plugins/no-such" > "$P9f/.agents/skills/gone/.plugharbor-root"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(g) --check exit 非 0"
+echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/gone' || fail "(g) 失效複本應報 BROKEN：$OUT"
+PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(g) 實跑 exit 非 0"
+[ ! -e "$P9f/.agents/skills/gone" ] || fail "(g) 失效複本應移除"
 
 echo "PASS: install-project.sh（9 組）"
