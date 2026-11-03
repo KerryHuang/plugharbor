@@ -53,7 +53,7 @@ retrospective:
 
 ## transcribe
 
-本機語音轉逐字稿（`skills/transcribe/scripts/transcribe.py`）：Mac Apple Silicon 用 mlx-whisper、其他平台用 faster-whisper，輸出經 OpenCC `s2twp` 轉台灣繁體，每段 `[hh:mm:ss] 文字`。依賴（ffmpeg、轉錄套件、`opencc-python-reimplemented`）由使用者自裝，`transcribe.py doctor` 列出缺件與安裝指令。不上雲端、不分講者。
+本機語音轉逐字稿（`skills/transcribe/scripts/transcribe.py`）：Mac Apple Silicon 用 mlx-whisper、其他平台用 faster-whisper，輸出經 OpenCC `s2twp` 轉台灣繁體，每段 `[hh:mm:ss] 文字`。依賴（ffmpeg、轉錄套件、`opencc-python-reimplemented`）由使用者自裝，`transcribe.py doctor` 列出缺件與安裝指令。不上雲端、不分講者。另有 `record devices|start|status|stop`：背景用麥克風錄音、每 300 秒一個 16 kHz wav 分段，錄音與 session 脫鉤，`stop` 合併成 `recording.wav`；錄音需要 ffmpeg（`doctor --record` 檢查）。
 
 ## 測試
 

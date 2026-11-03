@@ -3,6 +3,12 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.7.0] - 2026-11-03
+
+- feat: `transcribe` 新增 `record devices|start|status|stop`：用 ffmpeg 背景錄麥克風（Mac avfoundation 預設 `:default`，不用編號 0；Windows dshow 需指定裝置），每 N 秒（預設 300）寫一個 16 kHz 單聲道 wav 分段。狀態檔 `record.json` 在啟動後立刻寫入；錄音以 detach 方式與 session 脫鉤，任一 session 都能 `stop`。`stop` 會先 SIGINT（Windows 用 taskkill）再以 concat 合併成 `recording.wav`，程序已不在也照樣合併。開錄 3 秒後 max_volume 低於 -70 dB 就警告。
+- fix: 實測 Mac 不加大輸入佇列時每 30 秒掉約 3.5 秒音訊，擷取改帶 `-thread_queue_size 4096` 與 `aresample=async=1000`。
+- feat: `doctor --record` 一併檢查錄音需要的 ffmpeg（Windows 轉錄本身不需要）。測試 36 條。
+
 ## [0.6.2] - 2026-11-03
 
 - fix: `transcribe` mlx 路徑遇靜音會幻覺出「訂閱、點贊」等文字並以 exit 0 結束：改開 `word_timestamps`＋`hallucination_silence_threshold=2.0`，並以 ffmpeg `silencedetect`（-45dB、1 秒）丟掉八成以上落在無聲區段的段落。實測 60 秒純靜音改回 exit 4，長靜音＋語音只留真正的話。

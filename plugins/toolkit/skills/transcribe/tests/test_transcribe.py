@@ -245,3 +245,158 @@ def test_no_progress_spam_when_not_tty(monkeypatch, capsys):
     monkeypatch.setattr(t, "_has_cuda", lambda: False)
     t.run_faster_whisper("a.wav", "large-v3-turbo", None, "zh")
     assert capsys.readouterr().err.count("進度") == 0
+
+
+# ---- 第二階段：麥克風錄音 ----
+
+MAC_DEVICES = """[AVFoundation indev @ 0x1] AVFoundation video devices:
+[AVFoundation indev @ 0x1] [0] FaceTime HD Camera
+[AVFoundation indev @ 0x1] AVFoundation audio devices:
+[AVFoundation indev @ 0x1] [0] Microsoft Teams Audio
+[AVFoundation indev @ 0x1] [1] MacBook Air的麥克風
+[AVFoundation indev @ 0x1] [2] Kerry的iPhone 14麥克風
+[in#0 @ 0x2] Error opening input: Input/output error
+"""
+
+WIN_DEVICES = """[dshow @ 000001] "Integrated Webcam" (video)
+[dshow @ 000001]   Alternative name "@device_pnp_xxx"
+[dshow @ 000001] "麥克風陣列 (Realtek(R) Audio)" (audio)
+[dshow @ 000001]   Alternative name "@device_cm_{33D9A762}\\wave_{AAA}"
+[dshow @ 000001] "Stereo Mix (Realtek(R) Audio)" (audio)
+"""
+
+
+def test_parse_devices_mac():
+    assert t.parse_devices("Darwin", MAC_DEVICES) == ["Microsoft Teams Audio", "MacBook Air的麥克風", "Kerry的iPhone 14麥克風"]
+
+
+def test_parse_devices_windows():
+    assert t.parse_devices("Windows", WIN_DEVICES) == ["麥克風陣列 (Realtek(R) Audio)", "Stereo Mix (Realtek(R) Audio)"]
+
+
+def test_build_record_cmd_mac_default(tmp_path):
+    cmd = t.build_record_cmd("Darwin", None, tmp_path, 300)
+    assert cmd[cmd.index("-f") + 1] == "avfoundation"
+    assert cmd[cmd.index("-i") + 1] == ":default"
+    assert cmd[-1] == str(tmp_path / "seg-%03d.wav")
+    assert ["-ar", "16000", "-ac", "1"] == cmd[cmd.index("-ar"):cmd.index("-ar") + 4]
+    assert cmd[cmd.index("-segment_time") + 1] == "300"
+
+
+def test_build_record_cmd_windows(tmp_path):
+    cmd = t.build_record_cmd("Windows", "麥克風陣列 (Realtek(R) Audio)", tmp_path, 60)
+    assert cmd[cmd.index("-f") + 1] == "dshow"
+    assert cmd[cmd.index("-i") + 1] == "audio=麥克風陣列 (Realtek(R) Audio)"
+
+
+def test_concat_list_escapes_quotes(tmp_path):
+    segs = [tmp_path / "客戶 會議" / "seg-000.wav", tmp_path / "it's" / "seg-001.wav"]
+    text = t.concat_list(segs)
+    lines = text.splitlines()
+    assert lines[0] == f"file '{segs[0]}'"
+    assert lines[1] == "file '" + str(segs[1]).replace("'", "'\\''") + "'"
+
+
+@pytest.fixture
+def rec(monkeypatch, tmp_path):
+    """假的錄音環境：Popen 會建出 seg-000.wav，程序存活與音量可控。"""
+    import json as _json
+
+    on_mac(monkeypatch)
+    state = {"alive": True, "volume": -30.0, "spawned": [], "killed": [], "concat": []}
+
+    def fake_spawn(cmd, log_path):
+        state["spawned"].append(cmd)
+        out_dir = Path(cmd[-1]).parent
+        (out_dir / "seg-000.wav").write_bytes(b"RIFF" + b"\0" * 40 + b"\0" * 32000)
+        return 4242
+
+    def fake_concat(list_file, out):
+        state["concat"].append(Path(list_file).read_text(encoding="utf-8"))
+        Path(out).write_bytes(b"RIFF" + b"\0" * 40 + b"\0" * 64000)
+        return True
+
+    monkeypatch.setattr(t, "_spawn", fake_spawn)
+    monkeypatch.setattr(t, "_alive", lambda pid: state["alive"])
+    monkeypatch.setattr(t, "_max_volume", lambda path: state["volume"])
+    monkeypatch.setattr(t, "_kill", lambda pid, system: state["killed"].append(pid) or state.update(alive=False))
+    monkeypatch.setattr(t, "_run_ffmpeg_concat", fake_concat)
+    monkeypatch.setattr(t.time, "sleep", lambda s: None)
+    state["dir"] = tmp_path / "會議 素材"
+    state["read"] = lambda: _json.loads((state["dir"] / "record.json").read_text(encoding="utf-8"))
+    return state
+
+
+def test_start_writes_state_and_detaches(rec, capsys):
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 0
+    st = rec["read"]()
+    assert st["pid"] == 4242 and st["stopped_at"] is None and st["segment_sec"] == 300
+    assert len(rec["spawned"]) == 1
+
+
+def test_start_refuses_when_running(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    capsys.readouterr()
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 2
+    assert "4242" in capsys.readouterr().err
+    assert len(rec["spawned"]) == 1
+
+
+def test_start_warns_on_silence(rec, capsys):
+    rec["volume"] = -91.0
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 0
+    assert "靜音" in capsys.readouterr().err
+
+
+def test_start_fails_when_ffmpeg_dies(rec, capsys):
+    rec["alive"] = False
+    rec["dir"].mkdir(parents=True)
+    (rec["dir"] / "ffmpeg.log").write_text("Error opening input: Permission denied", encoding="utf-8")
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 3
+    assert "Permission denied" in capsys.readouterr().err
+
+
+def test_stop_merges_when_process_gone(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "seg-001.wav").write_bytes(b"RIFF")
+    rec["alive"] = False
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert rec["killed"] == []
+    assert "seg-000.wav" in rec["concat"][0] and "seg-001.wav" in rec["concat"][0]
+    assert rec["read"]()["stopped_at"] is not None
+    assert "recording.wav" in capsys.readouterr().out
+
+
+def test_stop_kills_running(rec):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert rec["killed"] == [4242]
+
+
+def test_stop_without_segments_fails(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "seg-000.wav").unlink()
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 4
+    assert not (rec["dir"] / "recording.wav").exists()
+
+
+def test_status_not_recording(rec, capsys):
+    assert t.main(["record", "status", "--out", str(rec["dir"])]) == 1
+
+
+def test_build_record_cmd_prevents_sample_drop(tmp_path):
+    # 實測：沒有加大輸入佇列與 async 重取樣時，Mac 每 30 秒掉約 3.5 秒音訊
+    for system, dev in (("Darwin", None), ("Windows", "Mic")):
+        cmd = t.build_record_cmd(system, dev, tmp_path, 300)
+        assert cmd.index("-thread_queue_size") < cmd.index("-i")
+        assert cmd[cmd.index("-af") + 1] == "aresample=async=1000"
+
+
+def test_doctor_record_requires_ffmpeg_on_windows(monkeypatch, capsys):
+    on_windows(monkeypatch)
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t, "_pkg_version", lambda name: "16.1.0")
+    monkeypatch.setattr(t.shutil, "which", lambda name: None)
+    assert t.main(["doctor"]) == 0
+    assert t.main(["doctor", "--record"]) == 1
+    assert "winget install ffmpeg" in capsys.readouterr().out

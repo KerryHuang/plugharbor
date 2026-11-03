@@ -8,9 +8,13 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import platform
 import shutil
+import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
@@ -182,9 +186,13 @@ def _major(version: Optional[str]) -> int:
         return 0
 
 
-def check_env() -> List[Tuple[str, bool, str]]:
+def check_env(record: bool = False) -> List[Tuple[str, bool, str]]:
     backend = pick_backend(platform.system(), platform.machine())
     checks = []
+    if record and backend != "mlx":
+        # faster-whisper 轉錄不需要 ffmpeg，但錄音需要
+        hint = "brew install ffmpeg" if platform.system() == "Darwin" else "winget install ffmpeg"
+        checks.append(("ffmpeg（錄音用）", shutil.which("ffmpeg") is not None, hint))
     if backend == "mlx":
         checks.append(("ffmpeg", shutil.which("ffmpeg") is not None, "brew install ffmpeg"))
         module, pkg = "mlx_whisper", "mlx-whisper"
@@ -199,9 +207,9 @@ def check_env() -> List[Tuple[str, bool, str]]:
     return checks
 
 
-def cmd_doctor() -> int:
+def cmd_doctor(record: bool = False) -> int:
     ok = True
-    for name, ready, hint in check_env():
+    for name, ready, hint in check_env(record):
         print(f"{'OK ' if ready else 'NG '} {name}" + ("" if ready else f"　→ {hint}"))
         ok = ok and ready
     return 0 if ok else 1
@@ -248,6 +256,219 @@ def cmd_transcribe(args, backend_runner: Optional[BackendRunner]) -> int:
     return 0
 
 
+# ---- 錄音（麥克風） ----
+
+
+def parse_devices(system: str, ffmpeg_stderr: str) -> List[str]:
+    """從 ffmpeg -list_devices 的輸出取出音訊輸入裝置名稱。"""
+    import re
+
+    if system == "Darwin":
+        text = ffmpeg_stderr.split("AVFoundation audio devices:", 1)[-1] if "AVFoundation audio devices:" in ffmpeg_stderr else ""
+        return re.findall(r"\] \[\d+\] (.+)$", text, flags=re.M)
+    return re.findall(r'"([^"]+)" \(audio\)', ffmpeg_stderr)
+
+
+def build_record_cmd(system: str, device: Optional[str], out_dir: Path, segment_sec: int) -> List[str]:
+    if system == "Darwin":
+        # 不用編號 0：實機上第 0 個常是 Teams 之類的虛擬裝置
+        src = ["-f", "avfoundation", "-i", f":{device or 'default'}"]
+    else:
+        if not device:
+            raise ValueError("Windows 需指定 --device（用 `record devices` 查名稱）")
+        src = ["-f", "dshow", "-i", f"audio={device}"]
+    return [
+        # 輸入佇列加大＋async 重取樣：實測 Mac 不加時每 30 秒掉約 3.5 秒音訊
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-thread_queue_size", "4096", *src,
+        "-af", "aresample=async=1000", "-ar", "16000", "-ac", "1",
+        "-f", "segment", "-segment_time", str(segment_sec), "-reset_timestamps", "1",
+        str(out_dir / "seg-%03d.wav"),
+    ]
+
+
+def concat_list(segments: List[Path]) -> str:
+    """ffmpeg concat demuxer 清單；路徑裡的單引號跳脫成 '\\''。"""
+    return "".join("file '" + str(seg).replace("'", "'\\''") + "'\n" for seg in segments)
+
+
+SILENCE_DB = -70.0
+STATE_FILE = "record.json"
+
+
+def _spawn(cmd: List[str], log_path: Path) -> int:
+    """以 detach 方式啟動 ffmpeg，Claude session 或發起的 shell 結束後照常錄。"""
+    log = open(log_path, "ab")
+    kw = {"stdin": subprocess.DEVNULL, "stdout": log, "stderr": log}
+    if platform.system() == "Windows":
+        kw["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+    else:
+        kw["start_new_session"] = True
+    return subprocess.Popen(cmd, **kw).pid
+
+
+def _alive(pid: int) -> bool:
+    if platform.system() == "Windows":
+        r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True, errors="replace")
+        return str(pid) in r.stdout
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _kill(pid: int, system: str) -> None:
+    if system == "Windows":
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+        return
+    import signal
+
+    os.kill(pid, signal.SIGINT)  # 讓 ffmpeg 正常收尾、寫好最後一段的檔頭
+    for _ in range(20):
+        if not _alive(pid):
+            return
+        time.sleep(0.5)
+    os.kill(pid, signal.SIGKILL)
+
+
+def _max_volume(path: Path) -> Optional[float]:
+    import re
+
+    r = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af", "volumedetect", "-f", "null", "-"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    m = re.search(r"max_volume: (-?[0-9.]+|-inf) dB", r.stderr)
+    if not m:
+        return None
+    return float("-inf") if m.group(1) == "-inf" else float(m.group(1))
+
+
+def _run_ffmpeg_concat(list_file: Path, out: Path) -> bool:
+    r = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(list_file), "-c", "copy", str(out)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if r.returncode != 0:
+        _err(r.stderr.strip())
+    return r.returncode == 0 and out.exists()
+
+
+def _read_state(out_dir: Path) -> Optional[dict]:
+    f = out_dir / STATE_FILE
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
+def _write_state(out_dir: Path, state: dict) -> None:
+    (out_dir / STATE_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _recording(state: Optional[dict]) -> bool:
+    return bool(state) and state.get("stopped_at") is None and _alive(state["pid"])
+
+
+def _segments(out_dir: Path) -> List[Path]:
+    return sorted(out_dir.glob("seg-*.wav"))
+
+
+def record_devices() -> int:
+    system = platform.system()
+    fmt = ["-f", "avfoundation", "-i", ""] if system == "Darwin" else ["-f", "dshow", "-i", "dummy"]
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-list_devices", "true", *fmt], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    devices = parse_devices(system, r.stderr)
+    if not devices:
+        _err("找不到音訊輸入裝置" + ("（Mac 可直接用預設裝置，不帶 --device）" if system == "Darwin" else ""))
+        return 1
+    for d in devices:
+        print(d)
+    return 0
+
+
+def record_start(out_dir: Path, device: Optional[str], segment_sec: int) -> int:
+    state = _read_state(out_dir)
+    if _recording(state):
+        _err(f"這個目錄已經在錄音（PID {state['pid']}）；要結束請用 `record stop`")
+        return 2
+    out_dir.mkdir(parents=True, exist_ok=True)
+    system = platform.system()
+    try:
+        cmd = build_record_cmd(system, device, out_dir, segment_sec)
+    except ValueError as e:
+        _err(str(e))
+        return 2
+    log_path = out_dir / "ffmpeg.log"
+    pid = _spawn(cmd, log_path)
+    # 先寫狀態檔：就算接下來 session 中斷，新 session 也找得到這個 PID 來 stop
+    state = {
+        "pid": pid, "started_at": datetime.now().isoformat(timespec="seconds"), "system": system,
+        "device": device or "default", "segment_sec": segment_sec, "stopped_at": None,
+    }
+    _write_state(out_dir, state)
+    time.sleep(3)
+    first = out_dir / "seg-000.wav"
+    if not _alive(pid) or not first.exists():
+        if _alive(pid):
+            _kill(pid, system)
+        state["stopped_at"] = datetime.now().isoformat(timespec="seconds")
+        _write_state(out_dir, state)
+        tail = log_path.read_text(encoding="utf-8", errors="replace")[-800:] if log_path.exists() else ""
+        _err("錄音沒有啟動成功（裝置名稱或麥克風權限有誤？）\n" + tail)
+        return 3
+    vol = _max_volume(first)
+    if vol is not None and vol < SILENCE_DB:
+        _err(f"警告：開頭 3 秒幾乎是靜音（max {vol} dB）——裝置可能選錯或沒有麥克風權限，確認後再繼續")
+    print(f"錄音中（PID {pid}），分段寫在 {out_dir}；散會後用 `record stop --out \"{out_dir}\"` 結束")
+    return 0
+
+
+def record_status(out_dir: Path) -> int:
+    state = _read_state(out_dir)
+    segs = _segments(out_dir)
+    if not _recording(state):
+        print(f"沒有在錄音（分段 {len(segs)} 個）")
+        return 1
+    started = datetime.fromisoformat(state["started_at"])
+    print(f"錄音中（PID {state['pid']}），已錄 {format_ts((datetime.now() - started).total_seconds())}，分段 {len(segs)} 個")
+    return 0
+
+
+def record_stop(out_dir: Path) -> int:
+    state = _read_state(out_dir)
+    if not state:
+        _err(f"找不到錄音狀態檔：{out_dir / STATE_FILE}")
+        return 2
+    if _recording(state):
+        _kill(state["pid"], state.get("system", platform.system()))
+    segs = _segments(out_dir)
+    if not segs:
+        _err("沒有任何錄音分段，無法合併")
+        return 4
+    list_file = out_dir / "segments.txt"
+    list_file.write_text(concat_list(segs), encoding="utf-8")
+    out = out_dir / "recording.wav"
+    if not _run_ffmpeg_concat(list_file, out):
+        _err("合併分段失敗，原始分段仍保留在目錄內")
+        return 3
+    state["stopped_at"] = datetime.now().isoformat(timespec="seconds")
+    _write_state(out_dir, state)
+    seconds = max(out.stat().st_size - 44, 0) / 32000  # 16 kHz、單聲道、16-bit
+    print(f"錄音已結束，合併為 {out}（約 {format_ts(seconds)}，{len(segs)} 段）")
+    return 0
+
+
+def cmd_record(args) -> int:
+    out_dir = Path(args.out) if getattr(args, "out", None) else None
+    if args.action == "devices":
+        return record_devices()
+    if args.action == "start":
+        return record_start(out_dir, args.device, args.segment_sec)
+    if args.action == "status":
+        return record_status(out_dir)
+    return record_stop(out_dir)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="transcribe.py", description="本機語音轉逐字稿")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -258,7 +479,17 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--prompt-file")
     tr.add_argument("--language", default="zh")
     tr.add_argument("--force", action="store_true")
-    sub.add_parser("doctor", help="檢查 ffmpeg／轉錄套件／OpenCC 是否就緒")
+    doc = sub.add_parser("doctor", help="檢查 ffmpeg／轉錄套件／OpenCC 是否就緒")
+    doc.add_argument("--record", action="store_true", help="一併檢查錄音需要的 ffmpeg")
+    rec = sub.add_parser("record", help="背景錄音（麥克風）")
+    rsub = rec.add_subparsers(dest="action", required=True)
+    rsub.add_parser("devices", help="列出音訊輸入裝置")
+    rs = rsub.add_parser("start", help="開始背景錄音")
+    rs.add_argument("--out", required=True)
+    rs.add_argument("--device")
+    rs.add_argument("--segment-sec", type=int, default=300)
+    for name in ("status", "stop"):
+        rsub.add_parser(name).add_argument("--out", required=True)
     return p
 
 
@@ -269,7 +500,9 @@ def main(argv: List[str], backend_runner: Optional[BackendRunner] = None) -> int
     args = build_parser().parse_args(argv)
     if args.cmd == "transcribe":
         return cmd_transcribe(args, backend_runner)
-    return cmd_doctor()
+    if args.cmd == "record":
+        return cmd_record(args)
+    return cmd_doctor(args.record)
 
 
 if __name__ == "__main__":
