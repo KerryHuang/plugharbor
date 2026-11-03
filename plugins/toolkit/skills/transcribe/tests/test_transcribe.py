@@ -109,7 +109,18 @@ def test_prompt_file_passed(audio, tmp_path):
     assert run.calls[0]["prompt"] == "模具 射出 排程"
 
 
+def on_mac(monkeypatch):
+    monkeypatch.setattr(t.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(t.platform, "machine", lambda: "arm64")
+
+
+def on_windows(monkeypatch):
+    monkeypatch.setattr(t.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(t.platform, "machine", lambda: "AMD64")
+
+
 def test_doctor_reports_missing(monkeypatch, capsys):
+    on_mac(monkeypatch)
     monkeypatch.setattr(t.shutil, "which", lambda name: None)
     rc = t.main(["doctor"])
     out = capsys.readouterr().out
@@ -119,6 +130,7 @@ def test_doctor_reports_missing(monkeypatch, capsys):
 
 
 def test_missing_ffmpeg_message(audio, tmp_path, monkeypatch, capsys):
+    on_mac(monkeypatch)
     monkeypatch.setattr(t.shutil, "which", lambda name: None)
     run = fake_backend([(0.0, "x")])
     rc = t.main(["transcribe", str(audio), "--out", str(tmp_path / "o.md")], backend_runner=run)
@@ -147,3 +159,27 @@ def test_keeps_common_tai(audio, tmp_path):
     out = tmp_path / "out.md"
     t.main(["transcribe", str(audio), "--out", str(out)], backend_runner=fake_backend([(0.0, "机台在台湾的平台")]))
     assert "機台在台灣的平台" in out.read_text(encoding="utf-8")
+
+
+def test_faster_whisper_skips_ffmpeg(audio, tmp_path, monkeypatch, capsys):
+    on_windows(monkeypatch)
+    monkeypatch.setattr(t.shutil, "which", lambda name: None)
+    rc = t.main(["transcribe", str(audio), "--out", str(tmp_path / "o.md")], backend_runner=fake_backend([(0.0, "好")]))
+    assert rc == 0
+    rc = t.main(["doctor"])
+    assert "ffmpeg" not in capsys.readouterr().out.split("逐字稿已寫入")[-1]
+
+
+def test_doctor_flags_incompatible_pyav(monkeypatch, capsys):
+    on_windows(monkeypatch)
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t, "_pkg_version", lambda name: "19.0.2" if name == "av" else "1.2.1")
+    assert t.main(["doctor"]) == 1
+    assert 'av<17' in capsys.readouterr().out
+
+
+def test_doctor_accepts_pyav_16(monkeypatch):
+    on_windows(monkeypatch)
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t, "_pkg_version", lambda name: "16.1.0" if name == "av" else "1.2.1")
+    assert t.main(["doctor"]) == 0

@@ -3,6 +3,10 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.6.1] - 2026-11-03
+
+- fix: `transcribe` Windows 實測修正。faster-whisper 以 PyAV 自帶解碼，ffmpeg 只在 mlx-whisper（Mac）路徑檢查與列入 `doctor`；faster-whisper 1.2.x 遇 PyAV 17+ 會因 `metadata_errors` 參數失敗，`doctor` 改為檢查 `av<17` 並給安裝指令。測試 16 條。
+
 ## [0.6.0] - 2026-11-03
 
 - feat: 新增 skill `transcribe`：本機把錄音檔轉成帶時間戳的逐字稿 Markdown。Mac Apple Silicon 用 mlx-whisper（預設 `mlx-community/whisper-large-v3-turbo`），其他平台用 faster-whisper（CPU int8、有 CUDA 用 float16），輸出經 OpenCC `s2twp` 並把「臺」統一為「台」；可帶 `--prompt-file` 術語提示。`doctor` 子命令檢查 ffmpeg／轉錄套件／OpenCC 並印安裝指令，不自動裝。靜音音檔 exit 4 不產檔、輸出已存在不覆寫（`--force`）、缺 OpenCC 或 ffmpeg 在轉錄前就停。

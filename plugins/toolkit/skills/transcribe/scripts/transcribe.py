@@ -111,16 +111,37 @@ def _importable(module: str) -> bool:
     return importlib.util.find_spec(module) is not None
 
 
+def _pkg_version(name: str) -> Optional[str]:
+    from importlib import metadata
+
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return None
+
+
+def _major(version: Optional[str]) -> int:
+    try:
+        return int((version or "0").split(".")[0])
+    except ValueError:
+        return 0
+
+
 def check_env() -> List[Tuple[str, bool, str]]:
-    is_mac = platform.system() == "Darwin"
     backend = pick_backend(platform.system(), platform.machine())
-    module, pkg = ("mlx_whisper", "mlx-whisper") if backend == "mlx" else ("faster_whisper", "faster-whisper")
-    ffmpeg_hint = "brew install ffmpeg" if is_mac else "winget install ffmpeg"
-    return [
-        ("ffmpeg", shutil.which("ffmpeg") is not None, ffmpeg_hint),
-        (pkg, _importable(module), f"pip install {pkg}"),
-        ("opencc", _importable("opencc"), "pip install opencc-python-reimplemented"),
-    ]
+    checks = []
+    if backend == "mlx":
+        checks.append(("ffmpeg", shutil.which("ffmpeg") is not None, "brew install ffmpeg"))
+        module, pkg = "mlx_whisper", "mlx-whisper"
+    else:
+        module, pkg = "faster_whisper", "faster-whisper"
+    checks.append((pkg, _importable(module), f"pip install {pkg}"))
+    if backend == "faster-whisper":
+        # faster-whisper 1.2.x 呼叫 av.open(metadata_errors=…)，PyAV 17 起已移除（2026-11 實測 19.0.2 失敗、16.1.0 可用）
+        av = _pkg_version("av")
+        checks.append((f"PyAV {av or '未安裝'}", av is not None and _major(av) < 17, 'pip install "av<17"'))
+    checks.append(("opencc", _importable("opencc"), "pip install opencc-python-reimplemented"))
+    return checks
 
 
 def cmd_doctor() -> int:
@@ -137,7 +158,9 @@ def cmd_transcribe(args, backend_runner: Optional[BackendRunner]) -> int:
     if not audio.is_file():
         _err(f"找不到音檔：{audio}")
         return 2
-    if shutil.which("ffmpeg") is None:
+    backend = pick_backend(platform.system(), platform.machine())
+    # faster-whisper 以 PyAV 自帶解碼，只有 mlx-whisper 需要系統的 ffmpeg
+    if backend == "mlx" and shutil.which("ffmpeg") is None:
         _err("找不到 ffmpeg，無法解碼音檔；先跑 `transcribe.py doctor` 看安裝指令")
         return 3
     if out.exists() and not args.force:
@@ -150,7 +173,7 @@ def cmd_transcribe(args, backend_runner: Optional[BackendRunner]) -> int:
         return 3
     prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
 
-    runner = backend_runner or _resolve_runner(pick_backend(platform.system(), platform.machine()))
+    runner = backend_runner or _resolve_runner(backend)
     segments = runner(str(audio), args.model, prompt, args.language)
     segments = [(start, _zh_tw(conv, text)) for start, text in segments if text.strip()]
     if not segments:
