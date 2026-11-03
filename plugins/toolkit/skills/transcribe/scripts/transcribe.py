@@ -196,6 +196,30 @@ def _major(version: Optional[str]) -> int:
         return 0
 
 
+SYSTEM_AUDIO_PERMISSION = (
+    "系統錄音權限（查不到，只能提醒）：系統設定 → 隱私權與安全性 → 螢幕與系統錄音 → 「僅限系統錄音」，"
+    "勾選啟動 Claude Code 的那個 App（終端機或 IDE），不必重開；沒授權時錄到的是全零靜音、不會報錯"
+)
+
+
+def _mac_version() -> Tuple[int, ...]:
+    try:
+        return tuple(int(x) for x in platform.mac_ver()[0].split("."))
+    except ValueError:
+        return (0,)
+
+
+def check_system_env() -> List[Tuple[str, bool, str]]:
+    """--source system|both 額外需要的東西（Windows 尚未驗證，D9）。"""
+    if platform.system() != "Darwin":
+        return [("系統聲音擷取（Windows 尚未驗證，暫不開放）", False, "改用 --source mic")]
+    return [
+        (f"macOS {platform.mac_ver()[0]}（需 14.2 以上）", _mac_version() >= (14, 2), "升級 macOS"),
+        (f"Python {'.'.join(map(str, sys.version_info[:3]))}（需 3.11 以上）", sys.version_info[:2] >= (3, 11), "改用 Python 3.11 以上的環境"),
+        ("catap", _importable("catap"), "pip install catap"),
+    ]
+
+
 def check_env(record: bool = False) -> List[Tuple[str, bool, str]]:
     backend = pick_backend(platform.system(), platform.machine())
     checks = []
@@ -217,11 +241,14 @@ def check_env(record: bool = False) -> List[Tuple[str, bool, str]]:
     return checks
 
 
-def cmd_doctor(record: bool = False) -> int:
+def cmd_doctor(record: bool = False, source: str = "mic") -> int:
     ok = True
-    for name, ready, hint in check_env(record):
+    checks = check_env(record) + (check_system_env() if record and source != "mic" else [])
+    for name, ready, hint in checks:
         print(f"{'OK ' if ready else 'NG '} {name}" + ("" if ready else f"　→ {hint}"))
         ok = ok and ready
+    if record and source != "mic" and platform.system() == "Darwin":
+        print(f"！ {SYSTEM_AUDIO_PERMISSION}")
     return 0 if ok else 1
 
 
@@ -818,6 +845,7 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--force", action="store_true")
     doc = sub.add_parser("doctor", help="檢查 ffmpeg／轉錄套件／OpenCC 是否就緒")
     doc.add_argument("--record", action="store_true", help="一併檢查錄音需要的 ffmpeg")
+    doc.add_argument("--source", choices=["mic", "system", "both"], default="mic", help="搭配 --record：一併檢查系統聲音擷取")
     rec = sub.add_parser("record", help="背景錄音（麥克風／系統聲音）")
     rsub = rec.add_subparsers(dest="action", required=True)
     rsub.add_parser("devices", help="列出音訊輸入裝置")
@@ -855,7 +883,7 @@ def main(argv: List[str], backend_runner: Optional[BackendRunner] = None) -> int
         return cmd_record(args)
     if args.cmd == "live":
         return cmd_live(args, backend_runner)
-    return cmd_doctor(args.record)
+    return cmd_doctor(args.record, args.source)
 
 
 if __name__ == "__main__":

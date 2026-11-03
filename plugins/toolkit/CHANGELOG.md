@@ -3,6 +3,14 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.8.0] - 2026-11-03
+
+- feat: `transcribe record start --source system|both`：錄線上會議時，連同系統播放的對方聲音一起錄。Mac 用 catap（Core Audio process tap，不必裝虛擬音訊驅動）擷取系統輸出，由 detach 的 Python worker 寫進 ffmpeg stdin，沿用 segment 分段；`both` 以 `amix=duration=first` 混入麥克風。Windows 的 WASAPI loopback 程式碼已寫，但尚未驗證，`doctor` 與 `start` 一律拒絕。
+- feat: 沒有聲音時（WASAPI 不送資料）依牆鐘補零，時間軸不縮短。`record status` 顯示「對方聲音：尚未收到／最近一次時間」；沒有系統錄音授權時只會收到全零音訊，不會報錯，所以開錄時不對系統軌做靜音警告。
+- feat: `transcribe live start`：背景逐段轉錄，模型只載入一次，等 `seg-(N+1)` 出現或錄音停止才轉 `seg-N`，以各段實際長度累加時間戳，追加到 `transcript.md`，每段寫 `<!-- seg-NNN done -->` 標記、全部完成寫 `<!-- live finished -->`；被殺重啟時以標記為準，不重複追加。`record status` 顯示逐字稿進度與落後提示。
+- feat: `doctor --record --source system` 檢查 macOS 14.2+、Python 3.11+、catap，並印出系統錄音授權步驟。
+- 實測（Mac）：system 81.08 秒／牆鐘 1:21、7 句全轉出；`both` 33.23 秒／牆鐘 32.92；`live` 在下一段開始後 20 秒內轉好前一段，停止後約 4 秒收尾。測試 75 條。
+
 ## [0.7.0] - 2026-11-03
 
 - feat: `transcribe` 新增 `record devices|start|status|stop`：用 ffmpeg 背景錄麥克風（Mac avfoundation 預設 `:default`，不用編號 0；Windows dshow 需指定裝置），每 N 秒（預設 300）寫一個 16 kHz 單聲道 wav 分段。狀態檔 `record.json` 在啟動後立刻寫入；錄音以 detach 方式與 session 脫鉤，任一 session 都能 `stop`。`stop` 會先 SIGINT（Windows 用 taskkill）再以 concat 合併成 `recording.wav`，程序已不在也照樣合併。開錄 3 秒後 max_volume 低於 -70 dB 就警告。

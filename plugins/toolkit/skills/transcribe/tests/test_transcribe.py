@@ -858,3 +858,29 @@ def test_status_shows_live_progress(rec, capsys):
     t.main(["record", "status", "--out", str(rec["dir"])])
     out = capsys.readouterr().out
     assert "逐字稿：已轉 1／4 段" in out and "落後" in out
+
+
+def test_doctor_system_checks_catap(monkeypatch, capsys):
+    on_mac(monkeypatch)
+    monkeypatch.setattr(t.shutil, "which", lambda name: "/usr/bin/" + name)
+    monkeypatch.setattr(t, "_importable", lambda m: m != "catap")
+    monkeypatch.setattr(t.platform, "mac_ver", lambda: ("27.0.1", ("", "", ""), "arm64"))
+    monkeypatch.setattr(t.sys, "version_info", (3, 12, 0))
+    assert t.main(["doctor", "--record", "--source", "system"]) == 1
+    out = capsys.readouterr().out
+    assert "NG  catap" in out and "pip install catap" in out
+    assert "僅限系統錄音" in out and "啟動 Claude Code 的那個 App" in out
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    assert t.main(["doctor", "--record", "--source", "system"]) == 0
+    monkeypatch.setattr(t.platform, "mac_ver", lambda: ("14.1", ("", "", ""), "arm64"))
+    assert t.main(["doctor", "--record", "--source", "system"]) == 1
+
+
+def test_doctor_system_windows_unverified(monkeypatch, capsys):
+    on_windows(monkeypatch)
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t, "_pkg_version", lambda name: "16.1.0")
+    monkeypatch.setattr(t.shutil, "which", lambda name: "C:/ffmpeg.exe")
+    assert t.main(["doctor", "--record", "--source", "system"]) == 1
+    assert "尚未驗證" in capsys.readouterr().out
+    assert t.main(["doctor", "--record"]) == 0

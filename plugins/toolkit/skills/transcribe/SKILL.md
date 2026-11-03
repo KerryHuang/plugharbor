@@ -1,6 +1,6 @@
 ---
 name: transcribe
-description: 在本機背景錄音（麥克風），或把錄音檔轉成帶時間戳的逐字稿 Markdown：Mac（Apple Silicon）用 mlx-whisper，Windows／其他平台用 faster-whisper，中文輸出經 OpenCC 轉台灣繁體。不上雲端、不分講者。Use when 使用者說「轉逐字稿」「語音轉文字」「錄音轉文字」「開始錄音」「transcribe」，或給一個音檔／影片檔要文字內容。
+description: 在本機背景錄音（麥克風，或線上會議時連同系統播放的對方聲音）並可邊錄邊逐段轉錄，或把錄音檔轉成帶時間戳的逐字稿 Markdown：Mac（Apple Silicon）用 mlx-whisper，Windows／其他平台用 faster-whisper，中文輸出經 OpenCC 轉台灣繁體。不上雲端、不分講者。Use when 使用者說「轉逐字稿」「語音轉文字」「錄音轉文字」「開始錄音」「錄線上會議」「transcribe」，或給一個音檔／影片檔要文字內容。
 argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 ---
 
@@ -35,6 +35,20 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 5. 使用者說散會才停：`record stop --out "<目錄>"`，會合併成 `<目錄>/recording.wav`（exit 4＝沒有任何分段）。再用上面的 `transcribe` 轉 `recording.wav`。
 6. **不要自行讀取或轉錄使用者沒要求的錄音內容**；測試錄音用完即刪。
 
+## 線上會議（對方聲音＋邊錄邊轉）
+
+目前只支援 Mac（macOS 14.2 以上、Python 3.11 以上、`pip install catap`）。Windows 尚未驗證，腳本會直接拒絕，請改用麥克風模式。
+
+1. **開錄前先問使用者是否已告知所有與會者（含線上的對方）要錄音**，沒確認就不開錄。建議戴耳機：不戴的話喇叭聲會再被麥克風收一次，逐字稿可能出現重複句（已知限制）。
+2. 環境：`doctor --record --source system`。它會印出系統錄音授權的步驟（查不到權限，只能提醒），轉述給使用者。
+3. 開錄：`record start --out "<目錄>" --source both`（只錄對方用 `system`）。開錄時沒有靜音警告，因為還沒人講話是正常的。
+4. 邊錄邊轉：`live start --out "<目錄>" [--prompt-file "<術語檔>"]`。每段錄完才轉，逐字稿追加到 `<目錄>/transcript.md`，每段結束寫一行 `<!-- seg-NNN done -->`，全部轉完寫 `<!-- live finished -->`。
+5. 開錄後 1 到 2 分鐘跑 `record status --out "<目錄>"`：
+   - 「對方聲音：尚未收到」：請使用者確認已授權、會議聲音從系統預設輸出播放。
+   - 「逐字稿：已轉 N／M 段（落後）」：機器跟不上，轉告使用者。散會後 `live` 會在背景把剩下的轉完。
+6. 散會：`record stop --out "<目錄>"`，等 `transcript.md` 出現 `live finished`。`recording.wav` 照常產出。
+7. 已知限制：會中切換輸出裝置（插拔耳機、AirPods 連線）後，可能收不到對方聲音。`status` 會顯示最近一次收到的時間，看到時間停住就提醒使用者。
+
 ## Exit code
 
 | code | 意思 |
@@ -46,4 +60,4 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 
 ## 不做
 
-講者辨識、雲端轉錄、線上會議的系統音訊擷取與會中即時轉錄（之後的版本才有）。
+講者辨識、分我方／對方、雲端轉錄、Windows 系統音訊（尚未驗證）。
