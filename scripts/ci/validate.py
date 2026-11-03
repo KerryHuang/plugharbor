@@ -6,7 +6,8 @@
   2. frontmatter：skill／agent 必有 name、description；description 不得用 `|` 區塊
   3. 交互引用：references／templates／scripts／agents 路徑與 `<plugin>:<skill>` 指向實際存在
   4. README 清單：根 README「skills 與 agents」表與實際目錄一致
-  5. 外洩掃描：個人路徑、非範例 email、CGNAT（Tailscale）IP；
+  5. 名稱衝突：skill、agent 名稱跨 plugin 不得重複（pi／Codex 是扁平命名）
+  6. 外洩掃描：個人路徑、非範例 email、CGNAT（Tailscale）IP；
      另讀 repo 根目錄 `.leak-denylist`（gitignored，只存在本機）逐行比對
 
 用法：python3 scripts/ci/validate.py
@@ -115,6 +116,19 @@ def check_frontmatter(pdir: Path) -> None:
         expect = f.parent.name if kind == "skill" else f.stem
         if fm.get("name") and fm["name"] != expect:
             err(f, f"name `{fm['name']}` 與檔名／目錄名 `{expect}` 不一致")
+
+
+def check_name_collisions(pdirs: list[Path]) -> None:
+    # Claude Code 以 <plugin>:<name> 區分，但 pi 的 skills 與 ~/.codex/agents/ 是扁平命名，同名會互蓋
+    for kind, pattern in (("skill", "skills/*/SKILL.md"), ("agent", "agents/*.md")):
+        seen: dict[str, Path] = {}
+        for pdir in pdirs:
+            for f in sorted(pdir.glob(pattern)):
+                name = f.parent.name if kind == "skill" else f.stem
+                if name in seen:
+                    err(f, f"{kind} 名稱 `{name}` 與 {seen[name].relative_to(ROOT)} 重複（扁平命名的 CLI 會互蓋）")
+                else:
+                    seen[name] = f
 
 
 # ---------- 3. 交互引用 ----------
@@ -246,6 +260,7 @@ def main() -> int:
         pdir = ROOT / entry["source"]
         check_frontmatter(pdir)
         check_refs(pdir, all_plugins)
+    check_name_collisions([ROOT / e["source"] for e in market["plugins"]])
     check_leaks()
 
     if errors:
