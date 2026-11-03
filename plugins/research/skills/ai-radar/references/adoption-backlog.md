@@ -48,7 +48,7 @@ living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見 SKILL.md「輸出位置�
 
 ## backlog 檔格式
 
-`<OUT>/adoption-backlog.md` 第一次建立時用下表，每項一列，之後只 append：
+`<OUT>/adoption-backlog.md` 第一次建立時用下表，每項一列。新項一律 append；唯一例外是深讀評估卡（對帳流程第 5 步）：同一比對鍵已有列時就地更新該列的分數與決策備註（證據寫成卡片所在檔的連結），狀態不動：
 
 ```markdown
 | # | 來源（連結 + 日期） | 摘要 | 影響×可行性×契合度 | 狀態 | 建議交棒／接入方式 | 決策備註 |
