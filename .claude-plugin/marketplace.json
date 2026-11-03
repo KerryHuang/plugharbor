@@ -20,7 +20,7 @@
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "跨語言開發工作流 — git 生命週期、工作編排、context 治理",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -38,7 +38,7 @@
       "name": "frontend-vue",
       "source": "./plugins/frontend-vue",
       "description": "Vue 3 + TypeScript + Quasar 前端 — 架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec 工作流",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "author": {
         "name": "KerryHuang"
       }

@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.0] - 2026-11-03
+
+- feat: `review` 審 PR 前先看狀態（closed／merged 不審）；新增「發現驗證與誤報排除」——排除既有問題、linter 會抓的、已靜音的、吹毛求疵，🚫／⚠️ 每條派獨立唯讀 subagent 驗證後才進報告。
+- feat: `implement` 步驟 9 彙整分級後先套 `review` 的發現驗證，再委派修正。
+
 ## [0.2.2] - 2026-11-03
 
 - docs: `agent-orchestration` 拿掉「同時已有 3 個活著的 worker 先問使用者」；派工數量不再設門檻。
