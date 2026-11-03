@@ -1,0 +1,10 @@
+{
+  "name": "ui-ux",
+  "private": true,
+  "description": "ui-ux plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
+  "license": "MIT",
+  "keywords": ["pi-package", "ui-ux"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

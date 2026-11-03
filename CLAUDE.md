@@ -1,7 +1,7 @@
 # plugharbor
 
 公開的 Claude Code plugin marketplace，也是所有 AI 工作模式的唯一來源，供 Claude Code、Codex、pi、agy 共用。
-內容：`plugins/`（14 個 plugin）、`setup/`（user 層設定、install／bootstrap／uninstall、adapters）、`scripts/ci/validate.py`、`.github/workflows/validate.yml`。
+內容：`plugins/`（13 個 plugin）、`setup/`（user 層設定、install／bootstrap／uninstall、adapters）、`scripts/ci/validate.py`、`.github/workflows/validate.yml`。
 各 CLI 差異見 `docs/agent-parity.md`，安裝與 user 層設定見 `setup/README.md`。
 
 ## 慣例

@@ -1,9 +1,9 @@
 # plugharbor
 
-所有 AI 工作模式的唯一來源：14 個 plugin（工作流、hooks、guard、reviewer、寫作、研究、兒童介面規範）加上 user 層設定（`setup/`），
+所有 AI 工作模式的唯一來源：13 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
 同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、workspace、dev-flow）裝在 user 層，每個專案都有；其餘 9 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace、dev-flow）裝在 user 層，每個專案都有；其餘 8 個是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 
@@ -46,17 +46,16 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | 外掛 | 版本 | 內容 |
 |------|------|------|
 | [sa-flow](./plugins/sa-flow/README.md) | 4.1.2 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
-| [dev-flow](./plugins/dev-flow/README.md) | 1.0.0 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版 |
-| [workspace](./plugins/workspace/README.md) | 1.0.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查 |
-| [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
-| [frontend-vue](./plugins/frontend-vue/README.md) | 0.2.0 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |
-| [database-sqlserver](./plugins/database-sqlserver/README.md) | 0.1.1 | SQL Server——table/view 撰寫慣例、TableDescription 生成、EF Core migration 與疑難排解 |
-| [ui-ux](./plugins/ui-ux/README.md) | 0.1.1 | UI/UX 設計知識庫——風格系統、版面、配色、互動慣例、資訊呈現 |
-| [desktop-avalonia](./plugins/desktop-avalonia/README.md) | 0.1.0 | Avalonia 桌面 .NET——MVVM 慣例、跨平台路徑、建置與發佈 |
+| [dev-flow](./plugins/dev-flow/README.md) | 1.1.0 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版，含不綁技術的 architect／developer／reviewer／tester／debugger agents |
+| [workspace](./plugins/workspace/README.md) | 1.1.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
+| [backend](./plugins/backend/README.md) | 1.0.0 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
+| [frontend](./plugins/frontend/README.md) | 1.0.0 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
+| [database](./plugins/database/README.md) | 1.0.0 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
+| [ui-ux](./plugins/ui-ux/README.md) | 1.0.0 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
+| [desktop](./plugins/desktop/README.md) | 1.0.0 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
 | [toolkit](./plugins/toolkit/README.md) | 0.7.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.2.1 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
-| [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.3 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
 | [delivery-flow](./plugins/delivery-flow/README.md) | 0.8.2 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
 
@@ -65,25 +64,24 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | 外掛 | skills | agents |
 |------|--------|--------|
 | sa-flow | `consolidate-docs` `dev-feedback` `dev-readiness` `explore` `foxpro-analyzer` `linear-create` `linear-reply` `linear-triage` `plugin-healthcheck` `qa-sweep` `requirement` `sample-verify` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `survey-existing-system` `system-analysis` `verifying-specs` `write-doc` | `domain-advisor` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` |
-| dev-flow | `work-on` `feature` `implement` `spec` `release` | — |
-| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` | — |
-| backend-dotnet | `clean-architecture` `cqrs-handler` `repository-pattern` `domain-entity` `dapper-query` `webapi-controller` `hangfire-job` `unit-testing` `tdd-cycle` | `architect` `developer` `reviewer` `tester` `debugger` |
-| frontend-vue | `frontend-architecture` `vue-composables` `chrome-devtools-debug` `i18n-implementation` `release-workflow` `review-remote` `openspec-propose` `openspec-apply-change` `openspec-archive-change` `openspec-explore` | `code-reviewer` `test-engineer` |
-| database-sqlserver | `table-conventions` `view-conventions` `generating-table-description` `syncing-db-entities` `ef-migration` `migration-troubleshoot` | — |
-| ui-ux | `ui-ux-pro-max` | — |
-| desktop-avalonia | `avalonia-mvvm` `cross-platform` `desktop-build-publish` | — |
+| dev-flow | `work-on` `feature` `implement` `spec` `release` | `architect` `developer` `reviewer` `tester` `debugger` |
+| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` | — |
+| backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
+| frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
+| database | `schema-conventions` `migration` `orm-sync` `schema-docs` | — |
+| ui-ux | `ui-ux-pro-max` `designing-ui` `auditing-ui` | — |
+| desktop | `mvvm` `build-publish` | — |
 | toolkit | `agent-dispatch` `agent-mesh-check` `config-doctor` `context-diet` `feedback-review` `handoff` `retrospective` `tidy-memory` `transcribe` | `claudemd-reviewer` `hook-reviewer` `rule-reviewer` `skill-reviewer` `subagent-reviewer` |
 | research | `ai-radar` `graphify` | — |
 | blog | `blog-capture` `publish-check` `write-post` | — |
-| kid-ui | `auditing-kid-ui` `designing-kid-ui` | — |
 | browser-docs | `annotate-screenshot` `live-drive` `pdf-converter` | `browser-surveyor` `doc-fidelity-reviewer` |
 | delivery-flow | `interview-prep` `issue-triage` `meeting-minutes` `operation-manual` `prototype-html` `qa-verify` `ticket-daily-report` `ticket-ops` `ticket-weekly-report` | `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` |
 
 ## 典型動線
 
 需求進來 → `sa-flow` 的 `explore` → `requirement` → `system-analysis` → `specify-backend` → `specify-frontend` → `dev-readiness` → `verifying-specs` → `linear-create` 開票；
-進實作後交給 `dev-flow` 的 `work-on` / `feature` 起頭，技術層面再取用 `backend-dotnet`、`frontend-vue`、
-`database-sqlserver` 等對應外掛，最後以 `workspace` 的 `commit` / `review` 與 `dev-flow` 的 `release` 收尾，完工後以 `delivery-flow` 的 `qa-verify` 實機驗收。
+進實作後交給 `dev-flow` 的 `work-on` / `feature` 起頭，技術層面再取用 `backend`、`frontend`、
+`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit` / `review` 與 `dev-flow` 的 `release` 收尾，完工後以 `delivery-flow` 的 `qa-verify` 實機驗收。
 
 ## 目錄結構
 

@@ -1,0 +1,10 @@
+{
+  "name": "database",
+  "private": true,
+  "description": "database plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
+  "license": "MIT",
+  "keywords": ["pi-package", "database"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

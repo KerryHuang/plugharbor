@@ -30,6 +30,10 @@ description: Clean Architecture 程式碼審查——委派審查型 subagent �
 4. **驗證與過濾** — 見下節「發現驗證與誤報排除」，只留下成立的發現。
 5. **彙整報告** — 合併結果，給出總體評估與行動項目。
 
+## 審查遠端 PR／MR 並 merge
+
+要列出開啟中的 PR／MR、審查後留言 request changes 或 merge 收尾（GitHub `gh`／GitLab `glab`）時，讀 `references/review-remote.md`：CLI 對照、流程、留言規則（完整 SHA 連結、suggestion 條件）。
+
 ## 發現驗證與誤報排除
 
 審查 subagent 的發現先過這一關才進報告：

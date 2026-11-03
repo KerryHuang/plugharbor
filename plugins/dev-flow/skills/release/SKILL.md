@@ -258,6 +258,7 @@ git branch -d release/x.y.z
 - **Hotfix**（線上急修，從 main 開 hotfix branch，預設 Fast Path 不問 QA）→ `references/hotfix.md`
 - **含子模組的 repo**（先 commit／push 子模組，再回主 repo 更新 ref）→ `references/submodules.md`
 - **版號異常、tag 指向錯誤 commit（tag 污染）** → `references/troubleshooting.md`
+- **發版前品質閘（type-check／lint）、專案要求線性歷史（develop rebase 到 origin/main）、rebase 遇 release-only commit 衝突** → `references/rebase-sync.md`
 
 ---
 

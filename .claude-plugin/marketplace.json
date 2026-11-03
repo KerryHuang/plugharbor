@@ -20,7 +20,7 @@
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -29,34 +29,34 @@
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "author": {
         "name": "KerryHuang"
       }
     },
     {
-      "name": "backend-dotnet",
-      "source": "./plugins/backend-dotnet",
-      "description": ".NET Clean Architecture 後端 — CQRS/Repository/EF Core/Dapper 產碼、單元測試、TDD，含 architect/developer/reviewer/tester agents",
-      "version": "0.1.0",
+      "name": "backend",
+      "source": "./plugins/backend",
+      "description": "後端開發職責 plugin——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；通用方法加技術棧附錄（目前有 .NET）。",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
     },
     {
-      "name": "frontend-vue",
-      "source": "./plugins/frontend-vue",
-      "description": "Vue 3 + TypeScript + Quasar 前端 — 架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec 工作流",
-      "version": "0.2.0",
+      "name": "frontend",
+      "source": "./plugins/frontend",
+      "description": "前端開發方法＋技術棧附錄——架構分層、元件邏輯抽取、i18n、執行期除錯；通用原則寫在 skill，Vue 3 寫法放附錄。",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
     },
     {
-      "name": "database-sqlserver",
-      "source": "./plugins/database-sqlserver",
-      "description": "SQL Server 資料庫 — table/view 慣例、TableDescription 生成、EF Core migration 工具與疑難排解",
-      "version": "0.1.1",
+      "name": "database",
+      "source": "./plugins/database",
+      "description": "資料庫能力——schema 撰寫慣例（table／view）、migration 流程與疑難排解、DB schema 與 ORM entity 同步、資料表說明文件；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄。",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -64,17 +64,17 @@
     {
       "name": "ui-ux",
       "source": "./plugins/ui-ux",
-      "description": "UI/UX 設計知識庫 — 風格系統、版面、配色、互動慣例、資訊呈現",
-      "version": "0.1.1",
+      "description": "UI/UX 設計知識庫與畫面規範 — 風格系統、版面、互動慣例，加上設計新畫面與唯讀審查；受眾（如兒童）規範以附錄載入。",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
     },
     {
-      "name": "desktop-avalonia",
-      "source": "./plugins/desktop-avalonia",
-      "description": "Avalonia 桌面 .NET — MVVM 慣例、跨平台路徑、桌面應用建置與發佈",
-      "version": "0.1.0",
+      "name": "desktop",
+      "source": "./plugins/desktop",
+      "description": "桌面應用開發——MVVM 分層原則與建置發佈流程，附 Avalonia 技術棧附錄。",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -101,15 +101,6 @@
       "name": "blog",
       "source": "./plugins/blog",
       "description": "部落格寫作流程——收素材（blog-capture）、寫白話初稿（write-post）、上線前檢查（publish-check）",
-      "version": "0.1.0",
-      "author": {
-        "name": "KerryHuang"
-      }
-    },
-    {
-      "name": "kid-ui",
-      "source": "./plugins/kid-ui",
-      "description": "兒童介面規範——設計新畫面的通用規範（文字、念題、點擊回饋、彈窗、返回／關閉、主題配色、版面尺寸）與唯讀審查清單",
       "version": "0.1.0",
       "author": {
         "name": "KerryHuang"

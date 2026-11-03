@@ -36,6 +36,18 @@ claude plugin install dev-flow@plugharbor
 
 git 與工作區工具（commit、worktree、分支清理、submodule、暫存檔、context 治理）與輕量開發核心（debugging、review、quality-check）在 [workspace](../workspace/README.md)。dev-flow 叫用它們都是可選，沒裝時 skill 內寫有退路。
 
+## Agents（5）
+
+不綁技術：先偵測專案技術棧、讀職責 plugin（backend、frontend 等）的附錄，沒有附錄就照專案既有程式。由 skill 派發。
+
+| Agent | 用途 |
+|-------|------|
+| `architect` | 架構設計與分層邊界規劃 |
+| `developer` | 依規格與附錄實作 |
+| `reviewer` | 程式碼審查（分層、測試、安全、效能，含前端檢查項） |
+| `tester` | 測試設計與補測試 |
+| `debugger` | 系統性除錯、追根因 |
+
 ## License
 
 MIT

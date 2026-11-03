@@ -1,0 +1,9 @@
+{
+  "name": "frontend",
+  "description": "前端開發方法＋技術棧附錄——架構分層、元件邏輯抽取、i18n、執行期除錯；通用原則寫在 skill，Vue 3 寫法放附錄。",
+  "version": "1.0.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

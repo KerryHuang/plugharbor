@@ -1,0 +1,10 @@
+{
+  "name": "desktop",
+  "private": true,
+  "description": "desktop plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
+  "license": "MIT",
+  "keywords": ["pi-package", "desktop"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

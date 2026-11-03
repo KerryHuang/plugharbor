@@ -1,0 +1,9 @@
+{
+  "name": "desktop",
+  "description": "桌面應用開發——MVVM 分層原則與建置發佈流程，附 Avalonia 技術棧附錄。",
+  "version": "1.0.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

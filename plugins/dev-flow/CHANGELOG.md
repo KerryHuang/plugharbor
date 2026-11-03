@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.0] - 2026-11-03
+
+- feat: 新增 5 個不綁技術的 agent——`architect`、`developer`、`reviewer`、`tester`、`debugger`，改寫自 backend-dotnet 的同名 agent；`reviewer`／`tester` 另吸收 frontend-vue 的 `code-reviewer`／`test-engineer`。先偵測技術棧並讀職責 plugin（backend、frontend 等）的附錄，沒有附錄就照專案既有程式。第③批隨 dev-flow 併入 lifecycle。
+- feat: `release` 吸收 frontend-vue 的 `release-workflow`，加 `skills/release/references/rebase-sync.md`（發版前與上游同步）。
+
 ## [1.0.0] - 2026-11-03
 
 - BREAKING: 12 個 skill 移到新 plugin workspace（user 層）：`commit`、`worktree`、`triage-branch-cleanup`、`submodule-relay`、`tmp-scratch`、`context-hygiene`、`agent-orchestration`、`dual-tool-mirror`、`convention-first`、`debugging`、`review`、`quality-check`。dev-flow 只留 `spec`、`feature`、`implement`、`work-on`、`release`。

@@ -5,7 +5,7 @@
 ## plugin 分層
 
 - **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace、dev-flow）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
-- **專案層**（其餘 9 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
+- **專案層**（其餘 8 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
 
   ```bash
   setup/install-project.sh [--shared] [--check] <專案根> <plugin…>
@@ -25,7 +25,7 @@
 
   pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
 - 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項，Codex／agy 刪掉 `.agents/skills/` 下對應的 link 與 `.agents/plugharbor/<p>`。
-- **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES` 加 `舊名:新名`（空白分隔；平常為空）。
+- **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES_DEFAULT` 加 `舊名:新名`（空白分隔）。目前開放：`backend-dotnet→backend`、`frontend-vue→frontend`、`database-sqlserver→database`、`desktop-avalonia→desktop`、`kid-ui→ui-ux`。
   install.sh 把 user 層的舊名從四個 CLI 卸掉、新名照常安裝；install-project.sh 對本專案裝著的舊名先卸再裝新名，命令列給舊名會自動換新名。
   `--check` 以 `RENAME: <cli> <舊> → <新>` 列出待處理的舊名。
 

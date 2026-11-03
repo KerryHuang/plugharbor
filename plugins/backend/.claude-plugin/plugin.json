@@ -1,0 +1,9 @@
+{
+  "name": "backend",
+  "description": "後端開發職責 plugin——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；通用方法加技術棧附錄（目前有 .NET）。",
+  "version": "1.0.0",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

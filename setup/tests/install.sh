@@ -129,12 +129,12 @@ ls -d "$C"/backups/plugharbor-*/skills/config-doctor >/dev/null 2>&1 || fail "co
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
 H="$TMP/h2"; mkdir -p "$H/.pi/agent"
 printf '{\n  "packages": ["npm:keep-me"],\n  "defaultModel": "x"\n}\n' > "$H/.pi/agent/settings.json"
-OUT="$(PLUGINS="toolkit research backend-dotnet" run "$H")" || fail "有 pi 的 install exit 非 0"
-echo "$OUT" | grep -q '^SKIP: pi backend-dotnet' || fail "沒有 pi 設定的 plugin 應印 SKIP：$OUT"
+OUT="$(PLUGINS="toolkit research dev-flow" run "$H")" || fail "有 pi 的 install exit 非 0"
+echo "$OUT" | grep -q '^SKIP: pi dev-flow' || fail "沒有 pi 設定的 plugin 應印 SKIP：$OUT"
 P="$H/.pi/agent/settings.json"
 grep -q 'npm:keep-me' "$P" || fail "pi packages 既有項目被移除"
 grep -q '"defaultModel": "x"' "$P" || fail "pi settings 其他鍵被動過"
-if grep -q 'plugins/backend-dotnet' "$P"; then fail "沒有 pi 設定的 plugin 不該加進 packages"; fi
+if grep -q 'plugins/dev-flow' "$P"; then fail "沒有 pi 設定的 plugin 不該加進 packages"; fi
 REL_TK="$(sed -n 's/^ *"\(\.\.[^"]*plugins\/toolkit\)",*$/\1/p' "$P")"
 # pi 以字串方式（node path.resolve）解析相對 ~/.pi/agent 的路徑，不走實體 symlink（macOS 的 /var → /private/var）
 ABS_TK="$(python3 -c 'import os,sys;print(os.path.normpath(os.path.join(sys.argv[1], sys.argv[2])))' "$H/.pi/agent" "$REL_TK")"
@@ -254,11 +254,11 @@ export STUB_STATE="$TMP/state"
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
 export STUB_STATE="$TMP/state-proj"; mkdir -p "$STUB_STATE"
 echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
-printf '[{"id": "sa-flow@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "kid-ui@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
+printf '[{"id": "sa-flow@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "ui-ux@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
 {
   echo 'Marketplace `plugharbor`'
   echo "sa-flow@plugharbor   installed, enabled  1.0.0    $REPO_DIR/plugins/sa-flow"
-  echo "kid-ui@plugharbor    not installed       1.0.0    $REPO_DIR/plugins/kid-ui"
+  echo "ui-ux@plugharbor    not installed       1.0.0    $REPO_DIR/plugins/ui-ux"
 } > "$STUB_STATE/codex-list"
 printf 'Installed plugins:\n- sa-flow (enabled, 1.0.0)\n' > "$STUB_STATE/agy-list"
 H="$TMP/h11"; mkdir -p "$H/.pi/agent"
@@ -273,9 +273,9 @@ cmp -s "$H/.pi/agent/settings.json" "$TMP/pi-before" || fail "--check 不該改 
 OUT="$(PLUGINS="toolkit research blog" run "$H")" || fail "移除專案層 exit 非 0：$OUT"
 grep -qx 'claude plugin uninstall sa-flow@plugharbor --scope user' "$STUB_LOG" || fail "claude 應移除 user 層 sa-flow"
 if grep -q 'claude plugin uninstall blog' "$STUB_LOG"; then fail "PLUGHARBOR_PLUGINS 指定的 blog 不該移除"; fi
-if grep -q 'uninstall kid-ui' "$STUB_LOG"; then fail "local scope 的 kid-ui 不該動"; fi
+if grep -q 'uninstall ui-ux' "$STUB_LOG"; then fail "local scope 的 ui-ux 不該動"; fi
 grep -qx 'codex plugin remove sa-flow@plugharbor' "$STUB_LOG" || fail "codex 應移除 sa-flow"
-if grep -q 'codex plugin remove kid-ui' "$STUB_LOG"; then fail "codex 沒裝的 kid-ui 不該移除"; fi
+if grep -q 'codex plugin remove ui-ux' "$STUB_LOG"; then fail "codex 沒裝的 ui-ux 不該移除"; fi
 grep -qx 'agy plugin uninstall sa-flow' "$STUB_LOG" || fail "agy 應移除 sa-flow"
 P="$H/.pi/agent/settings.json"
 if grep -q 'plugins/sa-flow' "$P"; then fail "pi packages 應移除 sa-flow：$(cat "$P")"; fi

@@ -1,0 +1,10 @@
+{
+  "name": "backend",
+  "private": true,
+  "description": "backend plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
+  "license": "MIT",
+  "keywords": ["pi-package", "backend"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}
