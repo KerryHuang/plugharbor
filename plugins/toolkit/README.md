@@ -1,6 +1,6 @@
 # toolkit
 
-通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。另附 8 個 skills 與 5 支 reviewer agents（見下）。
+通用 hooks 與分層 guard。安裝後自動註冊，不需改 `settings.json`。另附 9 個 skills 與 5 支 reviewer agents（見下）。
 
 ## 安裝
 
@@ -51,10 +51,15 @@ retrospective:
 
 附 `chain_cost.py`：統計某個工作單位花了幾個 session、幾輪、多少 token。只支援 Claude Code，只讀本機 `~/.claude/projects`。
 
+## transcribe
+
+本機語音轉逐字稿（`skills/transcribe/scripts/transcribe.py`）：Mac Apple Silicon 用 mlx-whisper、其他平台用 faster-whisper，輸出經 OpenCC `s2twp` 轉台灣繁體，每段 `[hh:mm:ss] 文字`。依賴（ffmpeg、轉錄套件、`opencc-python-reimplemented`）由使用者自裝，`transcribe.py doctor` 列出缺件與安裝指令。不上雲端、不分講者。
+
 ## 測試
 
 ```bash
 python3 -m pytest plugins/toolkit/hooks/tests -v
 python3 plugins/toolkit/skills/retrospective/scripts/test_chain_cost.py
+python3 -m pytest plugins/toolkit/skills/transcribe/tests -v   # 需 opencc-python-reimplemented
 for t in plugins/toolkit/hooks/tests/*.sh plugins/toolkit/skills/agent-dispatch/tests/*.sh; do bash "$t" || exit 1; done
 ```
