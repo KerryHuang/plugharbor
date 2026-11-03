@@ -13,4 +13,4 @@ git add <submodule-path>
 git commit -m "chore: 更新 <submodule> submodule ref"
 ```
 
-`M` 的方向判讀（何時該 bump、何時該 pull）、push 失敗不得接 bump、rebase 後驗 pointer，見 `submodule-relay` skill。
+`M` 的方向判讀（何時該 bump、何時該 pull）、push 失敗不得接 bump、rebase 後驗 pointer，見 `workspace:submodule-relay` skill（沒裝就守住順序：子模組 commit → push 成功 → 上層 bump）。

@@ -1,0 +1,10 @@
+{
+  "name": "workspace",
+  "private": true,
+  "description": "workspace plugin as a Pi package. Version lives in .claude-plugin/plugin.json.",
+  "license": "MIT",
+  "keywords": ["pi-package", "workspace"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

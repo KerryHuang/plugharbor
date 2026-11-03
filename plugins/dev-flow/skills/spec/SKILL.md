@@ -139,6 +139,8 @@ docs/
 
 ## 與其他 skill 銜接
 
-- `review` — 審查規格文件
+- `workspace:review` — 審查規格文件
 - `work-on` — 依規格執行開發
-- `commit` — 提交時引用規格文件
+- `workspace:commit` — 提交時引用規格文件
+
+`workspace:` 開頭的是 workspace plugin 的 skill（user 層，通常已裝）；沒裝時照括號裡的退路做。

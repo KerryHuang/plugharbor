@@ -19,8 +19,17 @@
     {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
-      "description": "跨語言開發工作流 — git 生命週期、工作編排、context 治理",
-      "version": "0.3.0",
+      "description": "規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版",
+      "version": "1.0.0",
+      "author": {
+        "name": "KerryHuang"
+      }
+    },
+    {
+      "name": "workspace",
+      "source": "./plugins/workspace",
+      "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }

@@ -78,5 +78,7 @@ Tests/
 
 - `spec` — 建立功能規格書
 - `work-on` — 執行完整開發流程
-- `quality-check` — 品質檢查
-- `commit` — 提交變更
+- `workspace:quality-check` — 品質檢查
+- `workspace:commit` — 提交變更
+
+`workspace:` 開頭的是 workspace plugin 的 skill（user 層，通常已裝）；沒裝時照括號裡的退路做。

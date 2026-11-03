@@ -1,9 +1,9 @@
 # plugharbor
 
-所有 AI 工作模式的唯一來源：13 個 plugin（工作流、hooks、guard、reviewer、寫作、研究、兒童介面規範）加上 user 層設定（`setup/`），
+所有 AI 工作模式的唯一來源：14 個 plugin（工作流、hooks、guard、reviewer、寫作、研究、兒童介面規範）加上 user 層設定（`setup/`），
 同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、dev-flow）裝在 user 層，每個專案都有；其餘 9 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace、dev-flow）裝在 user 層，每個專案都有；其餘 9 個是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 
@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/KerryHuang/plugharbor/main/setup/bo
 
 ```bash
 claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
-claude plugin install dev-flow@plugharbor                 # user 層
+claude plugin install workspace@plugharbor                # user 層
 cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案層，只在這個專案啟用
 ```
 
@@ -46,7 +46,8 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | 外掛 | 版本 | 內容 |
 |------|------|------|
 | [sa-flow](./plugins/sa-flow/README.md) | 4.1.1 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
-| [dev-flow](./plugins/dev-flow/README.md) | 0.3.0 | 跨語言開發工作流——git 生命週期、工作編排、context 治理 |
+| [dev-flow](./plugins/dev-flow/README.md) | 1.0.0 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版 |
+| [workspace](./plugins/workspace/README.md) | 1.0.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
 | [frontend-vue](./plugins/frontend-vue/README.md) | 0.2.0 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |
 | [database-sqlserver](./plugins/database-sqlserver/README.md) | 0.1.1 | SQL Server——table/view 撰寫慣例、TableDescription 生成、EF Core migration 與疑難排解 |
@@ -64,7 +65,8 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | 外掛 | skills | agents |
 |------|--------|--------|
 | sa-flow | `consolidate-docs` `dev-feedback` `dev-readiness` `explore` `foxpro-analyzer` `linear-create` `linear-reply` `linear-triage` `plugin-healthcheck` `qa-sweep` `requirement` `sample-verify` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `survey-existing-system` `system-analysis` `verifying-specs` `write-doc` | `domain-advisor` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` |
-| dev-flow | `work-on` `feature` `implement` `spec` `commit` `review` `release` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` | — |
+| dev-flow | `work-on` `feature` `implement` `spec` `release` | — |
+| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` | — |
 | backend-dotnet | `clean-architecture` `cqrs-handler` `repository-pattern` `domain-entity` `dapper-query` `webapi-controller` `hangfire-job` `unit-testing` `tdd-cycle` | `architect` `developer` `reviewer` `tester` `debugger` |
 | frontend-vue | `frontend-architecture` `vue-composables` `chrome-devtools-debug` `i18n-implementation` `release-workflow` `review-remote` `openspec-propose` `openspec-apply-change` `openspec-archive-change` `openspec-explore` | `code-reviewer` `test-engineer` |
 | database-sqlserver | `table-conventions` `view-conventions` `generating-table-description` `syncing-db-entities` `ef-migration` `migration-troubleshoot` | — |
@@ -81,7 +83,7 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 
 需求進來 → `sa-flow` 的 `explore` → `requirement` → `system-analysis` → `specify-backend` → `specify-frontend` → `dev-readiness` → `verifying-specs` → `linear-create` 開票；
 進實作後交給 `dev-flow` 的 `work-on` / `feature` 起頭，技術層面再取用 `backend-dotnet`、`frontend-vue`、
-`database-sqlserver` 等對應外掛，最後回到 `dev-flow` 的 `commit` / `review` / `release` 收尾，完工後以 `delivery-flow` 的 `qa-verify` 實機驗收。
+`database-sqlserver` 等對應外掛，最後以 `workspace` 的 `commit` / `review` 與 `dev-flow` 的 `release` 收尾，完工後以 `delivery-flow` 的 `qa-verify` 實機驗收。
 
 ## 目錄結構
 

@@ -32,7 +32,7 @@ description: 端到端功能開發編排——規劃、實作、測試、提交�
 
 6. **逐步實作** — 依計劃增量推進，每次重大變更後就地驗證。
 7. **增量驗證** — 每次變更後執行建置與相關測試（以 .NET 為例 `dotnet build && dotnet test`，其他工具鏈比照）。
-8. **品質檢查** — 段落完成後跑 `quality-check` 做全面驗證，全綠再往下。
+8. **品質檢查** — 段落完成後跑 `workspace:quality-check`（沒裝就跑專案自帶的 build／test）做全面驗證，全綠再往下。
 
 ## Phase 3：測試
 
@@ -47,8 +47,8 @@ description: 端到端功能開發編排——規劃、實作、測試、提交�
 ## Phase 4：完成
 
 11. **更新規格書** — 如有，把狀態更新為「已實作」並補變更歷史。
-12. **建立提交** — 逐檔指名 `git add` 後用 `commit` 產生語義化提交訊息（禁止 `git add -A`）。
-13. **最終摘要** — 總結變更檔案、後續項目；提醒手動 `git push` 與（如需要）開 PR、跑 `review`。
+12. **建立提交** — 逐檔指名 `git add` 後用 `workspace:commit`（沒裝就照 Conventional Commits 手寫）產生語義化提交訊息（禁止 `git add -A`）。
+13. **最終摘要** — 總結變更檔案、後續項目；提醒手動 `git push` 與（如需要）開 PR、跑 `workspace:review`。
 
 ## 實作計劃範例
 
@@ -103,6 +103,8 @@ flowchart LR
 
 - `feature` — 建分支並做初步領域規劃
 - `spec` — 建立/更新規格書
-- `quality-check` — 提交前驗證品質
-- `review` — 完成前審查
-- `commit` — 建立語義化提交
+- `workspace:quality-check` — 提交前驗證品質
+- `workspace:review` — 完成前審查
+- `workspace:commit` — 建立語義化提交
+
+`workspace:` 開頭的是 workspace plugin 的 skill（user 層，通常已裝）；沒裝時照括號裡的退路做。
