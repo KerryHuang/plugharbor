@@ -25,7 +25,8 @@ jobs:
         run: |
           pip install pyyaml
           status=0
-          for t in $(git ls-files 'plugins/**/test_*.py' ':!:plugins/toolkit/hooks/tests/*'); do
+          # pytest 寫的測試（hooks、transcribe）在後面「Hook 測試」步驟用 pytest 跑，這裡排除
+          for t in $(git ls-files 'plugins/**/test_*.py' ':!:plugins/toolkit/hooks/tests/*' ':!:plugins/toolkit/skills/transcribe/tests/*'); do
             echo "::group::$t"
             python "$t" || status=1
             echo "::endgroup::"
