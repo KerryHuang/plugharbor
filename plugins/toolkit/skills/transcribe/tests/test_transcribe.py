@@ -1,4 +1,5 @@
 import builtins
+import os
 import sys
 from pathlib import Path
 
@@ -331,6 +332,7 @@ def rec(monkeypatch, tmp_path):
     monkeypatch.setattr(t, "_kill", lambda pid, system: state["killed"].append(pid) or state.update(alive=False))
     monkeypatch.setattr(t, "_run_ffmpeg_concat", fake_concat)
     monkeypatch.setattr(t.time, "sleep", lambda s: None)
+    monkeypatch.setattr(t.shutil, "which", lambda name: "/usr/bin/" + name)
     state["dir"] = tmp_path / "會議 素材"
     state["read"] = lambda: _json.loads((state["dir"] / "record.json").read_text(encoding="utf-8"))
     return state
@@ -435,3 +437,96 @@ def test_build_record_cmd_flushes_segments(tmp_path):
     # 實測：segment 內層 muxer 每 256 KiB 才寫盤，硬殺（Windows 一律 taskkill /F）會丟最後約 8 秒
     cmd = t.build_record_cmd("Darwin", None, tmp_path, 300)
     assert cmd[cmd.index("-segment_format_options") + 1] == "flush_packets=1"
+
+
+def test_start_refuses_dir_with_old_segments(rec, capsys):
+    # 舊錄音程序已死（重開機）時在同一目錄再 start，segment muxer 會從 seg-000 覆蓋前半場
+    rec["dir"].mkdir(parents=True)
+    old = rec["dir"] / "seg-000.wav"
+    old.write_bytes(b"OLD")
+    rec["alive"] = False
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 2
+    assert old.read_bytes() == b"OLD"
+    assert rec["spawned"] == []
+    assert "換" in capsys.readouterr().err
+
+
+def test_start_refuses_dir_with_recording(rec):
+    rec["dir"].mkdir(parents=True)
+    (rec["dir"] / "recording.wav").write_bytes(b"OLD")
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 2
+    assert rec["spawned"] == []
+
+
+def test_start_without_ffmpeg_fails_cleanly(rec, monkeypatch, capsys):
+    monkeypatch.setattr(t.shutil, "which", lambda name: None)
+    assert t.main(["record", "start", "--out", str(rec["dir"])]) == 3
+    assert "doctor --record" in capsys.readouterr().err
+    assert rec["spawned"] == []
+
+
+def test_alive_rejects_reused_pid_posix(monkeypatch):
+    # 當機後 PID 被別的程序拿走：不能把它當成錄音中的 ffmpeg
+    on_mac(monkeypatch)
+    out = {"stdout": "Safari\n"}
+
+    class R:
+        def __init__(self):
+            self.stdout = out["stdout"]
+            self.returncode = 0 if out["stdout"] else 1
+
+    monkeypatch.setattr(t.subprocess, "run", lambda *a, **k: R())
+    assert t._alive(4242) is False
+    out["stdout"] = "/opt/homebrew/bin/ffmpeg\n"
+    assert t._alive(4242) is True
+    out["stdout"] = ""
+    assert t._alive(4242) is False
+
+
+def test_alive_rejects_reused_pid_windows(monkeypatch):
+    on_windows(monkeypatch)
+    out = {"stdout": '"notepad.exe","4242","Console","1","10,000 K"\n'}
+
+    class R:
+        def __init__(self):
+            self.stdout = out["stdout"]
+            self.returncode = 0
+
+    monkeypatch.setattr(t.subprocess, "run", lambda *a, **k: R())
+    assert t._alive(4242) is False
+    out["stdout"] = '"ffmpeg.exe","4242","Console","1","30,000 K"\n'
+    assert t._alive(4242) is True
+    out["stdout"] = "INFO: No tasks are running which match the specified criteria.\n"
+    assert t._alive(4242) is False
+
+
+def test_kill_windows_does_not_kill_tree(monkeypatch):
+    calls = []
+    monkeypatch.setattr(t.subprocess, "run", lambda cmd, **k: calls.append(cmd))
+    t._kill(4242, "Windows")
+    assert "/T" not in calls[0]
+
+
+def test_kill_tolerates_process_exiting_midway(monkeypatch):
+    # ffmpeg 在 SIGINT 前或最後一次輪詢後自己結束：stop 不能噴 traceback
+    on_mac(monkeypatch)
+    monkeypatch.setattr(t, "_alive", lambda pid: True)
+    monkeypatch.setattr(t.time, "sleep", lambda s: None)
+
+    def gone(pid, sig):
+        raise ProcessLookupError
+
+    monkeypatch.setattr(t.os, "kill", gone)
+    t._kill(4242, "Darwin")  # 不丟例外即通過
+
+
+def test_child_exited_detects_zombie():
+    # ffmpeg 一啟動就死時是本程序的 zombie，os.kill(pid, 0) 仍成功；要先 reap 才判得出來
+    import subprocess
+
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    import time as _time
+
+    _time.sleep(1.0)
+    assert t._child_exited(p.pid) is True
+    assert t._child_exited(os.getpid()) is False

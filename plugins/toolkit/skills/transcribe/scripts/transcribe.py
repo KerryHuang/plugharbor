@@ -317,30 +317,41 @@ def _spawn(cmd: List[str], log_path: Path) -> int:
 
 
 def _alive(pid: int) -> bool:
+    """PID 還在而且是 ffmpeg：當機或重開機後 PID 可能被別的程序拿走，不能只看存不存在。"""
     if platform.system() == "Windows":
-        r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True, errors="replace")
-        return str(pid) in r.stdout
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
+        r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace")
+        return any(line.lower().startswith('"ffmpeg.exe"') and f'"{pid}"' in line for line in r.stdout.splitlines())
+    r = subprocess.run(["ps", "-p", str(pid), "-o", "comm="], capture_output=True, text=True, errors="replace")
+    return r.returncode == 0 and "ffmpeg" in r.stdout
+
+
+def _child_exited(pid: int) -> bool:
+    """本程序剛啟動的 ffmpeg 若已結束會變 zombie，ps／kill 仍查得到；先 reap 才判得出來。"""
+    if platform.system() == "Windows":
         return False
-    except PermissionError:
-        return True
-    return True
+    try:
+        done, _ = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        return False
+    return done == pid
 
 
 def _kill(pid: int, system: str) -> None:
     if system == "Windows":
-        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+        # 不帶 /T：ffmpeg 沒有子程序，帶了只會擴大 PID 被重用時的誤殺範圍
+        subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
         return
     import signal
 
-    os.kill(pid, signal.SIGINT)  # 讓 ffmpeg 正常收尾、寫好最後一段的檔頭
-    for _ in range(20):
-        if not _alive(pid):
-            return
-        time.sleep(0.5)
-    os.kill(pid, signal.SIGKILL)
+    try:
+        os.kill(pid, signal.SIGINT)  # 讓 ffmpeg 正常收尾、寫好最後一段的檔頭
+        for _ in range(20):
+            if not _alive(pid):
+                return
+            time.sleep(0.5)
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return  # 送訊號前後自己結束了
 
 
 def _max_volume(path: Path) -> Optional[float]:
@@ -401,6 +412,13 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int) -> int:
     if _recording(state):
         _err(f"這個目錄已經在錄音（PID {state['pid']}）；要結束請用 `record stop`")
         return 2
+    if _segments(out_dir) or (out_dir / "recording.wav").exists():
+        # segment muxer 會從 seg-000 開始覆蓋，前一段錄音救不回來
+        _err(f"這個目錄已有之前的錄音分段：{out_dir}\n請換一個新目錄再開錄；要合併舊的請用 `record stop`")
+        return 2
+    if not shutil.which("ffmpeg"):
+        _err("找不到 ffmpeg，請先跑 `doctor --record` 看安裝方式")
+        return 3
     out_dir.mkdir(parents=True, exist_ok=True)
     system = platform.system()
     try:
@@ -418,7 +436,7 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int) -> int:
     _write_state(out_dir, state)
     time.sleep(3)
     first = out_dir / "seg-000.wav"
-    if not _alive(pid) or not first.exists():
+    if _child_exited(pid) or not _alive(pid) or not first.exists():
         if _alive(pid):
             _kill(pid, system)
         state["stopped_at"] = datetime.now().isoformat(timespec="seconds")

@@ -9,7 +9,9 @@
 - fix: 實測 Mac 不加大輸入佇列時每 30 秒掉約 3.5 秒音訊，擷取改帶 `-thread_queue_size 4096` 與 `aresample=async=1000`。
 - fix: Windows 實測，SSH 連線（及部分終端機）結束時會連同 job 內的子程序一起砍掉；啟動改帶 `CREATE_BREAKAWAY_FROM_JOB`，job 不允許時退回原旗標。
 - fix: 硬殺 ffmpeg（Windows 一律 `taskkill /F`、Mac 的 SIGKILL 後備）會丟最後約 8 秒，因為 segment 內層 muxer 每 256 KiB 才寫盤，改帶 `-segment_format_options flush_packets=1`；合併清單每段加 `option ignore_length 1`（硬殺的 wav 檔頭長度沒收尾），並改用絕對路徑（相對 `--out` 會被解析成 `dir/dir/seg`）。
-- feat: `doctor --record` 一併檢查錄音需要的 ffmpeg（Windows 轉錄本身不需要）。測試 39 條。
+- fix: 目錄已有 `seg-*.wav` 或 `recording.wav` 時 `start` 拒絕（exit 2），避免 segment muxer 從 seg-000 覆蓋前一段錄音；沒裝 ffmpeg 時 `start` 回 exit 3，不再噴 traceback。
+- fix: 程序存活判斷改成確認 PID 仍是 ffmpeg（Mac `ps -o comm=`、Windows `tasklist /FO CSV`），當機後 PID 被重用時不會誤殺別的程序；Windows `taskkill` 拿掉 `/T`；啟動檢查先 reap 已結束的子程序（zombie 仍查得到 PID）；`_kill` 遇程序中途自己結束不再丟例外。
+- feat: `doctor --record` 一併檢查錄音需要的 ffmpeg（Windows 轉錄本身不需要）。測試 47 條。
 
 ## [0.6.2] - 2026-11-03
 
