@@ -22,6 +22,7 @@ SCOPE=local; [ "$SHARED" -eq 0 ] || SCOPE=project
 
 PLUGINS=""
 for p in $WANT; do
+  if new="$(ph_rename_new "$p")"; then echo "RENAME: ${p} → ${new}（改用新名）"; p="$new"; fi
   if [ ! -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ]; then echo "FAIL: 找不到 plugin「${p}」"; exit 2; fi
   if ph_is_user_plugin "$p"; then echo "SKIP: ${p} 是 user 層，已由 install.sh 安裝"; else PLUGINS="$PLUGINS $p"; fi
 done
@@ -29,6 +30,17 @@ done
 DIFFS=0; FAILS=0
 note_diff() { echo "$1"; DIFFS=$((DIFFS + 1)); }
 run() { echo "RUN:  $*"; "$@" || { echo "FAIL: $*"; FAILS=$((FAILS + 1)); }; }
+
+# 這次要裝的新名所對應的舊名（改名對照）；每行「舊名 新名」
+# （寫成函式：bash 3.2 解析 $( ) 裡的 case 會出錯）
+renamed_pairs() {
+  local o n
+  while read -r o n; do
+    [ -n "$o" ] || continue
+    case " $PLUGINS " in *" $n "*) echo "$o $n" ;; esac
+  done <<< "$(ph_rename_pairs)"
+}
+RENAMED="$(renamed_pairs)"
 
 [ "$CHECK" -eq 1 ] && echo "比對專案層 plugin（${SCOPE}）↔ ${ROOT}（只報不改）" || echo "安裝專案層 plugin（${SCOPE}）→ ${ROOT}"
 
@@ -80,6 +92,11 @@ elif command -v claude >/dev/null 2>&1; then
     fi
   fi
   out="$(claude plugin list --json 2>/dev/null | tr -d '\r')" || out=""
+  while read -r o n; do
+    [ -n "$o" ] && [ -n "$(printf '%s\n' "$out" | claude_ver "$o")" ] || continue
+    if [ "$CHECK" -eq 1 ]; then note_diff "RENAME: claude ${o} → ${n}（舊名，install-project 會卸載後裝新名）"
+    else run claude plugin uninstall "$o@plugharbor" --scope "$SCOPE"; fi
+  done <<< "$RENAMED"
   REFRESHED=0
   for p in $PLUGINS; do
     cur="$(printf '%s\n' "$out" | claude_ver "$p")"; want="$(ph_version "$p")"
@@ -102,10 +119,13 @@ else
 fi
 
 # ---------- pi：專案 .pi/settings.json 的 packages（絕對路徑，只限 local） ----------
-PI_PKGS=""
+PI_PKGS=""; PI_OLD=""
 for p in $PLUGINS; do
   grep -q '"pi"' "$REPO_DIR/plugins/$p/package.json" 2>/dev/null && PI_PKGS="$PI_PKGS $(ph_native_path "$REPO_DIR/plugins/$p")"
 done
+while read -r o n; do
+  [ -z "$o" ] || PI_OLD="$PI_OLD $(ph_native_path "$REPO_DIR/plugins/$o")=$n"
+done <<< "$RENAMED"
 if [ -z "$PI_PKGS" ]; then
   :
 elif ! command -v pi >/dev/null 2>&1; then
@@ -120,24 +140,30 @@ else
   PYTHONUTF8=1 "$PY" -c '
 import json, os, sys
 path, check, pkgs = sys.argv[1], sys.argv[2] == "1", sys.argv[3].split()
+renamed = dict(r.split("=", 1) for r in sys.argv[4].split())  # 舊路徑=新名
 try:
     d = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
 except Exception as e:
     print(f"FAIL: 讀不了 {path}：{e}"); sys.exit(1)
 cur = d.setdefault("packages", [])
+old = [p for p in cur if p in renamed]
+for p in old:
+    print(f"RENAME: pi {os.path.basename(p)} → {renamed[p]}" if check else f"OK:   pi 移除舊名 {os.path.basename(p)}（改名為 {renamed[p]}）")
+if old and not check:
+    cur[:] = [p for p in cur if p not in renamed]
 add = [p for p in pkgs if p not in cur]
 for p in pkgs:
     name = os.path.basename(p)
     if p in cur: print(f"UP-TO-DATE: pi {name}")
     elif check: print(f"MISSING: pi {name}")
-if add and not check:
+if (add or old) and not check:
     cur.extend(add)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=2); f.write("\n")
     for p in add: print(f"OK:   pi {os.path.basename(p)}")
-sys.exit(2 if add and check else 0)
-' "$(ph_native_path "$ROOT/.pi/settings.json")" "$CHECK" "$PI_PKGS" && rc=0 || rc=$?
+sys.exit(2 if (add or old) and check else 0)
+' "$(ph_native_path "$ROOT/.pi/settings.json")" "$CHECK" "$PI_PKGS" "$PI_OLD" && rc=0 || rc=$?
   case "$rc" in 0) ;; 2) DIFFS=$((DIFFS + 1)) ;; *) FAILS=$((FAILS + 1)) ;; esac
   if [ "$CHECK" -eq 0 ] && [ "$rc" -eq 0 ]; then
     ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""

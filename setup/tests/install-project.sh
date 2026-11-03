@@ -93,4 +93,25 @@ grep -qx "cygpath -m $P7/.pi/settings.json" "$STUB_LOG" || fail "pi 設定檔路
 grep -qx "cygpath -m $REPO_DIR/plugins/sa-flow" "$STUB_LOG" || fail "pi package 路徑應先經 cygpath -m 轉換"
 rm "$STUB/cygpath"
 
-echo "PASS: install-project.sh（7 組）"
+# ---------- 8) 改名對照：本專案裝著舊名 → 先卸舊名再裝新名；命令列給舊名自動換新名；pi 舊路徑換新 ----------
+P8="$(newproj p8)"; : > "$STUB_LOG"; : > "$STUB_CWD_LOG"
+printf '[{"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "%s"},\n {"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "/other"}]\n' "$P8" > "$STUB_STATE/claude-list"
+mkdir -p "$P8/.pi"
+printf '{"packages": ["npm:keep-me", "%s"]}\n' "$REPO_DIR/plugins/old-kid" > "$P8/.pi/settings.json"
+OUT="$(PLUGHARBOR_RENAMES="old-kid:kid-ui" run --check "$P8" kid-ui)" || fail "改名 --check exit 非 0：$OUT"
+echo "$OUT" | grep -q '^RENAME: claude old-kid → kid-ui' || fail "--check 應報 RENAME: claude：$OUT"
+echo "$OUT" | grep -q '^RENAME: pi old-kid → kid-ui' || fail "--check 應報 RENAME: pi：$OUT"
+if grep -q 'uninstall' "$STUB_LOG"; then fail "--check 不該卸載"; fi
+OUT="$(PLUGHARBOR_RENAMES="old-kid:kid-ui" run "$P8" kid-ui)" || fail "改名實跑 exit 非 0：$OUT"
+U="$(grep -n "^claude plugin uninstall old-kid@plugharbor --scope local @ $P8$" "$STUB_CWD_LOG" | cut -d: -f1)"
+I="$(grep -n "^claude plugin install kid-ui@plugharbor --scope local @ $P8$" "$STUB_CWD_LOG" | cut -d: -f1)"
+[ -n "$U" ] && [ -n "$I" ] && [ "$U" -lt "$I" ] || fail "應先在專案根卸 old-kid 再裝 kid-ui：$(cat "$STUB_CWD_LOG")"
+[ "$(grep -c 'uninstall old-kid' "$STUB_LOG")" = 1 ] || fail "別的專案的 old-kid 不該卸"
+S="$P8/.pi/settings.json"
+if grep -q 'plugins/old-kid' "$S"; then fail "pi 舊路徑應移除：$(cat "$S")"; fi
+grep -q "$REPO_DIR/plugins/kid-ui" "$S" && grep -q 'npm:keep-me' "$S" || fail "pi 應加新路徑、保留其他：$(cat "$S")"
+OUT="$(PLUGHARBOR_RENAMES="old-kid:kid-ui" run --check "$P8" old-kid)" || fail "命令列給舊名 exit 非 0：$OUT"
+echo "$OUT" | grep -q '^RENAME: old-kid → kid-ui（改用新名）' || fail "命令列舊名應自動換新名：$OUT"
+rm "$STUB_STATE/claude-list"
+
+echo "PASS: install-project.sh（8 組）"
