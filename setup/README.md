@@ -4,7 +4,7 @@
 
 ## plugin 分層
 
-- **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、dev-flow）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
+- **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace、dev-flow）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
 - **專案層**（其餘 9 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
 
   ```bash
@@ -15,10 +15,19 @@
   |---|---|---|
   | Claude Code | `plugin install --scope local` | 專案 scope 登記 marketplace 後 `plugin install --scope project` |
   | pi | 寫 `<專案>/.pi/settings.json` 的 packages，並加進 `.git/info/exclude` | 略過 |
-  | Codex、agy | 略過 | 略過 |
+  | Codex、agy | 在 `<專案>/.agents/skills/` 建 symlink（見下），並加進 `.git/info/exclude` | 略過 |
 
-  Codex、agy 沒有專案範圍，專案層 plugin 在這兩個 CLI 不提供。pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
-- 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項。
+  Codex 與 agy 都讀 `<專案>/.agents/skills/<skill>/SKILL.md` 並跟隨 symlink，兩者共用一份：
+  `.agents/plugharbor/<plugin>` 指向 clone 的 `plugins/<plugin>`，`.agents/skills/<skill>` 指向 `../plugharbor/<plugin>/skills/<skill>`。
+  skill 的 plugin 根以 SKILL.md 的 realpath 往上兩層為準，所以 references 讀得到。
+  已存在、不是 plugharbor 的同名項目（例如 `dual-tool-mirror` 鏡像出來的 skill）一律 `SKIP:` 不動；指向 plugharbor 但失效的 link，`--check` 報 `BROKEN:`、實跑移除。
+  建不了 symlink（Windows 沒開開發人員模式）時改複製 skill，同目錄寫 `.plugharbor-root` 記 plugin 根，印 WARN；plugharbor 更新後要重跑。
+
+  pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
+- 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項，Codex／agy 刪掉 `.agents/skills/` 下對應的 link 與 `.agents/plugharbor/<p>`。
+- **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES` 加 `舊名:新名`（空白分隔；平常為空）。
+  install.sh 把 user 層的舊名從四個 CLI 卸掉、新名照常安裝；install-project.sh 對本專案裝著的舊名先卸再裝新名，命令列給舊名會自動換新名。
+  `--check` 以 `RENAME: <cli> <舊> → <新>` 列出待處理的舊名。
 
 ## Claude Code 的 marketplace 來源
 

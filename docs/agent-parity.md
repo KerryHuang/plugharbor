@@ -49,16 +49,17 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
 - 回報給模型的是 link 路徑（`<專案>/.agents/skills/<skill>/SKILL.md`），不是實體路徑。
 - 要求「以 SKILL.md 的實體路徑（realpath）往上兩層找 plugin 根」時，兩者都正確讀到 plugin 根的 `references/`。
 - 所以專案層只建一份 `.agents/skills`，兩個 CLI 共用；`harness-terms.md` 寫明以 realpath 為準。
-- Windows Git Bash 的 symlink 行為：待 Windows 實測。
+- `setup/install-project.sh` 據此建 symlink（做法見 `setup/README.md`「plugin 分層」）。
+- Windows Git Bash 的 symlink 行為：待 Windows 實測；建不了 link 時改複製並寫 `.plugharbor-root`。
 
 ## 已知落差
 
 - **pi 載入不到多數舊 plugin**：legacy 的 7 個 plugin（sa-flow、dev-flow、backend-dotnet、frontend-vue、database-sqlserver、ui-ux、desktop-avalonia）
   只有 sa-flow 有 `package.json`，pi 才載入得到它；其餘 6 個 pi 看不到（install.sh 會印 `SKIP: pi <name>（沒有 pi package 設定）`）。
-  新 plugin（toolkit、research、blog、kid-ui、browser-docs、delivery-flow）都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
+  新 plugin（toolkit、research、blog、kid-ui、browser-docs、delivery-flow、workspace）都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
 - **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
-- **分層安裝**：user 層 4 個（toolkit、research、browser-docs、dev-flow）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 只替 Claude Code（`--scope local`／`project`）與 pi（專案 `.pi/settings.json`）安裝。Codex、agy 沒有專案範圍，不提供專案層 plugin。
+- **分層安裝**：user 層 5 個（toolkit、research、browser-docs、workspace、dev-flow）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（只限 local）。
 - **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
   delivery-flow 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；sa-flow 叫用 delivery-flow／browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
 - **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；

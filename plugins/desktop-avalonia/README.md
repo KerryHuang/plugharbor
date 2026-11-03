@@ -1,6 +1,6 @@
 # desktop-avalonia
 
-Avalonia 桌面 .NET 能力 plugin — 收斂 Avalonia + CommunityToolkit.Mvvm 專屬做法。通用 .NET / git 能力不重複收（見 backend-dotnet、dev-flow）。
+Avalonia 桌面 .NET 能力 plugin — 收斂 Avalonia + CommunityToolkit.Mvvm 專屬做法。通用 .NET / git 能力不重複收（見 backend-dotnet、workspace）。
 
 ## 定位
 
