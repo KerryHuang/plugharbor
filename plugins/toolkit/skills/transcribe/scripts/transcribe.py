@@ -63,6 +63,55 @@ def _err(msg: str) -> None:
 
 
 MLX_MODELS = {"large-v3-turbo": "mlx-community/whisper-large-v3-turbo"}
+# Whisper prompt 上限約 223 tokens，超過時保留尾端、截掉開頭；中文約一字一 token，留點餘裕
+PROMPT_CHAR_LIMIT = 200
+
+
+def parse_silences(ffmpeg_stderr: str, duration: float) -> List[Tuple[float, float]]:
+    """解析 ffmpeg silencedetect 輸出；結尾沒有 silence_end 的區段延伸到 duration。"""
+    import re
+
+    out: List[Tuple[float, float]] = []
+    start = None
+    for m in re.finditer(r"silence_(start|end): ([0-9.]+)", ffmpeg_stderr):
+        if m.group(1) == "start":
+            start = float(m.group(2))
+        elif start is not None:
+            out.append((start, float(m.group(2))))
+            start = None
+    if start is not None:
+        out.append((start, duration))
+    return out
+
+
+def detect_silences(audio: str) -> List[Tuple[float, float]]:
+    """用 ffmpeg 找出接近無聲的區段；ffmpeg 失敗時回空清單（等同不過濾）。"""
+    import subprocess
+
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-nostats", "-i", audio, "-af", "silencedetect=noise=-45dB:d=1", "-f", "null", "-"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
+        )
+    except OSError:
+        return []
+    import re
+
+    m = re.search(r"Duration: (\d+):(\d+):([0-9.]+)", r.stderr)
+    duration = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else float("inf")
+    return parse_silences(r.stderr, duration)
+
+
+def drop_silent(raw: List[dict], silences: List[Tuple[float, float]]) -> List[dict]:
+    """丟掉八成以上落在無聲區段的段落——Whisper 在無聲處會幻覺出「訂閱、字幕由…提供」之類文字。"""
+    kept = []
+    for seg in raw:
+        start, end = float(seg["start"]), float(seg.get("end", seg["start"]))
+        length = max(end - start, 1e-6)
+        covered = sum(max(0.0, min(end, b) - max(start, a)) for a, b in silences)
+        if covered / length < 0.8:
+            kept.append(seg)
+    return kept
 
 
 def run_mlx(audio: str, model: str, prompt: Optional[str], language: str) -> List[Segment]:
@@ -73,9 +122,12 @@ def run_mlx(audio: str, model: str, prompt: Optional[str], language: str) -> Lis
         path_or_hf_repo=MLX_MODELS.get(model, model),
         initial_prompt=prompt,
         language=language,
-        verbose=False,
+        word_timestamps=True,
+        hallucination_silence_threshold=2.0,
+        verbose=None,
     )
-    return [(float(s["start"]), s["text"]) for s in result.get("segments", [])]
+    raw = drop_silent(result.get("segments", []), detect_silences(audio))
+    return [(float(s["start"]), s["text"]) for s in raw]
 
 
 def _has_cuda() -> bool:
@@ -94,10 +146,13 @@ def run_faster_whisper(audio: str, model: str, prompt: Optional[str], language: 
     wm = WhisperModel(model, device="auto", compute_type=compute_type)
     segments, info = wm.transcribe(audio, language=language, initial_prompt=prompt, vad_filter=True)
     out: List[Segment] = []
+    tty = sys.stderr.isatty()  # 背景執行時不印逐段進度，免得 stderr 變成一條數十 KB 的長行
     for s in segments:
         out.append((float(s.start), s.text))
-        print(f"\r進度 {format_ts(s.end)} / {format_ts(info.duration)}", end="", file=sys.stderr, flush=True)
-    print(file=sys.stderr)
+        if tty:
+            print(f"\r進度 {format_ts(s.end)} / {format_ts(info.duration)}", end="", file=sys.stderr, flush=True)
+    if tty:
+        print(file=sys.stderr)
     return out
 
 
@@ -172,6 +227,8 @@ def cmd_transcribe(args, backend_runner: Optional[BackendRunner]) -> int:
         _err("缺少 OpenCC，無法轉繁體：pip install opencc-python-reimplemented（或先跑 doctor）")
         return 3
     prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
+    if prompt and len(prompt) > PROMPT_CHAR_LIMIT:
+        _err(f"警告：術語提示 {len(prompt)} 字，超過 Whisper 上限（約 {PROMPT_CHAR_LIMIT} 字），開頭會被截掉；最重要的詞請放在檔尾")
 
     runner = backend_runner or _resolve_runner(backend)
     segments = runner(str(audio), args.model, prompt, args.language)

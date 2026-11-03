@@ -3,6 +3,12 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.6.2] - 2026-11-03
+
+- fix: `transcribe` mlx 路徑遇靜音會幻覺出「訂閱、點贊」等文字並以 exit 0 結束：改開 `word_timestamps`＋`hallucination_silence_threshold=2.0`，並以 ffmpeg `silencedetect`（-45dB、1 秒）丟掉八成以上落在無聲區段的段落。實測 60 秒純靜音改回 exit 4，長靜音＋語音只留真正的話。
+- fix: 術語提示超過約 200 字時印警告（Whisper 上限約 223 tokens，超過會截掉開頭）。
+- fix: stderr 不是 TTY（背景執行）時不印逐段進度，免得輸出變成一條數十 KB 的長行。測試 21 條。
+
 ## [0.6.1] - 2026-11-03
 
 - fix: `transcribe` Windows 實測修正。faster-whisper 以 PyAV 自帶解碼，ffmpeg 只在 mlx-whisper（Mac）路徑檢查與列入 `doctor`；faster-whisper 1.2.x 遇 PyAV 17+ 會因 `metadata_errors` 參數失敗，`doctor` 改為檢查 `av<17` 並給安裝指令。測試 16 條。

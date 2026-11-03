@@ -183,3 +183,65 @@ def test_doctor_accepts_pyav_16(monkeypatch):
     monkeypatch.setattr(t, "_importable", lambda m: True)
     monkeypatch.setattr(t, "_pkg_version", lambda name: "16.1.0" if name == "av" else "1.2.1")
     assert t.main(["doctor"]) == 0
+
+
+SILENCEDETECT = """[Parsed_silencedetect_0 @ 0x1] silence_start: 0
+[Parsed_silencedetect_0 @ 0x1] silence_end: 90.002 | silence_duration: 90.002
+[Parsed_silencedetect_0 @ 0x1] silence_start: 120.5
+"""
+
+
+def test_parse_silences_open_ended():
+    assert t.parse_silences(SILENCEDETECT, duration=130.0) == [(0.0, 90.002), (120.5, 130.0)]
+
+
+def test_drop_silent_removes_hallucination_in_silence():
+    raw = [
+        {"start": 58.8, "end": 60.0, "text": "优优独播剧场"},
+        {"start": 89.8, "end": 95.0, "text": "今天讨论模具排程"},
+        {"start": 121.0, "end": 125.0, "text": "请不吝点赞订阅"},
+    ]
+    kept = t.drop_silent(raw, [(0.0, 90.002), (120.5, 130.0)])
+    assert [s["text"] for s in kept] == ["今天讨论模具排程"]
+
+
+def test_mlx_uses_hallucination_guard_and_silence_filter(monkeypatch):
+    import types
+
+    seen = {}
+
+    def fake_transcribe(audio, **kw):
+        seen.update(kw)
+        return {"segments": [{"start": 58.8, "end": 60.0, "text": "幻覺"}, {"start": 90.0, "end": 92.0, "text": "你好"}]}
+
+    monkeypatch.setitem(sys.modules, "mlx_whisper", types.SimpleNamespace(transcribe=fake_transcribe))
+    monkeypatch.setattr(t, "detect_silences", lambda audio: [(0.0, 89.5)])
+    assert t.run_mlx("a.wav", "large-v3-turbo", None, "zh") == [(90.0, "你好")]
+    assert seen["word_timestamps"] is True
+    assert seen["hallucination_silence_threshold"] == 2.0
+
+
+def test_warns_when_prompt_too_long(audio, tmp_path, capsys):
+    pf = tmp_path / "g.txt"
+    pf.write_text("模具" * 150, encoding="utf-8")
+    t.main(["transcribe", str(audio), "--out", str(tmp_path / "o.md"), "--prompt-file", str(pf)], backend_runner=fake_backend([(0.0, "x")]))
+    assert "開頭會被截掉" in capsys.readouterr().err
+
+
+def test_no_progress_spam_when_not_tty(monkeypatch, capsys):
+    import types
+
+    seg = types.SimpleNamespace(start=0.0, end=1.0, text="好")
+    info = types.SimpleNamespace(duration=1.0)
+
+    class FakeModel:
+        def __init__(self, *a, **kw):
+            pass
+
+        def transcribe(self, *a, **kw):
+            return iter([seg] * 50), info
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", types.SimpleNamespace(WhisperModel=FakeModel))
+    monkeypatch.setattr(t, "_has_cuda", lambda: False)
+    t.run_faster_whisper("a.wav", "large-v3-turbo", None, "zh")
+    assert capsys.readouterr().err.count("進度") == 0
