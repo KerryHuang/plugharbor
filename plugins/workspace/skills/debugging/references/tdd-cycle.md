@@ -78,4 +78,4 @@ Red (寫失敗測試) → Green (最小實作) → Refactor (重構) → 重複
 
 - **測試命名**：方法名 `Method_Scenario_ExpectedResult`（英文）；顯示名稱是否用繁中跟隨團隊慣例
 - **收尾**：完成所有循環後，走 `backend:unit-testing` 的 Step 5 測試價值複審剪枝（可選；沒裝就自行檢查有無「測框架本身」的低價值案例，刪除前徵詢使用者），再 commit
-- **角色分工（有裝 dev-flow 時，可選）**：`dev-flow:tester` 負責 Red，`dev-flow:developer` 負責 Green 與 Refactor
+- **角色分工（有裝 dev-flow 時，可選）**：`dev-flow:tester` 負責 Red，`dev-flow:developer` 負責 Green 與 Refactor（沒裝 dev-flow 就用 general-purpose agent 分別帶「測試工程師」「實作者」角色說明；職責 plugin 載入了附錄時，把附錄絕對路徑寫進派工 prompt）

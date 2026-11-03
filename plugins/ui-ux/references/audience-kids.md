@@ -2,7 +2,7 @@
 
 使用者明確說明受眾是兒童，或專案 README／設定標明兒童受眾時載入；一般專案不套用。供 `designing-ui`、`auditing-ui` 共用。
 
-預設對象是小一（6–7 歲）、平板橫放、手指點。專案若有自己的設定，先讀專案的 `.claude/skills/designing-ui/this-app.md` 或 `.claude/rules/` 裡的 app 版面規則（裝置、元件在哪個檔案、這個 app 的坑）；都沒有，就請使用者提供年齡層和裝置再開始。
+預設對象是小一（6–7 歲）、平板橫放、手指點。專案若有自己的設定，先讀專案的 `.claude/skills/designing-ui/this-app.md`（舊專案在 `.claude/skills/designing-kid-ui/this-app.md`）或 `.claude/rules/` 裡的 app 版面規則（裝置、元件在哪個檔案、這個 app 的坑）；都沒有，就請使用者提供年齡層和裝置再開始。
 
 ## 兒童專屬原則
 

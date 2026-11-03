@@ -106,7 +106,7 @@ Mock data **禁止**真實個資，一律替換為虛構值：
 
 ## 5. TDD 模式
 
-Red-Green-Refactor 的完整做法見 `workspace:debugging`（可選；沒裝 workspace 就照「先寫失敗測試→最小實作→重構、每階段跑篩選測試」自行進行）。本 skill 提供紅燈階段的測試骨架；測試先行實作可派 `dev-flow:tester`（可選）。
+Red-Green-Refactor 的完整做法見 `workspace:debugging`（可選；沒裝 workspace 就照「先寫失敗測試→最小實作→重構、每階段跑篩選測試」自行進行）。本 skill 提供紅燈階段的測試骨架；測試先行實作可派 `dev-flow:tester`（可選；沒裝 dev-flow 就用 general-purpose agent，prompt 帶「測試工程師，先寫會失敗的測試」）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
 
 ## Red Flags — STOP
 

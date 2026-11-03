@@ -14,7 +14,7 @@ model: opus
 先看專案的建置檔（`*.csproj`／`*.sln`、`go.mod`、`pyproject.toml`、`package.json`、`pom.xml` 等）判斷技術棧，再讀附錄：
 
 1. 呼叫端 prompt 給的附錄路徑，優先（建置／測試／診斷指令、常見錯誤碼在附錄的「測試與診斷指令」）。
-2. 沒給就用 Glob 找已安裝職責 plugin 的 `references/stacks/<stack>.md`。
+2. 沒給：不要自己去找 plugin 目錄（plugin 裝在 CLI 的快取裡，從專案根找不到）；在回報註明「呼叫端沒給附錄路徑」。
 3. 都沒有就用專案自帶的建置與測試指令（README、CI、`package.json`、`Makefile` 找得到的那支），回報寫「附錄：無（照既有程式）」。
 
 回報第一行寫「附錄：<檔名>」。

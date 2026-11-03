@@ -33,7 +33,7 @@ description: 資料存取層：Repository 介面與實作、查詢物件、ORM �
 | 批次大量寫入 | micro-ORM 或批次 API | 避開逐筆追蹤成本 |
 | 兩者並存 | 同一連線與交易 | 避免交易不一致 |
 
-灰色地帶（JOIN >3、報表、需 View）→ 派 `dev-flow:architect` 抉擇（可選；沒裝 dev-flow 用 general-purpose agent，prompt 帶「架構顧問，給 2–3 方案與 trade-off」）。
+灰色地帶（JOIN >3、報表、需 View）→ 派 `dev-flow:architect` 抉擇（可選；沒裝 dev-flow 用 general-purpose agent，prompt 帶「架構顧問，給 2–3 方案與 trade-off」）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
 
 ## 3. 查詢規則
 

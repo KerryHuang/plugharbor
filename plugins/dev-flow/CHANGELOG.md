@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.1] - 2026-11-03
+
+- fix: 5 個 agent 不再自己 Glob 找附錄（plugin 在 CLI 快取裡，從專案根找不到），改由呼叫端在派工 prompt 帶附錄絕對路徑；沒給就照專案既有程式並在回報註明。
+
 ## [1.1.0] - 2026-11-03
 
 - feat: 新增 5 個不綁技術的 agent——`architect`、`developer`、`reviewer`、`tester`、`debugger`，改寫自 backend-dotnet 的同名 agent；`reviewer`／`tester` 另吸收 frontend-vue 的 `code-reviewer`／`test-engineer`。先偵測技術棧並讀職責 plugin（backend、frontend 等）的附錄，沒有附錄就照專案既有程式。第③批隨 dev-flow 併入 lifecycle。

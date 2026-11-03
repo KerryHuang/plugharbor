@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.0.1] - 2026-11-03
+
+- fix: `designing-ui`／`auditing-ui` 讀專案設定時也找舊路徑 `.claude/skills/designing-kid-ui/this-app.md`。遷移：專案裡若有專案層的 `.claude/skills/designing-kid-ui/SKILL.md`，刪掉它（或整個目錄改名為 `designing-ui/` 並刪掉其中的 `SKILL.md`），免得與 plugin 的 `designing-ui` 重複觸發。
+
 ## [1.0.0] - 2026-11-03
 
 - feat!: 吸收 kid-ui plugin。`designing-kid-ui` → `designing-ui`、`auditing-kid-ui` → `auditing-ui`（skill 改名，舊名不再存在）。

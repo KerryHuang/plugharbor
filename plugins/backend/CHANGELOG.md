@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.0.1] - 2026-11-03
+
+- fix: 派 `dev-flow` agent（或 general-purpose 退路）時，把 §0 載入的附錄絕對路徑寫進派工 prompt；`unit-testing` 補沒裝 dev-flow 時的退路。
+
 ## [1.0.0] - 2026-11-03
 
 - feat: 新 plugin，自 backend-dotnet 改寫成「通用方法＋技術棧附錄」。skill 對照：`clean-architecture`→`layered-architecture`、`cqrs-handler`→`cqrs`、`repository-pattern`＋`dapper-query`→`data-access`、`domain-entity`→`domain-model`、`webapi-controller`→`api-endpoint`、`hangfire-job`→`background-job`、`unit-testing`→`unit-testing`。

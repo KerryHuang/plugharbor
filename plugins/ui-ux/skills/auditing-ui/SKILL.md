@@ -28,7 +28,7 @@ argument-hint: "[要審的畫面或檔案；空白＝全部]"
 ```
 審查進度：
 - [ ] 1. 讀 references/checklist.md；有受眾附錄就一併讀其審查清單
-- [ ] 2. 讀專案自己的 UI 規則與元件說明（.claude/rules/、.claude/skills/designing-ui/this-app.md、設計系統文件）
+- [ ] 2. 讀專案自己的 UI 規則與元件說明（.claude/rules/、.claude/skills/designing-ui/this-app.md 或舊路徑 .claude/skills/designing-kid-ui/this-app.md、設計系統文件）
 - [ ] 3. 照範圍列出要看的檔案（UI 程式碼、場景或畫面）
 - [ ] 4. 每一條照「怎麼查」做；需要開瀏覽器的條目標「待實測」，不要猜
 - [ ] 5. 回報
