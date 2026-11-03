@@ -32,6 +32,18 @@
         ]
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'S=\"${CLAUDE_PLUGIN_ROOT}/hooks/loop-guard.py\"; [ -f \"$S\" ] || exit 0; for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$S\"; done; exit 0'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -84,6 +96,16 @@
           {
             "type": "command",
             "command": "sh -c 'S=\"${CLAUDE_PLUGIN_ROOT}/hooks/feedback-capture.py\"; [ -f \"$S\" ] || exit 0; for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$S\"; done; exit 0'",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'S=\"${CLAUDE_PLUGIN_ROOT}/hooks/loop-guard.py\"; [ -f \"$S\" ] || exit 0; for PY in python3 python; do \"$PY\" -c \"\" 2>/dev/null && exec \"$PY\" \"$S\"; done; exit 0'",
             "timeout": 5
           }
         ]

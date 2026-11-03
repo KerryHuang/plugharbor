@@ -3,6 +3,13 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.5.0] - 2026-11-03
+
+- feat: 新增 hook `plugins/toolkit/hooks/loop-guard.py`（失敗迴圈提醒）：同一輪內同一失敗指紋出現 3 次，注入「停下重估、換方向前落檔、必要時 friction」提示進 context，之後同指紋再犯只給使用者 systemMessage；不中止、不寫 friction 佇列。指紋＝工具名＋錯誤第一個有意義的行（跳過 `Exit code N`），去數字／十六進位位址／路徑（借自 microsoft/TokenEconomizer loopguard）。主 session 與 subagent 依 `agent_id` 各自計數。Claude Code 註冊 PostToolUseFailure 與 UserPromptSubmit（重置主 session）；狀態在 `~/.claude/loop-guard/`，7 天前的 session 狀態自動清掉。
+- feat: 同一支腳本也吃 Codex 的 PostToolUse payload：Codex 沒有失敗事件，成敗查 `transcript_path` 同 `tool_use_id` 的 `item_completed`；輪界用 `turn_id`；狀態在 `~/.codex/loop-guard/`。adapter 新增 `setup/adapters/loop-guard.mjs`（stdin 轉給 repo 內的 `loop-guard.py`）並註冊進 `~/.codex/hooks.json` 的 PostToolUse，安裝後需在 Codex `/hooks` 信任。
+- test: 新增 `plugins/toolkit/hooks/tests/test_loop_guard.py`（21 條）；`setup/adapters/tests/sync-user.test.mjs` 新增 wrapper 解析與轉送測試；`test_agent_model_guard.py` 的 python hook 數改為 10。
+- docs: `docs/agent-parity.md`、toolkit README 補 loop-guard。
+
 ## [0.4.1] - 2026-11-03
 
 - docs: `plugins/toolkit/skills/agent-dispatch/SKILL.md` 長任務模式拿掉「開 pane 前已有 3 個活著的 worker 先問使用者」的前置步驟；派工數量不再設門檻。

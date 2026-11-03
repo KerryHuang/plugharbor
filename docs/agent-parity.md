@@ -17,12 +17,13 @@ Codex 與 agy 的 Claude 專用操作對應見 `setup/adapters/runtime.md`。
 
 ## toolkit hook 對照
 
-Claude 欄是 `plugins/toolkit/hooks/hooks.json` 實際註冊的事件。adapter 替 Codex／agy 註冊 `setup/adapters/` 下的三支精簡 hook
-（`session-start.mjs`、`tool-policy.mjs`、`notify.mjs`），不是把 Python hook 搬過去。
+Claude 欄是 `plugins/toolkit/hooks/hooks.json` 實際註冊的事件。adapter 替 Codex／agy 註冊 `setup/adapters/` 下的四支精簡 hook
+（`session-start.mjs`、`tool-policy.mjs`、`notify.mjs`、`loop-guard.mjs`），不是把 Python hook 搬過去；`notify.mjs`、`loop-guard.mjs` 只是把 stdin 轉給 repo 內的腳本。
 
 **注意（Codex）**：Codex（0.164 起）會載入 plugin 的 `hooks/hooks.json`，並替換 `CLAUDE_PLUGIN_ROOT`；`codex plugin add toolkit@plugharbor` 後會快取該檔。
 因此下表 Codex 欄的「無」是指 adapter 沒有另外移植；toolkit 的 hook 一旦在 Codex 經 `/hooks` 信任，實際上可能也會跑。已知後果：
 Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`（重複通知）；`feedback-capture.py` 可能把 Codex 的 prompt 寫進 Claude 回饋佇列。
+loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認得的 `PostToolUseFailure`（2026-11-03 實測），toolkit 的 UserPromptSubmit 那條只會清掉 Codex 本來就靠 `turn_id` 重置的計數。
 實際行為尚未驗證，切換（cutover）時要用 `/hooks` 確認哪些 hook 生效，再決定是否在 Codex 端關掉。
 
 | Hook | Claude | Codex | agy | pi |
@@ -34,6 +35,7 @@ Stop 可能同時跑 toolkit 的 `notification.sh` 與 adapter 的 `notify.mjs`�
 | `feedback-capture.py` | ✅ UserPromptSubmit | 無：回饋佇列只在 Claude 收集；未接 Codex 的 UserPromptSubmit | 無 | 無 |
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
 | `retro-due-reminder.py` | ✅ SessionStart `startup` | 無：adapter 未移植；在 Codex 手動跑 retrospective | 無 | 無：pi 沒有 hook 機制 |
+| `loop-guard.py` | ✅ PostToolUseFailure、UserPromptSubmit（重置主 session） | ✅ PostToolUse：`loop-guard.mjs` 轉給同一支 `loop-guard.py`。Codex 沒有失敗事件、`tool_response` 只有輸出字串，成敗改查 `transcript_path` 裡同 `tool_use_id` 的 `item_completed`（`status: failed`／`exit_code`）；輪界用 `turn_id`；subagent 帶 `agent_id`。狀態在 `~/.codex/loop-guard/` | 無：adapter 只替 agy 註冊 Stop | 無：pi 沒有 hook 機制 |
 | `context-size-reminder.py` | ✅ Stop | 無：依賴 Claude transcript 格式與 context 級距；Codex 自己管理 context | 無 | 無 |
 | `notification.sh` | ✅ Notification、Stop | ✅ Stop：`notify.mjs` 把 stdin 轉給 repo 內的 `notification.sh`，通知規則只維護一處（無 Notification 事件） | ✅ Stop：同一支 `notify.mjs`，經 `hooks.json` 的 `plugharbor-notify` | 無：pi 沒有 hook 機制 |
 

@@ -214,7 +214,7 @@ function nodeBin() {
 export function installSupport({ home = homedir(), repo = resolve(here, '../..') } = {}) {
   const owned = ownership(home)
   const dest = join(home, SUPPORT)
-  for (const name of ['sync-user.mjs', 'session-start.mjs', 'tool-policy.mjs', 'notify.mjs', 'runtime.md']) owned.put(join(dest, name), readFileSync(join(here, name)))
+  for (const name of ['sync-user.mjs', 'session-start.mjs', 'tool-policy.mjs', 'notify.mjs', 'loop-guard.mjs', 'runtime.md']) owned.put(join(dest, name), readFileSync(join(here, name)))
   // session-start 從這裡找回來源 repo。
   owned.put(join(dest, 'repo'), resolve(repo))
   // Codex /hooks 會在目前 profile 追加信任狀態；保留 runtime 的狀態區塊。
@@ -230,7 +230,7 @@ export function installSupport({ home = homedir(), repo = resolve(here, '../..')
   const hooks = read(hookPath) ? JSON.parse(read(hookPath)) : { hooks: {} }
   const quote = value => process.platform === 'win32' ? `"${value}"` : `'${value.replace(/'/g, "'\\''")}'`
   const retrust = []
-  for (const [event, script, matcher] of [['SessionStart', 'session-start.mjs', undefined], ['PreToolUse', 'tool-policy.mjs', '^Bash$'], ['Stop', 'notify.mjs', undefined]]) {
+  for (const [event, script, matcher] of [['SessionStart', 'session-start.mjs', undefined], ['PreToolUse', 'tool-policy.mjs', '^Bash$'], ['Stop', 'notify.mjs', undefined], ['PostToolUse', 'loop-guard.mjs', undefined]]) {
     // Windows 的 Codex 用 PowerShell 跑 hook：開頭是帶引號的路徑會被當成字串而解析失敗，改用 PATH 上的裸 node。
     const command = `${process.platform === 'win32' ? 'node' : quote(nodeBin())} ${quote(join(dest, script))}`
     const groups = hooks.hooks ??= {}

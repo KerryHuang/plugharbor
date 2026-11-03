@@ -2,13 +2,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { syncUser, installSupport, manifestKey } from '../sync-user.mjs'
 import { notificationScript } from '../notify.mjs'
+import { loopGuardScript } from '../loop-guard.mjs'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { inspectCommand } from '../tool-policy.mjs'
+
+const here = dirname(fileURLToPath(import.meta.url))
 
 const fixture = () => {
   const home = mkdtempSync(join(tmpdir(), 'plugharbor-home-test-'))
@@ -123,6 +126,7 @@ test('support installation merges hooks, preserves foreign hooks, and is idempot
     assert.equal(readFileSync(join(home, '.codex/hooks.json'), 'utf8'), first)
     assert.ok(first.includes('foreign-hook'))
     assert.ok(first.includes('tool-policy.mjs'))
+    assert.ok(JSON.parse(first).hooks.PostToolUse[0].hooks[0].command.includes('loop-guard.mjs'))
     const stop = JSON.parse(first).hooks.Stop
     assert.equal(stop.length, 2, 'foreign Stop hook kept beside notify.mjs')
     assert.ok(stop[1].hooks[0].command.includes('notify.mjs'))
@@ -338,5 +342,30 @@ test('notification script resolves from the recorded repo, then legacy path, els
     mkdirSync(join(repo, 'plugins/toolkit/hooks'), { recursive: true })
     writeFileSync(join(repo, 'plugins/toolkit/hooks/notification.sh'), '')
     assert.equal(notificationScript(home), join(repo, 'plugins/toolkit/hooks/notification.sh'))
+  } finally { done(home, repo) }
+})
+
+test('loop-guard wrapper resolves the repo script and relays its output', () => {
+  const { home, repo } = fixture()
+  try {
+    assert.equal(loopGuardScript(home), null)
+    mkdirSync(join(home, '.codex/support/plugharbor'), { recursive: true })
+    writeFileSync(join(home, '.codex/support/plugharbor/repo'), repo)
+    assert.equal(loopGuardScript(home), null, 'repo script missing -> null')
+    const real = resolve(here, '../../..')
+    writeFileSync(join(home, '.codex/support/plugharbor/repo'), real)
+    assert.equal(loopGuardScript(home), join(real, 'plugins/toolkit/hooks/loop-guard.py'))
+    const transcript = join(home, 'rollout.jsonl')
+    const outputs = [1, 2, 3].map(i => {
+      const item = { type: 'CommandExecution', id: `exec-${i}`, status: 'failed', exit_code: 1 }
+      writeFileSync(transcript, JSON.stringify({ type: 'event_msg', payload: { type: 'item_completed', item } }) + '\n', { flag: 'a' })
+      const payload = { session_id: 'c1', turn_id: 't1', hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_use_id: `exec-${i}`, tool_input: { command: 'ls' }, tool_response: 'ls: x: No such file or directory\n', transcript_path: transcript }
+      const r = spawnSync(process.execPath, [join(here, '../loop-guard.mjs')], { input: JSON.stringify(payload), encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home } })
+      assert.equal(r.status, 0, r.stderr)
+      return r.stdout
+    })
+    assert.equal(outputs[0], '')
+    assert.equal(outputs[1], '')
+    assert.equal(JSON.parse(outputs[2]).hookSpecificOutput.hookEventName, 'PostToolUse')
   } finally { done(home, repo) }
 })
