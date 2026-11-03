@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 專案層 plugin → 指定專案：Claude Code 裝到 local（預設，不進 git）或 project（--shared，進 git 與團隊共用）scope；
-# pi 寫專案的 .pi/settings.json（只限 local）；Codex、agy 沒有專案範圍，略過。user 層 plugin 由 install.sh 負責。
+# pi 寫專案的 .pi/settings.json；Codex、agy 在專案 .agents/skills 建 symlink（兩者都只限 local）。user 層 plugin 由 install.sh 負責。
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$REPO_DIR/setup/lib.sh"
@@ -176,9 +176,90 @@ sys.exit(2 if (add or old) and check else 0)
   fi
 fi
 
-if [ -n "$PLUGINS" ]; then
-  echo "SKIP: codex 沒有專案範圍（專案層 plugin 不安裝）"
-  echo "SKIP: agy 沒有專案範圍（專案層 plugin 不安裝）"
+# ---------- Codex／agy：都讀 <專案>/.agents/skills/<skill>/SKILL.md 並跟隨 symlink ----------
+# .agents/plugharbor/<plugin> → clone 的 plugins/<plugin>；.agents/skills/<skill> → ../plugharbor/<plugin>/skills/<skill>。
+# skill 用 ${CLAUDE_PLUGIN_ROOT} 時以 SKILL.md 的 realpath 往上兩層為 plugin 根。
+# 建不了 symlink（Windows 沒開開發人員模式）就複製 skill，同目錄 .plugharbor-root 記 plugin 根。
+AG="$ROOT/.agents"
+LINK_MODE="${PLUGHARBOR_LINK_MODE:-symlink}"
+ours_link() {  # $1=link 路徑；指向 plugharbor 的才算
+  local t; t="$(readlink "$1")" || return 1
+  case "$t" in ../plugharbor/*|"$REPO_DIR"/plugins/*) return 0 ;; *) return 1 ;; esac
+}
+try_link() {  # $1=目標 $2=link；成功建出 symlink 才 return 0
+  [ "$LINK_MODE" = symlink ] || return 1
+  MSYS=winsymlinks:nativestrict ln -s "$1" "$2" 2>/dev/null && [ -L "$2" ] && return 0
+  rm -rf "$2"; return 1
+}
+WARNED_COPY=0
+copy_skill() {  # $1=plugin $2=skill
+  local d="$AG/skills/$2"
+  [ "$WARNED_COPY" -eq 1 ] || { echo "WARN: 無法建 symlink，改用複製；plugharbor 更新後要重跑本腳本"; WARNED_COPY=1; }
+  rm -rf "$d"; cp -R "$REPO_DIR/plugins/$1/skills/$2" "$d"
+  ph_native_path "$REPO_DIR/plugins/$1" > "$d/.plugharbor-root"
+}
+same_copy() {  # $1=複本 $2=來源；忽略 .plugharbor-root
+  diff -rq -x .plugharbor-root "$1" "$2" >/dev/null 2>&1
+}
+EXCLUDES=""
+if [ -z "$PLUGINS" ]; then
+  :
+elif ! command -v codex >/dev/null 2>&1 && ! command -v agy >/dev/null 2>&1; then
+  echo "SKIP: codex／agy（未安裝）"
+elif [ "$SHARED" -eq 1 ]; then
+  echo "SKIP: codex/agy 不支援 --shared（link 是本機路徑）"
+else
+  # 失效的 plugharbor link：--check 報 BROKEN，實跑移除
+  for l in "$AG"/skills/* "$AG"/plugharbor/*; do
+    [ -L "$l" ] && [ ! -e "$l" ] && ours_link "$l" || continue
+    if [ "$CHECK" -eq 1 ]; then note_diff "BROKEN: ${l}"; else rm -f "$l"; echo "OK:   移除失效 link ${l}"; fi
+  done
+  for p in $PLUGINS; do
+    [ -d "$REPO_DIR/plugins/$p/skills" ] || continue
+    pl="$AG/plugharbor/$p"; copy=0
+    if [ -L "$pl" ] && [ "$(readlink "$pl")" = "$REPO_DIR/plugins/$p" ]; then
+      :
+    elif [ -e "$pl" ] && [ ! -L "$pl" ]; then
+      echo "SKIP: ${pl} 已存在且不是 plugharbor 的 link"; continue
+    elif [ "$CHECK" -eq 1 ]; then
+      [ "$LINK_MODE" = symlink ] || copy=1
+    else
+      mkdir -p "$AG/plugharbor"; rm -f "$pl"
+      try_link "$REPO_DIR/plugins/$p" "$pl" || { copy=1; rmdir "$AG/plugharbor" 2>/dev/null || true; }
+    fi
+    [ "$copy" -eq 1 ] || EXCLUDES="$EXCLUDES .agents/plugharbor/"
+    for sd in "$REPO_DIR/plugins/$p/skills"/*/; do
+      [ -d "$sd" ] || continue
+      s="$(basename "$sd")"; l="$AG/skills/$s"; want="../plugharbor/$p/skills/$s"
+      if [ -L "$l" ] && ! ours_link "$l"; then
+        echo "SKIP: ${l} 已存在且不是 plugharbor 的 link"; continue
+      elif [ -d "$l" ] && [ ! -L "$l" ] && [ ! -f "$l/.plugharbor-root" ]; then
+        echo "SKIP: ${l} 已存在且不是 plugharbor 的 link"; continue
+      elif [ -e "$l" ] && [ ! -L "$l" ] && [ ! -d "$l" ]; then
+        echo "SKIP: ${l} 已存在且不是 plugharbor 的 link"; continue
+      fi
+      EXCLUDES="$EXCLUDES .agents/skills/$s"
+      if [ -L "$l" ] && [ "$(readlink "$l")" = "$want" ] && [ -e "$l" ]; then
+        echo "UP-TO-DATE: link $s"
+      elif [ -d "$l" ] && [ ! -L "$l" ] && same_copy "$l" "$sd"; then
+        echo "UP-TO-DATE: link $s"
+      elif [ "$CHECK" -eq 1 ]; then
+        if [ -d "$l" ] && [ ! -L "$l" ]; then note_diff "DIFF: 複本 ${l} 與 plugharbor 不同"; else note_diff "MISSING: codex/agy link $s"; fi
+      else
+        mkdir -p "$AG/skills"; rm -rf "$l"
+        if [ "$copy" -eq 0 ] && try_link "$want" "$l"; then echo "OK:   codex/agy link $s"
+        else copy_skill "$p" "$s"; echo "OK:   codex/agy 複製 $s"; fi
+      fi
+    done
+  done
+  if [ "$CHECK" -eq 0 ] && [ -n "$EXCLUDES" ]; then
+    ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""
+    if [ -n "$ex" ]; then
+      case "$ex" in /*) ;; *) ex="$ROOT/$ex" ;; esac
+      mkdir -p "$(dirname "$ex")"; touch "$ex"
+      for e in $EXCLUDES; do grep -qxF "$e" "$ex" || echo "$e" >> "$ex"; done
+    fi
+  fi
 fi
 
 if [ "$FAILS" -gt 0 ]; then echo "完成，但有 ${FAILS} 項失敗"; exit 1; fi

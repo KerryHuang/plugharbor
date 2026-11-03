@@ -9,7 +9,7 @@
 
 | Claude Code | Pi |
 |---|---|
-| `${CLAUDE_PLUGIN_ROOT}` | plugin 根目錄＝SKILL.md 所在目錄往上兩層（`skills/<skill>/SKILL.md` → plugin 根）。Pi 不代換這個變數：寫進工具呼叫或 shell 指令前，先換成絕對路徑；shell 裡的 `${CLAUDE_PLUGIN_ROOT}` 在 Pi 是空字串。 |
+| `${CLAUDE_PLUGIN_ROOT}` | plugin 根目錄＝SKILL.md 所在目錄往上兩層（`skills/<skill>/SKILL.md` → plugin 根）。透過 symlink 載入（Codex／agy 的專案層）時以 SKILL.md 的實體路徑（realpath）往上兩層為準；SKILL.md 同目錄有 `.plugharbor-root` 時（建不了 symlink 的複製模式）以該檔內容為準。Pi 不代換這個變數：寫進工具呼叫或 shell 指令前，先換成絕對路徑；shell 裡的 `${CLAUDE_PLUGIN_ROOT}` 在 Pi 是空字串。 |
 | `${CLAUDE_SKILL_DIR}` | 本 SKILL.md 所在目錄的絕對路徑。Pi 不代換：寫進工具呼叫或 shell 指令前先換成絕對路徑。 |
 | `$ARGUMENTS` | `/skill:<name>` 後面的文字（Pi 把它附在 skill 內容後當使用者請求），沒有就用觸發本 skill 的那則使用者訊息。 |
 | `${CLAUDE_CODE_SESSION_ID}` | Pi 沒有對應值。依賴它的量測在 Pi 上略過，回報時註明「Pi 未量測」。 |

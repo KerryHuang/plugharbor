@@ -11,7 +11,7 @@
       "name": "sa-flow",
       "source": "./plugins/sa-flow",
       "description": "SDLC 上游規格鏈 — 需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -119,7 +119,7 @@
       "name": "browser-docs",
       "source": "./plugins/browser-docs",
       "description": "瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "author": {
         "name": "KerryHuang"
       }
@@ -128,7 +128,7 @@
       "name": "delivery-flow",
       "source": "./plugins/delivery-flow",
       "description": "專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型",
-      "version": "0.8.1",
+      "version": "0.8.2",
       "author": {
         "name": "KerryHuang"
       }

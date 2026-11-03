@@ -45,7 +45,7 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [sa-flow](./plugins/sa-flow/README.md) | 4.1.1 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
+| [sa-flow](./plugins/sa-flow/README.md) | 4.1.2 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
 | [dev-flow](./plugins/dev-flow/README.md) | 1.0.0 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版 |
 | [workspace](./plugins/workspace/README.md) | 1.0.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
@@ -57,8 +57,8 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | [research](./plugins/research/README.md) | 0.2.1 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |
-| [browser-docs](./plugins/browser-docs/README.md) | 0.3.2 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
-| [delivery-flow](./plugins/delivery-flow/README.md) | 0.8.1 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
+| [browser-docs](./plugins/browser-docs/README.md) | 0.3.3 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
+| [delivery-flow](./plugins/delivery-flow/README.md) | 0.8.2 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
 
 ### skills 與 agents
 

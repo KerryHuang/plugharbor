@@ -3,6 +3,10 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.3.3] - 2026-11-03
+
+- docs: harness-terms 的 `${CLAUDE_PLUGIN_ROOT}` 補 Codex／agy 專案層 symlink 載入時的 plugin 根判定（realpath 往上兩層；複製模式讀 `.plugharbor-root`）。
+
 ## [0.3.2] - 2026-11-02
 
 - fix: `plugins/browser-docs/skills/pdf-converter/scripts/verify_roundtrip.py` 新增 `ConversionFailed`，只在 LibreOffice 轉檔失敗或逾時時以退出碼 2 結束；原本 `except RuntimeError` 過寬，fitz 的損毀 PDF 錯誤會被誤報成「轉檔失敗」。`plugins/browser-docs/skills/pdf-converter/SKILL.md` 錯誤表補上退出碼 2 的處理，並補測試。

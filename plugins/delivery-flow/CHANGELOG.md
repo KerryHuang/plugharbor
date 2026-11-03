@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.8.2] - 2026-11-03
+
+- docs: harness-terms 的 `${CLAUDE_PLUGIN_ROOT}` 補 Codex／agy 專案層 symlink 載入時的 plugin 根判定（realpath 往上兩層；複製模式讀 `.plugharbor-root`）。
+
 ## [0.8.1] - 2026-11-02
 
 - docs: `qa-verify` 的 description 觸發語改用 `[案例檔]`／`[票號]`，不再用角括號。

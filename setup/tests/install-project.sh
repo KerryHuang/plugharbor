@@ -26,9 +26,9 @@ if grep -q 'marketplace add' "$STUB_LOG"; then fail "user 層已有 marketplace�
 S="$P/.pi/settings.json"
 grep -q "$REPO_DIR/plugins/sa-flow" "$S" || fail "pi 應寫入 sa-flow 的絕對路徑：$(cat "$S" 2>/dev/null)"
 grep -qx '.pi/settings.json' "$P/.git/info/exclude" || fail ".pi/settings.json 應加進 .git/info/exclude"
-echo "$OUT" | grep -q '^SKIP: codex' || fail "codex 應印 SKIP"
-echo "$OUT" | grep -q '^SKIP: agy' || fail "agy 應印 SKIP"
-if grep -q -E '^(codex|agy) plugin (add|install)' "$STUB_LOG"; then fail "codex／agy 不該安裝專案層 plugin"; fi
+[ -L "$P/.agents/skills/explore" ] || fail "codex／agy 應建 .agents/skills/explore 的 link：$OUT"
+[ -L "$P/.agents/skills/designing-kid-ui" ] || fail "codex／agy 應建 kid-ui 的 skill link"
+if grep -q -E '^(codex|agy) plugin (add|install)' "$STUB_LOG"; then fail "codex／agy 不該用 plugin 指令安裝專案層 plugin"; fi
 # 重跑：pi 不重複、exclude 不重複
 run "$P" sa-flow kid-ui >/dev/null || fail "重跑 exit 非 0"
 [ "$(grep -c 'plugins/sa-flow' "$S")" = 1 ] || fail "pi packages 重跑重複"
@@ -114,4 +114,56 @@ OUT="$(PLUGHARBOR_RENAMES="old-kid:kid-ui" run --check "$P8" old-kid)" || fail "
 echo "$OUT" | grep -q '^RENAME: old-kid → kid-ui（改用新名）' || fail "命令列舊名應自動換新名：$OUT"
 rm "$STUB_STATE/claude-list"
 
-echo "PASS: install-project.sh（8 組）"
+# ---------- 9) Codex／agy：.agents/skills/<skill> → ../plugharbor/<plugin>/skills/<skill>，plugin 根是 realpath 往上兩層 ----------
+realp() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"; }
+P9="$(newproj "p 九")"
+OUT="$(run "$P9" sa-flow)" || fail "symlink 安裝 exit 非 0：$OUT"
+L="$P9/.agents/skills/explore"
+[ -L "$L" ] || fail "(a) 應建 link：$OUT"
+[ "$(readlink "$L")" = "../plugharbor/sa-flow/skills/explore" ] || fail "(a) skill link 應為相對路徑：$(readlink "$L")"
+[ "$(realp "$L")" = "$(realp "$REPO_DIR/plugins/sa-flow/skills/explore")" ] || fail "(a) realpath 應落在 plugharbor clone：$(realp "$L")"
+EX="$P9/.git/info/exclude"
+grep -qx '.agents/plugharbor/' "$EX" || fail "(a) exclude 應含 .agents/plugharbor/"
+grep -qx '.agents/skills/explore' "$EX" || fail "(a) exclude 應含每個 skill link"
+if grep -qx '.agents/skills/' "$EX"; then fail "(a) 不該排除整個 .agents/skills/"; fi
+echo "$OUT" | grep -q '^OK:   codex/agy link explore' || fail "(a) 應印 OK link：$OUT"
+# (b) 重跑：UP-TO-DATE、exclude 不重複
+OUT="$(run "$P9" sa-flow)" || fail "(b) 重跑 exit 非 0"
+echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
+[ "$(grep -cx '.agents/plugharbor/' "$EX")" = 1 ] || fail "(b) exclude 重複"
+[ "$(grep -cx '.agents/skills/explore' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
+# (c) 使用者自己的同名實體目錄：SKIP、內容不動
+P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/write-doc"; echo mine > "$P9c/.agents/skills/write-doc/SKILL.md"
+OUT="$(run "$P9c" sa-flow)" || fail "(c) exit 非 0"
+echo "$OUT" | grep -q "^SKIP: .*write-doc 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
+[ "$(cat "$P9c/.agents/skills/write-doc/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/write-doc" ] || fail "(c) 使用者目錄被動到"
+# (d) 失效的 plugharbor link：--check 報 BROKEN，實跑移除；別人的失效 link 不動
+ln -s "$REPO_DIR/plugins/no-such/skills/x" "$P9/.agents/skills/x"
+ln -s "/nowhere/else" "$P9/.agents/skills/theirs"
+OUT="$(run --check "$P9" sa-flow)" || fail "(d) --check exit 非 0"
+echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/x' || fail "(d) --check 應報 BROKEN：$OUT"
+[ -L "$P9/.agents/skills/x" ] || fail "(d) --check 不該移除"
+OUT="$(run "$P9" sa-flow)" || fail "(d) 實跑 exit 非 0"
+[ ! -L "$P9/.agents/skills/x" ] || fail "(d) 失效 link 應移除：$OUT"
+[ -L "$P9/.agents/skills/theirs" ] || fail "(d) 不是 plugharbor 的 link 不該動"
+# (e) --shared：不建 link
+P9e="$(newproj p9e)"
+OUT="$(run --shared "$P9e" sa-flow)" || fail "(e) exit 非 0"
+echo "$OUT" | grep -q '^SKIP: codex/agy 不支援 --shared' || fail "(e) 應印 SKIP：$OUT"
+[ ! -e "$P9e/.agents" ] || fail "(e) --shared 不該建 .agents"
+# (f) 建不了 symlink（Windows 無開發人員模式）：複製 skill，同目錄 .plugharbor-root 記 plugin 根
+P9f="$(newproj p9f)"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow)" || fail "(f) exit 非 0：$OUT"
+echo "$OUT" | grep -q '^WARN: 無法建 symlink，改用複製' || fail "(f) 應 WARN：$OUT"
+D="$P9f/.agents/skills/explore"
+[ -d "$D" ] && [ ! -L "$D" ] && [ -f "$D/SKILL.md" ] || fail "(f) 應複製 skill 目錄"
+[ "$(cat "$D/.plugharbor-root")" = "$REPO_DIR/plugins/sa-flow" ] || fail "(f) .plugharbor-root 應記 plugin 根：$(cat "$D/.plugharbor-root" 2>/dev/null)"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
+echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
+echo changed >> "$D/SKILL.md"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
+echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
+PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(f) 重跑 exit 非 0"
+cmp -s "$D/SKILL.md" "$REPO_DIR/plugins/sa-flow/skills/explore/SKILL.md" || fail "(f) 重跑應更新複本"
+
+echo "PASS: install-project.sh（9 組）"
