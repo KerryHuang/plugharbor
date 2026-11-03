@@ -7,7 +7,9 @@
 
 - feat: `transcribe` 新增 `record devices|start|status|stop`：用 ffmpeg 背景錄麥克風（Mac avfoundation 預設 `:default`，不用編號 0；Windows dshow 需指定裝置），每 N 秒（預設 300）寫一個 16 kHz 單聲道 wav 分段。狀態檔 `record.json` 在啟動後立刻寫入；錄音以 detach 方式與 session 脫鉤，任一 session 都能 `stop`。`stop` 會先 SIGINT（Windows 用 taskkill）再以 concat 合併成 `recording.wav`，程序已不在也照樣合併。開錄 3 秒後 max_volume 低於 -70 dB 就警告。
 - fix: 實測 Mac 不加大輸入佇列時每 30 秒掉約 3.5 秒音訊，擷取改帶 `-thread_queue_size 4096` 與 `aresample=async=1000`。
-- feat: `doctor --record` 一併檢查錄音需要的 ffmpeg（Windows 轉錄本身不需要）。測試 36 條。
+- fix: Windows 實測，SSH 連線（及部分終端機）結束時會連同 job 內的子程序一起砍掉；啟動改帶 `CREATE_BREAKAWAY_FROM_JOB`，job 不允許時退回原旗標。
+- fix: 硬殺 ffmpeg（Windows 一律 `taskkill /F`、Mac 的 SIGKILL 後備）會丟最後約 8 秒，因為 segment 內層 muxer 每 256 KiB 才寫盤，改帶 `-segment_format_options flush_packets=1`；合併清單每段加 `option ignore_length 1`（硬殺的 wav 檔頭長度沒收尾），並改用絕對路徑（相對 `--out` 會被解析成 `dir/dir/seg`）。
+- feat: `doctor --record` 一併檢查錄音需要的 ffmpeg（Windows 轉錄本身不需要）。測試 39 條。
 
 ## [0.6.2] - 2026-11-03
 

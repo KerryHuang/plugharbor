@@ -281,17 +281,23 @@ def build_record_cmd(system: str, device: Optional[str], out_dir: Path, segment_
         # 輸入佇列加大＋async 重取樣：實測 Mac 不加時每 30 秒掉約 3.5 秒音訊
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-thread_queue_size", "4096", *src,
         "-af", "aresample=async=1000", "-ar", "16000", "-ac", "1",
-        "-f", "segment", "-segment_time", str(segment_sec), "-reset_timestamps", "1",
+        # 內層 muxer 每個封包就寫盤：實測不加時硬殺會丟最後約 8 秒（256 KiB 緩衝）
+        "-f", "segment", "-segment_format_options", "flush_packets=1",
+        "-segment_time", str(segment_sec), "-reset_timestamps", "1",
         str(out_dir / "seg-%03d.wav"),
     ]
 
 
 def concat_list(segments: List[Path]) -> str:
-    """ffmpeg concat demuxer 清單；路徑裡的單引號跳脫成 '\\''。"""
-    return "".join("file '" + str(seg).replace("'", "'\\''") + "'\n" for seg in segments)
+    """ffmpeg concat demuxer 清單：用絕對路徑（相對路徑會以清單檔目錄為基準），單引號跳脫成 '\\''；
+    每段加 ignore_length——被硬殺的最後一段 wav 檔頭長度沒收尾，不加會被截短。"""
+    return "".join(
+        "file '" + str(Path(seg).resolve()).replace("'", "'\\''") + "'\noption ignore_length 1\n" for seg in segments
+    )
 
 
 SILENCE_DB = -70.0
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 STATE_FILE = "record.json"
 
 
@@ -299,11 +305,15 @@ def _spawn(cmd: List[str], log_path: Path) -> int:
     """以 detach 方式啟動 ffmpeg，Claude session 或發起的 shell 結束後照常錄。"""
     log = open(log_path, "ab")
     kw = {"stdin": subprocess.DEVNULL, "stdout": log, "stderr": log}
-    if platform.system() == "Windows":
-        kw["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-    else:
+    if platform.system() != "Windows":
         kw["start_new_session"] = True
-    return subprocess.Popen(cmd, **kw).pid
+        return subprocess.Popen(cmd, **kw).pid
+    base = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+    # 實測：Windows 的 SSH 連線（與部分終端機）把子程序放進 job，連線一結束就一起砍；要脫離 job 才活得下來
+    try:
+        return subprocess.Popen(cmd, creationflags=base | CREATE_BREAKAWAY_FROM_JOB, **kw).pid
+    except OSError:
+        return subprocess.Popen(cmd, creationflags=base, **kw).pid
 
 
 def _alive(pid: int) -> bool:

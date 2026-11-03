@@ -294,7 +294,16 @@ def test_concat_list_escapes_quotes(tmp_path):
     text = t.concat_list(segs)
     lines = text.splitlines()
     assert lines[0] == f"file '{segs[0]}'"
-    assert lines[1] == "file '" + str(segs[1]).replace("'", "'\\''") + "'"
+    assert lines[2] == "file '" + str(segs[1]).replace("'", "'\\''") + "'"
+
+
+def test_concat_list_absolute_and_ignores_stale_header(tmp_path, monkeypatch):
+    # 實測：清單路徑以清單檔所在目錄為基準（相對 --out 會變成 dir/dir/seg）；
+    # 被硬殺的最後一段檔頭長度沒收尾，不加 ignore_length 會被截短
+    monkeypatch.chdir(tmp_path)
+    lines = t.concat_list([Path("rec") / "seg-000.wav"]).splitlines()
+    assert lines[0] == f"file '{(tmp_path / 'rec' / 'seg-000.wav').resolve()}'"
+    assert lines[1] == "option ignore_length 1"
 
 
 @pytest.fixture
@@ -400,3 +409,29 @@ def test_doctor_record_requires_ffmpeg_on_windows(monkeypatch, capsys):
     assert t.main(["doctor"]) == 0
     assert t.main(["doctor", "--record"]) == 1
     assert "winget install ffmpeg" in capsys.readouterr().out
+
+
+def test_spawn_windows_breaks_away_from_job(monkeypatch, tmp_path):
+    # 實測：Windows OpenSSH／終端機會把子程序放進 job，連線結束就一起被砍
+    on_windows(monkeypatch)
+    calls = []
+
+    class FakePopen:
+        def __init__(self, cmd, **kw):
+            calls.append(kw.get("creationflags", 0))
+            if len(calls) == 1 and kw["creationflags"] & 0x01000000:
+                raise PermissionError("job 不允許 breakaway")
+            self.pid = 7
+
+    monkeypatch.setattr(t.subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200, raising=False)
+    monkeypatch.setattr(t.subprocess, "DETACHED_PROCESS", 0x8, raising=False)
+    monkeypatch.setattr(t.subprocess, "Popen", FakePopen)
+    assert t._spawn(["ffmpeg"], tmp_path / "ffmpeg.log") == 7
+    assert calls[0] & 0x01000000
+    assert not calls[1] & 0x01000000
+
+
+def test_build_record_cmd_flushes_segments(tmp_path):
+    # 實測：segment 內層 muxer 每 256 KiB 才寫盤，硬殺（Windows 一律 taskkill /F）會丟最後約 8 秒
+    cmd = t.build_record_cmd("Darwin", None, tmp_path, 300)
+    assert cmd[cmd.index("-segment_format_options") + 1] == "flush_packets=1"
