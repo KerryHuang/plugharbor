@@ -159,11 +159,11 @@ OUT="$(run "$H")" || fail "沒有 herdr 時 exit 非 0"
 echo "$OUT" | grep -q '^SKIP: herdr' || fail "沒有 herdr 應印 SKIP: herdr"
 mv "$TMP/herdr.off" "$STUB/herdr"
 
-# ---------- 8) 預設只裝 user 層 4 個 ----------
+# ---------- 8) 預設只裝 user 層 5 個 ----------
 H="$TMP/h4"; mkdir -p "$H"; : > "$STUB_LOG"
 PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
-[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 4 ] || fail "預設應只裝 user 層 4 個：$(grep '^claude plugin install ' "$STUB_LOG")"
-for p in toolkit research browser-docs dev-flow; do
+[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 5 ] || fail "預設應只裝 user 層 5 個：$(grep '^claude plugin install ' "$STUB_LOG")"
+for p in toolkit research browser-docs workspace dev-flow; do
   grep -qx "claude plugin install $p@plugharbor --scope user" "$STUB_LOG" || fail "預設應裝 user 層 $p"
 done
 if grep -q '^claude plugin install sa-flow' "$STUB_LOG"; then fail "專案層 sa-flow 不該裝到 user 層"; fi
@@ -299,5 +299,47 @@ grep -qx "cygpath -m $H/.pi/agent" "$STUB_LOG" || fail "pi 設定目錄應先經
 grep -qx "cygpath -m $REPO_DIR/plugins/toolkit" "$STUB_LOG" || fail "pi package 路徑應先經 cygpath -m 轉換"
 rm "$STUB/pi" "$STUB/cygpath"
 
-echo "PASS: install.sh（18 組）"
+# ---------- 19) 舊名→新名：--check 報 RENAME，實跑在四個 CLI 卸舊名，不裝舊名 ----------
+bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
+export STUB_STATE="$TMP/state-rename"; mkdir -p "$STUB_STATE"
+echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
+printf '[{"id": "old-tool@plugharbor", "version": "0.9.0", "scope": "user"}]\n' > "$STUB_STATE/claude-list"
+{
+  echo 'Marketplace `plugharbor`'
+  echo "old-tool@plugharbor  installed, enabled  0.9.0    $REPO_DIR/plugins/old-tool"
+} > "$STUB_STATE/codex-list"
+printf 'Installed plugins:\n- old-tool (enabled, 0.9.0)\n' > "$STUB_STATE/agy-list"
+H="$TMP/h13"; mkdir -p "$H/.pi/agent"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/old-tool"),d)]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
+OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" run "$H" --check)" || fail "改名 --check exit 非 0：$OUT"
+for x in claude codex agy pi; do
+  echo "$OUT" | grep -q "^RENAME: $x old-tool → toolkit" || fail "--check 應報 RENAME: $x old-tool → toolkit：$OUT"
+done
+cmp -s "$H/.pi/agent/settings.json" "$TMP/pi-before" || fail "--check 不該改 pi settings"
+: > "$STUB_LOG"
+OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" run "$H")" || fail "改名實跑 exit 非 0：$OUT"
+grep -qx 'claude plugin uninstall old-tool@plugharbor --scope user' "$STUB_LOG" || fail "claude 應卸 old-tool：$(cat "$STUB_LOG")"
+grep -qx 'codex plugin remove old-tool@plugharbor' "$STUB_LOG" || fail "codex 應卸 old-tool"
+grep -qx 'agy plugin uninstall old-tool' "$STUB_LOG" || fail "agy 應卸 old-tool"
+if grep -q ' install old-tool\| add old-tool' "$STUB_LOG"; then fail "不該安裝舊名"; fi
+grep -qx 'claude plugin install toolkit@plugharbor --scope user' "$STUB_LOG" || fail "新名 toolkit 應照常安裝"
+P="$H/.pi/agent/settings.json"
+if grep -q 'plugins/old-tool' "$P"; then fail "pi 應移除 old-tool：$(cat "$P")"; fi
+grep -q 'npm:keep-me' "$P" && grep -q 'plugins/toolkit' "$P" || fail "pi 其他項目被動到或新名沒加：$(cat "$P")"
+
+# ---------- 20) 舊名與新名都已安裝、新名是最新：只卸舊名，不重裝新名 ----------
+printf '[{"id": "old-tool@plugharbor", "version": "0.9.0", "scope": "user"},\n {"id": "toolkit@plugharbor", "version": "%s", "scope": "user"}]\n' "$TOOLKIT_VER" > "$STUB_STATE/claude-list"
+mkdir -p "$TMP/h14" "$TMP/h15"; : > "$STUB_LOG"
+OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" PLUGINS="toolkit" run "$TMP/h14")" || fail "新舊並存 exit 非 0：$OUT"
+grep -qx 'claude plugin uninstall old-tool@plugharbor --scope user' "$STUB_LOG" || fail "新舊並存應卸舊名"
+if grep -q '^claude plugin \(install\|update\) toolkit' "$STUB_LOG"; then fail "新名已是最新不該重裝：$(cat "$STUB_LOG")"; fi
+
+# ---------- 21) 沒有改名對照（正式值）：不印 RENAME ----------
+OUT="$(run "$TMP/h15" --check)" || fail "無對照 --check exit 非 0"
+if echo "$OUT" | grep -q '^RENAME:'; then fail "沒有對照不該印 RENAME：$OUT"; fi
+rm "$STUB/pi"
+export STUB_STATE="$TMP/state"
+
+echo "PASS: install.sh（21 組）"
 

@@ -29,7 +29,25 @@ ph_all_plugins() {
 }
 
 # 分層：工具類裝 user 層（每個專案都有），其餘是專案層，由 setup/install-project.sh 依專案安裝
-PH_USER_PLUGINS="toolkit research browser-docs dev-flow"
+PH_USER_PLUGINS="toolkit research browser-docs workspace dev-flow"
+# 改名對照：空白分隔「舊名:新名」。install 卸舊名、新名照常安裝；正式值為空，改名那一批才加
+# （例：第②批 backend-dotnet:backend）。PLUGHARBOR_RENAMES 只給測試覆寫。
+PH_RENAMES="${PLUGHARBOR_RENAMES-}"
+
+ph_rename_pairs() {  # 每行印「舊名 新名」
+  local x
+  for x in $PH_RENAMES; do
+    case "$x" in *:?*) printf '%s %s\n' "${x%%:*}" "${x#*:}" ;; esac
+  done
+}
+
+ph_rename_new() {  # $1=舊名；印新名，沒有對照 return 1
+  local x
+  for x in $PH_RENAMES; do
+    [ "${x%%:*}" != "$1" ] || { printf '%s\n' "${x#*:}"; return 0; }
+  done
+  return 1
+}
 # Claude Code 的 marketplace 來源（git，與 bootstrap.sh 同一變數）
 PH_REPO_URL="${PLUGHARBOR_REPO:-https://github.com/KerryHuang/plugharbor.git}"
 

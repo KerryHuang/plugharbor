@@ -24,6 +24,11 @@ REMOVE=""
 for p in $(ph_project_plugins); do
   case " $(echo $PLUGINS) " in *" $p "*) ;; *) REMOVE="$REMOVE $p" ;; esac
 done
+# 改名對照的舊名一律從 user 層卸掉（新名在 PLUGINS 裡照常安裝）
+while read -r p _; do
+  [ -n "$p" ] || continue
+  case " $REMOVE " in *" $p "*) ;; *) REMOVE="$REMOVE $p" ;; esac
+done <<< "$(ph_rename_pairs)"
 while IFS= read -r p; do
   [ -f "$REPO_DIR/plugins/$p/.claude-plugin/plugin.json" ] || { echo "FAIL: 找不到 plugin「${p}」（PLUGHARBOR_PLUGINS）"; exit 2; }
 done <<< "$PLUGINS"
@@ -249,10 +254,12 @@ for p in $PLUGINS; do
   done
 done
 
-# 專案層 plugin 從 user 層移除；$1=CLI $2=plugin，其餘＝移除指令
+# 專案層 plugin 與改名的舊名從 user 層移除；$1=CLI $2=plugin，其餘＝移除指令
 stale_remove() {
-  local cli="$1" p="$2"; shift 2
-  if [ "$CHECK" -eq 1 ]; then note_diff "STALE: ${cli} ${p}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）"; else run "$@"; fi
+  local cli="$1" p="$2" new; shift 2
+  if [ "$CHECK" -eq 0 ]; then run "$@"
+  elif new="$(ph_rename_new "$p")"; then note_diff "RENAME: ${cli} ${p} → ${new}（舊名，install 會卸載，新名照常安裝）"
+  else note_diff "STALE: ${cli} ${p}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）"; fi
 }
 
 # ---------- 5、6) 各 CLI 註冊 plugin；版號相同就不重裝 ----------
@@ -376,9 +383,13 @@ pkgs = cur.get("packages", [])
 def norm(x): return os.path.normcase(os.path.normpath(x))
 def local(x): return isinstance(x, str) and not x.startswith(("npm:", "git:", "http"))
 stale = [x for x in pkgs if local(x) and norm(os.path.join(start, x)) in remove]
+renames = dict(r.split(":", 1) for r in sys.argv[5].split() if ":" in r)
 for x in stale:
     name = remove[norm(os.path.join(start, x))]
-    print(f"STALE: pi {name}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）" if check else f"OK:   pi package 移除 {x}（專案層）")
+    if name in renames:
+        print(f"RENAME: pi {name} → {renames[name]}（舊名，install 會卸載，新名照常安裝）" if check else f"OK:   pi package 移除 {x}（改名為 {renames[name]}）")
+    else:
+        print(f"STALE: pi {name}（專案層 plugin 裝在 user 層，install 會移除；改用 setup/install-project.sh）" if check else f"OK:   pi package 移除 {x}（專案層）")
 pkgs = [x for x in pkgs if x not in stale]
 have = {norm(os.path.join(start, x)) for x in pkgs if local(x)}
 added = []
@@ -399,7 +410,7 @@ if (added or stale) and not check:
         shutil.copy2(path, os.path.join(backup, "pi", "settings.json"))
     os.makedirs(start, exist_ok=True)
     open(path, "w", encoding="utf-8", newline="\n").write(json.dumps(cur, ensure_ascii=False, indent=2) + "\n")
-' "$(ph_native_path "$HOME/.pi/agent")" "$CHECK" "$(ph_native_path "$BACKUP")" "$(for p in $REMOVE; do printf '%s ' "$(ph_native_path "$REPO_DIR/plugins/$p")"; done)")"
+' "$(ph_native_path "$HOME/.pi/agent")" "$CHECK" "$(ph_native_path "$BACKUP")" "$(for p in $REMOVE; do printf '%s ' "$(ph_native_path "$REPO_DIR/plugins/$p")"; done)" "$PH_RENAMES")"
   rc=$?
   set -e
   if [ -n "$PI_OUT" ]; then
