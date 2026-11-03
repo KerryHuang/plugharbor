@@ -42,6 +42,15 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 「無」的原因是該 CLI 沒有對應事件，或該 hook 讀的資料（Claude transcript、`~/.claude/feedback-loop/`）只有 Claude 會產生。
 要補的話是各 CLI 自己寫 adapter，不是搬 Python hook。
 
+## 專案層 skill 路徑（實測 2026-11-03，macOS）
+
+Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而且會跟隨 symlink：
+
+- 回報給模型的是 link 路徑（`<專案>/.agents/skills/<skill>/SKILL.md`），不是實體路徑。
+- 要求「以 SKILL.md 的實體路徑（realpath）往上兩層找 plugin 根」時，兩者都正確讀到 plugin 根的 `references/`。
+- 所以專案層只建一份 `.agents/skills`，兩個 CLI 共用；`harness-terms.md` 寫明以 realpath 為準。
+- Windows Git Bash 的 symlink 行為：待 Windows 實測。
+
 ## 已知落差
 
 - **pi 載入不到多數舊 plugin**：legacy 的 7 個 plugin（sa-flow、dev-flow、backend-dotnet、frontend-vue、database-sqlserver、ui-ux、desktop-avalonia）
