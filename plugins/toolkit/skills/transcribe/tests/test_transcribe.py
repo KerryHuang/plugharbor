@@ -530,3 +530,112 @@ def test_child_exited_detects_zombie():
     _time.sleep(1.0)
     assert t._child_exited(p.pid) is True
     assert t._child_exited(os.getpid()) is False
+
+
+# ---- 第三階段：系統聲音 ----
+
+
+def test_build_pipe_record_cmd_system(tmp_path):
+    cmd = t.build_pipe_record_cmd("Darwin", "system", None, tmp_path, 300, 48000)
+    assert cmd[cmd.index("-i") + 1] == "pipe:0"
+    assert cmd[cmd.index("-f") + 1] == "f32le" and cmd[cmd.index("-ar") + 1] == "48000"
+    assert "avfoundation" not in cmd
+    assert cmd[cmd.index("-af") + 1] == "aresample=async=1000"
+    assert cmd[cmd.index("-segment_format_options") + 1] == "flush_packets=1"
+    assert cmd[-1].endswith("seg-%03d.wav")
+
+
+def test_build_pipe_record_cmd_both_mixes_mic(tmp_path):
+    cmd = t.build_pipe_record_cmd("Darwin", "both", None, tmp_path, 300, 44100)
+    inputs = [cmd[i + 1] for i, a in enumerate(cmd) if a == "-i"]
+    assert inputs == ["pipe:0", ":default"]
+    assert "amix=inputs=2" in cmd[cmd.index("-filter_complex") + 1]
+    assert "-af" not in cmd
+    assert cmd.index("-thread_queue_size") < cmd.index("avfoundation")
+
+
+def test_padding_frames():
+    assert t.padding_frames(2.0, 48000, 48000) == 48000
+    assert t.padding_frames(1.0, 60000, 48000) == 0
+
+
+def test_is_heard():
+    assert t.is_heard(0.5) is True
+    assert t.is_heard(1e-5) is False
+    assert t.is_heard(0.0) is False
+
+
+class _FakeStdin:
+    def __init__(self):
+        self.n = 0
+        self.closed = False
+
+    def write(self, b):
+        self.n += len(b)
+
+    def flush(self):
+        pass
+
+    def close(self):
+        self.closed = True
+
+
+def _worker_env(monkeypatch, tmp_path, chunk_from=1.0, stop_at=3.0):
+    import array as _array
+
+    on_mac(monkeypatch)
+    env = {"now": 0.0, "stopped": False, "stdin": _FakeStdin(), "cmd": None}
+
+    class FakeProc:
+        pid = 777
+
+        def __init__(self, cmd, **kw):
+            env["cmd"] = cmd
+            self.stdin = env["stdin"]
+
+        def wait(self, timeout=None):
+            return 0
+
+    def fake_capture(on_chunk):
+        env["on_chunk"] = on_chunk
+        return (lambda: env.update(stopped=True)), 48000
+
+    def fake_sleep(s):
+        env["now"] += s
+        if env["now"] >= chunk_from:
+            env["on_chunk"](_array.array("f", [0.5] * int(48000 * s)).tobytes())
+        if env["now"] >= stop_at:
+            t._STOP.set()
+
+    monkeypatch.setattr(t.subprocess, "Popen", FakeProc)
+    monkeypatch.setattr(t, "_open_system_capture", fake_capture)
+    monkeypatch.setattr(t, "_now", lambda: env["now"])
+    monkeypatch.setattr(t.time, "sleep", fake_sleep)
+    monkeypatch.setattr(t, "_install_stop_handlers", lambda: None)
+    return env
+
+
+def test_system_worker_pads_and_writes_heard(monkeypatch, tmp_path):
+    import json as _json
+
+    env = _worker_env(monkeypatch, tmp_path)
+    assert t._system_worker(tmp_path, "system", None, 300) == 0
+    frames = env["stdin"].n / 4
+    assert (env["now"] - 0.6) * 48000 <= frames <= (env["now"] + 0.6) * 48000
+    st = _json.loads((tmp_path / "system.json").read_text(encoding="utf-8"))
+    assert st["heard_at"] is not None and st["ffmpeg_pid"] == 777
+    assert env["cmd"][env["cmd"].index("-i") + 1] == "pipe:0"
+
+
+def test_system_worker_never_heard(monkeypatch, tmp_path):
+    import json as _json
+
+    _worker_env(monkeypatch, tmp_path, chunk_from=99.0)
+    assert t._system_worker(tmp_path, "system", None, 300) == 0
+    assert _json.loads((tmp_path / "system.json").read_text(encoding="utf-8"))["heard_at"] is None
+
+
+def test_system_worker_stops_cleanly(monkeypatch, tmp_path):
+    env = _worker_env(monkeypatch, tmp_path)
+    assert t._system_worker(tmp_path, "system", None, 300) == 0
+    assert env["stopped"] is True and env["stdin"].closed is True

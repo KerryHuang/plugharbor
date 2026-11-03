@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import platform
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -269,23 +271,43 @@ def parse_devices(system: str, ffmpeg_stderr: str) -> List[str]:
     return re.findall(r'"([^"]+)" \(audio\)', ffmpeg_stderr)
 
 
-def build_record_cmd(system: str, device: Optional[str], out_dir: Path, segment_sec: int) -> List[str]:
+def _mic_input(system: str, device: Optional[str]) -> List[str]:
+    # 輸入佇列加大：實測 Mac 不加時每 30 秒掉約 3.5 秒音訊
     if system == "Darwin":
         # 不用編號 0：實機上第 0 個常是 Teams 之類的虛擬裝置
-        src = ["-f", "avfoundation", "-i", f":{device or 'default'}"]
-    else:
-        if not device:
-            raise ValueError("Windows 需指定 --device（用 `record devices` 查名稱）")
-        src = ["-f", "dshow", "-i", f"audio={device}"]
+        return ["-thread_queue_size", "4096", "-f", "avfoundation", "-i", f":{device or 'default'}"]
+    if not device:
+        raise ValueError("Windows 需指定 --device（用 `record devices` 查名稱）")
+    return ["-thread_queue_size", "4096", "-f", "dshow", "-i", f"audio={device}"]
+
+
+def _segment_output(out_dir: Path, segment_sec: int) -> List[str]:
     return [
-        # 輸入佇列加大＋async 重取樣：實測 Mac 不加時每 30 秒掉約 3.5 秒音訊
-        "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-thread_queue_size", "4096", *src,
-        "-af", "aresample=async=1000", "-ar", "16000", "-ac", "1",
+        "-ar", "16000", "-ac", "1",
         # 內層 muxer 每個封包就寫盤：實測不加時硬殺會丟最後約 8 秒（256 KiB 緩衝）
         "-f", "segment", "-segment_format_options", "flush_packets=1",
         "-segment_time", str(segment_sec), "-reset_timestamps", "1",
         str(out_dir / "seg-%03d.wav"),
     ]
+
+
+def build_record_cmd(system: str, device: Optional[str], out_dir: Path, segment_sec: int) -> List[str]:
+    return [
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", *_mic_input(system, device),
+        # async 重取樣：補齊擷取端的時間誤差
+        "-af", "aresample=async=1000", *_segment_output(out_dir, segment_sec),
+    ]
+
+
+def build_pipe_record_cmd(system: str, source: str, mic_device: Optional[str], out_dir: Path, segment_sec: int, rate: int) -> List[str]:
+    """系統聲音由 worker 以 float32 單聲道 PCM 寫進 stdin；both 時再混入麥克風。"""
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "f32le", "-ar", str(rate), "-ac", "1", "-i", "pipe:0"]
+    if source == "both":
+        cmd += [*_mic_input(system, mic_device), "-filter_complex",
+                "[1:a]aresample=async=1000[m];[0:a][m]amix=inputs=2:duration=longest:normalize=0"]
+    else:
+        cmd += ["-af", "aresample=async=1000"]
+    return cmd + _segment_output(out_dir, segment_sec)
 
 
 def concat_list(segments: List[Path]) -> str:
@@ -382,8 +404,12 @@ def _read_state(out_dir: Path) -> Optional[dict]:
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
+def _write_json(path: Path, data: dict) -> None:
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def _write_state(out_dir: Path, state: dict) -> None:
-    (out_dir / STATE_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_json(out_dir / STATE_FILE, state)
 
 
 def _recording(state: Optional[dict]) -> bool:
@@ -392,6 +418,133 @@ def _recording(state: Optional[dict]) -> bool:
 
 def _segments(out_dir: Path) -> List[Path]:
     return sorted(out_dir.glob("seg-*.wav"))
+
+
+# ---- 系統聲音（線上會議對方的聲音） ----
+
+SYSTEM_PAD_TOLERANCE = 0.25  # 秒：擷取端正常延遲不算缺口
+_STOP = threading.Event()
+_now = time.monotonic
+
+
+def padding_frames(elapsed_sec: float, frames_written: int, rate: int) -> int:
+    return max(0, int(elapsed_sec * rate) - frames_written)
+
+
+def is_heard(peak: float, threshold_db: float = -60.0) -> bool:
+    return peak > 0 and 20 * math.log10(peak) > threshold_db
+
+
+def _install_stop_handlers() -> None:
+    import signal
+
+    for name in ("SIGINT", "SIGTERM", "SIGBREAK"):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), lambda *_: _STOP.set())
+
+
+def _open_system_capture(on_chunk: Callable[[bytes], None]) -> Tuple[Callable[[], None], int]:
+    """開始擷取系統輸出（float32 單聲道），回傳 (stop, 取樣率)。"""
+    if platform.system() == "Darwin":
+        import catap
+
+        sess = catap.record_system_audio(mono=True, on_buffer=lambda buf: on_chunk(buf.data))
+        sess.start()
+        fmt = sess.stream_format
+        if not (fmt.is_float and fmt.bits_per_sample == 32 and fmt.num_channels == 1):
+            sess.stop()
+            sess.close()
+            raise RuntimeError(f"不支援的擷取格式：{fmt}")
+
+        def stop() -> None:
+            sess.stop()
+            sess.close()
+
+        return stop, int(fmt.sample_rate)
+    # Windows：WASAPI loopback（尚未驗證，D9 由呼叫端擋下）
+    import soundcard as sc
+
+    rate = 48000
+    loop = sc.get_microphone(id=str(sc.default_speaker().name), include_loopback=True)
+    done = threading.Event()
+
+    def run() -> None:
+        with loop.recorder(samplerate=rate, channels=1) as rec:
+            while not done.is_set():
+                on_chunk(rec.record(numframes=rate // 10).astype("float32").tobytes())
+
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+
+    def stop() -> None:
+        done.set()
+        th.join(timeout=2)
+
+    return stop, rate
+
+
+def _system_worker(out_dir: Path, source: str, mic_device: Optional[str], segment_sec: int) -> int:
+    """擷取系統聲音寫進 ffmpeg；沒聲音時（Windows WASAPI 不送資料）依牆鐘補零，時間軸才不會縮短。"""
+    import array
+
+    _STOP.clear()
+    _install_stop_handlers()
+    lock = threading.Lock()
+    st = {"written": 0, "heard_at": None, "proc": None, "early": []}
+
+    def on_chunk(data: bytes) -> None:
+        samples = array.array("f")
+        samples.frombytes(data[: len(data) - len(data) % 4])
+        peak = max(map(abs, samples), default=0.0)
+        with lock:
+            if is_heard(peak):
+                st["heard_at"] = datetime.now().isoformat(timespec="seconds")
+            if st["proc"] is None:
+                st["early"].append(data)
+            else:
+                st["proc"].stdin.write(data)
+            st["written"] += len(samples)
+
+    def save() -> None:
+        _write_json(out_dir / "system.json", {"heard_at": st["heard_at"], "ffmpeg_pid": st["proc"].pid})
+
+    stop_capture, rate = _open_system_capture(on_chunk)
+    cmd = build_pipe_record_cmd(platform.system(), source, mic_device, out_dir, segment_sec, rate)
+    log = open(out_dir / "ffmpeg.log", "ab")
+    t0 = _now()
+    with lock:
+        st["proc"] = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=log, stderr=log)
+        for data in st["early"]:
+            st["proc"].stdin.write(data)
+        st["early"] = []
+    save()
+    last_save = _now()
+    try:
+        while not _STOP.is_set():
+            with lock:
+                pad = padding_frames(_now() - t0 - SYSTEM_PAD_TOLERANCE, st["written"], rate)
+                if pad:
+                    st["proc"].stdin.write(b"\0" * (pad * 4))
+                    st["written"] += pad
+            if _now() - last_save >= 5:
+                save()
+                last_save = _now()
+            time.sleep(0.5)
+    except (BrokenPipeError, OSError) as e:  # ffmpeg 先死了
+        _err(f"ffmpeg 管線中斷：{e}")
+    finally:
+        stop_capture()
+        with lock:
+            try:
+                st["proc"].stdin.close()
+            except OSError:
+                pass
+        try:
+            st["proc"].wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            st["proc"].kill()
+        save()
+    return 0
 
 
 def record_devices() -> int:
