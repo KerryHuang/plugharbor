@@ -304,7 +304,7 @@ def build_pipe_record_cmd(system: str, source: str, mic_device: Optional[str], o
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "f32le", "-ar", str(rate), "-ac", "1", "-i", "pipe:0"]
     if source == "both":
         cmd += [*_mic_input(system, mic_device), "-filter_complex",
-                "[1:a]aresample=async=1000[m];[0:a][m]amix=inputs=2:duration=longest:normalize=0"]
+                "[1:a]aresample=async=1000[m];[0:a][m]amix=inputs=2:duration=first:normalize=0"]
     else:
         cmd += ["-af", "aresample=async=1000"]
     return cmd + _segment_output(out_dir, segment_sec)
@@ -338,13 +338,13 @@ def _spawn(cmd: List[str], log_path: Path) -> int:
         return subprocess.Popen(cmd, creationflags=base, **kw).pid
 
 
-def _alive(pid: int) -> bool:
-    """PID 還在而且是 ffmpeg：當機或重開機後 PID 可能被別的程序拿走，不能只看存不存在。"""
+def _alive(pid: int, name: str = "ffmpeg") -> bool:
+    """PID 還在而且是指定程式（ffmpeg 或 python worker）：當機後 PID 可能被別的程序拿走，不能只看存不存在。"""
     if platform.system() == "Windows":
         r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace")
-        return any(line.lower().startswith('"ffmpeg.exe"') and f'"{pid}"' in line for line in r.stdout.splitlines())
+        return any(line.lower().startswith(f'"{name}') and f'"{pid}"' in line for line in r.stdout.splitlines())
     r = subprocess.run(["ps", "-p", str(pid), "-o", "comm="], capture_output=True, text=True, errors="replace")
-    return r.returncode == 0 and "ffmpeg" in r.stdout
+    return r.returncode == 0 and name in r.stdout.lower()
 
 
 def _child_exited(pid: int) -> bool:
@@ -358,7 +358,7 @@ def _child_exited(pid: int) -> bool:
     return done == pid
 
 
-def _kill(pid: int, system: str) -> None:
+def _kill(pid: int, system: str, name: str = "ffmpeg") -> None:
     if system == "Windows":
         # 不帶 /T：ffmpeg 沒有子程序，帶了只會擴大 PID 被重用時的誤殺範圍
         subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
@@ -368,7 +368,7 @@ def _kill(pid: int, system: str) -> None:
     try:
         os.kill(pid, signal.SIGINT)  # 讓 ffmpeg 正常收尾、寫好最後一段的檔頭
         for _ in range(20):
-            if not _alive(pid):
+            if not _alive(pid, name):
                 return
             time.sleep(0.5)
         os.kill(pid, signal.SIGKILL)
@@ -412,8 +412,26 @@ def _write_state(out_dir: Path, state: dict) -> None:
     _write_json(out_dir / STATE_FILE, state)
 
 
+def _proc_name(state: dict) -> str:
+    return "ffmpeg" if state.get("source", "mic") == "mic" else "python"
+
+
 def _recording(state: Optional[dict]) -> bool:
-    return bool(state) and state.get("stopped_at") is None and _alive(state["pid"])
+    return bool(state) and state.get("stopped_at") is None and _alive(state["pid"], _proc_name(state))
+
+
+def _system_state(out_dir: Path) -> Optional[dict]:
+    f = out_dir / "system.json"
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
+def _system_ready(system: str) -> Optional[Tuple[int, str]]:
+    """system／both 的前置條件；不符回 (exit code, 訊息)。"""
+    if system == "Windows":
+        return 2, "Windows 的系統聲音擷取尚未驗證，暫不開放；請改用 --source mic"
+    if sys.version_info[:2] < (3, 11) or not _importable("catap"):
+        return 3, "系統聲音擷取需要 Python 3.11 以上與 catap；先跑 `doctor --record --source system` 看安裝方式"
+    return None
 
 
 def _segments(out_dir: Path) -> List[Path]:
@@ -560,7 +578,7 @@ def record_devices() -> int:
     return 0
 
 
-def record_start(out_dir: Path, device: Optional[str], segment_sec: int) -> int:
+def record_start(out_dir: Path, device: Optional[str], segment_sec: int, source: str = "mic") -> int:
     state = _read_state(out_dir)
     if _recording(state):
         _err(f"這個目錄已經在錄音（PID {state['pid']}）；要結束請用 `record stop`")
@@ -572,32 +590,45 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int) -> int:
     if not shutil.which("ffmpeg"):
         _err("找不到 ffmpeg，請先跑 `doctor --record` 看安裝方式")
         return 3
-    out_dir.mkdir(parents=True, exist_ok=True)
     system = platform.system()
+    if source != "mic":
+        blocked = _system_ready(system)
+        if blocked:
+            _err(blocked[1])
+            return blocked[0]
+    out_dir.mkdir(parents=True, exist_ok=True)
     try:
         cmd = build_record_cmd(system, device, out_dir, segment_sec)
     except ValueError as e:
-        _err(str(e))
-        return 2
-    log_path = out_dir / "ffmpeg.log"
+        if source != "system":
+            _err(str(e))
+            return 2
+    if source != "mic":
+        # worker 自己再起 ffmpeg；log 分開，ffmpeg.log 留給 ffmpeg
+        cmd = [sys.executable, str(Path(__file__).resolve()), "record", "_worker", "--out", str(out_dir),
+               "--source", source, "--segment-sec", str(segment_sec)] + (["--device", device] if device else [])
+    log_path = out_dir / ("ffmpeg.log" if source == "mic" else "worker.log")
     pid = _spawn(cmd, log_path)
     # 先寫狀態檔：就算接下來 session 中斷，新 session 也找得到這個 PID 來 stop
     state = {
         "pid": pid, "started_at": datetime.now().isoformat(timespec="seconds"), "system": system,
-        "device": device or "default", "segment_sec": segment_sec, "stopped_at": None,
+        "device": device or "default", "segment_sec": segment_sec, "source": source, "stopped_at": None,
     }
     _write_state(out_dir, state)
     time.sleep(3)
     first = out_dir / "seg-000.wav"
-    if _child_exited(pid) or not _alive(pid) or not first.exists():
-        if _alive(pid):
-            _kill(pid, system)
+    name = _proc_name(state)
+    if _child_exited(pid) or not _alive(pid, name) or not first.exists():
+        if _alive(pid, name):
+            _kill(pid, system, name)
         state["stopped_at"] = datetime.now().isoformat(timespec="seconds")
         _write_state(out_dir, state)
-        tail = log_path.read_text(encoding="utf-8", errors="replace")[-800:] if log_path.exists() else ""
+        logs = [f for f in (log_path, out_dir / "ffmpeg.log") if f.exists()]
+        tail = "".join(dict.fromkeys(f.read_text(encoding="utf-8", errors="replace")[-800:] for f in logs))
         _err("錄音沒有啟動成功（裝置名稱或麥克風權限有誤？）\n" + tail)
         return 3
-    vol = _max_volume(first)
+    # 系統聲音開錄時沒聲音是正常的（還沒人講話），只對麥克風做靜音檢查
+    vol = _max_volume(first) if source != "system" else None
     if vol is not None and vol < SILENCE_DB:
         _err(f"警告：開頭 3 秒幾乎是靜音（max {vol} dB）——裝置可能選錯或沒有麥克風權限，確認後再繼續")
     print(f"錄音中（PID {pid}），分段寫在 {out_dir}；散會後用 `record stop --out \"{out_dir}\"` 結束")
@@ -612,6 +643,12 @@ def record_status(out_dir: Path) -> int:
         return 1
     started = datetime.fromisoformat(state["started_at"])
     print(f"錄音中（PID {state['pid']}），已錄 {format_ts((datetime.now() - started).total_seconds())}，分段 {len(segs)} 個")
+    if state.get("source", "mic") != "mic":
+        heard = (_system_state(out_dir) or {}).get("heard_at")
+        if heard:
+            print(f"對方聲音：最近 {heard.replace('T', ' ')}")
+        else:
+            print("對方聲音：尚未收到（還沒人講話，或沒有授權系統錄音給啟動 Claude Code 的那個 App）")
     return 0
 
 
@@ -620,8 +657,14 @@ def record_stop(out_dir: Path) -> int:
     if not state:
         _err(f"找不到錄音狀態檔：{out_dir / STATE_FILE}")
         return 2
+    system = state.get("system", platform.system())
     if _recording(state):
-        _kill(state["pid"], state.get("system", platform.system()))
+        _kill(state["pid"], system, _proc_name(state))
+    if state.get("source", "mic") != "mic":
+        # worker 被硬殺時它的 ffmpeg 會變孤兒，一併停掉
+        fpid = (_system_state(out_dir) or {}).get("ffmpeg_pid")
+        if fpid and _alive(fpid):
+            _kill(fpid, system)
     segs = _segments(out_dir)
     if not segs:
         _err("沒有任何錄音分段，無法合併")
@@ -644,7 +687,9 @@ def cmd_record(args) -> int:
     if args.action == "devices":
         return record_devices()
     if args.action == "start":
-        return record_start(out_dir, args.device, args.segment_sec)
+        return record_start(out_dir, args.device, args.segment_sec, args.source)
+    if args.action == "_worker":
+        return _system_worker(out_dir, args.source, args.device, args.segment_sec)
     if args.action == "status":
         return record_status(out_dir)
     return record_stop(out_dir)
@@ -662,13 +707,20 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--force", action="store_true")
     doc = sub.add_parser("doctor", help="檢查 ffmpeg／轉錄套件／OpenCC 是否就緒")
     doc.add_argument("--record", action="store_true", help="一併檢查錄音需要的 ffmpeg")
-    rec = sub.add_parser("record", help="背景錄音（麥克風）")
+    rec = sub.add_parser("record", help="背景錄音（麥克風／系統聲音）")
     rsub = rec.add_subparsers(dest="action", required=True)
     rsub.add_parser("devices", help="列出音訊輸入裝置")
     rs = rsub.add_parser("start", help="開始背景錄音")
     rs.add_argument("--out", required=True)
     rs.add_argument("--device")
     rs.add_argument("--segment-sec", type=int, default=300)
+    rs.add_argument("--source", choices=["mic", "system", "both"], default="mic",
+                    help="mic＝麥克風；system＝系統播放的聲音（線上會議對方）；both＝兩者混成一軌")
+    rw = rsub.add_parser("_worker", help=argparse.SUPPRESS)
+    rw.add_argument("--out", required=True)
+    rw.add_argument("--device")
+    rw.add_argument("--segment-sec", type=int, default=300)
+    rw.add_argument("--source", choices=["system", "both"], required=True)
     for name in ("status", "stop"):
         rsub.add_parser(name).add_argument("--out", required=True)
     return p

@@ -313,11 +313,13 @@ def rec(monkeypatch, tmp_path):
     import json as _json
 
     on_mac(monkeypatch)
-    state = {"alive": True, "volume": -30.0, "spawned": [], "killed": [], "concat": []}
+    state = {"alive": True, "ffmpeg_alive": False, "volume": -30.0, "spawned": [], "killed": [], "concat": []}
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t.sys, "version_info", (3, 12, 0))
 
     def fake_spawn(cmd, log_path):
         state["spawned"].append(cmd)
-        out_dir = Path(cmd[-1]).parent
+        out_dir = Path(cmd[cmd.index("--out") + 1]) if "--out" in cmd else Path(cmd[-1]).parent
         (out_dir / "seg-000.wav").write_bytes(b"RIFF" + b"\0" * 40 + b"\0" * 32000)
         return 4242
 
@@ -327,9 +329,9 @@ def rec(monkeypatch, tmp_path):
         return True
 
     monkeypatch.setattr(t, "_spawn", fake_spawn)
-    monkeypatch.setattr(t, "_alive", lambda pid: state["alive"])
+    monkeypatch.setattr(t, "_alive", lambda pid, name="ffmpeg": state["alive"] if pid == 4242 else state["ffmpeg_alive"])
     monkeypatch.setattr(t, "_max_volume", lambda path: state["volume"])
-    monkeypatch.setattr(t, "_kill", lambda pid, system: state["killed"].append(pid) or state.update(alive=False))
+    monkeypatch.setattr(t, "_kill", lambda pid, system, name="ffmpeg": state["killed"].append(pid) or state.update(alive=False))
     monkeypatch.setattr(t, "_run_ffmpeg_concat", fake_concat)
     monkeypatch.setattr(t.time, "sleep", lambda s: None)
     monkeypatch.setattr(t.shutil, "which", lambda name: "/usr/bin/" + name)
@@ -639,3 +641,95 @@ def test_system_worker_stops_cleanly(monkeypatch, tmp_path):
     env = _worker_env(monkeypatch, tmp_path)
     assert t._system_worker(tmp_path, "system", None, 300) == 0
     assert env["stopped"] is True and env["stdin"].closed is True
+
+
+def test_start_system_spawns_worker(rec):
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 0
+    cmd = rec["spawned"][0]
+    assert "_worker" in cmd and cmd[cmd.index("--source") + 1] == "system"
+    assert rec["read"]()["source"] == "system"
+
+
+def test_start_system_skips_silence_warning(rec, capsys):
+    rec["volume"] = -91.0
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 0
+    assert "靜音" not in capsys.readouterr().err
+
+
+def test_start_both_keeps_silence_warning(rec, capsys):
+    rec["volume"] = -91.0
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "both"]) == 0
+    assert "靜音" in capsys.readouterr().err
+
+
+def test_start_system_refused_on_windows(rec, monkeypatch, capsys):
+    on_windows(monkeypatch)
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "both", "--device", "Mic"]) == 2
+    assert "尚未驗證" in capsys.readouterr().err
+    assert rec["spawned"] == []
+
+
+def test_start_system_requires_py311_and_catap(rec, monkeypatch, capsys):
+    monkeypatch.setattr(t, "_importable", lambda m: m != "catap")
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 3
+    assert "doctor --record --source system" in capsys.readouterr().err
+    monkeypatch.setattr(t, "_importable", lambda m: True)
+    monkeypatch.setattr(t.sys, "version_info", (3, 10, 0))
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 3
+    assert rec["spawned"] == []
+
+
+def test_status_reports_system_not_heard(rec, capsys):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"])
+    (rec["dir"] / "system.json").write_text(_json.dumps({"heard_at": None, "ffmpeg_pid": 99}), encoding="utf-8")
+    capsys.readouterr()
+    assert t.main(["record", "status", "--out", str(rec["dir"])]) == 0
+    assert "尚未收到" in capsys.readouterr().out
+    (rec["dir"] / "system.json").write_text(_json.dumps({"heard_at": "2026-11-03T10:00:00", "ffmpeg_pid": 99}), encoding="utf-8")
+    t.main(["record", "status", "--out", str(rec["dir"])])
+    assert "10:00:00" in capsys.readouterr().out
+
+
+def test_stop_kills_orphan_ffmpeg(rec, capsys):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"])
+    (rec["dir"] / "system.json").write_text(_json.dumps({"heard_at": None, "ffmpeg_pid": 99}), encoding="utf-8")
+    rec["alive"] = False
+    rec["ffmpeg_alive"] = True
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert rec["killed"] == [99]
+    assert rec["concat"]
+
+
+def test_stop_system_stops_worker(rec):
+    t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"])
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert rec["killed"] == [4242]
+
+
+def test_alive_matches_worker_name(monkeypatch):
+    on_mac(monkeypatch)
+
+    class R:
+        returncode = 0
+        stdout = "/opt/homebrew/bin/Python\n"
+
+    monkeypatch.setattr(t.subprocess, "run", lambda *a, **k: R())
+    assert t._alive(5, "python") is True
+    assert t._alive(5) is False
+
+
+def test_mic_default_unchanged(rec):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    cmd = rec["spawned"][0]
+    assert cmd[0] == "ffmpeg" and "_worker" not in cmd
+    assert rec["read"]()["source"] == "mic"
+
+
+def test_both_mix_ends_with_system_pipe(tmp_path):
+    # 實測：duration=longest 時關掉 stdin，ffmpeg 仍等麥克風輸入，stop 要等 10 秒逾時硬殺，多錄 10 秒
+    cmd = t.build_pipe_record_cmd("Darwin", "both", None, tmp_path, 300, 48000)
+    assert "duration=first" in cmd[cmd.index("-filter_complex") + 1]
