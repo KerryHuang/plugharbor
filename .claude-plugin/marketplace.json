@@ -20,7 +20,7 @@
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "跨語言開發工作流 — git 生命週期、工作編排、context 治理",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -74,7 +74,7 @@
       "name": "toolkit",
       "source": "./plugins/toolkit",
       "description": "通用 hooks 與分層 guard——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "author": {
         "name": "KerryHuang"
       }

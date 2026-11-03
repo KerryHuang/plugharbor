@@ -42,7 +42,6 @@ argument-hint: "[對象] <任務>"
 在 herdr 裡的步驟（指令細節見 `references/herdr-long-task.md`）：
 
 0. 前置：
-   - `herdr agent list` 數活著的 worker；已有 3 個以上，用 AskUserQuestion 問使用者要照派、排隊，還是改派 subagent。
    - herdr 沒裝、或升級後指令回 `protocol_mismatch`：見 reference「安裝與升級」。
    - herdr 指令不加 `2>/dev/null`，錯誤全在 stderr。
    - 在 herdr pane 裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*` 環境變數，否則會蓋掉真正主 session 的回報。

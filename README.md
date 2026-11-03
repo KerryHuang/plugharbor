@@ -46,13 +46,13 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | 外掛 | 版本 | 內容 |
 |------|------|------|
 | [sa-flow](./plugins/sa-flow/README.md) | 4.1.1 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
-| [dev-flow](./plugins/dev-flow/README.md) | 0.2.1 | 跨語言開發工作流——git 生命週期、工作編排、context 治理 |
+| [dev-flow](./plugins/dev-flow/README.md) | 0.2.2 | 跨語言開發工作流——git 生命週期、工作編排、context 治理 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
 | [frontend-vue](./plugins/frontend-vue/README.md) | 0.1.1 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |
 | [database-sqlserver](./plugins/database-sqlserver/README.md) | 0.1.1 | SQL Server——table/view 撰寫慣例、TableDescription 生成、EF Core migration 與疑難排解 |
 | [ui-ux](./plugins/ui-ux/README.md) | 0.1.1 | UI/UX 設計知識庫——風格系統、版面、配色、互動慣例、資訊呈現 |
 | [desktop-avalonia](./plugins/desktop-avalonia/README.md) | 0.1.0 | Avalonia 桌面 .NET——MVVM 慣例、跨平台路徑、建置與發佈 |
-| [toolkit](./plugins/toolkit/README.md) | 0.4.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截 |
+| [toolkit](./plugins/toolkit/README.md) | 0.4.1 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.1.0 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [kid-ui](./plugins/kid-ui/README.md) | 0.1.0 | 兒童介面規範——設計新畫面的通用規範與唯讀審查清單 |

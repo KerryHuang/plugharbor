@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.2.2] - 2026-11-03
+
+- docs: `agent-orchestration` 拿掉「同時已有 3 個活著的 worker 先問使用者」；派工數量不再設門檻。
+
 ## [0.2.1] - 2026-11-02
 
 - docs: `convention-first`、`tmp-scratch` 的 description 拿掉角括號（Claude Code 清單會顯示成 `&lt;`）。

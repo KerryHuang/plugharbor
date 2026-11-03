@@ -1,7 +1,7 @@
 {
   "name": "dev-flow",
   "description": "跨語言開發工作流 — git 生命週期、工作編排、context 治理。Conventional Commits / Git Flow / worktree，收斂多專案共通做法。",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "KerryHuang"
   },
