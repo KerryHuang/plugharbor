@@ -651,9 +651,14 @@ def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optiona
             time.sleep(poll_sec)
             continue
         seg = segs[n]
-        lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, "zh") if text.strip()]
+        try:
+            lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, "zh") if text.strip()]
+            mark = f"<!-- {seg.stem} done -->"
+        except Exception as e:  # 單段失敗不拖垮整場；原始分段還在，事後可對 recording.wav 重轉
+            _err(f"{seg.name} 轉錄失敗：{e!r}")
+            lines, mark = [], f"<!-- {seg.stem} failed -->"
         with transcript.open("a", encoding="utf-8") as f:
-            f.write("".join(line + "\n" for line in lines) + f"<!-- {seg.stem} done -->\n")
+            f.write("".join(line + "\n" for line in lines) + mark + "\n")
         done = n + 1
         offset += segment_seconds(seg)
         st.update(done=done, offset_sec=offset)
@@ -671,7 +676,18 @@ def live_start(out_dir: Path, model: str, prompt_file: Optional[str]) -> int:
     cmd = [sys.executable, str(Path(__file__).resolve()), "live", "_run", "--out", str(out_dir), "--model", model]
     if prompt_file:
         cmd += ["--prompt-file", str(Path(prompt_file).resolve())]
-    pid = _spawn(cmd, out_dir / "live.log")
+    log = out_dir / "live.log"
+    pid = _spawn(cmd, log)
+    # 確認真的起來了（寫出自己的 live.json）；缺套件、術語檔路徑錯時會立刻死
+    for _ in range(16):
+        st = _read_live(out_dir)
+        if st and st.get("pid") == pid:
+            break
+        if _child_exited(pid) or not _alive(pid, "python"):
+            tail = log.read_text(encoding="utf-8", errors="replace")[-800:] if log.exists() else ""
+            _err("逐段轉錄沒有啟動成功\n" + tail)
+            return 3
+        time.sleep(0.5)
     print(f"逐段轉錄已啟動（PID {pid}），逐字稿寫在 {out_dir / TRANSCRIPT}；每段完成會加一行 `<!-- seg-NNN done -->`")
     return 0
 
@@ -683,6 +699,8 @@ def _live_progress(out_dir: Path, n_segments: int, recording_active: bool) -> Op
     if st.get("finished"):
         return f"逐字稿：完成（{st.get('done', 0)} 段）"
     done = st.get("done", 0)
+    if not _alive(st.get("pid", 0), "python"):
+        return f"逐字稿：逐段轉錄已中止（已轉 {done} 段，原因看 live.log），可再跑 `live start` 接續"
     ready = n_segments - 1 if recording_active else n_segments
     lag = "（落後）" if ready - done >= 2 else ""
     return f"逐字稿：已轉 {done}／{n_segments} 段{lag}"
@@ -738,9 +756,15 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int, source:
         "device": device or "default", "segment_sec": segment_sec, "source": source, "stopped_at": None,
     }
     _write_state(out_dir, state)
-    time.sleep(3)
     first = out_dir / "seg-000.wav"
     name = _proc_name(state)
+    # 系統聲音要起 Python、import catap、建 tap，第一次跑可能超過 3 秒
+    waited, limit = 0.0, (3.0 if source == "mic" else 8.0)
+    while waited < limit and not (first.exists() and waited >= 3.0):
+        if _child_exited(pid) or not _alive(pid, name):
+            break
+        time.sleep(0.5)
+        waited += 0.5
     if _child_exited(pid) or not _alive(pid, name) or not first.exists():
         if _alive(pid, name):
             _kill(pid, system, name)

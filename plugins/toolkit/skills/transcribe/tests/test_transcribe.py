@@ -853,7 +853,7 @@ def test_status_shows_live_progress(rec, capsys):
     t.main(["record", "start", "--out", str(rec["dir"])])
     for i in range(1, 4):
         (rec["dir"] / f"seg-00{i}.wav").write_bytes(b"RIFF")
-    (rec["dir"] / "live.json").write_text(_json.dumps({"pid": 1, "done": 1, "finished": False}), encoding="utf-8")
+    (rec["dir"] / "live.json").write_text(_json.dumps({"pid": 4242, "done": 1, "finished": False}), encoding="utf-8")
     capsys.readouterr()
     t.main(["record", "status", "--out", str(rec["dir"])])
     out = capsys.readouterr().out
@@ -884,3 +884,73 @@ def test_doctor_system_windows_unverified(monkeypatch, capsys):
     assert t.main(["doctor", "--record", "--source", "system"]) == 1
     assert "尚未驗證" in capsys.readouterr().out
     assert t.main(["doctor", "--record"]) == 0
+
+
+# ---- 最終審閱修正 ----
+
+
+def test_live_start_fails_when_process_dies(rec, monkeypatch, capsys):
+    # 審閱 I1：live 一啟動就死（缺套件、術語檔路徑錯）時不能印「已啟動」
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "live.log").write_text("Traceback: ModuleNotFoundError: No module named 'opencc'", encoding="utf-8")
+    rec["alive"] = False
+    capsys.readouterr()
+    assert t.main(["live", "start", "--out", str(rec["dir"])]) == 3
+    assert "opencc" in capsys.readouterr().err
+
+
+def test_live_start_waits_for_state(rec, capsys):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "live.json").write_text(_json.dumps({"pid": 4242, "done": 0, "finished": False}), encoding="utf-8")
+    rec["alive"] = True
+    # 已在跑的 live（同 PID 活著、未完成）→ 拒絕
+    assert t.main(["live", "start", "--out", str(rec["dir"])]) == 2
+
+
+def test_live_progress_reports_dead_process(rec, capsys):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "live.json").write_text(_json.dumps({"pid": 999, "done": 0, "finished": False}), encoding="utf-8")
+    capsys.readouterr()
+    t.main(["record", "status", "--out", str(rec["dir"])])
+    out = capsys.readouterr().out
+    assert "已中止" in out and "live.log" in out
+
+
+def test_live_segment_error_continues(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    _wav(live["dir"] / "seg-001.wav", 30)
+    real = live["runner"]
+
+    def flaky(audio, model, prompt, language):
+        if Path(audio).stem == "seg-000":
+            raise RuntimeError("解碼失敗")
+        return real(audio, model, prompt, language)
+
+    assert t._live_loop(live["dir"], flaky, "large-v3-turbo", None) == 0
+    text = live["text"]()
+    assert "<!-- seg-000 failed -->" in text
+    assert "[00:00:31] seg-001 的內容" in text and "<!-- live finished -->" in text
+
+
+def test_start_system_waits_for_slow_first_segment(rec, monkeypatch):
+    # 審閱 M7（升 Important）：第一次跑要 import catap、建 tap，3 秒內可能還沒有 seg-000
+    real_spawn = t._spawn
+    clock = {"slept": 0.0}
+
+    def slow_spawn(cmd, log_path):
+        pid = real_spawn(cmd, log_path)
+        (rec["dir"] / "seg-000.wav").unlink()
+        return pid
+
+    def sleep(s):
+        clock["slept"] += s
+        if clock["slept"] >= 5.0 and not (rec["dir"] / "seg-000.wav").exists():
+            _wav(rec["dir"] / "seg-000.wav", 1)
+
+    monkeypatch.setattr(t, "_spawn", slow_spawn)
+    monkeypatch.setattr(t.time, "sleep", sleep)
+    assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 0

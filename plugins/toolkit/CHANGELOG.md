@@ -9,7 +9,8 @@
 - feat: 沒有聲音時（WASAPI 不送資料）依牆鐘補零，時間軸不縮短。`record status` 顯示「對方聲音：尚未收到／最近一次時間」；沒有系統錄音授權時只會收到全零音訊，不會報錯，所以開錄時不對系統軌做靜音警告。
 - feat: `transcribe live start`：背景逐段轉錄，模型只載入一次，等 `seg-(N+1)` 出現或錄音停止才轉 `seg-N`，以各段實際長度累加時間戳，追加到 `transcript.md`，每段寫 `<!-- seg-NNN done -->` 標記、全部完成寫 `<!-- live finished -->`；被殺重啟時以標記為準，不重複追加。`record status` 顯示逐字稿進度與落後提示。
 - feat: `doctor --record --source system` 檢查 macOS 14.2+、Python 3.11+、catap，並印出系統錄音授權步驟。
-- 實測（Mac）：system 81.08 秒／牆鐘 1:21、7 句全轉出；`both` 33.23 秒／牆鐘 32.92；`live` 在下一段開始後 20 秒內轉好前一段，停止後約 4 秒收尾。測試 75 條。
+- fix（最終審閱）：`live start` 確認程序真的起來（寫出 live.json），一啟動就死時 exit 3 並印 log 尾段；`record status` 在 live 程序已不在時顯示「已中止」；單段轉錄失敗寫 `<!-- seg-NNN failed -->` 後繼續下一段；`--source system|both` 開錄最多等 8 秒第一段（第一次跑要 import catap、建 tap）。
+- 實測（Mac）：system 81.08 秒／牆鐘 1:21、7 句全轉出；`both` 33.23 秒／牆鐘 32.92；`live` 在下一段開始後 20 秒內轉好前一段，停止後約 4 秒收尾。測試 80 條。
 
 ## [0.7.0] - 2026-11-03
 

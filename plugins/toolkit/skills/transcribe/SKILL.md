@@ -46,6 +46,7 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 5. 開錄後 1 到 2 分鐘跑 `record status --out "<目錄>"`：
    - 「對方聲音：尚未收到」：請使用者確認已授權、會議聲音從系統預設輸出播放。
    - 「逐字稿：已轉 N／M 段（落後）」：機器跟不上，轉告使用者。散會後 `live` 會在背景把剩下的轉完。
+   - 「逐段轉錄已中止」：看 `<目錄>/live.log` 轉述原因，修好後再跑 `live start` 接續（不會重複追加）。某段寫 `<!-- seg-NNN failed -->` 表示那段轉錄失敗，事後可對 `recording.wav` 重轉。
 6. 散會：`record stop --out "<目錄>"`，等 `transcript.md` 出現 `live finished`。`recording.wav` 照常產出。
 7. 已知限制：會中切換輸出裝置（插拔耳機、AirPods 連線）後，可能收不到對方聲音。`status` 會顯示最近一次收到的時間，看到時間停住就提醒使用者。
 
