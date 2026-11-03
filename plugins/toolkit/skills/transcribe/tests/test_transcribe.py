@@ -733,3 +733,128 @@ def test_both_mix_ends_with_system_pipe(tmp_path):
     # 實測：duration=longest 時關掉 stdin，ffmpeg 仍等麥克風輸入，stop 要等 10 秒逾時硬殺，多錄 10 秒
     cmd = t.build_pipe_record_cmd("Darwin", "both", None, tmp_path, 300, 48000)
     assert "duration=first" in cmd[cmd.index("-filter_complex") + 1]
+
+
+# ---- 第三階段：live 逐段轉錄 ----
+
+
+def test_next_ready():
+    assert t.next_ready(3, 0, True) == 0
+    assert t.next_ready(3, 2, True) is None
+    assert t.next_ready(3, 2, False) == 2
+    assert t.next_ready(3, 3, False) is None
+    assert t.next_ready(0, 0, False) is None
+
+
+def _wav(path, seconds):
+    path.write_bytes(b"RIFF" + b"\0" * 40 + b"\0" * int(32000 * seconds))
+
+
+@pytest.fixture
+def live(monkeypatch, tmp_path):
+    """假的 live 環境：段落檔可控、錄音狀態可控、runner 依段名回文字。"""
+    env = {"active": False, "calls": [], "polls": 0, "dir": tmp_path / "會議 素材"}
+    env["dir"].mkdir()
+
+    def runner(audio, model, prompt, language):
+        name = Path(audio).stem
+        env["calls"].append(name)
+        return env.get("results", {}).get(name, [(1.0, f"{name} 的內容")])
+
+    def fake_sleep(s):
+        env["polls"] += 1
+        if env["polls"] > 50:
+            raise RuntimeError("live 沒有結束")
+        hook = env.get("on_poll")
+        if hook:
+            hook()
+
+    monkeypatch.setattr(t, "_recording", lambda state: env["active"])
+    monkeypatch.setattr(t.time, "sleep", fake_sleep)
+    env["runner"] = runner
+    env["run"] = lambda: t._live_loop(env["dir"], runner, "large-v3-turbo", None)
+    env["text"] = lambda: (env["dir"] / "transcript.md").read_text(encoding="utf-8")
+    return env
+
+
+def test_live_appends_with_offset(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    _wav(live["dir"] / "seg-001.wav", 30)
+    assert live["run"]() == 0
+    text = live["text"]()
+    assert "[00:00:01] seg-000 的內容" in text and "[00:00:31] seg-001 的內容" in text
+    assert text.index("<!-- seg-000 done -->") < text.index("seg-001 的內容") < text.index("<!-- seg-001 done -->")
+    assert text.rstrip().endswith("<!-- live finished -->")
+
+
+def test_live_waits_for_next_segment(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    live["active"] = True
+
+    def poll():
+        if live["polls"] == 1:
+            assert live["calls"] == []  # seg-001 還沒出現，不能轉正在寫的 seg-000
+            _wav(live["dir"] / "seg-001.wav", 10)
+            live["active"] = False
+
+    live["on_poll"] = poll
+    assert live["run"]() == 0
+    assert live["calls"] == ["seg-000", "seg-001"]
+
+
+def test_live_resumes_without_duplicates(live):
+    import json as _json
+
+    _wav(live["dir"] / "seg-000.wav", 30)
+    _wav(live["dir"] / "seg-001.wav", 30)
+    live["active"] = True  # 只會轉 seg-000
+    live["on_poll"] = lambda: (_ for _ in ()).throw(KeyboardInterrupt)  # 轉完一段就被殺
+    with pytest.raises(KeyboardInterrupt):
+        live["run"]()
+    # 模擬標記已寫、live.json 還沒更新就被殺
+    st = _json.loads((live["dir"] / "live.json").read_text(encoding="utf-8"))
+    st["done"] = 0
+    (live["dir"] / "live.json").write_text(_json.dumps(st), encoding="utf-8")
+    live["active"] = False
+    live["on_poll"] = None
+    assert live["run"]() == 0
+    assert live["text"]().count("seg-000 的內容") == 1
+    assert "[00:00:31] seg-001 的內容" in live["text"]()
+
+
+def test_live_silent_segment_continues(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    _wav(live["dir"] / "seg-001.wav", 30)
+    live["results"] = {"seg-000": []}
+    assert live["run"]() == 0
+    text = live["text"]()
+    assert "<!-- seg-000 done -->" in text and "seg-001 的內容" in text
+
+
+def test_live_finishes_after_recording_stopped(live):
+    import json as _json
+
+    for i in range(3):
+        _wav(live["dir"] / f"seg-00{i}.wav", 20)
+    assert live["run"]() == 0
+    assert live["calls"] == ["seg-000", "seg-001", "seg-002"]
+    st = _json.loads((live["dir"] / "live.json").read_text(encoding="utf-8"))
+    assert st["finished"] is True and st["done"] == 3
+
+
+def test_live_start_requires_recording_state(tmp_path, capsys):
+    assert t.main(["live", "start", "--out", str(tmp_path)]) == 2
+    assert "record start" in capsys.readouterr().err
+
+
+def test_status_shows_live_progress(rec, capsys):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    for i in range(1, 4):
+        (rec["dir"] / f"seg-00{i}.wav").write_bytes(b"RIFF")
+    (rec["dir"] / "live.json").write_text(_json.dumps({"pid": 1, "done": 1, "finished": False}), encoding="utf-8")
+    capsys.readouterr()
+    t.main(["record", "status", "--out", str(rec["dir"])])
+    out = capsys.readouterr().out
+    assert "逐字稿：已轉 1／4 段" in out and "落後" in out

@@ -8,10 +8,12 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -145,11 +147,17 @@ def _has_cuda() -> bool:
         return False
 
 
-def run_faster_whisper(audio: str, model: str, prompt: Optional[str], language: str) -> List[Segment]:
+@functools.lru_cache(maxsize=2)
+def _faster_whisper_model(model: str):
+    # live 逐段轉錄時同一程序呼叫多次，模型只載入一次
     from faster_whisper import WhisperModel
 
     compute_type = "float16" if _has_cuda() else "int8"
-    wm = WhisperModel(model, device="auto", compute_type=compute_type)
+    return WhisperModel(model, device="auto", compute_type=compute_type)
+
+
+def run_faster_whisper(audio: str, model: str, prompt: Optional[str], language: str) -> List[Segment]:
+    wm = _faster_whisper_model(model)
     segments, info = wm.transcribe(audio, language=language, initial_prompt=prompt, vad_filter=True)
     out: List[Segment] = []
     tty = sys.stderr.isatty()  # 背景執行時不印逐段進度，免得 stderr 變成一條數十 KB 的長行
@@ -565,6 +573,94 @@ def _system_worker(out_dir: Path, source: str, mic_device: Optional[str], segmen
     return 0
 
 
+# ---- 準即時：逐段轉錄 ----
+
+LIVE_FILE = "live.json"
+TRANSCRIPT = "transcript.md"
+_MARK = re.compile(r"<!-- seg-(\d+) done -->")
+
+
+def next_ready(n_segments: int, done: int, recording_active: bool) -> Optional[int]:
+    """錄音中最後一段還在寫，要等下一段出現才轉；錄音停了就連最後一段也轉。"""
+    if done < n_segments - 1 or (not recording_active and done < n_segments):
+        return done
+    return None
+
+
+def segment_seconds(path: Path) -> float:
+    return max(path.stat().st_size - 44, 0) / 32000  # 16 kHz、單聲道、16-bit
+
+
+def _read_live(out_dir: Path) -> Optional[dict]:
+    f = out_dir / LIVE_FILE
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
+def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optional[str], poll_sec: float = 5.0) -> int:
+    conv = _converter()
+    transcript = out_dir / TRANSCRIPT
+    if not transcript.exists():
+        meta = {"audio": "即時錄音（逐段轉錄）", "model": model, "transcribed_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
+        transcript.write_text(render_markdown([], meta), encoding="utf-8")
+    # 以逐字稿裡的完成標記為準：程序在「寫完標記、還沒更新 live.json」之間被殺時不會重複追加
+    marked = [int(m) for m in _MARK.findall(transcript.read_text(encoding="utf-8"))]
+    st = _read_live(out_dir) or {}
+    done = max(st.get("done", 0), max(marked) + 1 if marked else 0)
+    segs = _segments(out_dir)
+    offset = sum(segment_seconds(p) for p in segs[:done])
+    st.update(pid=os.getpid(), done=done, offset_sec=offset, finished=False)
+    _write_json(out_dir / LIVE_FILE, st)
+    while True:
+        segs = _segments(out_dir)
+        active = _recording(_read_state(out_dir))
+        n = next_ready(len(segs), done, active)
+        if n is None:
+            if not active and done >= len(segs):
+                with transcript.open("a", encoding="utf-8") as f:
+                    f.write("<!-- live finished -->\n")
+                st.update(done=done, offset_sec=offset, finished=True)
+                _write_json(out_dir / LIVE_FILE, st)
+                return 0
+            time.sleep(poll_sec)
+            continue
+        seg = segs[n]
+        lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, "zh") if text.strip()]
+        with transcript.open("a", encoding="utf-8") as f:
+            f.write("".join(line + "\n" for line in lines) + f"<!-- {seg.stem} done -->\n")
+        done = n + 1
+        offset += segment_seconds(seg)
+        st.update(done=done, offset_sec=offset)
+        _write_json(out_dir / LIVE_FILE, st)
+
+
+def live_start(out_dir: Path, model: str, prompt_file: Optional[str]) -> int:
+    if _read_state(out_dir) is None:
+        _err(f"這個目錄沒有錄音：先用 `record start --out \"{out_dir}\"` 開錄，再啟動 live")
+        return 2
+    st = _read_live(out_dir)
+    if st and not st.get("finished") and _alive(st["pid"], "python"):
+        _err(f"這個目錄的逐段轉錄已在執行（PID {st['pid']}）")
+        return 2
+    cmd = [sys.executable, str(Path(__file__).resolve()), "live", "_run", "--out", str(out_dir), "--model", model]
+    if prompt_file:
+        cmd += ["--prompt-file", str(Path(prompt_file).resolve())]
+    pid = _spawn(cmd, out_dir / "live.log")
+    print(f"逐段轉錄已啟動（PID {pid}），逐字稿寫在 {out_dir / TRANSCRIPT}；每段完成會加一行 `<!-- seg-NNN done -->`")
+    return 0
+
+
+def _live_progress(out_dir: Path, n_segments: int, recording_active: bool) -> Optional[str]:
+    st = _read_live(out_dir)
+    if not st:
+        return None
+    if st.get("finished"):
+        return f"逐字稿：完成（{st.get('done', 0)} 段）"
+    done = st.get("done", 0)
+    ready = n_segments - 1 if recording_active else n_segments
+    lag = "（落後）" if ready - done >= 2 else ""
+    return f"逐字稿：已轉 {done}／{n_segments} 段{lag}"
+
+
 def record_devices() -> int:
     system = platform.system()
     fmt = ["-f", "avfoundation", "-i", ""] if system == "Darwin" else ["-f", "dshow", "-i", "dummy"]
@@ -638,8 +734,12 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int, source:
 def record_status(out_dir: Path) -> int:
     state = _read_state(out_dir)
     segs = _segments(out_dir)
-    if not _recording(state):
+    active = _recording(state)
+    progress = _live_progress(out_dir, len(segs), active)
+    if not active:
         print(f"沒有在錄音（分段 {len(segs)} 個）")
+        if progress:
+            print(progress)
         return 1
     started = datetime.fromisoformat(state["started_at"])
     print(f"錄音中（PID {state['pid']}），已錄 {format_ts((datetime.now() - started).total_seconds())}，分段 {len(segs)} 個")
@@ -649,6 +749,8 @@ def record_status(out_dir: Path) -> int:
             print(f"對方聲音：最近 {heard.replace('T', ' ')}")
         else:
             print("對方聲音：尚未收到（還沒人講話，或沒有授權系統錄音給啟動 Claude Code 的那個 App）")
+    if progress:
+        print(progress)
     return 0
 
 
@@ -695,6 +797,15 @@ def cmd_record(args) -> int:
     return record_stop(out_dir)
 
 
+def cmd_live(args, backend_runner: Optional[BackendRunner]) -> int:
+    out_dir = Path(args.out)
+    if args.action == "start":
+        return live_start(out_dir, args.model, args.prompt_file)
+    prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
+    runner = backend_runner or _resolve_runner(pick_backend(platform.system(), platform.machine()))
+    return _live_loop(out_dir, runner, args.model, prompt)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="transcribe.py", description="本機語音轉逐字稿")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -723,6 +834,13 @@ def build_parser() -> argparse.ArgumentParser:
     rw.add_argument("--source", choices=["system", "both"], required=True)
     for name in ("status", "stop"):
         rsub.add_parser(name).add_argument("--out", required=True)
+    lv = sub.add_parser("live", help="錄音中逐段轉錄（準即時）")
+    lsub = lv.add_subparsers(dest="action", required=True)
+    for name in ("start", "_run"):
+        lp = lsub.add_parser(name, help="背景逐段轉錄錄音目錄" if name == "start" else argparse.SUPPRESS)
+        lp.add_argument("--out", required=True)
+        lp.add_argument("--model", default=DEFAULT_MODEL)
+        lp.add_argument("--prompt-file")
     return p
 
 
@@ -735,6 +853,8 @@ def main(argv: List[str], backend_runner: Optional[BackendRunner] = None) -> int
         return cmd_transcribe(args, backend_runner)
     if args.cmd == "record":
         return cmd_record(args)
+    if args.cmd == "live":
+        return cmd_live(args, backend_runner)
     return cmd_doctor(args.record)
 
 
