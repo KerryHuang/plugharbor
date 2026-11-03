@@ -1,7 +1,7 @@
 ---
 name: ai-radar
-description: 每週掃描近一週最新 AI 情報並產出週報，涵蓋大廠工具規範更新、AI 工程實踐、user 層與當下專案的 agent-system 最佳化建議、plugin 排行與（專案有提供時的）知識庫時效稽核，並對帳採納待辦跨週追蹤。手動觸發。觸發詞：「AI 週報」「查本週 AI 新聞」「AI 情報雷達」「ai-radar」。
-argument-hint: "[回溯天數，預設7] [--deep 5]"
+description: 每週掃描近一週最新 AI 情報並產出週報，涵蓋大廠工具規範更新、AI 工程實踐、user 層與當下專案的 agent-system 最佳化建議、plugin 排行與前 5 個候選的深讀評估（對照自家 plugin 判斷裝用／借鑒／不理）、（專案有提供時的）知識庫時效稽核，並對帳採納待辦跨週追蹤；也可用 --plugin 單獨評估指定 repo。手動觸發。觸發詞：「AI 週報」「查本週 AI 新聞」「AI 情報雷達」「ai-radar」「評估這個 plugin」。
+argument-hint: "[回溯天數，預設7] [--deep 5] [--plugin <repo 網址>]"
 disable-model-invocation: true
 ---
 
@@ -17,6 +17,10 @@ agent system（及專案知識庫）的最佳化／時效機會。跑完後**對
 - **`--deep 5`**：區塊 5 改為
   `update-knowledge-base --audit --deep`（L2 既有聲明做全量重驗，而非輪替抽樣；
   專案沒有該 skill 時同樣跳過）。
+- **`--plugin <repo 網址>`**：單獨評估模式。只跑深讀評估（基準清單 → 一個深讀
+  subagent → 評估卡），跳過區塊 1–5 與週報，也不套用「跳過已評過的」規則；卡片寫到
+  `<OUT>/plugin-eval/YYYY-MM-DD-<repo 名稱 slug>.md`，再做採納待辦對帳。規則見
+  [references/plugin-eval.md](references/plugin-eval.md)。
 
 > 今天日期以使用者環境 / 對話中的當前日期為準，據此換算時間窗。
 
@@ -73,10 +77,15 @@ repo）；專案要讓週報進版控，就由專案自己宣告 `ai-radar-outpu
 - 此反查需橫向判斷，留主執行緒主模型；大量逐檔開檔可派 `general-purpose`
   稽核 agent（`model: sonnet`）並給明確檢查清單。
 
-### 區塊 4 — Marketplace / Plugin 排行
-- 派 `general-purpose` agent（`model: sonnet`）以 `WebSearch` / `WebFetch` 查最多
+### 區塊 4 — Marketplace / Plugin 排行與深讀評估
+- **4a 排行**：派 `general-purpose` agent（`model: sonnet`）以 `WebSearch` / `WebFetch` 查最多
   人推薦 / 使用的軟體工程 / vibe coding marketplace 與 plugin；列名稱、簡述、連結、
-  為何熱門（星數 / 討論度 / 推薦來源）。
+  為何熱門，每個候選必回報星數、最近 push、討論熱度、一句話用途。
+- **4b 深讀評估**：依 [references/plugin-eval.md](references/plugin-eval.md)：
+  1. 主執行緒產一次「基準清單」（要對照的自家 plugin；決定順序見該檔「基準清單」）。
+  2. 依「候選挑選」取前 5 個（跳過 backlog 已標 `已深讀` 的，往下遞補）。
+  3. 依「深讀 subagent prompt」每個候選派一個 sonnet subagent，同一則訊息並行；只 clone 讀、不安裝不執行。
+  4. 彙整回傳的評估卡進週報 4b，結論接進採納待辦對帳。
 
 ### 區塊 5 — 知識庫時效稽核（條件式）
 - **只在當下專案有 `update-knowledge-base` skill 時才跑**（plugin 提供的帶命名空間版本如
@@ -115,6 +124,7 @@ repo）；專案要讓週報進版控，就由專案自己宣告 `ai-radar-outpu
 - 依 `references/report-template.md` 彙整。
 - **在主執行緒寫檔**，輸出到 `<OUT>/YYYY-MM-DD-ai雷達.md`
   （`YYYY-MM-DD` = 執行當天）。
+- **`--plugin` 模式**：只寫 `<OUT>/plugin-eval/YYYY-MM-DD-<repo 名稱 slug>.md`（一張評估卡），不產週報。
 - **區塊 5**（有跑時）的漂移報告由 `update-knowledge-base --audit` 另外落檔；
   週報只放摘要 + 連結。
 - **採納待辦**更新到 `<OUT>/adoption-backlog.md`（append 新項 +
