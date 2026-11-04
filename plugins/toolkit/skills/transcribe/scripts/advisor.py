@@ -12,7 +12,9 @@ import math
 import os
 import platform
 import re
+import shutil
 import struct
+import tempfile
 import subprocess
 import sys
 import time
@@ -436,6 +438,71 @@ def advisor_stop(out_dir: Path) -> int:
     return 0
 
 
+# ---- 開會前自我檢查 ----
+
+MEETING_MIC = "小小麥克風"
+LOOPBACK_DB = -30.0
+AGGREGATE_STEPS = (
+    "建立聚合裝置：開「音訊MIDI設定」（應用程式 → 工具程式）→ 左下「＋」→「建立聚合裝置」→ 改名「{name}」→ "
+    "先勾實體麥克風、再勾 BlackHole 2ch → 「時脈來源」選實體麥克風；會議軟體的麥克風改選「{name}」，喇叭維持原本的輸出"
+)
+
+
+def _has_voice(voice: str) -> bool:
+    r = subprocess.run(["say", "-v", "?"], capture_output=True, text=True, errors="replace")
+    return any(line.split()[:1] == [voice] for line in r.stdout.splitlines())
+
+
+def _list_input_devices() -> List[str]:
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-list_devices", "true", "-f", "avfoundation", "-i", ""],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return tr.parse_devices("Darwin", r.stderr)
+
+
+def _probe_volume(device: str, seconds: float, say_text: Optional[str] = None) -> Optional[float]:
+    """從輸入裝置錄 seconds 秒回傳 max_volume（dB）；有 say_text 時同時把它唸到同名輸出裝置（迴路測試）。"""
+    with tempfile.TemporaryDirectory() as d:
+        wav = Path(d) / "probe.wav"
+        proc = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "avfoundation",
+                                 "-i", f":{device}", "-t", str(seconds), str(wav)],
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if say_text:
+            time.sleep(0.8)  # 等 ffmpeg 開好裝置
+            subprocess.run(["say", "-v", VOICE, "-a", device, say_text], capture_output=True)
+        try:
+            proc.wait(timeout=seconds + 10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            return None
+        return tr._max_volume(wav) if wav.exists() else None
+
+
+def cmd_doctor(device: str, meeting_mic: str) -> int:
+    checks: List[Tuple[str, bool, str]] = [
+        (f"say 中文聲音 {VOICE}", _has_voice(VOICE), f"系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音，下載「{VOICE}」"),
+        ("claude CLI", shutil.which("claude") is not None, "安裝 Claude Code，並確認 `claude` 在 PATH"),
+        ("ffmpeg", shutil.which("ffmpeg") is not None, "brew install ffmpeg"),
+    ]
+    devices = _list_input_devices() if checks[2][1] else []
+    has_dev = device in devices
+    checks.append((f"虛擬麥克風「{device}」", has_dev, "brew install --cask blackhole-2ch，裝完重啟音訊服務（sudo killall coreaudiod）"))
+    checks.append((f"聚合裝置「{meeting_mic}」", meeting_mic in devices, AGGREGATE_STEPS.format(name=meeting_mic)))
+    if has_dev:
+        v = _probe_volume(device, 4, "小小測試")
+        checks.append((f"迴路測試：唸到「{device}」錄得到（{v} dB，需 > {LOOPBACK_DB:.0f}）", v is not None and v > LOOPBACK_DB,
+                       f"確認 say 能輸出到「{device}」；剛裝 BlackHole 要先重啟音訊服務"))
+    v = _probe_volume("default", 2)
+    checks.append((f"實體麥克風有聲音（{v} dB，需 > {tr.SILENCE_DB:.0f}）", v is not None and v > tr.SILENCE_DB,
+                   "系統設定 → 隱私權與安全性 → 麥克風，允許目前的終端機；並確認系統預設輸入是實體麥克風"))
+    checks += tr.check_system_env()
+    ok = True
+    for name, ready, hint in checks:
+        print(f"{'OK ' if ready else 'NG '} {name}" + ("" if ready else f"　→ {hint}"))
+        ok = ok and ready
+    print(f"！ {tr.SYSTEM_AUDIO_PERMISSION}")
+    return 0 if ok else 1
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(prog="advisor.py", description="會議 AI 顧問「小小」")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -450,10 +517,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         sp.add_argument("--language", default="zh")
     for name in ("status", "stop"):
         sub.add_parser(name).add_argument("--out", required=True)
+    dp = sub.add_parser("doctor")
+    dp.add_argument("--device", default=DEFAULT_DEVICE)
+    dp.add_argument("--meeting-mic", default=MEETING_MIC)
     args = p.parse_args(argv)
     if platform.system() != "Darwin":
         tr._err("小小目前只支援 macOS")
         return 2
+    if args.cmd == "doctor":
+        return cmd_doctor(args.device, args.meeting_mic)
     out_dir = Path(args.out)
     if args.cmd == "status":
         return advisor_status(out_dir)

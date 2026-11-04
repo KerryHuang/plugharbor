@@ -484,3 +484,48 @@ def test_start_reports_dead_child(life, monkeypatch, capsys):
 def test_windows_not_supported(life, monkeypatch):
     monkeypatch.setattr(a.platform, "system", lambda: "Windows")
     assert a.main(["status", "--out", str(life["dir"])]) == 2
+
+
+# ---- doctor ----
+
+
+@pytest.fixture
+def doc(monkeypatch):
+    env = {"devices": ["MacBook Air的麥克風", "BlackHole 2ch", "小小麥克風"], "vol": {"BlackHole 2ch": -12.0, "default": -40.0}}
+    monkeypatch.setattr(a.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(a, "_has_voice", lambda v: True)
+    monkeypatch.setattr(a.shutil, "which", lambda n: f"/usr/bin/{n}")
+    monkeypatch.setattr(a, "_list_input_devices", lambda: env["devices"])
+    monkeypatch.setattr(a, "_probe_volume", lambda device, seconds, say_text=None: env["vol"].get(device))
+    monkeypatch.setattr(a.tr, "check_system_env", lambda: [("catap", True, "")])
+    return env
+
+
+def test_doctor_all_ok(doc, capsys):
+    assert a.main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert "NG" not in out and "OK" in out
+
+
+def test_doctor_missing_aggregate_prints_steps(doc, capsys):
+    doc["devices"] = ["MacBook Air的麥克風", "BlackHole 2ch"]
+    assert a.main(["doctor"]) == 1
+    out = capsys.readouterr().out
+    assert "NG" in out and "小小麥克風" in out and "音訊MIDI設定" in out
+
+
+def test_doctor_loopback_silent_fails(doc, capsys):
+    doc["vol"]["BlackHole 2ch"] = -91.0
+    assert a.main(["doctor"]) == 1
+    assert "BlackHole 2ch" in capsys.readouterr().out
+
+
+def test_doctor_silent_mic_fails(doc, capsys):
+    doc["vol"]["default"] = float("-inf")
+    assert a.main(["doctor"]) == 1
+    assert "麥克風" in capsys.readouterr().out
+
+
+def test_doctor_missing_claude_fails(doc, monkeypatch, capsys):
+    monkeypatch.setattr(a.shutil, "which", lambda n: None if n == "claude" else f"/usr/bin/{n}")
+    assert a.main(["doctor"]) == 1
