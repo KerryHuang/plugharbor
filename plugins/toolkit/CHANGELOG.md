@@ -3,6 +3,10 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.9.0] - 2026-11-04
+
+- feat: agent-dispatch 派工可指定模型與思考等級（`clis.mjs` 的 `buildArgs` 加 `model`／`effort`，四個 CLI 各用自己的參數），並能從錯誤訊息辨認額度用盡與重置時間（`quotaInfo`，抓不到時間就預設封鎖 1 小時）。
+
 ## [0.8.0] - 2026-11-03
 
 - feat: `transcribe record start --source system|both`：錄線上會議時，連同系統播放的對方聲音一起錄。Mac 用 catap（Core Audio process tap，不必裝虛擬音訊驅動）擷取系統輸出，由 detach 的 Python worker 寫進 ffmpeg stdin，沿用 segment 分段；`both` 以 `amix=duration=first` 混入麥克風。Windows 的 WASAPI loopback 程式碼已寫，但尚未驗證，`doctor` 與 `start` 一律拒絕。

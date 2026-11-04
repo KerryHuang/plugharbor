@@ -24,22 +24,44 @@ export function resolveBin(name, env = process.env, platform = process.platform)
 }
 
 // probe：唯讀只回字串；driver：自動核准，只用在驗證第 3 層的 A；ask：派工短問答，唯讀但保留使用者設定。
-export function buildArgs(name, mode, prompt) {
+// opts.model／opts.effort：派工指定模型與思考等級（參數名見 ../references/cli-notes.md）；不給就和以前完全相同。
+export function buildArgs(name, mode, prompt, { model, effort } = {}) {
+  const m = (flag, v) => (v ? [flag, v] : [])
   switch (name) {
-    case 'claude':
-      return mode === 'driver' ? ['-p', prompt, '--allowedTools', 'Bash'] : ['-p', prompt, '--tools', '']
+    case 'claude': {
+      const base = mode === 'driver' ? ['-p', prompt, '--allowedTools', 'Bash'] : ['-p', prompt, '--tools', '']
+      return [...base, ...m('--model', model), ...m('--effort', effort)]
+    }
     case 'codex': {
       const lean = mode === 'ask' ? [] : ['--ignore-user-config', '--ignore-rules']
-      return ['exec', ...lean, '--ephemeral', '--skip-git-repo-check', '-s', mode === 'driver' ? 'danger-full-access' : 'read-only', prompt]
+      const pick = [...m('-m', model), ...m('-c', effort && `model_reasoning_effort=${effort}`)]
+      return ['exec', ...lean, ...pick, '--ephemeral', '--skip-git-repo-check', '-s', mode === 'driver' ? 'danger-full-access' : 'read-only', prompt]
     }
-    case 'agy':
+    case 'agy': {
       // agy 沒有真正的唯讀：--mode plan 在 -p 只產計畫不回答，--sandbox 只限 shell、不限它的寫檔工具。
-      return mode === 'driver' ? ['-p', prompt, '--dangerously-skip-permissions'] : ['-p', prompt, '--sandbox', '--disable-slash-commands']
-    case 'pi':
-      return mode === 'driver' ? ['-p', prompt, '--tools', 'bash', '--no-session'] : ['-p', prompt, '--no-tools', '--no-session']
+      const base = mode === 'driver' ? ['-p', prompt, '--dangerously-skip-permissions'] : ['-p', prompt, '--sandbox', '--disable-slash-commands']
+      return [...base, ...m('--model', model), ...m('--effort', effort)]
+    }
+    case 'pi': {
+      const base = mode === 'driver' ? ['-p', prompt, '--tools', 'bash', '--no-session'] : ['-p', prompt, '--no-tools', '--no-session']
+      // pi 的思考等級可掛在 --model 後面（"<model>:<thinking>"）；沒指定模型時用 --thinking
+      const pick = model ? m('--model', effort ? `${model}:${effort}` : model) : m('--thinking', effort)
+      return [...base, ...pick]
+    }
     default:
       throw new Error(`未知的 CLI：${name}`)
   }
+}
+
+// 額度用盡的錯誤訊息 → 重置時間（抓不到就預設 1 小時後，避免永不改派）；不是額度錯誤回 null。
+const QUOTA = /\b(usage limit|quota|rate.?limit|credits?|429)\b/i
+export function quotaInfo(out, now = Date.now()) {
+  if (!QUOTA.test(out)) return null
+  const iso = out.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/)
+  if (iso && !Number.isNaN(Date.parse(iso[0]))) return { resetAt: Date.parse(iso[0]) }
+  const rel = out.match(/in\s+(\d+)\s*(minute|min|hour|hr)s?\b/i)
+  if (rel) return { resetAt: now + Number(rel[1]) * (/^h/i.test(rel[2]) ? 3_600_000 : 60_000) }
+  return { resetAt: now + 3_600_000 }
 }
 
 // 從某個 CLI 裡再叫 CLI 時，留著外層的標記會被當成巢狀 session 擋下或誤判。
