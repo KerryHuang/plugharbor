@@ -19,6 +19,14 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$TARGET/backups/plugharbor-$STAMP"
 DIFFS=0; FAILS=0
 PLUGINS="$(ph_plugins)"
+# PLUGHARBOR_PLUGINS 寫舊名：換成新名（與 install-project.sh 同），新舊並列只留一個
+MAPPED=""
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  if new="$(ph_rename_new "$p")"; then echo "NOTE: PLUGHARBOR_PLUGINS 的 ${p} 已改名為 ${new}，改裝 ${new}"; p="$new"; fi
+  case " $MAPPED " in *" $p "*) ;; *) MAPPED="$MAPPED $p" ;; esac
+done <<< "$PLUGINS"
+PLUGINS="$(set -f; printf '%s\n' $MAPPED)"
 # 專案層 plugin 不該留在 user 層（PLUGHARBOR_PLUGINS 明確指定的除外）
 REMOVE=""
 for p in $(ph_project_plugins); do

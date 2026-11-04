@@ -391,5 +391,12 @@ OUT="$(PLUGINS="workspace" run "$H")" || fail "(23) 實跑 exit 非 0：$OUT"
 grep -qx 'codex plugin remove dev-flow@plugharbor' "$STUB_LOG" || fail "(23) codex 應卸 config.toml 登記的 dev-flow：$(cat "$STUB_LOG")"
 if grep -q 'codex plugin remove workspace' "$STUB_LOG"; then fail "(23) workspace 不該被卸"; fi
 
-echo "PASS: install.sh（23 組）"
+# ---------- 24) PLUGHARBOR_PLUGINS 寫舊名：改用新名並提示，不 FAIL；新舊並列只裝一次 ----------
+H="$TMP/h24"; mkdir -p "$H"
+OUT="$(PLUGINS="dev-flow workspace" run "$H" --check || true)"
+echo "$OUT" | grep -q "^NOTE: PLUGHARBOR_PLUGINS 的 dev-flow 已改名為 workspace" || fail "(24) 舊名應提示改用新名：$OUT"
+if echo "$OUT" | grep -q "^FAIL"; then fail "(24) 舊名不該 FAIL：$OUT"; fi
+[ "$(echo "$OUT" | grep -c "claude workspace")" -eq 1 ] || fail "(24) workspace 應只處理一次：$OUT"
+
+echo "PASS: install.sh（24 組）"
 
