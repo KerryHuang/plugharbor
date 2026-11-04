@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.11.4] - 2026-11-04
+
+- test: 並行上限測試在 CI（沒裝 claude）改放假 CLI 到 PATH；0.11.3 先檢查 CLI 是否存在，CI 上測不到上限。
+
 ## [0.11.3] - 2026-11-04
 
 agent-dispatch 重新審查的 12 項修正：

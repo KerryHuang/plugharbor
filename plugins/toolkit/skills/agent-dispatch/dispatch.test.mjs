@@ -331,7 +331,12 @@ test('背景 worker：已有 4 個執行中 → prepare 拋並行上限', () => 
     writeFileSync(join(d, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid }))
   }
   assert.equal(running(root), 4)
-  assert.throws(() => prepare({ repo: tmpRepo(), name: 'x', cli: 'claude', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /並行已達上限 4/)
+  // prepare 先檢查 CLI 在不在 PATH；CI 沒裝 claude，放假 CLI 才測得到並行上限
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    assert.throws(() => prepare({ repo: tmpRepo(), name: 'x', cli: 'claude', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /並行已達上限 4/)
+  } finally { process.env.PATH = old }
 })
 
 function promptStub() { const p = join(mkdtempSync(join(tmpdir(), 'ad-p-')), 'p.md'); writeFileSync(p, 'x'); return p }
