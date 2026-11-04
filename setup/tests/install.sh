@@ -375,5 +375,21 @@ if grep -q 'plugins/dev-flow' "$P"; then fail "(22) pi 應移除 dev-flow：$(ca
 rm "$STUB/pi"
 export STUB_STATE="$TMP/state"
 
-echo "PASS: install.sh（22 組）"
+# ---------- 23) codex：marketplace 已移除舊名時 plugin list 不列它，改看 config.toml 的登記 ----------
+printf '[{"id": "workspace@plugharbor", "version": "%s", "scope": "user"}]\n' "$WS_VER" > "$STUB_STATE/claude-list"
+{
+  echo 'Marketplace `plugharbor`'
+  echo "workspace@plugharbor  installed, enabled  $WS_VER    $REPO_DIR/plugins/workspace"
+} > "$STUB_STATE/codex-list"
+printf 'Installed plugins:\n- workspace (enabled, %s)\n' "$WS_VER" > "$STUB_STATE/agy-list"
+H="$TMP/h23"; mkdir -p "$H/.codex"
+printf '[plugins."dev-flow@plugharbor"]\nenabled = true\n\n[plugins."workspace@plugharbor"]\nenabled = true\n' > "$H/.codex/config.toml"
+OUT="$(PLUGINS="workspace" run "$H" --check)" || fail "(23) --check exit 非 0：$OUT"
+echo "$OUT" | grep -q "^RENAME: codex dev-flow → workspace" || fail "(23) config.toml 登記的 dev-flow 應報 RENAME：$OUT"
+: > "$STUB_LOG"
+OUT="$(PLUGINS="workspace" run "$H")" || fail "(23) 實跑 exit 非 0：$OUT"
+grep -qx 'codex plugin remove dev-flow@plugharbor' "$STUB_LOG" || fail "(23) codex 應卸 config.toml 登記的 dev-flow：$(cat "$STUB_LOG")"
+if grep -q 'codex plugin remove workspace' "$STUB_LOG"; then fail "(23) workspace 不該被卸"; fi
+
+echo "PASS: install.sh（23 組）"
 

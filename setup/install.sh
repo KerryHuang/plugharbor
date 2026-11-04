@@ -336,8 +336,13 @@ if command -v codex >/dev/null 2>&1; then
   for p in $PLUGINS; do
     sync_plugin codex "$p" "$(printf '%s\n' "$out" | ph_codex_ver "$p")" codex plugin add "$p@plugharbor"
   done
+  # marketplace 移除舊名後 plugin list 就不列它，但 config.toml 的登記與快取還在
+  codex_cfg="${CODEX_HOME:-$HOME/.codex}/config.toml"
   for p in $REMOVE; do
-    [ -z "$(printf '%s\n' "$out" | ph_codex_ver "$p")" ] || stale_remove codex "$p" codex plugin remove "$p@plugharbor"
+    if [ -n "$(printf '%s\n' "$out" | ph_codex_ver "$p")" ] \
+      || { [ -f "$codex_cfg" ] && grep -qF "[plugins.\"$p@plugharbor\"]" "$codex_cfg"; }; then
+      stale_remove codex "$p" codex plugin remove "$p@plugharbor"
+    fi
   done
 else
   echo "SKIP: codex（未安裝）"
