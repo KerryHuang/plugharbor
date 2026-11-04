@@ -148,3 +148,126 @@ def test_mask_covers_tail_after_playback():
     assert m.covers(110, 111) is False
     assert m.covers(98.0, 98.4) is False
     assert m.covers(98.6, 99) is True
+
+
+# ---- 問 Claude ----
+
+import json  # noqa: E402
+import subprocess  # noqa: E402
+
+MODE = {"name": "內部", "allowed_tools": ["Read", "Grep", "WebSearch"], "mcp_config": None,
+        "model": "sonnet", "persona": "你是會議顧問小小。"}
+
+
+def write_mode(tmp_path, **over):
+    p = tmp_path / "mode.json"
+    p.write_text(json.dumps({**MODE, **over}, ensure_ascii=False), encoding="utf-8")
+    return p
+
+
+def test_load_mode_ok(tmp_path):
+    m = a.load_mode(write_mode(tmp_path))
+    assert m["allowed_tools"] == ["Read", "Grep", "WebSearch"]
+
+
+@pytest.mark.parametrize("tools", [["Read", "Write"], ["Edit"], ["NotebookEdit"], ["Bash"], ["Bash(*)"]])
+def test_load_mode_rejects_write_tools(tmp_path, tools):
+    with pytest.raises(ValueError):
+        a.load_mode(write_mode(tmp_path, allowed_tools=tools))
+
+
+def test_load_mode_allows_scoped_bash(tmp_path):
+    a.load_mode(write_mode(tmp_path, allowed_tools=["Bash(python3 /x/customer_sql.py --slug abc:*)"]))
+
+
+def test_load_mode_requires_fields(tmp_path):
+    p = tmp_path / "m.json"
+    p.write_text(json.dumps({"name": "x"}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        a.load_mode(p)
+
+
+def test_build_cmd_without_mcp():
+    cmd = a.build_claude_cmd(MODE, "MP-3368 做到哪了", "[00:01:00] 我們在談排程")
+    assert cmd[:2] == ["claude", "-p"]
+    prompt = cmd[2]
+    assert "你是會議顧問小小。" in prompt and "MP-3368 做到哪了" in prompt and "我們在談排程" in prompt
+    assert "2～3 句" in prompt
+    assert cmd[cmd.index("--model") + 1] == "sonnet"
+    assert cmd[cmd.index("--allowedTools") + 1] == "Read,Grep,WebSearch"
+    assert "--mcp-config" not in cmd and "--strict-mcp-config" not in cmd
+
+
+def test_build_cmd_with_mcp_config():
+    cmd = a.build_claude_cmd({**MODE, "mcp_config": "/x/mcp.json"}, "q", "")
+    assert cmd[cmd.index("--mcp-config") + 1] == "/x/mcp.json"
+    assert "--strict-mcp-config" in cmd
+
+
+class FakeProc:
+    """communicate 依假時鐘決定逾時：delay 秒後才有輸出。"""
+
+    def __init__(self, delay=1.0, out="好的，這是回答。", code=0):
+        self.delay, self.out, self.code = delay, out, code
+        self.killed = False
+        self.returncode = None
+        self.kw = None
+
+    def __call__(self, cmd, **kw):
+        self.kw = kw
+        return self
+
+    def communicate(self, timeout=None):
+        if self.killed:
+            return "", ""
+        if timeout is not None and self.delay > timeout:
+            self.delay -= timeout
+            raise subprocess.TimeoutExpired("claude", timeout)
+        self.returncode = self.code
+        return self.out, "boom" if self.code else ""
+
+    def kill(self):
+        self.killed = True
+
+
+def test_fast_answer(monkeypatch):
+    fp = FakeProc(delay=1.0)
+    monkeypatch.setattr(a.subprocess, "Popen", fp)
+    slow = []
+    assert a.ask(MODE, "q", "", on_slow=lambda: slow.append(1)) == ("好的，這是回答。", True)
+    assert slow == []
+    assert fp.kw["stdin"] == subprocess.DEVNULL
+
+
+def test_slow_answer_calls_on_slow_once(monkeypatch):
+    monkeypatch.setattr(a.subprocess, "Popen", FakeProc(delay=10.0))
+    slow = []
+    text, ok = a.ask(MODE, "q", "", on_slow=lambda: slow.append(1))
+    assert ok and slow == [1]
+
+
+def test_timeout_returns_fallback(monkeypatch):
+    fp = FakeProc(delay=99.0)
+    monkeypatch.setattr(a.subprocess, "Popen", fp)
+    assert a.ask(MODE, "q", "", timeout=30.0, on_slow=lambda: None) == (a.FALLBACK, False)
+    assert fp.killed
+
+
+def test_cli_error_returns_fallback(monkeypatch):
+    monkeypatch.setattr(a.subprocess, "Popen", FakeProc(code=1))
+    assert a.ask(MODE, "q", "", on_slow=lambda: None) == (a.FALLBACK, False)
+
+
+def test_missing_cli_returns_fallback(monkeypatch):
+    def boom(*a_, **k):
+        raise FileNotFoundError("claude")
+
+    monkeypatch.setattr(a.subprocess, "Popen", boom)
+    assert a.ask(MODE, "q", "", on_slow=lambda: None) == (a.FALLBACK, False)
+
+
+def test_ask_uses_mode_cwd(monkeypatch):
+    fp = FakeProc()
+    monkeypatch.setattr(a.subprocess, "Popen", fp)
+    a.ask({**MODE, "cwd": "/work"}, "q", "", on_slow=lambda: None)
+    assert fp.kw["cwd"] == "/work"

@@ -6,13 +6,15 @@
 只支援 macOS。
 """
 import array
+import json
 import math
 import re
 import struct
+import subprocess
 import sys
 from collections import deque
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import transcribe as tr  # noqa: E402
@@ -169,3 +171,64 @@ class PlaybackMask:
 
     def covers(self, t0: float, t1: float) -> bool:
         return any(t0 <= e + self.pad and t1 >= s - self.pad for s, e in self.spans)
+
+
+# ---- 問 Claude ----
+
+FALLBACK = "這題我會後補在會議記錄。"
+SLOW_LINE = "我查一下。"
+_REQUIRED = ("name", "allowed_tools", "model", "persona")
+_WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit", "Bash", "Bash(*)", "Bash(:*)"}
+
+
+def load_mode(path: Path) -> dict:
+    """讀場合檔；會中一律唯讀，白名單含寫入工具或不限指令的 Bash 就拒絕。"""
+    mode = json.loads(Path(path).read_text(encoding="utf-8"))
+    missing = [k for k in _REQUIRED if not mode.get(k)]
+    if missing:
+        raise ValueError(f"場合檔缺欄位：{', '.join(missing)}")
+    bad = [t for t in mode["allowed_tools"] if t.strip() in _WRITE_TOOLS]
+    if bad:
+        raise ValueError(f"場合檔含寫入工具（會中一律唯讀）：{', '.join(bad)}")
+    mode.setdefault("mcp_config", None)
+    return mode
+
+
+def build_claude_cmd(mode: dict, question: str, context: str) -> List[str]:
+    prompt = (
+        f"{mode['persona']}\n"
+        "你正在線上會議中被點名發言，回答會用語音唸出來：只用 2～3 句繁體中文口語回答，不用條列、不用 Markdown；"
+        "沒把握的事直接說會後確認，不要猜。\n\n"
+        f"最近的會議逐字稿：\n{context}\n\n問題：{question}"
+    )
+    cmd = ["claude", "-p", prompt, "--model", mode["model"], "--allowedTools", ",".join(mode["allowed_tools"])]
+    if mode.get("mcp_config"):
+        cmd += ["--mcp-config", mode["mcp_config"], "--strict-mcp-config"]
+    return cmd
+
+
+def ask(mode: dict, question: str, context: str, timeout: float = 30.0,
+        on_slow: Callable[[], None] = lambda: None, slow_after: float = 4.0) -> Tuple[str, bool]:
+    """回傳 (回答, 是否成功)。slow_after 秒還沒答就呼叫一次 on_slow；逾時或失敗回傳 FALLBACK。"""
+    try:
+        # stdin 給 /dev/null：實測缺 stdin 時 claude -p 會先等 3 秒
+        proc = subprocess.Popen(build_claude_cmd(mode, question, context), stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=mode.get("cwd"))
+    except OSError as e:
+        tr._err(f"無法執行 claude：{e!r}")
+        return FALLBACK, False
+    try:
+        try:
+            out, err = proc.communicate(timeout=slow_after)
+        except subprocess.TimeoutExpired:
+            on_slow()
+            out, err = proc.communicate(timeout=max(timeout - slow_after, 0.1))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        tr._err(f"claude 超過 {timeout:.0f} 秒沒有回答")
+        return FALLBACK, False
+    if proc.returncode != 0 or not out.strip():
+        tr._err(f"claude 回答失敗（exit {proc.returncode}）：{(err or '').strip()[-300:]}")
+        return FALLBACK, False
+    return out.strip(), True
