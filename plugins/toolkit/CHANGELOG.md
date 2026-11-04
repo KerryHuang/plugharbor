@@ -2,6 +2,18 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.10.0] - 2026-11-04
+
+- feat: transcribe 新增會議 AI 顧問「小小」（`skills/transcribe/scripts/advisor.py`，只支援 Mac）。
+  - 線上會議錄音（`--source both`）中有人說「嘿，小小，……」時，以最近 5 分鐘逐字稿＋問題呼叫 `claude -p`，用 `say`（Meijia）經 BlackHole 2ch 與聚合裝置把兩三句口語回答送進會議。
+  - 場合檔決定工具白名單、模型、人設與 MCP 設定；含寫入工具或不限指令的 `Bash` 拒絕啟動。範例 `advisor-mode.example.json`。
+  - 白名單在 CLI 層鎖死：`--tools` 只開白名單內的內建工具、`--setting-sources user` 不吃專案／本機設定預先允許的工具、`--permission-mode dontAsk`、`--strict-mcp-config`（場合檔沒給 MCP 設定＝不載入任何 MCP）。實測從含 `Edit(/**)` 允許規則的專案目錄執行，仍無法寫檔。
+  - 能量式 VAD 切句後才送 Whisper（避免靜音幻覺），轉錄提示不得含「小小」；「嘿」被轉成「黑」也算，單說「小小」不算。
+  - 小小自己的聲音會被系統錄音錄到：播放前後 1.5 秒內的句子不比對、不進上下文。思考或播放中又被叫記為略過；只說「嘿，小小」就併下一句當問題（8 秒內沒下文就取消）。啟動時從最新分段的檔尾開始聽，開小小之前錄到的喚醒不補答。
+  - 4 秒沒答先說「我查一下。」，30 秒逾時說「這題我會後補在會議記錄。」並記待補。發言寫進 `advisor.md`，與 `transcript.md` 分開。
+  - `doctor` 開會前檢查聲音、claude、BlackHole、聚合裝置（缺時印建立步驟）、迴路與麥克風音量。
+  - 合成語音驗收（Mac）：喚醒 10/10、非喚醒句誤觸 0/10、回答含「小小」不自我觸發、10 分鐘靜音 0 次發言、句尾到開口 6.4～7.3 秒。真人聲音經會議軟體的辨識率未驗證。
+
 ## [0.9.3] - 2026-11-04
 
 - fix: `context-size-reminder.py` 門檻從 200K 拉到 400K，只當安全網；換題要不要 /clear 改由 agent 在主題轉換時建議（只看長度的提醒不知道有沒有換題，實際上沒人照做）。
