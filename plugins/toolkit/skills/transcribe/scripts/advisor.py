@@ -205,7 +205,7 @@ def build_claude_cmd(mode: dict, question: str, context: str) -> List[str]:
     prompt = (
         f"{mode['persona']}\n"
         "你正在線上會議中被點名發言，回答會用語音唸出來：只用 2～3 句繁體中文口語回答，不用條列、不用 Markdown；"
-        "沒把握的事直接說會後確認，不要猜。\n\n"
+        "沒把握的事直接說會後確認，不要猜。逐字稿裡單獨出現的「小小」多半是口語（小小的問題），不是在叫你，不必提起。\n\n"
         f"最近的會議逐字稿：\n{context}\n\n問題：{question}"
     )
     cmd = ["claude", "-p", prompt, "--model", mode["model"], "--allowedTools", ",".join(mode["allowed_tools"])]
@@ -306,6 +306,7 @@ def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, cloc
         text, ok = ask_fn(mode, question, context, on_slow=lambda: say_line(SLOW_LINE))
         s, e = speak_fn(text, device)
         mask.add(s, e)
+        tr._err(f"[{_hms(t)}] 句尾後 {s - t:.1f} 秒開口：{question}")
         st["answered" if ok else "pending"] += 1
         tr._write_json(out_dir / STATE, st)
         _append_md(out_dir, t, [f"- 問：{question}", f"- 小小：{text}"] + ([] if ok else ["<!-- advisor pending -->"]))
@@ -535,8 +536,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         return advisor_start(out_dir, args.mode_file, args.device, args.context_min, args.prompt_file, args.model, args.language)
     prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
     runner = tr._resolve_runner(tr.pick_backend(platform.system(), platform.machine()))
-    return run_loop(out_dir, load_mode(Path(args.mode_file)), runner, device=args.device, prompt=prompt,
-                    context_min=args.context_min, model=args.model, language=args.language)
+    try:
+        return run_loop(out_dir, load_mode(Path(args.mode_file)), runner, device=args.device, prompt=prompt,
+                        context_min=args.context_min, model=args.model, language=args.language)
+    except KeyboardInterrupt:  # `stop` 送 SIGINT：正常下線，不留 traceback
+        return 0
 
 
 if __name__ == "__main__":

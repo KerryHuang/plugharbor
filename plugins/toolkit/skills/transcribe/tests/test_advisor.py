@@ -529,3 +529,29 @@ def test_doctor_silent_mic_fails(doc, capsys):
 def test_doctor_missing_claude_fails(doc, monkeypatch, capsys):
     monkeypatch.setattr(a.shutil, "which", lambda n: None if n == "claude" else f"/usr/bin/{n}")
     assert a.main(["doctor"]) == 1
+
+
+def test_answer_logs_latency(loop, capsys):
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = ["嘿，小小，現在幾點"]
+    loop["speak_span"] = (1004.0, 1006.0)  # 句尾在 999.7（聲音 1 秒＋靜音 0.7 秒後切句，之後還有 0.3 秒）
+    assert loop["run"]() == 0
+    import re
+    m = re.search(r"句尾後 ([\d.]+) 秒開口：現在幾點", capsys.readouterr().err)
+    assert m and abs(float(m.group(1)) - 4.3) <= 0.2  # 30 ms frame、0.1 秒餵入的量化誤差
+
+
+def test_prompt_says_casual_mentions_are_not_calls():
+    prompt = a.build_claude_cmd(MODE, "Q", "ctx")[2]
+    assert "不是在叫你" in prompt
+
+
+def test_run_exits_cleanly_on_stop_signal(tmp_path, monkeypatch):
+    monkeypatch.setattr(a.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(a.tr, "_resolve_runner", lambda name: None)
+
+    def interrupted(*args, **kw):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(a, "run_loop", interrupted)
+    assert a.main(["_run", "--out", str(tmp_path), "--mode-file", str(write_mode(tmp_path))]) == 0

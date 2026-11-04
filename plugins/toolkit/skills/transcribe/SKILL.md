@@ -1,6 +1,6 @@
 ---
 name: transcribe
-description: 在本機背景錄音（麥克風，或線上會議時連同系統播放的對方聲音）並可邊錄邊逐段轉錄，或把錄音檔轉成帶時間戳的逐字稿 Markdown：Mac（Apple Silicon）用 mlx-whisper，Windows／其他平台用 faster-whisper，中文輸出經 OpenCC 轉台灣繁體。不上雲端、不分講者。Use when 使用者說「轉逐字稿」「語音轉文字」「錄音轉文字」「開始錄音」「錄線上會議」「transcribe」，或給一個音檔／影片檔要文字內容。
+description: 在本機背景錄音（麥克風，或線上會議時連同系統播放的對方聲音）並可邊錄邊逐段轉錄，或把錄音檔轉成帶時間戳的逐字稿 Markdown：Mac（Apple Silicon）用 mlx-whisper，Windows／其他平台用 faster-whisper，中文輸出經 OpenCC 轉台灣繁體。不上雲端、不分講者。線上會議中還可加入會議 AI 顧問「小小」：有人說「嘿，小小，……」時用語音回答（Mac）。Use when 使用者說「轉逐字稿」「語音轉文字」「錄音轉文字」「開始錄音」「錄線上會議」「transcribe」「開小小」「會議顧問」，或給一個音檔／影片檔要文字內容。
 argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 ---
 
@@ -49,6 +49,25 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
    - 「逐段轉錄已中止」：看 `<目錄>/live.log` 轉述原因，修好後再跑 `live start` 接續（不會重複追加）。某段寫 `<!-- seg-NNN failed -->` 表示那段轉錄失敗，事後可對 `recording.wav` 重轉。
 6. 散會：`record stop --out "<目錄>"`，等 `transcript.md` 出現 `live finished`。`recording.wav` 照常產出。
 7. 已知限制：會中切換輸出裝置（插拔耳機、AirPods 連線）後，可能收不到對方聲音。`status` 會顯示最近一次收到的時間，看到時間停住就提醒使用者。
+
+## 會議 AI 顧問「小小」
+
+在線上會議錄音（`--source both`）上加一個只在被點名時開口的顧問：有人說「嘿，小小，……」，它把最近 5 分鐘逐字稿和問題交給 `claude -p`，再用 `say` 把兩三句口語回答送進虛擬麥克風。腳本是 `${CLAUDE_PLUGIN_ROOT}/skills/transcribe/scripts/advisor.py`（以下簡寫 `advisor.py`，用跑 `record` 的同一個 python3 執行），只支援 Mac。
+
+1. **一次性設定**（`advisor.py doctor` 缺什麼會印步驟）：
+   - 安裝 BlackHole 2ch（`brew install --cask blackhole-2ch`，裝完 `sudo killall coreaudiod` 重啟音訊服務，不必重開機）。
+   - 在「音訊MIDI設定」建立聚合裝置「小小麥克風」：先勾實體麥克風、再勾 BlackHole 2ch，時脈來源選實體麥克風。
+   - 會議軟體的**麥克風**改選「小小麥克風」，喇叭維持原本的輸出。
+   - 系統設定下載中文聲音「Meijia」。
+2. **開會前**：`advisor.py doctor`。exit 1 時轉述 `NG` 項目；任何一項沒過就不啟動小小，會議照常只錄音。
+3. **場合檔**：決定小小能用哪些工具、用哪個模型、人設。範例 `advisor-mode.example.json`；白名單只能放唯讀工具（含 `Write`、`Edit`、不限指令的 `Bash` 會被拒絕）。可加 `"cwd"` 指定它查資料的目錄、`"mcp_config"` 指定 MCP 設定檔（會加 `--strict-mcp-config`，只用該檔）。**開始前先問使用者是內部會議還是客戶會議**，再選對應的場合檔。
+4. **啟動**：先照上一節開錄（`record start --source both`，可同時跑 `live start`），再
+   `advisor.py start --out "<目錄>" --mode-file "<場合檔>" [--prompt-file "<術語檔>"] [--context-min 5]`。
+   - exit 2：目錄沒在錄、錄音只有麥克風、場合檔不合格、術語檔含「小小」（會讓 Whisper 吐出整串「小小小」），或已有一個小小在跑。exit 3：沒啟動成功，附 `advisor.log` 尾段。
+5. **會中**：`advisor.py status --out "<目錄>"` 看已回答、待補幾題。4 秒還沒答它會先說「我查一下。」；30 秒逾時說「這題我會後補在會議記錄。」並記為待補。思考或播放中又被叫一次會略過，記在 `advisor.md`。
+6. **紀錄**：每次發言寫進 `<目錄>/advisor.md`（`### HH:MM:SS`、`- 問：`、`- 小小：`；待補多一行 `<!-- advisor pending -->`），與 `transcript.md` 分開，整理會議記錄時依時間合併。小小自己的聲音會被系統錄音錄進去，所以播放前後 1.5 秒內轉出的句子不比對喚醒詞、不放進上下文；`transcript.md` 裡那段合成語音的辨識結果在整理時以 `advisor.md` 原文為準。
+7. 錄音停止後小小會自己結束；要提早下線用 `advisor.py stop --out "<目錄>"`。
+8. 已知限制：只驗過合成語音（結果見 CHANGELOG），真人聲音經會議軟體的辨識率未驗證；喚醒要說「嘿，小小」，單說「小小」不算。
 
 ## Exit code
 
