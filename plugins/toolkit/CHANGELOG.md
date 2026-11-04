@@ -8,6 +8,9 @@
 - feat: agent-dispatch 派工可指定模型與思考等級（`clis.mjs` 的 `buildArgs` 加 `model`／`effort`，四個 CLI 各用自己的參數），並能從錯誤訊息辨認額度用盡與重置時間（`quotaInfo`，抓不到時間就預設封鎖 1 小時）。
 - feat: 派工路由（`agent-dispatch/references/routing.json`＋`scripts/route.mjs`）：任務類型 × 難度（top／standard／cheap）查表得出有序候選（CLI＋模型＋思考等級），濾掉 agent-mesh-check 最近一次沒通過的 CLI 與額度封鎖中的 CLI；改動碰到安全、資料、DB 結構、公開介面或超過 300 行時要跨家族審查，挑不同家族的審查者，湊不到才退回同家。`node route.mjs block <cli> <到期時間>` 手動標記某家先省著用。
 - feat: `ask.mjs` 接上路由：`--type`／`--tier` 查表挑對象（`--to` 仍可直接指定），`--model`／`--effort` 可覆寫；額度用盡自動封鎖該家並改派下一個候選，全部不能用時 exit 75 並印最早解封時間；第一行固定印「交給誰、用哪級、理由」；輸出超過 16000 字元時全文寫進結果檔（預設 `<prompt 檔>.out.md`），只印前 4000 字元摘要。
+- feat: 沒有 herdr 時的長任務（`agent-dispatch/scripts/bg.mjs`）。
+  - **Ghostty 分割**：macOS 用 Ghostty 1.4 的 AppleScript 開看得見的分割，可帶工作目錄與環境變數，收工時用 id 關掉。spike 結論見 `skills/agent-dispatch/references/background-worker.md`。
+  - **背景 worker**：每個 worker 開獨立 git worktree（分支 `dispatch/<名>`），由 detached 監督程序執行，結束後依結果檔寫入 `done`／`failed`／`quota` 狀態並發 macOS 通知。並行上限 4，遇到額度或逾時就降。Windows 尚未實機驗證。
 
 ## [0.8.0] - 2026-11-03
 

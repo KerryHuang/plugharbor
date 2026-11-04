@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { buildArgs, quotaInfo } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, delimiter } from 'node:path'
 import { loadRouting, readState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
 
 const has = (args, ...seq) => {
@@ -123,7 +123,7 @@ test('meshAvailable：取 layer 2 pass；沒資料回 null', () => {
 
 // ── ask.mjs：改派與長結果 ──
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { summarize } from './scripts/ask.mjs'
 
@@ -196,6 +196,94 @@ test('ask：長輸出寫進結果檔，stdout 只放摘要', () => {
   assert.ok(r.stdout.length < 4500)
   assert.match(r.stdout, /全文 20000 字元/)
 })
+
+// ── 背景 worker ──
+import { detectEnv, prepare, supervise, running, ghosttyAvailable, ghosttySplitScript } from './scripts/bg.mjs'
+import { execFileSync } from 'node:child_process'
+
+test('detectEnv：herdr 優先，其次 ghostty，最後背景', () => {
+  assert.equal(detectEnv({ HERDR_ENV: '1' }, { ghostty: true }), 'herdr')
+  assert.equal(detectEnv({}, { ghostty: true }), 'ghostty')
+  assert.equal(detectEnv({}, { ghostty: false }), 'background')
+})
+
+test('ghosttyAvailable：只在 macOS 而且在 Ghostty 裡', () => {
+  assert.equal(ghosttyAvailable({ TERM_PROGRAM: 'ghostty' }, 'darwin'), true)
+  assert.equal(ghosttyAvailable({ TERM_PROGRAM: 'ghostty' }, 'linux'), false)
+  assert.equal(ghosttyAvailable({ TERM_PROGRAM: 'herdr' }, 'darwin'), false)
+})
+
+test('ghosttySplitScript：引號與反斜線都跳脫，帶工作目錄與環境變數', () => {
+  const s = ghosttySplitScript({ cwd: '/a b/"c"', command: 'claude "hi"', env: ['AGENT_DISPATCH_RESULT=/r d/x.md'] })
+  assert.match(s, /set initial working directory of cfg to "\/a b\/\\"c\\""/)
+  assert.match(s, /set command of cfg to "claude \\"hi\\""/)
+  assert.match(s, /set environment variables of cfg to \{"AGENT_DISPATCH_RESULT=\/r d\/x\.md"\}/)
+  assert.match(s, /split \(focused terminal of selected tab of front window\) direction right with configuration cfg/)
+})
+
+// 假 driver CLI：在 cwd 改一個檔；SHIM_RESULT=0 時不寫結果檔並 exit 1
+function driverShim() {
+  const d = mkdtempSync(join(tmpdir(), 'ad-drv-'))
+  const f = join(d, 'claude')
+  writeFileSync(f, `#!${process.execPath}
+const fs = require('node:fs')
+fs.writeFileSync('changed.txt', 'by worker')
+if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing result'); process.exit(1) }
+fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt')
+`)
+  chmodSync(f, 0o755)
+  return d
+}
+
+function tmpRepo() {
+  const repo = mkdtempSync(join(tmpdir(), 'ad repo '))
+  const git = (...a) => execFileSync('git', ['-C', repo, ...a], { stdio: 'pipe' })
+  git('init', '-q'); writeFileSync(join(repo, 'a.txt'), 'a')
+  git('add', 'a.txt'); git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-qm', 'init')
+  return repo
+}
+
+async function runJob(env) {
+  const repo = tmpRepo()
+  const root = mkdtempSync(join(tmpdir(), 'ad ws '))
+  const prompt = join(root, 'p.md'); writeFileSync(prompt, 'do it')
+  const old = { PATH: process.env.PATH, ...Object.fromEntries(Object.keys(env).map(k => [k, process.env[k]])) }
+  // shim 放最前面：蓋過真的 claude，git 仍找得到
+  Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
+  try {
+    const job = prepare({ repo, name: 't1', cli: 'claude', promptFile: prompt, ws: join(root, 't1'), state: join(root, 'state.json') })
+    await supervise(job.ws)
+    return { repo, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
+  } finally {
+    for (const [k, v] of Object.entries(old)) v === undefined ? delete process.env[k] : (process.env[k] = v)
+  }
+}
+
+test('背景 worker：在 worktree 改檔、寫結果檔，狀態 done，主 repo 不動', async () => {
+  const { repo, job, status } = await runJob({})
+  assert.equal(status.state, 'done')
+  assert.ok(existsSync(join(job.worktree, 'changed.txt')))
+  assert.ok(!existsSync(join(repo, 'changed.txt')))
+  assert.equal(execFileSync('git', ['-C', repo, 'status', '--porcelain'], { encoding: 'utf8' }), '')
+})
+
+test('背景 worker：沒寫結果檔就結束 → failed 並附輸出尾段', async () => {
+  const { status } = await runJob({ SHIM_RESULT: '0' })
+  assert.equal(status.state, 'failed')
+  assert.match(status.tail, /crashed before writing result/)
+})
+
+test('背景 worker：已有 4 個執行中 → prepare 拋並行上限', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-par-'))
+  for (let i = 0; i < 4; i++) {
+    const d = join(root, `j${i}`); mkdirSync(d)
+    writeFileSync(join(d, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid }))
+  }
+  assert.equal(running(root), 4)
+  assert.throws(() => prepare({ repo: tmpRepo(), name: 'x', cli: 'claude', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /並行已達上限 4/)
+})
+
+function promptStub() { const p = join(mkdtempSync(join(tmpdir(), 'ad-p-')), 'p.md'); writeFileSync(p, 'x'); return p }
 
 test('statePath 比照 mesh 的規則', () => {
   assert.equal(statePath({ XDG_STATE_HOME: '/s' }, 'linux'), join('/s', 'agent-dispatch', 'state.json'))
