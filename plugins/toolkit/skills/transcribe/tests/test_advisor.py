@@ -271,3 +271,216 @@ def test_ask_uses_mode_cwd(monkeypatch):
     monkeypatch.setattr(a.subprocess, "Popen", fp)
     a.ask({**MODE, "cwd": "/work"}, "q", "", on_slow=lambda: None)
     assert fp.kw["cwd"] == "/work"
+
+
+# ---- 主迴圈 ----
+
+import wave  # noqa: E402
+
+
+def write_seg(d, i, pcm):
+    (d / f"seg-{i:03d}.wav").write_bytes(wav_header() + pcm)
+
+
+@pytest.fixture
+def loop(tmp_path, monkeypatch):
+    """假環境：錄音已寫完（不在錄）、runner 依呼叫順序回文字、ask／speak 記錄呼叫。"""
+    env = {"dir": tmp_path / "會議", "texts": [], "durations": [], "asked": [], "spoken": [], "now": 1000.0,
+           "answer": ("這是小小的回答。", True), "speak_span": None}
+    env["dir"].mkdir()
+    monkeypatch.setattr(a.tr, "_capture_active", lambda d: False)
+    monkeypatch.setattr(a.time, "sleep", lambda s: None)
+
+    def runner(audio, model, prompt, language):
+        with wave.open(audio) as w:
+            env["durations"].append(w.getnframes() / w.getframerate())
+        text = env["texts"].pop(0) if env["texts"] else "（雜音）"
+        return [(0.0, text)]
+
+    def ask_fn(mode, question, context, on_slow=lambda: None, **kw):
+        env["asked"].append((question, context))
+        return env["answer"]
+
+    def speak_fn(text, device):
+        env["spoken"].append(text)
+        return env["speak_span"] or (env["now"], env["now"] + 3)
+
+    env["run"] = lambda: a.run_loop(env["dir"], MODE, runner, ask_fn=ask_fn, speak_fn=speak_fn,
+                                    clock=lambda: env["now"], device="BlackHole 2ch")
+    env["md"] = lambda: (env["dir"] / "advisor.md").read_text(encoding="utf-8")
+    env["state"] = lambda: json.loads((env["dir"] / "advisor.json").read_text(encoding="utf-8"))
+    return env
+
+
+def utts(*secs):
+    pcm = b""
+    for s in secs:
+        pcm += tone(s) + silence(1.0)
+    return pcm
+
+
+def test_wake_triggers_answer_and_writes_advisor_md(loop):
+    write_seg(loop["dir"], 0, utts(1.0, 1.0))
+    loop["texts"] = ["我們在談換模時間", "嘿，小小，你覺得呢？"]
+    assert loop["run"]() == 0
+    assert loop["asked"][0][0] == "你覺得呢"
+    assert "我們在談換模時間" in loop["asked"][0][1]
+    assert loop["spoken"] == ["這是小小的回答。"]
+    md = loop["md"]()
+    assert "- 問：你覺得呢" in md and "- 小小：這是小小的回答。" in md
+    assert loop["state"]()["answered"] == 1
+
+
+def test_no_wake_no_answer(loop):
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = ["這只是一個小小的問題"]
+    assert loop["run"]() == 0
+    assert loop["asked"] == [] and loop["spoken"] == []
+
+
+def test_masked_sentence_not_in_context(loop):
+    write_seg(loop["dir"], 0, utts(1.0, 1.0, 1.0))
+    loop["texts"] = ["嘿，小小，第一題", "這句是小小自己的聲音", "嘿，小小，第二題"]
+    # 第一次回答的播放時段蓋住第二句（所有句子的推估時間都落在 now 之前約 6 秒內）
+    spans = [(990.0, 997.6), (2000.0, 2001.0)]
+    loop["speak_span"] = None
+
+    def speak_fn_spans(text, device):
+        loop["spoken"].append(text)
+        return spans.pop(0)
+
+    r = a.run_loop(loop["dir"], MODE, lambda *x: [(0.0, loop["texts"].pop(0))],
+                   ask_fn=lambda m, q, c, on_slow=None, **k: loop["asked"].append((q, c)) or ("答", True),
+                   speak_fn=speak_fn_spans, clock=lambda: loop["now"], device="X")
+    assert r == 0
+    assert [q for q, _ in loop["asked"]] == ["第一題"]  # 第三句也落在遮蔽／思考區間內
+    assert all("小小自己的聲音" not in c for _, c in loop["asked"])
+
+
+def test_busy_wake_is_ignored_and_logged(loop):
+    write_seg(loop["dir"], 0, utts(1.0, 1.0))
+    loop["texts"] = ["嘿，小小，第一題", "嘿，小小，第二題"]
+    loop["speak_span"] = (2000.0, 2001.0)  # 播放在很久之後：第二句落在「思考中」
+    assert loop["run"]() == 0
+    assert [q for q, _ in loop["asked"]] == ["第一題"]
+    assert "思考中，略過：嘿，小小，第二題" in loop["md"]()
+
+
+def test_empty_question_merges_next_sentence(loop):
+    write_seg(loop["dir"], 0, utts(1.0, 1.0))
+    loop["texts"] = ["嘿，小小。", "MP-3368 做到哪了"]
+    assert loop["run"]() == 0
+    assert loop["asked"][0][0] == "MP-3368 做到哪了"
+
+
+def test_fallback_marks_pending(loop):
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = ["嘿，小小，查一下"]
+    loop["answer"] = (a.FALLBACK, False)
+    assert loop["run"]() == 0
+    assert "<!-- advisor pending -->" in loop["md"]()
+    st = loop["state"]()
+    assert st["pending"] == 1 and st["answered"] == 0 and st["finished"] is True
+
+
+def test_utterance_spans_segment_rollover(loop):
+    pcm = utts(1.2)
+    cut = 19200  # 0.6 秒處：切在那句話的聲音中間
+    write_seg(loop["dir"], 0, pcm[:cut])
+    write_seg(loop["dir"], 1, pcm[cut:])
+    loop["texts"] = ["一句話"]
+    assert loop["run"]() == 0
+    assert len(loop["durations"]) == 1 and loop["durations"][0] >= 1.1
+
+
+def test_loop_exits_after_recording_stopped(loop, monkeypatch):
+    write_seg(loop["dir"], 0, utts(1.0))
+    calls = {"n": 0}
+
+    def active(d):
+        calls["n"] += 1
+        return calls["n"] < 3
+
+    monkeypatch.setattr(a.tr, "_capture_active", active)
+    loop["texts"] = ["普通的一句話"]
+    assert loop["run"]() == 0
+    assert calls["n"] >= 3 and loop["state"]()["finished"] is True
+
+
+# ---- 生命週期 ----
+
+
+@pytest.fixture
+def life(tmp_path, monkeypatch):
+    env = {"dir": tmp_path / "會議", "spawned": [], "alive": True}
+    env["dir"].mkdir()
+    monkeypatch.setattr(a.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(a.tr, "_capture_active", lambda d: True)
+    monkeypatch.setattr(a.tr, "_alive", lambda pid, name="ffmpeg": env["alive"])
+    monkeypatch.setattr(a.tr, "_child_exited", lambda pid: False)
+    monkeypatch.setattr(a.time, "sleep", lambda s: None)
+
+    def spawn(cmd, log):
+        env["spawned"].append(cmd)
+        (env["dir"] / "advisor.json").write_text(json.dumps({"pid": 555, "finished": False}), encoding="utf-8")
+        return 555
+
+    monkeypatch.setattr(a.tr, "_spawn", spawn)
+    env["mode"] = write_mode(tmp_path)
+    return env
+
+
+def rec_state(d, source):
+    a.tr._write_state(d, {"pid": 1, "source": source, "stopped_at": None})
+
+
+def test_start_spawns_runner(life):
+    rec_state(life["dir"], "both")
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"])]) == 0
+    cmd = life["spawned"][0]
+    assert "_run" in cmd and cmd[cmd.index("--device") + 1] == "BlackHole 2ch"
+
+
+def test_start_refuses_mic_only_source(life, capsys):
+    rec_state(life["dir"], "mic")
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"])]) == 2
+    assert life["spawned"] == []
+
+
+def test_start_refuses_without_recording(life, monkeypatch):
+    monkeypatch.setattr(a.tr, "_capture_active", lambda d: False)
+    rec_state(life["dir"], "both")
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"])]) == 2
+
+
+def test_start_refuses_duplicate(life):
+    rec_state(life["dir"], "both")
+    (life["dir"] / "advisor.json").write_text(json.dumps({"pid": 9, "finished": False}), encoding="utf-8")
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"])]) == 2
+    assert life["spawned"] == []
+
+
+def test_start_refuses_bad_mode(life, tmp_path):
+    rec_state(life["dir"], "both")
+    bad = write_mode(tmp_path, allowed_tools=["Write"])
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(bad)]) == 2
+
+
+def test_start_refuses_prompt_with_wake_word(life, tmp_path):
+    rec_state(life["dir"], "both")
+    g = tmp_path / "g.txt"
+    g.write_text("嘿，小小，你好。", encoding="utf-8")
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"]), "--prompt-file", str(g)]) == 2
+
+
+def test_start_reports_dead_child(life, monkeypatch, capsys):
+    rec_state(life["dir"], "both")
+    monkeypatch.setattr(a.tr, "_spawn", lambda cmd, log: (log.write_text("Traceback: boom", encoding="utf-8"), 777)[1])
+    monkeypatch.setattr(a.tr, "_child_exited", lambda pid: True)
+    assert a.main(["start", "--out", str(life["dir"]), "--mode-file", str(life["mode"])]) == 3
+    assert "boom" in capsys.readouterr().err
+
+
+def test_windows_not_supported(life, monkeypatch):
+    monkeypatch.setattr(a.platform, "system", lambda: "Windows")
+    assert a.main(["status", "--out", str(life["dir"])]) == 2

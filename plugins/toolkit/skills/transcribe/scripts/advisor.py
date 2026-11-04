@@ -5,13 +5,18 @@
 能量式 VAD 切句 → Whisper → 比對喚醒詞 → `claude -p` → `say` 送進虛擬麥克風（預設 BlackHole 2ch）。
 只支援 macOS。
 """
+import argparse
 import array
 import json
 import math
+import os
+import platform
 import re
 import struct
 import subprocess
 import sys
+import time
+import wave
 from collections import deque
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
@@ -232,3 +237,235 @@ def ask(mode: dict, question: str, context: str, timeout: float = 30.0,
         tr._err(f"claude 回答失敗（exit {proc.returncode}）：{(err or '').strip()[-300:]}")
         return FALLBACK, False
     return out.strip(), True
+
+
+# ---- 說話 ----
+
+VOICE = "Meijia"
+DEFAULT_DEVICE = "BlackHole 2ch"
+
+
+def speak(text: str, device: str) -> Tuple[float, float]:
+    """用 macOS `say` 唸到指定輸出裝置（虛擬麥克風），回傳播放起訖時間（epoch 秒）。"""
+    start = time.time()
+    r = subprocess.run(["say", "-v", VOICE, "-a", device, text], capture_output=True, text=True)
+    if r.returncode != 0:
+        tr._err(f"say 失敗（exit {r.returncode}）：{r.stderr.strip()[-300:]}")
+    return start, time.time()
+
+
+# ---- 主迴圈 ----
+
+STATE = "advisor.json"
+LOG_MD = "advisor.md"
+UTT_WAV = "advisor-utt.wav"
+FEED_CHUNK = RATE // 10 * 2  # VAD 每次餵 0.1 秒：句子的時間推估精度
+
+
+def _hms(t: float) -> str:
+    return time.strftime("%H:%M:%S", time.localtime(t))
+
+
+def _append_md(out_dir: Path, t: float, lines: List[str]) -> None:
+    with (out_dir / LOG_MD).open("a", encoding="utf-8") as f:
+        f.write(f"### {_hms(t)}\n" + "".join(line + "\n" for line in lines) + "\n")
+
+
+def _write_utt(path: Path, pcm: bytes) -> None:
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(pcm)
+
+
+def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, clock: Callable[[], float] = time.time,
+             device: str = DEFAULT_DEVICE, prompt: Optional[str] = None, context_min: float = 5.0,
+             model: str = "large-v3-turbo", language: str = "zh", poll_sec: float = 0.5) -> int:
+    """追讀錄音、被叫到就回答；錄音停止且分段讀完後結束。"""
+    out_dir = Path(out_dir)
+    conv = tr._converter()
+    st = {"pid": os.getpid(), "mode": mode["name"], "started_at": clock(), "answered": 0, "pending": 0, "finished": False}
+    tr._write_json(out_dir / STATE, st)
+    tail, vad, mask = SegmentTail(out_dir), Vad(), PlaybackMask()
+    recent: deque = deque()  # (時間, 句子)：給 claude 的最近 N 分鐘逐字稿
+    busy_until = 0.0  # 上一題回答播完的時間；之前的喚醒算「思考中」
+    waiting_question = False  # 只說了「嘿，小小」：下一句就是問題
+
+    def say_line(text: str) -> None:
+        s, e = speak_fn(text, device)
+        mask.add(s, e)
+
+    def answer(question: str, t: float) -> float:
+        cutoff = clock() - context_min * 60
+        while recent and recent[0][0] < cutoff:
+            recent.popleft()
+        context = "\n".join(f"[{_hms(ts)}] {line}" for ts, line in recent)
+        text, ok = ask_fn(mode, question, context, on_slow=lambda: say_line(SLOW_LINE))
+        s, e = speak_fn(text, device)
+        mask.add(s, e)
+        st["answered" if ok else "pending"] += 1
+        tr._write_json(out_dir / STATE, st)
+        _append_md(out_dir, t, [f"- 問：{question}", f"- 小小：{text}"] + ([] if ok else ["<!-- advisor pending -->"]))
+        return e
+
+    def handle(utt: bytes, t0: float, t1: float) -> None:
+        nonlocal busy_until, waiting_question
+        if mask.covers(t0, t1):
+            return  # 小小自己的聲音：不轉錄、不比對
+        wav = out_dir / UTT_WAV
+        _write_utt(wav, utt)
+        try:
+            text = "".join(seg_text for _, seg_text in runner(str(wav), model, prompt, language))
+        except Exception as e:  # 單句失敗不拖垮整場
+            tr._err(f"轉錄失敗：{e!r}")
+            return
+        finally:
+            wav.unlink(missing_ok=True)
+        text = tr._zh_tw(conv, text).strip()
+        if not text:
+            return
+        question = match_wake(text)
+        if question is not None and t0 < busy_until:
+            _append_md(out_dir, t1, [f"- （思考中，略過：{text}）"])
+            return
+        if waiting_question and question is None:
+            waiting_question = False
+            busy_until = answer(text.strip(_EDGE), t1)
+            return
+        if question is None:
+            recent.append((t1, text))
+            return
+        if not question:
+            waiting_question = True
+            return
+        waiting_question = False
+        busy_until = answer(question, t1)
+
+    while True:
+        active = tr._capture_active(out_dir)  # 先看狀態再讀：判定停止時，最後的資料一定已讀進來
+        pcm = tail.read_new()
+        if pcm:
+            now = clock()
+            for i in range(0, len(pcm), FEED_CHUNK):
+                end = min(i + FEED_CHUNK, len(pcm))
+                for utt in vad.feed(pcm[i:end]):
+                    # 以讀到這批資料的時間回推：這批結尾約等於「現在」
+                    t1 = now - (len(pcm) - end) / 2 / RATE
+                    handle(utt, t1 - len(utt) / 2 / RATE, t1)
+            continue
+        if not active:
+            st["finished"] = True
+            tr._write_json(out_dir / STATE, st)
+            return 0
+        time.sleep(poll_sec)
+
+
+# ---- 啟動／狀態／停止 ----
+
+
+def _read_advisor(out_dir: Path) -> Optional[dict]:
+    f = out_dir / STATE
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
+def _running(st: Optional[dict]) -> bool:
+    return bool(st) and not st.get("finished") and tr._alive(st.get("pid", 0), "python")
+
+
+def advisor_start(out_dir: Path, mode_file: str, device: str, context_min: float, prompt_file: Optional[str],
+                  model: str, language: str) -> int:
+    rec = tr._read_state(out_dir)
+    if not rec or not tr._capture_active(out_dir):
+        tr._err(f"這個目錄不在錄音中：先用 `record start --source both --out \"{out_dir}\"` 開錄")
+        return 2
+    if rec.get("source", "mic") == "mic":
+        tr._err("錄音來源只有麥克風，小小聽不到對方：請用 `--source both` 重新開錄")
+        return 2
+    try:
+        load_mode(Path(mode_file))
+    except (OSError, ValueError) as e:
+        tr._err(f"場合檔不能用：{e}")
+        return 2
+    if prompt_file and "小小" in Path(prompt_file).read_text(encoding="utf-8"):
+        tr._err("術語提示含「小小」：Whisper 會因此吐出整串「小小小」，請從術語檔拿掉")
+        return 2
+    st = _read_advisor(out_dir)
+    if _running(st):
+        tr._err(f"這個目錄的小小已在執行（PID {st['pid']}）")
+        return 2
+    cmd = [sys.executable, str(Path(__file__).resolve()), "_run", "--out", str(out_dir), "--mode-file",
+           str(Path(mode_file).resolve()), "--device", device, "--context-min", str(context_min),
+           "--model", model, "--language", language]
+    if prompt_file:
+        cmd += ["--prompt-file", str(Path(prompt_file).resolve())]
+    log = out_dir / "advisor.log"
+    pid = tr._spawn(cmd, log)
+    for _ in range(10):  # 5 秒內確認起來（寫出自己的 advisor.json）
+        st = _read_advisor(out_dir)
+        if st and st.get("pid") == pid:
+            break
+        if tr._child_exited(pid) or not tr._alive(pid, "python"):
+            tail = log.read_text(encoding="utf-8", errors="replace")[-800:] if log.exists() else ""
+            tr._err("小小沒有啟動成功\n" + tail)
+            return 3
+        time.sleep(0.5)
+    print(f"小小已上線（PID {pid}）：說「嘿，小小，……」叫它；發言記在 {out_dir / LOG_MD}")
+    return 0
+
+
+def advisor_status(out_dir: Path) -> int:
+    st = _read_advisor(out_dir)
+    if not st:
+        print("小小：沒有啟動")
+        return 0
+    state = "執行中" if _running(st) else ("已結束" if st.get("finished") else "已中止（原因看 advisor.log）")
+    print(f"小小：{state}，已回答 {st.get('answered', 0)} 題、待補 {st.get('pending', 0)} 題")
+    return 0
+
+
+def advisor_stop(out_dir: Path) -> int:
+    st = _read_advisor(out_dir)
+    if not _running(st):
+        print("小小沒有在執行")
+        return 0
+    tr._kill(st["pid"], platform.system(), "python")
+    st["finished"] = True
+    tr._write_json(out_dir / STATE, st)
+    print(f"小小已下線（已回答 {st.get('answered', 0)} 題、待補 {st.get('pending', 0)} 題）")
+    return 0
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    p = argparse.ArgumentParser(prog="advisor.py", description="會議 AI 顧問「小小」")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    for name in ("start", "_run"):
+        sp = sub.add_parser(name)
+        sp.add_argument("--out", required=True)
+        sp.add_argument("--mode-file", required=True)
+        sp.add_argument("--device", default=DEFAULT_DEVICE)
+        sp.add_argument("--context-min", type=float, default=5.0)
+        sp.add_argument("--prompt-file")
+        sp.add_argument("--model", default="large-v3-turbo")
+        sp.add_argument("--language", default="zh")
+    for name in ("status", "stop"):
+        sub.add_parser(name).add_argument("--out", required=True)
+    args = p.parse_args(argv)
+    if platform.system() != "Darwin":
+        tr._err("小小目前只支援 macOS")
+        return 2
+    out_dir = Path(args.out)
+    if args.cmd == "status":
+        return advisor_status(out_dir)
+    if args.cmd == "stop":
+        return advisor_stop(out_dir)
+    if args.cmd == "start":
+        return advisor_start(out_dir, args.mode_file, args.device, args.context_min, args.prompt_file, args.model, args.language)
+    prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
+    runner = tr._resolve_runner(tr.pick_backend(platform.system(), platform.machine()))
+    return run_loop(out_dir, load_mode(Path(args.mode_file)), runner, device=args.device, prompt=prompt,
+                    context_min=args.context_min, model=args.model, language=args.language)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
