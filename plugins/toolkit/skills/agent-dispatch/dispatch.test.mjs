@@ -345,6 +345,16 @@ test('buildArgs worker 模式：claude 自動接受編輯，pi 開讀寫工具�
   assert.deepEqual(buildArgs('agy', 'worker', 'P'), buildArgs('agy', 'driver', 'P'))
 })
 
+test('buildArgs worker 模式：claude 把結果檔所在目錄加進可寫範圍（cwd 是 wt/，結果檔在上一層）', () => {
+  const c = buildArgs('claude', 'worker', 'P', { resultFile: '/ws/job1/result.md', model: 'haiku' })
+  const i = c.indexOf('--add-dir')
+  assert.ok(i > 0, c.join(' '))
+  assert.equal(c[i + 1], '/ws/job1')
+  assert.equal(i + 2, c.length, '--add-dir 吃多個值，放最後才不會吞掉後面的參數')
+  assert.ok(!buildArgs('claude', 'worker', 'P').includes('--add-dir'))
+  assert.ok(!buildArgs('claude', 'ask', 'P', { resultFile: '/ws/job1/result.md' }).includes('--add-dir'))
+})
+
 test('scrubEnv 清掉 AGENT_DISPATCH_RESULT，巢狀派工不會被 Stop hook 當成 worker', () => {
   assert.equal(scrubEnv({ AGENT_DISPATCH_RESULT: '/r.md', PATH: '/b' }).AGENT_DISPATCH_RESULT, undefined)
 })

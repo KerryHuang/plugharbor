@@ -26,13 +26,15 @@ export function resolveBin(name, env = process.env, platform = process.platform)
 // probe：唯讀只回字串；driver：自動核准，只用在驗證第 3 層的 A；ask：派工短問答，唯讀但保留使用者設定；
 // worker：背景 worker 要能改檔（claude 自動接受編輯、pi 開讀寫工具，codex／agy 同 driver）。
 // opts.model／opts.effort：派工指定模型與思考等級（參數名見 ../references/cli-notes.md）；不給就和以前完全相同。
-export function buildArgs(name, mode, prompt, { model, effort } = {}) {
+export function buildArgs(name, mode, prompt, { model, effort, resultFile } = {}) {
   const m = (flag, v) => (v ? [flag, v] : [])
   switch (name) {
     case 'claude': {
       const base = mode === 'worker' ? ['-p', prompt, '--permission-mode', 'acceptEdits', '--allowedTools', 'Bash']
         : mode === 'driver' ? ['-p', prompt, '--allowedTools', 'Bash'] : ['-p', prompt, '--tools', '']
-      return [...base, ...m('--model', model), ...m('--effort', effort)]
+      // acceptEdits 只放行 cwd（wt/）底下；結果檔在上一層，要加進可寫範圍。--add-dir 吃多個值，放最後
+      const dir = mode === 'worker' && resultFile ? ['--add-dir', dirname(resultFile)] : []
+      return [...base, ...m('--model', model), ...m('--effort', effort), ...dir]
     }
     case 'codex': {
       const lean = mode === 'ask' ? [] : ['--ignore-user-config', '--ignore-rules']

@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.11.2] - 2026-11-04
+
+- fix: agent-dispatch 背景 worker（claude）寫不進結果檔。worker 的 cwd 是工作區的 `wt/`，結果檔在上一層，`acceptEdits` 只放行 cwd 底下；改為啟動時帶 `--add-dir <結果檔所在目錄>`。真 CLI 實測由 failed 轉 done。
+
 ## [0.11.1] - 2026-11-04
 
 - fix: transcribe 小小 doctor 缺中文語音時的下載路徑改成新版 macOS 名稱（閱讀與朗讀 → 系統聲音 ⓘ → 聲音），舊名稱留在括號。
