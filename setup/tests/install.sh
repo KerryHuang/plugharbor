@@ -400,5 +400,14 @@ if echo "$OUT" | grep -q "^FAIL"; then fail "(24) 舊名不該 FAIL：$OUT"; fi
 rc=0; PLUGINS="workspace" run "$H" --check >/dev/null || rc=$?
 [ "$rc" -eq 3 ] || fail "(24) --check 有差異應 exit 3，實際 ${rc}"
 
-echo "PASS: install.sh（24 組）"
+# ---------- 25) 只有 claude：codex、agy 印 SKIP 並照常完成，不呼叫它們 ----------
+ONLYCLAUDE="$TMP/stub-onlyclaude"
+bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$ONLYCLAUDE" "$TOOLS" claude
+H="$TMP/h25"; mkdir -p "$H"; : > "$STUB_LOG"
+OUT="$(RUN_PATH="$ONLYCLAUDE:$TOOLS:/usr/bin:/bin" run "$H")" || fail "(25) 只有 claude 時 exit 非 0：$OUT"
+echo "$OUT" | grep -q '^SKIP: codex（未安裝）' || fail "(25) 沒有 codex 應印 SKIP: codex：$OUT"
+echo "$OUT" | grep -q '^SKIP: agy（未安裝）' || fail "(25) 沒有 agy 應印 SKIP: agy：$OUT"
+if grep -qE '^(codex|agy) ' "$STUB_LOG"; then fail "(25) 沒裝的 CLI 不該被呼叫：$(cat "$STUB_LOG")"; fi
+
+echo "PASS: install.sh（25 組）"
 
