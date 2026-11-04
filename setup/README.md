@@ -2,6 +2,8 @@
 
 `setup/install.sh [--check] [--force] [--yes]` 會把這裡的東西裝進 `~/.claude/`，並替有裝的 CLI（claude、codex、agy、pi、herdr）註冊 user 層 plugin；`setup/uninstall.sh` 只移除它放進去的東西。
 
+`--check`（install.sh 與 install-project.sh 都有）只報不改，exit code：0 一致、3 有差異、1 有步驟失敗、2 用法錯誤。
+
 ## plugin 分層
 
 - **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。

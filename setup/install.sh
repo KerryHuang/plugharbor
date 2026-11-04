@@ -483,6 +483,9 @@ fi
 echo "---"
 if [ "$CHECK" -eq 1 ]; then
   [ "$DIFFS" -eq 0 ] && echo "一致：repo 與本機無差異" || echo "$DIFFS 項有差異；跑 install.sh 補上（內容不同的檔案要 --force，會先備份）"
+  # exit：0 一致、3 有差異、1 有步驟失敗（2 是用法錯誤）
+  [ "$FAILS" -eq 0 ] || exit 1
+  [ "$DIFFS" -eq 0 ] || exit 3
   exit 0
 fi
 [ -d "$BACKUP" ] && echo "備份：$BACKUP"

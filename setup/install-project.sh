@@ -351,3 +351,5 @@ fi
 
 if [ "$FAILS" -gt 0 ]; then echo "完成，但有 ${FAILS} 項失敗"; exit 1; fi
 if [ "$CHECK" -eq 1 ]; then echo "差異 ${DIFFS} 項"; else echo "完成"; fi
+# --check 的 exit：0 一致、3 有差異、1 有步驟失敗（2 是用法錯誤）
+[ "$CHECK" -eq 0 ] || [ "$DIFFS" -eq 0 ] || exit 3

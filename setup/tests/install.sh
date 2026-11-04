@@ -105,7 +105,7 @@ diff "$TMP/before" "$TMP/after" >/dev/null || fail "重跑不冪等：$(diff "$T
 # ---------- 3) --check 只報不改 ----------
 echo "改過" > "$C/rules/git-safety.md"
 hashes "$H" > "$TMP/before"
-OUT="$(run "$H" --check)" || fail "--check exit 非 0"
+OUT="$(run "$H" --check)" || [ $? -eq 3 ] || fail "--check exit 不是 0／3"
 hashes "$H" > "$TMP/after"
 diff "$TMP/before" "$TMP/after" >/dev/null || fail "--check 改了檔案"
 echo "$OUT" | grep -q 'DIFF: *rules/git-safety.md' || fail "--check 沒報 rules 差異：$OUT"
@@ -246,7 +246,7 @@ OUT="$(run "$H")" || fail "目錄來源遷移 exit 非 0：$OUT"
 RM="$(grep -n '^claude plugin marketplace remove plugharbor$' "$STUB_LOG" | cut -d: -f1)"
 AD="$(grep -n '^claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git$' "$STUB_LOG" | cut -d: -f1)"
 [ -n "$RM" ] && [ -n "$AD" ] && [ "$RM" -lt "$AD" ] || fail "目錄來源應先 remove 再加 GitHub 來源：$(cat "$STUB_LOG")"
-OUT="$(run "$H" --check)" || fail "--check exit 非 0"
+OUT="$(run "$H" --check)" || [ $? -eq 3 ] || fail "--check exit 不是 0／3"
 echo "$OUT" | grep -q 'STALE: claude marketplace plugharbor' || fail "--check 應報目錄來源 STALE：$OUT"
 export STUB_STATE="$TMP/state"
 
@@ -264,7 +264,7 @@ printf 'Installed plugins:\n- lifecycle (enabled, 1.0.0)\n' > "$STUB_STATE/agy-l
 H="$TMP/h11"; mkdir -p "$H/.pi/agent"
 python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/lifecycle"),d).replace(os.sep,"/"),os.path.relpath(os.path.join(r,"plugins/toolkit"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
-OUT="$(run "$H" --check)" || fail "--check exit 非 0"
+OUT="$(run "$H" --check)" || [ $? -eq 3 ] || fail "--check exit 不是 0／3"
 for x in "claude lifecycle" "claude blog" "codex lifecycle" "agy lifecycle" "pi lifecycle"; do
   echo "$OUT" | grep -q "STALE: ${x}（專案層" || fail "--check 應報 STALE: ${x}：$OUT"
 done
@@ -315,7 +315,7 @@ printf 'Installed plugins:\n- old-tool (enabled, 0.9.0)\n' > "$STUB_STATE/agy-li
 H="$TMP/h13"; mkdir -p "$H/.pi/agent"
 python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/old-tool"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
-OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" run "$H" --check)" || fail "改名 --check exit 非 0：$OUT"
+OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" run "$H" --check)" || [ $? -eq 3 ] || fail "改名 --check exit 不是 0／3：$OUT"
 for x in claude codex agy pi; do
   echo "$OUT" | grep -q "^RENAME: $x old-tool → toolkit" || fail "--check 應報 RENAME: $x old-tool → toolkit：$OUT"
 done
@@ -339,11 +339,11 @@ grep -qx 'claude plugin uninstall old-tool@plugharbor --scope user' "$STUB_LOG" 
 if grep -q '^claude plugin \(install\|update\) toolkit' "$STUB_LOG"; then fail "新名已是最新不該重裝：$(cat "$STUB_LOG")"; fi
 
 # ---------- 21) 沒有改名對照（正式值）：不印 RENAME ----------
-OUT="$(run "$TMP/h15" --check)" || fail "無對照 --check exit 非 0"
+OUT="$(run "$TMP/h15" --check)" || [ $? -eq 3 ] || fail "無對照 --check exit 不是 0／3"
 if echo "$OUT" | grep -q '^RENAME:'; then fail "沒有對照不該印 RENAME：$OUT"; fi
 # 新名是專案層：訊息要指向 install-project.sh，不能說「新名照常安裝」
 printf '[{"id": "old-blog@plugharbor", "version": "0.9.0", "scope": "user"}]\n' > "$STUB_STATE/claude-list"
-OUT="$(PLUGHARBOR_RENAMES="old-blog:blog" run "$TMP/h15" --check)" || fail "專案層改名 --check exit 非 0"
+OUT="$(PLUGHARBOR_RENAMES="old-blog:blog" run "$TMP/h15" --check)" || [ $? -eq 3 ] || fail "專案層改名 --check exit 不是 0／3"
 echo "$OUT" | grep -q '^RENAME: claude old-blog → blog.*install-project.sh' || fail "專案層新名應指向 install-project.sh：$OUT"
 if echo "$OUT" | grep -q '^RENAME: claude old-blog.*照常安裝'; then fail "專案層新名不該說照常安裝：$OUT"; fi
 
@@ -359,7 +359,7 @@ printf '[{"id": "dev-flow@plugharbor", "version": "0.9.0", "scope": "user"},\n {
 printf 'Installed plugins:\n- dev-flow (enabled, 0.9.0)\n- workspace (enabled, %s)\n' "$WS_VER" > "$STUB_STATE/agy-list"
 H="$TMP/h16"; mkdir -p "$H/.pi/agent"
 python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":[os.path.relpath(os.path.join(r,p),d).replace(os.sep,"/") for p in ("plugins/dev-flow","plugins/workspace")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
-OUT="$(PLUGINS="workspace" run "$H" --check)" || fail "(22) --check exit 非 0：$OUT"
+OUT="$(PLUGINS="workspace" run "$H" --check)" || [ $? -eq 3 ] || fail "(22) --check exit 不是 0／3：$OUT"
 for x in claude codex agy pi; do
   echo "$OUT" | grep -q "^RENAME: $x dev-flow → workspace" || fail "(22) --check 應報 RENAME: $x dev-flow → workspace：$OUT"
 done
@@ -384,7 +384,7 @@ printf '[{"id": "workspace@plugharbor", "version": "%s", "scope": "user"}]\n' "$
 printf 'Installed plugins:\n- workspace (enabled, %s)\n' "$WS_VER" > "$STUB_STATE/agy-list"
 H="$TMP/h23"; mkdir -p "$H/.codex"
 printf '[plugins."dev-flow@plugharbor"]\nenabled = true\n\n[plugins."workspace@plugharbor"]\nenabled = true\n' > "$H/.codex/config.toml"
-OUT="$(PLUGINS="workspace" run "$H" --check)" || fail "(23) --check exit 非 0：$OUT"
+OUT="$(PLUGINS="workspace" run "$H" --check)" || [ $? -eq 3 ] || fail "(23) --check exit 不是 0／3：$OUT"
 echo "$OUT" | grep -q "^RENAME: codex dev-flow → workspace" || fail "(23) config.toml 登記的 dev-flow 應報 RENAME：$OUT"
 : > "$STUB_LOG"
 OUT="$(PLUGINS="workspace" run "$H")" || fail "(23) 實跑 exit 非 0：$OUT"
@@ -397,6 +397,8 @@ OUT="$(PLUGINS="dev-flow workspace" run "$H" --check || true)"
 echo "$OUT" | grep -q "^NOTE: PLUGHARBOR_PLUGINS 的 dev-flow 已改名為 workspace" || fail "(24) 舊名應提示改用新名：$OUT"
 if echo "$OUT" | grep -q "^FAIL"; then fail "(24) 舊名不該 FAIL：$OUT"; fi
 [ "$(echo "$OUT" | grep -c "claude workspace")" -eq 1 ] || fail "(24) workspace 應只處理一次：$OUT"
+rc=0; PLUGINS="workspace" run "$H" --check >/dev/null || rc=$?
+[ "$rc" -eq 3 ] || fail "(24) --check 有差異應 exit 3，實際 ${rc}"
 
 echo "PASS: install.sh（24 組）"
 

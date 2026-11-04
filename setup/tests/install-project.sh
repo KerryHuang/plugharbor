@@ -81,7 +81,8 @@ if grep -q 'plugins/lifecycle' "$P5/.pi/settings.json"; then fail "已進版控�
 
 # ---------- 6) --check 只報不改 ----------
 P6="$(newproj p6)"; : > "$STUB_LOG"
-OUT="$(run --check "$P6" lifecycle)" || fail "--check exit 非 0"
+rc=0; OUT="$(run --check "$P6" lifecycle)" || rc=$?
+[ "$rc" -eq 3 ] || fail "--check 有差異應 exit 3，實際 ${rc}：$OUT"
 echo "$OUT" | grep -q 'MISSING: claude lifecycle' || fail "--check 應報 MISSING：$OUT"
 if grep -q 'claude plugin install' "$STUB_LOG"; then fail "--check 不該安裝"; fi
 [ ! -e "$P6/.pi/settings.json" ] || fail "--check 不該寫 pi 設定"
@@ -108,7 +109,7 @@ P8="$(newproj p8)"; : > "$STUB_LOG"; : > "$STUB_CWD_LOG"
 printf '[{"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "%s"},\n {"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "/other"}]\n' "$(native "$P8")" > "$STUB_STATE/claude-list"
 mkdir -p "$P8/.pi"
 printf '{"packages": ["npm:keep-me", "%s"]}\n' "$(native "$REPO_DIR/plugins/old-kid")" > "$P8/.pi/settings.json"
-OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" ui-ux)" || fail "改名 --check exit 非 0：$OUT"
+OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" ui-ux)" || [ $? -eq 3 ] || fail "改名 --check exit 不是 0／3：$OUT"
 echo "$OUT" | grep -q '^RENAME: claude old-kid → ui-ux' || fail "--check 應報 RENAME: claude：$OUT"
 echo "$OUT" | grep -q '^RENAME: pi old-kid → ui-ux' || fail "--check 應報 RENAME: pi：$OUT"
 if grep -q 'uninstall' "$STUB_LOG"; then fail "--check 不該卸載"; fi
@@ -120,7 +121,7 @@ I="$(grep -n "^claude plugin install ui-ux@plugharbor --scope local @ $P8$" "$ST
 S="$P8/.pi/settings.json"
 if grep -q 'plugins/old-kid' "$S"; then fail "pi 舊路徑應移除：$(cat "$S")"; fi
 grep -q "$(native "$REPO_DIR/plugins/ui-ux")" "$S" && grep -q 'npm:keep-me' "$S" || fail "pi 應加新路徑、保留其他：$(cat "$S")"
-OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" old-kid)" || fail "命令列給舊名 exit 非 0：$OUT"
+OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" old-kid)" || [ $? -eq 3 ] || fail "命令列給舊名 exit 不是 0／3：$OUT"
 echo "$OUT" | grep -q '^RENAME: old-kid → ui-ux（改用新名）' || fail "命令列舊名應自動換新名：$OUT"
 rm "$STUB_STATE/claude-list"
 
@@ -153,7 +154,7 @@ echo "$OUT" | grep -q "^SKIP: .*write-doc 已存在且不是 plugharbor 的 link
 if [ "$CAN_LINK" -eq 1 ]; then
 ln -s "$REPO_DIR/plugins/no-such/skills/x" "$P9/.agents/skills/x"
 ln -s "/nowhere/else" "$P9/.agents/skills/theirs"
-OUT="$(run --check "$P9" lifecycle)" || fail "(d) --check exit 非 0"
+OUT="$(run --check "$P9" lifecycle)" || [ $? -eq 3 ] || fail "(d) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/x' || fail "(d) --check 應報 BROKEN：$OUT"
 [ -L "$P9/.agents/skills/x" ] || fail "(d) --check 不該移除"
 OUT="$(run "$P9" lifecycle)" || fail "(d) 實跑 exit 非 0"
@@ -179,10 +180,10 @@ ROOT_SA="$(native "$REPO_DIR/plugins/lifecycle")"
 # Codex 不會讀 .plugharbor-root，也追不到複本的 plugin 根：複本裡的 ${CLAUDE_PLUGIN_ROOT} 要換成 clone 的絕對路徑
 if grep -rq '\${CLAUDE_PLUGIN_ROOT}' "$D"; then fail "(f) 複本仍有 \${CLAUDE_PLUGIN_ROOT}：$(grep -rn '\${CLAUDE_PLUGIN_ROOT}' "$D" | head -2)"; fi
 grep -q "$ROOT_SA/references/" "$D/SKILL.md" || fail "(f) 複本應把 plugin 根換成 $ROOT_SA"
-OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || fail "(f) --check exit 非 0"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
 echo changed >> "$D/SKILL.md"
-OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || fail "(f) --check exit 非 0"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(f) 重跑 exit 非 0"
 if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
@@ -190,16 +191,16 @@ if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
 P9f2="$(newproj p9f2)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f2" ui-ux)" || fail "(f2) 不含 plugin 根的 skill 讓複製模式中止：$OUT"
 [ -f "$P9f2/.agents/skills/ui-ux-pro-max/SKILL.md" ] || fail "(f2) 應複製 ui-ux-pro-max"
-OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || fail "(f) --check exit 非 0"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 換過路徑的複本應視為一致：$OUT"
 # (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除
 echo "/old/clone/plugins/lifecycle" > "$D/.plugharbor-root"
-OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || fail "(g) --check exit 非 0"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(g) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(g) marker 過期應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 exit 非 0"
 [ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
 mkdir -p "$P9f/.agents/skills/gone"; echo x > "$P9f/.agents/skills/gone/SKILL.md"; echo "$REPO_DIR/plugins/no-such" > "$P9f/.agents/skills/gone/.plugharbor-root"
-OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || fail "(g) --check exit 非 0"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(g) --check exit 不是 0／3"
 echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/gone' || fail "(g) 失效複本應報 BROKEN：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 exit 非 0"
 [ ! -e "$P9f/.agents/skills/gone" ] || fail "(g) 失效複本應移除"
@@ -212,7 +213,7 @@ while read -r o n; do
   [ ! -e "$REPO_DIR/plugins/$o" ] || fail "改名對照的舊名還在：$o"
 done <<< "$PAIRS"
 P10="$(newproj p10)"
-OUT="$(run --check "$P10" database-sqlserver desktop-avalonia)" || fail "正式對照 --check exit 非 0：$OUT"
+OUT="$(run --check "$P10" database-sqlserver desktop-avalonia)" || [ $? -eq 3 ] || fail "正式對照 --check exit 不是 0／3：$OUT"
 echo "$OUT" | grep -q '^RENAME: database-sqlserver → database（改用新名）' || fail "應換成 database：$OUT"
 echo "$OUT" | grep -q '^MISSING: claude desktop' || fail "應以新名 desktop 比對：$OUT"
 
@@ -220,7 +221,7 @@ echo "$OUT" | grep -q '^MISSING: claude desktop' || fail "應以新名 desktop �
 P11="$(newproj p11)"; : > "$STUB_LOG"
 printf '[{"id": "sa-flow@plugharbor", "version": "0.9.0", "scope": "local", "projectPath": "%s"},\n {"id": "delivery-flow@plugharbor", "version": "0.9.0", "scope": "local", "projectPath": "%s"}]\n' \
   "$(native "$P11")" "$(native "$P11")" > "$STUB_STATE/claude-list"
-OUT="$(run --check "$P11" sa-flow delivery-flow)" || fail "(11) --check exit 非 0：$OUT"
+OUT="$(run --check "$P11" sa-flow delivery-flow)" || [ $? -eq 3 ] || fail "(11) --check exit 不是 0／3：$OUT"
 echo "$OUT" | grep -q '^RENAME: claude sa-flow → lifecycle' || fail "(11) --check 應報 RENAME: claude sa-flow：$OUT"
 echo "$OUT" | grep -q '^RENAME: claude delivery-flow → lifecycle' || fail "(11) --check 應報 RENAME: claude delivery-flow：$OUT"
 [ "$(echo "$OUT" | grep -c '^MISSING: claude lifecycle')" = 1 ] || fail "(11) 新名只該比對一次：$OUT"
@@ -243,7 +244,7 @@ P12="$(newproj p12)"; mkdir -p "$P12/.claude"
 echo '{"permissions": {"allow": ["Bash(ls)"]}, "enabledPlugins": {"mine@x": true}}' > "$P12/.claude/settings.local.json"
 cp "$P12/.claude/settings.local.json" "$TMP/sl-before"
 # (c) --check：不寫檔，印 DISABLE
-OUT="$(run --check "$P12" lifecycle)" || fail "(12c) --check exit 非 0：$OUT"
+OUT="$(run --check "$P12" lifecycle)" || [ $? -eq 3 ] || fail "(12c) --check exit 不是 0／3：$OUT"
 echo "$OUT" | grep -qx "DISABLE: ${SP}" || fail "(12c) --check 應報 DISABLE: ${SP}：$OUT"
 echo "$OUT" | grep -qx "DISABLE: ${SP2}" || fail "(12c) --check 應報 DISABLE: ${SP2}：$OUT"
 cmp -s "$P12/.claude/settings.local.json" "$TMP/sl-before" || fail "(12c) --check 不該寫 settings.local.json"
@@ -256,7 +257,7 @@ SL="$P12/.claude/settings.local.json"
 grep -q 'Bash(ls)' "$SL" || fail "(12b) 其他鍵被動到：$(cat "$SL")"
 grep -qx '.claude/settings.local.json' "$P12/.git/info/exclude" || fail "(12b) settings.local.json 應加進 .git/info/exclude"
 # 已是 false：--check 不再報
-OUT="$(run --check "$P12" lifecycle)" || fail "(12c) 第二次 --check exit 非 0"
+OUT="$(run --check "$P12" lifecycle)" || [ $? -eq 3 ] || fail "(12c) 第二次 --check exit 不是 0／3"
 if echo "$OUT" | grep -q '^DISABLE:'; then fail "(12c) 已是 false 不該再報 DISABLE：$OUT"; fi
 # --shared 也寫 settings.local.json（不寫 settings.json）
 P12s="$(newproj p12s)"
