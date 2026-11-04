@@ -72,6 +72,21 @@ class SegmentTail:
         self.pos += len(data)
         return data
 
+    def seek_end(self) -> None:
+        """跳到目前最新分段的檔尾：只讀之後新錄進來的聲音。"""
+        nums = sorted(int(p.stem[4:]) for p in self.out_dir.glob("seg-*.wav") if p.stem[4:].isdigit())
+        if not nums:
+            return
+        self.index = nums[-1]
+        path = self._path(self.index)
+        with path.open("rb") as f:
+            off = wav_data_offset(f.read(4096))
+        if off is None:
+            self.pos = None
+            return
+        size = path.stat().st_size - off
+        self.pos = off + size - (size & 1)
+
     def read_new(self) -> bytes:
         out = bytearray()
         while True:
@@ -265,6 +280,7 @@ def speak(text: str, device: str) -> Tuple[float, float]:
 STATE = "advisor.json"
 LOG_MD = "advisor.md"
 UTT_WAV = "advisor-utt.wav"
+WAKE_FOLLOWUP_SEC = 8.0  # 只說「嘿，小小」後，這麼久內的下一句才算問題
 FEED_CHUNK = RATE // 10 * 2  # VAD 每次餵 0.1 秒：句子的時間推估精度
 
 
@@ -287,16 +303,19 @@ def _write_utt(path: Path, pcm: bytes) -> None:
 
 def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, clock: Callable[[], float] = time.time,
              device: str = DEFAULT_DEVICE, prompt: Optional[str] = None, context_min: float = 5.0,
-             model: str = "large-v3-turbo", language: str = "zh", poll_sec: float = 0.5) -> int:
+             model: str = "large-v3-turbo", language: str = "zh", poll_sec: float = 0.5, from_start: bool = False) -> int:
     """追讀錄音、被叫到就回答；錄音停止且分段讀完後結束。"""
     out_dir = Path(out_dir)
     conv = tr._converter()
     st = {"pid": os.getpid(), "mode": mode["name"], "started_at": clock(), "answered": 0, "pending": 0, "finished": False}
     tr._write_json(out_dir / STATE, st)
     tail, vad, mask = SegmentTail(out_dir), Vad(), PlaybackMask()
+    if not from_start:
+        tail.seek_end()  # 開錄後才開小小：之前錄到的「嘿，小小」不補答
     recent: deque = deque()  # (時間, 句子)：給 claude 的最近 N 分鐘逐字稿
     busy_until = 0.0  # 上一題回答播完的時間；之前的喚醒算「思考中」
     waiting_question = False  # 只說了「嘿，小小」：下一句就是問題
+    wake_at = 0.0
 
     def say_line(text: str) -> None:
         s, e = speak_fn(text, device)
@@ -317,7 +336,7 @@ def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, cloc
         return e
 
     def handle(utt: bytes, t0: float, t1: float) -> None:
-        nonlocal busy_until, waiting_question
+        nonlocal busy_until, waiting_question, wake_at
         if mask.covers(t0, t1):
             return  # 小小自己的聲音：不轉錄、不比對
         wav = out_dir / UTT_WAV
@@ -333,6 +352,8 @@ def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, cloc
         if not text:
             return
         question = match_wake(text)
+        if waiting_question and t0 - wake_at > WAKE_FOLLOWUP_SEC:
+            waiting_question = False  # 叫了沒下文：之後的話不當問題
         if question is not None and t0 < busy_until:
             _append_md(out_dir, t1, [f"- （思考中，略過：{text}）"])
             return
@@ -344,7 +365,7 @@ def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, cloc
             recent.append((t1, text))
             return
         if not question:
-            waiting_question = True
+            waiting_question, wake_at = True, t1
             return
         waiting_question = False
         busy_until = answer(question, t1)

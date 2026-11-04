@@ -314,8 +314,8 @@ def loop(tmp_path, monkeypatch):
         env["spoken"].append(text)
         return env["speak_span"] or (env["now"], env["now"] + 3)
 
-    env["run"] = lambda: a.run_loop(env["dir"], MODE, runner, ask_fn=ask_fn, speak_fn=speak_fn,
-                                    clock=lambda: env["now"], device="BlackHole 2ch")
+    env["run"] = lambda from_start=True: a.run_loop(env["dir"], MODE, runner, ask_fn=ask_fn, speak_fn=speak_fn,
+                                                   clock=lambda: env["now"], device="BlackHole 2ch", from_start=from_start)
     env["md"] = lambda: (env["dir"] / "advisor.md").read_text(encoding="utf-8")
     env["state"] = lambda: json.loads((env["dir"] / "advisor.json").read_text(encoding="utf-8"))
     return env
@@ -360,7 +360,7 @@ def test_masked_sentence_not_in_context(loop):
 
     r = a.run_loop(loop["dir"], MODE, lambda *x: [(0.0, loop["texts"].pop(0))],
                    ask_fn=lambda m, q, c, on_slow=None, **k: loop["asked"].append((q, c)) or ("答", True),
-                   speak_fn=speak_fn_spans, clock=lambda: loop["now"], device="X")
+                   speak_fn=speak_fn_spans, clock=lambda: loop["now"], device="X", from_start=True)
     assert r == 0
     assert [q for q, _ in loop["asked"]] == ["第一題"]  # 第三句也落在遮蔽／思考區間內
     assert all("小小自己的聲音" not in c for _, c in loop["asked"])
@@ -564,3 +564,30 @@ def test_run_exits_cleanly_on_stop_signal(tmp_path, monkeypatch):
 
     monkeypatch.setattr(a, "run_loop", interrupted)
     assert a.main(["_run", "--out", str(tmp_path), "--mode-file", str(write_mode(tmp_path))]) == 0
+
+
+def test_start_skips_audio_recorded_before_advisor(loop):
+    """開錄後才開小小：之前錄到的「嘿，小小」不能補答。"""
+    write_seg(loop["dir"], 0, utts(1.0))
+    write_seg(loop["dir"], 1, utts(1.0))
+    loop["texts"] = ["嘿，小小，舊的問題", "嘿，小小，舊的問題二"]
+    assert loop["run"](from_start=False) == 0
+    assert loop["asked"] == [] and loop["durations"] == []
+
+
+def test_seek_end_reads_only_new_audio(tmp_path):
+    write_seg(tmp_path, 0, utts(1.0))
+    write_seg(tmp_path, 1, tone(0.5))
+    t = a.SegmentTail(tmp_path)
+    t.seek_end()
+    assert t.read_new() == b""
+    with (tmp_path / "seg-001.wav").open("ab") as f:
+        f.write(silence(0.25))
+    assert t.read_new() == silence(0.25)
+
+
+def test_bare_wake_expires_when_no_question_follows(loop):
+    write_seg(loop["dir"], 0, utts(1.0) + silence(10.0) + utts(1.0))
+    loop["texts"] = ["嘿，小小。", "好，那下週再看"]
+    assert loop["run"]() == 0
+    assert loop["asked"] == []
