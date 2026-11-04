@@ -53,7 +53,7 @@ git branch --show-current && git status --short
 
 - 規格在 `<spec.dir>/` 底下找本功能的檔（`scale: full` 時是 FRD／SAD／BFS／FFS 一組）。找不到 → 停下，建議先跑 `lifecycle:spec`；使用者明說不寫規格時，把他的描述寫進 ledger「目標」段當依據，回報標「無規格」。
 - 規格裡還有 `[NEEDS CLARIFICATION]` → 停下問使用者，不猜。
-- 跑 `lifecycle:spec-check` 驗規格品質：
+- 跑 `lifecycle:spec-check` 驗規格品質（lean 規格已在 `lifecycle:spec` 之後跑過、結論 ✅ 且規格之後沒再改 → 不重跑，直接繼續；沒跑過或之後改過才跑。lean 的 spec-check 全流程只跑這一次）：
   - 通過 → 繼續。
   - 有條件通過（⚠️，0 critical、有 warning）或不通過 → 修規格後重驗（⚠️ 也是修正後才開發，與 spec-check 一致），**最多 3 次**；3 次仍不過 → 列剩餘缺失，請使用者決定。
 

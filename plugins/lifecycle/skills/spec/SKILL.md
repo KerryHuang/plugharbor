@@ -79,7 +79,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 5. **自查**：跑範本的品質檢查清單；`[NEEDS CLARIFICATION` 未清零就照原則 2 回報。
 6. **CR（`--change` 或檔案已存在）**：in-place 修改受影響段落，**取代不追加**；版本號 +1、§7 加一列，有票號就寫上。需要回覆票時交給 `lifecycle:ticket-reply`。
 
-**下一步**：建議跑 `lifecycle:spec-check`（lean 規格檢查），通過後 `lifecycle:ticket-create` 或 `lifecycle:implement`。
+**下一步**：lean 流程的 `lifecycle:spec-check`（lean 規格檢查）就在這一步跑一次；`lifecycle:implement` 的品質閘門見到通過紀錄不重跑。通過後 `lifecycle:ticket-create` 或 `lifecycle:implement`。
 
 ## full：分層規格（FRD → SAD → BFS → FFS）
 

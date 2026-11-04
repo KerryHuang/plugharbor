@@ -446,7 +446,9 @@ flowchart LR
 
 ---
 
-## 6. API 介面規格
+## 6. API 介面規格（有 HTTP API 才填）
+
+> 非 HTTP API 的功能改填對應介面，其餘 API 專屬欄位（HTTP 狀態碼、Location header）以同義欄位取代，不逐格寫「不適用」：CLI＝指令／參數／stdin／exit code／stdout 格式；批次／排程＝觸發方式（cron、事件）／輸入來源／輸出目標／重跑與冪等；桌面／離線＝進入點／本機輸入輸出／檔案或 IPC 契約。
 
 <!-- §6.1 為端點總覽表；§6.2 起每端點含說明／Request／Response 欄位表。屬性表用 PascalCase，JSON 範例用 camelCase；關聯實體以巢狀物件呈現，優先複用 Light Response；修改時間用 lastModifiedTime（非 lastModifiedDate）。完整 JSON 範例與命名慣例見 templates/examples/bfs-api.md。 -->
 
@@ -696,6 +698,8 @@ flowchart LR
 
 ## 8. 例外處理規格
 
+> 「HTTP 狀態碼」欄只在有 HTTP API 時填；CLI 改填 exit code，批次改填失敗處置（重試／跳過／中止），桌面填 UI 提示類型。
+
 > 錯誤情境 >8 條且有判定順序（先驗什麼、再驗什麼）→ 附決策樹（mermaid），表列只補錯誤代碼與訊息字串。
 
 ### 8.1 錯誤情境清單
@@ -867,7 +871,7 @@ flowchart LR
 ### 12.1 測試案例清單
 
 > **測試案例設計原則**：每個 TC 對應一個具體使用者動作，前置條件使用真實資料代號（如 VND-001、WO-001），
-> 預期結果包含具體的 HTTP 狀態碼和訊息。避免「有效資料」等模糊描述。
+> 預期結果包含具體的 HTTP 狀態碼（非 HTTP 功能改寫 exit code、輸出檔或畫面訊息）和訊息。避免「有效資料」等模糊描述。
 
 <!-- 完整 TC 範例見 templates/examples/bfs-validation.md -->
 

@@ -20,7 +20,7 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 ## Step 0：前置檢查（缺什麼停在那裡）
 
 1. `bash <plugin>/skills/qa-verify/scripts/preflight.sh <ws>`；exit ≠ 0 → 照它印的補，補不了就停。
-   缺 `qa.environments` 或 `.plugharbor/qa.local.md` → 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（環境名／網址／可否寫入／帳號／密碼），經同意後代寫（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`「qa.environments」；密碼只寫進 `qa.local.md`，不回顯）。
+   缺 `qa.environments` 或 `.plugharbor/qa.local.md` → 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（環境名／網址／可否寫入／帳號／密碼），經同意後代寫（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`「qa.environments」；密碼只寫進 `qa.local.md`，不回顯）。**寫入前**跑 `git check-ignore -q .plugharbor/qa.local.md`：未被忽略 → 先把該路徑追加到 `git rev-parse --git-path info/exclude` 印出的檔（本機不入版控，worktree 也適用；專案已有慣例要寫 `.gitignore` 則依專案），並告知使用者；非 git repo 則略過。
 2. `ToolSearch("select:mcp__chrome-devtools__navigate_page")` 必須有；缺 → 停，指向 `references/browser-modes.md`。唯讀 DB 查詢工具（專案有提供才有）選配：不可用 → 標記「DB 不可查」（fixtures 省略 `查證`，`依據` 仍必填），plan 有資料斷言時該槽會判「無法比對」。
 3. 輸入是票號才需要票務工具：經 `lifecycle:ticket-ops` 的 `get`（讀票）與 `comment`（回票），不直接呼叫任何票務 MCP 或 CLI。ticket-ops 不可用（缺 `ticket.tool` 設定、工具未接）→ 票面模式無法開始，直接停；案例檔模式降級為「只落報告不回票」，明說。帶 `--no-comment` → 不回票，Step 6 改把 `--comment` 輸出寫到 `<工作區>/ticket-comment.md`，由呼叫端統一貼。
 4. 有票號才做**環境版本閘**：讀該票完工留言取交付 commit／版本，比對目標環境是否已部署（做法見 `references/environments.md`「版本比對」；有部署狀態工具就用它）。
@@ -118,7 +118,7 @@ Step 0 已降級者，報告「環境與前置資料」節有一行「未回票�
 `總計` 六個數相加＝plan 的 TC 數（少一條就是 judge 沒跑完，不可回報完成）；
 「規格校正清單」非空時每條都有人填的處置（改規格／接受差異／開 Bug／待 PO），沒有就回報「未收工：校正 N 條待處置」——skill 不代填。
 
-完成後依動線用 `AskUserQuestion` 建議下一步：處置有「開 Bug」→ 經 `lifecycle:ticket-ops` 的 `create` 開票（本 skill 不開票）；使用者同意才接著跑，不自動執行。
+完成後依動線用 `AskUserQuestion` 建議下一步：處置有「開 Bug」→ 經 `lifecycle:ticket-create`（開票單一入口，它會出草稿請使用者確認）開票，不直接用 `ticket-ops create`（本 skill 不開票）；使用者同意才接著跑，不自動執行。
 
 **瀏覽器收尾**：agent 只關自己的分頁；主 session 若為本次手動起過任何 Chrome（含 9222 附掛），在回報完成的同一輪關掉並驗證（`curl -s -m 2 http://127.0.0.1:9222/json/version` 無回應、無殘留的 Chrome 行程）。
 
