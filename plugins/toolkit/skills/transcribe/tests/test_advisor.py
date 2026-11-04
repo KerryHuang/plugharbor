@@ -108,3 +108,43 @@ def test_vad_caps_long_utterance():
     utts = feed_all(vad, tone(20) + silence(1.0))
     assert utts and len(utts[0]) / 2 / RATE <= 15.0
     assert sum(len(u) for u in utts) / 2 / RATE >= 19.0
+
+
+# ---- 喚醒比對 ----
+
+
+def test_wake_variants():
+    assert a.match_wake("嘿，小小，你覺得呢？") == "你覺得呢"
+    assert a.match_wake("黑小小 MP3368 做到哪了") == "MP3368 做到哪了"
+    assert a.match_wake("Hey 小小 幫我查") == "幫我查"
+    assert a.match_wake("hey,小小,幫我查") == "幫我查"
+
+
+def test_wake_without_question_returns_empty():
+    assert a.match_wake("嘿，小小。") == ""
+
+
+def test_plain_xiaoxiao_not_wake():
+    assert a.match_wake("這只是一個小小的問題") is None
+    assert a.match_wake("這邊小小改一下") is None
+
+
+def test_wake_mid_sentence():
+    assert a.match_wake("好，那先這樣。嘿，小小，幫我查一下") == "幫我查一下"
+
+
+def test_repeated_xiaoxiao_rejected():
+    assert a.match_wake("小小小小小小小小") is None
+    assert a.match_wake("嘿小小小小小小小小") is None
+
+
+# ---- 播放遮蔽 ----
+
+
+def test_mask_covers_tail_after_playback():
+    m = a.PlaybackMask()
+    m.add(100, 108)
+    assert m.covers(109, 109.4) is True
+    assert m.covers(110, 111) is False
+    assert m.covers(98.0, 98.4) is False
+    assert m.covers(98.6, 99) is True

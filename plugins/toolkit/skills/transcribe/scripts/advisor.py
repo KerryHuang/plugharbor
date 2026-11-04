@@ -7,11 +7,12 @@
 """
 import array
 import math
+import re
 import struct
 import sys
 from collections import deque
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import transcribe as tr  # noqa: E402
@@ -137,3 +138,34 @@ class Vad:
             if self.silent_ms >= self.end_silence_ms or len(self.utt) // 2 * 1000 // RATE >= self.max_ms:
                 self._finish(out)
         return out
+
+
+# ---- 喚醒比對 ----
+
+# 「嘿」接在前一句後面時常被轉成「黑」；單獨的「小小」是口語（小小的問題），不算叫它
+_WAKE = re.compile(r"(?:嘿|黑|hey)[\s，,、。.!！?？]*小小", re.IGNORECASE)
+_EDGE = " \t\r\n，,、。.!！?？：:；;…"
+
+
+def match_wake(text: str) -> Optional[str]:
+    """命中「嘿，小小」回傳之後的問題（可為空字串），否則 None。"""
+    if "小小小" in text:  # 靜音幻覺常吐出整串「小小小…」
+        return None
+    m = _WAKE.search(text)
+    if not m:
+        return None
+    return text[m.end():].strip(_EDGE)
+
+
+class PlaybackMask:
+    """小小自己播放的時段（前後加 pad）：catap 會錄到它自己的聲音，這段的轉錄要丟掉。"""
+
+    def __init__(self, pad_sec: float = 1.5):
+        self.pad = pad_sec
+        self.spans: List[Tuple[float, float]] = []
+
+    def add(self, start: float, end: float) -> None:
+        self.spans.append((start, end))
+
+    def covers(self, t0: float, t1: float) -> bool:
+        return any(t0 <= e + self.pad and t1 >= s - self.pad for s, e in self.spans)
