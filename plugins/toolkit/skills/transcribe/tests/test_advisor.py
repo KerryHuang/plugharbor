@@ -188,10 +188,10 @@ def test_load_mode_requires_fields(tmp_path):
 
 
 def test_build_cmd_without_mcp():
-    cmd = a.build_claude_cmd(MODE, "MP-3368 做到哪了", "[00:01:00] 我們在談排程")
+    cmd = a.build_claude_cmd(MODE, "ABC-123 做到哪了", "[00:01:00] 我們在談排程")
     assert cmd[:2] == ["claude", "-p"]
     prompt = cmd[2]
-    assert "你是會議顧問小小。" in prompt and "MP-3368 做到哪了" in prompt and "我們在談排程" in prompt
+    assert "你是會議顧問小小。" in prompt and "ABC-123 做到哪了" in prompt and "我們在談排程" in prompt
     assert "2～3 句" in prompt
     assert cmd[cmd.index("--model") + 1] == "sonnet"
     assert cmd[cmd.index("--allowedTools") + 1] == "Read,Grep,WebSearch"
@@ -377,9 +377,9 @@ def test_busy_wake_is_ignored_and_logged(loop):
 
 def test_empty_question_merges_next_sentence(loop):
     write_seg(loop["dir"], 0, utts(1.0, 1.0))
-    loop["texts"] = ["嘿，小小。", "MP-3368 做到哪了"]
+    loop["texts"] = ["嘿，小小。", "ABC-123 做到哪了"]
     assert loop["run"]() == 0
-    assert loop["asked"][0][0] == "MP-3368 做到哪了"
+    assert loop["asked"][0][0] == "ABC-123 做到哪了"
 
 
 def test_fallback_marks_pending(loop):

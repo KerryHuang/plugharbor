@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.10.1] - 2026-11-04
+
+- test: advisor 測試的問題範例改用範例票號，不帶真實票號。
+
 ## [0.10.0] - 2026-11-04
 
 - feat: transcribe 新增會議 AI 顧問「小小」（`skills/transcribe/scripts/advisor.py`，只支援 Mac）。
