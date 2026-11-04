@@ -63,7 +63,7 @@ context: fork
 
 ## 共同工作流程骨架
 
-1. **讀設定**：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool`；退出碼 2 → 輸出 stderr 的建檔指引並終止，不猜值。
+1. **讀設定**：`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool`；退出碼 2 或 3 → 輸出 stderr 的指引（建檔或改名）並終止，不猜值。
 2. **定日期**，3. **拉資料**（全量，無相依的查詢同批發出），4. **建清單並落檔** `dataset.json`（key → `{label, note, items[]}`，每個 item 至少含 ID、標題、一句 meta；有負責人與 `url` 就帶），5. **算指標／判燈號**，6. **派 `lifecycle:report-writer` 產出**（平行、前景派發、不帶 `run_in_background`：fork 若用背景派工可能先結束這一輪，回報改送到最上層，後面的複驗就沒人做），7. **複驗**，8. **落地**，9. **回報**。
 
 各步驟的具體做法（查詢清單、燈號、產出份數與範本）在對應模式的流程檔。派發 report-writer 時，prompt 裡的路徑變數要先換成絕對路徑，agent 不會代換。

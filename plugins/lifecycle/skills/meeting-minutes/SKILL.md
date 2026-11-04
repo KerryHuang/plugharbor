@@ -45,6 +45,8 @@ model: sonnet
 
 > **落檔位置**：讀 `publish-target`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get publish-target`；建議值 `file:docs/meetings`）。
 > `file:<目錄>` → 落在該目錄；`hedgedoc:<url>` → 本機仍先落檔（目錄問使用者，建議 `docs/meetings`），再依 §3.3 發布。
+> 退出碼 3（只找到舊檔 `.plugharbor/delivery-flow.yml`）→ 停下，請使用者改名為 `lifecycle.yml`（或經同意代為 `git mv`），不問鍵、不寫檔。
+>
 > 退出碼 2（缺檔或缺鍵）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（預選 `file:docs/meetings`），寫入 `.plugharbor/lifecycle.yml`（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`）。
 > 會議記錄常含談話內容，是否進版控由專案決定；不確定時提醒使用者先確認 `.gitignore`。
 

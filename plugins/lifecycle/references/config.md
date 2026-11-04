@@ -1,12 +1,12 @@
 # lifecycle 設定
 
-專案設定放在專案根的 `.plugharbor/lifecycle.yml`，由 `scripts/config.py` 讀取。退出碼 2 是「缺檔、缺鍵（值為空也算）或格式錯誤」的訊號：呼叫的 skill 依 `harness-terms.md` 的提問方式問使用者，再把答案寫進該檔，不自行猜值。
+專案設定放在專案根的 `.plugharbor/lifecycle.yml`，由 `scripts/config.py` 讀取。退出碼 2 是「缺檔、缺鍵（值為空也算）或格式錯誤」的訊號：呼叫的 skill 依 `harness-terms.md` 的提問方式問使用者，再把答案寫進該檔，不自行猜值。退出碼 3（只找到舊檔 `.plugharbor/delivery-flow.yml`）→ 停下，請使用者改名為 `lifecycle.yml`（或經同意代為 `git mv`），不問鍵、不寫檔。
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺鍵或格式錯誤：退出碼 2，stderr 一行說明
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺鍵或格式錯誤：退出碼 2；只有舊檔：退出碼 3；stderr 一行說明
 ```
 
-有預設值的鍵（`scale`、`spec.dir`）缺檔或缺鍵時直接回預設值。專案只有舊檔 `.plugharbor/delivery-flow.yml` 時一律退出碼 2 並提示改名為 `lifecycle.yml`（鍵不變）：不要當成沒設定而重問全部鍵。
+有預設值的鍵（`scale`、`spec.dir`）缺檔或缺鍵時直接回預設值。專案只有舊檔 `.plugharbor/delivery-flow.yml` 時一律退出碼 3 並提示改名為 `lifecycle.yml`（鍵不變），有預設值的鍵也一樣：不要當成沒設定而重問全部鍵。`spec.dir` 沒設、而專案根 `CLAUDE.md` 有舊鍵 `sdlc-docs-path:` 時沿用其值，stderr 提示改設 `spec.dir`。
 
 ## 鍵
 

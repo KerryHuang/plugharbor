@@ -17,7 +17,7 @@ color: green
 - **`允許寫入` 與 `含個資` 是兩個獨立旗標，判準不同**（可寫的測試站也可能載著客戶資料副本，
   資料量小也不代表可寫，兩件事不能用同一個訊號判）：
   - `允許寫入`：讀設定 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get qa.environments`（JSON list，每項 `{name, url, writable}`），
-    派工 URL 與清單項的 `url` 以 **origin（scheme＋host＋port）** 比對，對到的那一項取其 `writable`；對不到、設定缺鍵（退出碼 2）→ `false`。`writable` 不是布林值 → 視為 `false`，並在回傳說明「qa.environments[<name>].writable 不是布林」。這是**環境歸屬**問題，不看網址長相、DB 資料量或公司名。
+    派工 URL 與清單項的 `url` 以 **origin（scheme＋host＋port）** 比對，對到的那一項取其 `writable`；對不到、設定缺鍵（退出碼 2）→ `false`；只有舊設定檔（退出碼 3）→ `false`，並在回傳說明「設定檔需改名為 lifecycle.yml」。`writable` 不是布林值 → 視為 `false`，並在回傳說明「qa.environments[<name>].writable 不是布林」。這是**環境歸屬**問題，不看網址長相、DB 資料量或公司名。
     **不可自行推定授權**：`writable: false` 的環境要寫入，必須由使用者明示授權並寫進派工；沒帶就判 `false`。
   - `含個資`：有唯讀 DB 查詢工具才查——對公司／客戶主檔取前幾筆名稱欄，查實際公司名，出現真實客戶
     公司名 → `true`；只有示範／測試字樣 → `false`。判不準或沒有工具 → `true`（保守遮罩）。

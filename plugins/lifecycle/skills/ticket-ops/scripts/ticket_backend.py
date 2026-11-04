@@ -58,7 +58,7 @@ def main(argv):
         print(json.dumps(stage_to_native(load_config(Path.cwd(), "ticket.states"), argv[2]), ensure_ascii=False))
     except (ConfigMissing, ValueError) as e:
         print(e.hint if isinstance(e, ConfigMissing) else e, file=sys.stderr)
-        return 2
+        return 3 if isinstance(e, ConfigMissing) and e.key == "(rename)" else 2
     return 0
 
 

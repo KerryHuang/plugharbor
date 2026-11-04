@@ -140,6 +140,15 @@ try:
     assert isinstance(ep, dict), "enabledPlugins 不是物件"
 except Exception as e:
     print(f"FAIL: 讀不了 {path}：{e}"); sys.exit(1)
+# 專案共用 settings.json（與 local 本身）啟用的 superpowers@*：本機還沒裝，信任專案後也會被裝上
+shared = os.path.join(os.path.dirname(path), "settings.json")
+try:
+    sep = json.load(open(shared, encoding="utf-8")).get("enabledPlugins") or {} if os.path.exists(shared) else {}
+except Exception:
+    sep = {}
+for i in list(sep if isinstance(sep, dict) else {}) + list(ep):
+    if i.split("@")[0] == "superpowers" and i not in ids:
+        ids.append(i)
 todo = [i for i in ids if ep.get(i) is not False]
 for i in todo:
     print(f"DISABLE: {i}" if check else f"OK:   停用 {i}（.claude/settings.local.json）")
@@ -149,7 +158,7 @@ if todo and not check:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(d, f, ensure_ascii=False, indent=2); f.write("\n")
-' "$(ph_native_path "$ROOT/.claude/settings.local.json")" "$CHECK")"
+' "$(ph_native_path "$ROOT/.claude/settings.local.json")" "$CHECK" | tr -d '\r')"
     rc=$?
     set -e
     [ -z "$sp_out" ] || echo "$sp_out"
@@ -158,7 +167,7 @@ if todo and not check:
     else
       ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""
       if [ -n "$ex" ]; then
-        case "$ex" in /*) ;; *) ex="$ROOT/$ex" ;; esac
+        case "$ex" in /*|[A-Za-z]:*) ;; *) ex="$ROOT/$ex" ;; esac  # Git for Windows 回 C:/… 也是絕對路徑
         mkdir -p "$(dirname "$ex")"; touch "$ex"
         grep -qxF '.claude/settings.local.json' "$ex" || echo '.claude/settings.local.json' >> "$ex"
       fi
@@ -218,7 +227,7 @@ sys.exit(2 if (add or old) and check else 0)
   if [ "$CHECK" -eq 0 ] && [ "$rc" -eq 0 ]; then
     ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""
     if [ -n "$ex" ]; then
-      case "$ex" in /*) ;; *) ex="$ROOT/$ex" ;; esac
+      case "$ex" in /*|[A-Za-z]:*) ;; *) ex="$ROOT/$ex" ;; esac  # Git for Windows 回 C:/… 也是絕對路徑
       mkdir -p "$(dirname "$ex")"; touch "$ex"
       grep -qxF '.pi/settings.json' "$ex" || echo '.pi/settings.json' >> "$ex"
     fi
@@ -333,7 +342,7 @@ else
   if [ "$CHECK" -eq 0 ] && [ -n "$EXCLUDES" ]; then
     ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""
     if [ -n "$ex" ]; then
-      case "$ex" in /*) ;; *) ex="$ROOT/$ex" ;; esac
+      case "$ex" in /*|[A-Za-z]:*) ;; *) ex="$ROOT/$ex" ;; esac  # Git for Windows 回 C:/… 也是絕對路徑
       mkdir -p "$(dirname "$ex")"; touch "$ex"
       for e in $EXCLUDES; do grep -qxF "$e" "$ex" || echo "$e" >> "$ex"; done
     fi

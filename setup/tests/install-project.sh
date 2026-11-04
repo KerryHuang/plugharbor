@@ -268,6 +268,15 @@ P12d="$(newproj p12d)"
 OUT="$(run "$P12d" backend)" || fail "(12d) exit 非 0：$OUT"
 [ ! -e "$P12d/.claude/settings.local.json" ] || fail "(12d) 沒裝 lifecycle 不該建 settings.local.json"
 if echo "$OUT" | grep -q 'DISABLE\|superpowers'; then fail "(12d) 沒裝 lifecycle 不該提 superpowers：$OUT"; fi
+# (e) 專案共用 settings.json 啟用了別家 marketplace 的 superpowers、本機還沒裝：local 也要設 false，settings.json 不動
+echo '[]' > "$STUB_STATE/claude-list"
+P12e="$(newproj p12e)"; mkdir -p "$P12e/.claude"
+echo '{"enabledPlugins": {"superpowers@x": true, "other@y": true}}' > "$P12e/.claude/settings.json"
+cp "$P12e/.claude/settings.json" "$TMP/ss-before"
+OUT="$(run "$P12e" lifecycle)" || fail "(12e) exit 非 0：$OUT"
+[ "$(sp_val "$P12e/.claude/settings.local.json" superpowers@x)" = false ] || fail "(12e) 共用設定啟用的 superpowers@x 應在 local 設 false：$OUT"
+[ "$(sp_val "$P12e/.claude/settings.local.json" other@y)" = MISSING ] || fail "(12e) 非 superpowers 的鍵不該寫進 local"
+cmp -s "$P12e/.claude/settings.json" "$TMP/ss-before" || fail "(12e) 不該改 settings.json"
 rm "$STUB_STATE/claude-list"
 
 echo "PASS: install-project.sh（12 組）"

@@ -97,6 +97,15 @@ class Cli(unittest.TestCase):
             self.assertEqual(r.returncode, 2)
             self.assertTrue(r.stderr.strip())
 
+    def test_old_delivery_flow_yml_exit_3(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".plugharbor").mkdir()
+            (Path(d) / ".plugharbor" / "delivery-flow.yml").write_text(yaml.safe_dump(LINEAR), encoding="utf-8")
+            r = self.run_cli(d, "stage", "done")
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("delivery-flow.yml", r.stderr)
+
     def test_unknown_stage_exit_2(self):
         import yaml
         with tempfile.TemporaryDirectory() as d:

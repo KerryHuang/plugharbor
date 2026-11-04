@@ -37,6 +37,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 | `scale: full`，無 `--stage` | 「full：分層規格」，從第一份還沒產出的文件起跑 |
 | 其餘（含設定檔不存在） | 「lean：一份規格」 |
 
+`config.py get scale` 退出碼 3（只有舊檔 `delivery-flow.yml`）→ 停下請使用者改名，不當成 lean。
+
 設定鍵說明見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`。互動詢問一律依
 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md` §互動詢問規範（建議置首、一次一題、回合可見性）。
 

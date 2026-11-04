@@ -130,10 +130,38 @@ class ConfigTest(unittest.TestCase):
             (d / "delivery-flow.yml").write_text("ticket:\n  tool: linear\n", encoding="utf-8")
             r = subprocess.run([sys.executable, str(CLI), "get", "ticket.tool"],
                                cwd=t, capture_output=True, text=True)
-            self.assertEqual((r.returncode, r.stdout.strip()), (2, ""))
+            self.assertEqual((r.returncode, r.stdout.strip()), (3, ""))
             self.assertIn("lifecycle.yml", r.stderr)
             self.assertIn("delivery-flow.yml", r.stderr)
             self.assertNotIn("Traceback", r.stderr)
+
+    def test_old_delivery_flow_yml_blocks_defaulted_key(self):
+        # 有預設值的鍵也不能默默回預設：舊檔存在時一律要使用者先改名
+        with tempfile.TemporaryDirectory() as t:
+            d = pathlib.Path(t) / ".plugharbor"
+            d.mkdir()
+            (d / "delivery-flow.yml").write_text("scale: full\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(CLI), "get", "scale"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual((r.returncode, r.stdout.strip()), (3, ""))
+            self.assertIn("delivery-flow.yml", r.stderr)
+
+    def test_spec_dir_reads_legacy_sdlc_docs_path(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "ticket:\n  tool: github\n")
+            (pathlib.Path(t) / "CLAUDE.md").write_text("# 專案\n\nsdlc-docs-path: ../docs\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "../docs"))
+            self.assertIn("sdlc-docs-path", r.stderr)
+
+    def test_spec_dir_in_lifecycle_yml_wins_over_legacy(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "spec:\n  dir: specs\n")
+            (pathlib.Path(t) / "CLAUDE.md").write_text("sdlc-docs-path: ../docs\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
+                               cwd=t, capture_output=True, text=True)
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "specs"))
 
     def test_scale_defaults_to_lean(self):
         with tempfile.TemporaryDirectory() as t:

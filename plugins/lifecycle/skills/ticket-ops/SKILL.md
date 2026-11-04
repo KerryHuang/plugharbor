@@ -17,6 +17,7 @@ model: sonnet
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
 ```
 
+退出碼 3（只找到舊檔 `.plugharbor/delivery-flow.yml`）→ 停下，請使用者改名為 `lifecycle.yml`（或經同意代為 `git mv`），不問鍵、不寫檔。
 退出碼 2（缺檔、缺鍵或格式錯誤）→ 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者：`ticket.tool`，以及對應的 `ticket.team`（Linear）或 `ticket.repo`（GitHub），再逐階段問 `ticket.states` 對照（格式與範例見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`），寫入 `.plugharbor/lifecycle.yml`。不自行猜值。
 
 ## 1. 載入對應 reference

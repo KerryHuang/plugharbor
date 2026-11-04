@@ -12,7 +12,9 @@ if [ -n "$PY" ] && "$PY" -c "import yaml" 2>/dev/null; then say "PyYAML" "OK"
 else say "PyYAML" "缺：${PY:-python} -m pip install pyyaml"; MISSING=1; fi
 
 CFG="$(cd "$(dirname "$0")" && pwd)/../../../scripts/config.py"
-if [ -n "$PY" ] && (cd "$WS" && "$PY" "$CFG" get qa.environments 2>/dev/null | grep -qv "^\[\]$"); then say "qa.environments" "OK"
+if [ -f "$WS/.plugharbor/delivery-flow.yml" ] && [ ! -f "$WS/.plugharbor/lifecycle.yml" ]; then
+  say "設定檔" "舊檔：請把 .plugharbor/delivery-flow.yml 改名為 lifecycle.yml（鍵不變），不要重新填寫"; MISSING=1
+elif [ -n "$PY" ] && (cd "$WS" && "$PY" "$CFG" get qa.environments 2>/dev/null | grep -qv "^\[\]$"); then say "qa.environments" "OK"
 else say "qa.environments" "缺：.plugharbor/lifecycle.yml 要有 qa.environments（格式見 references/config.md）——skill 會問你並代寫"; MISSING=1; fi
 
 if [ -f "$WS/.plugharbor/qa.local.md" ]; then say "qa.local.md" "OK"

@@ -5,7 +5,7 @@
 環境清單、網址與可寫性只來自專案設定 `.plugharbor/lifecycle.yml` 的 `qa.environments`（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`）：
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get qa.environments   # 缺：退出碼 2
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get qa.environments   # 缺：退出碼 2；只有舊檔 delivery-flow.yml：退出碼 3（停下請使用者改名）
 ```
 
 - `qa-fixture` 判 `環境.允許寫入`：派工 URL 的 origin（scheme＋host＋port）對到清單上某一項的 `url` origin，取該項 `writable`；對不到 → `false`。`writable` 不是布林值也視為 `false` 並在回傳報告。依據寫進 `環境.依據`（如 `config qa.environments[dev].writable=true`）。不看網址長相、不看 DB 資料量。
