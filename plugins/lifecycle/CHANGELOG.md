@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.0] - 2026-11-04
+
+- feat: meeting-minutes 新增「錄音」模式（§2C）：錄音檔、現場麥克風、線上會議（會中逐段整理、散會重寫）與會議 AI 顧問「小小」，指令機制交給 `toolkit:transcribe`；沒裝 toolkit 就改走貼文字。會議記錄側的規則：講明不加入會議、開錄與開小小前確認已告知與會者、問與會者名單進術語檔、暫名主題散會再定、要停止請在 Claude 輸入「散會」、report-writer 不得自補名單外的人名。
+- feat: meeting-minutes 寫完一律在最上方加 5～8 條摘要（未定案標〔待確認〕）、全文不刪；使用者要求精簡時只有內部／研討會／學習會議依性質刪雜訊、證據層不刪，客戶會議不刪。會議記錄可能成為合約附件。
+- docs: 收尾改 skill 時只寫通則，不寫單場的人名與會中內容。
+
 ## [1.0.0] - 2026-11-04
 
 - BREAKING: 由 `sa-flow`（4.1.2）、`delivery-flow`（0.8.2）、`dev-flow`（1.1.1）合併而成；命名空間一律改為 `lifecycle:`。舊版歷史見 git log 中三個舊 plugin 的 CHANGELOG。

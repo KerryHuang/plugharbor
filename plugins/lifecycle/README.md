@@ -38,7 +38,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 | `explore` | 新功能起手、寫規格前快速收斂需求：六維引導問答，產出探索摘要供 lifecycle:spec 使用 |
 | `implement` | 照規格把功能從開分支做到交付 |
 | `interview-prep` | 正式訪談前後準備：把多場會議／訪談素材彙整成已知／未知盤點，或為指定受訪者產出需求訪談大綱；每條標已確認／待確認／推測並附出處（手動） |
-| `meeting-minutes` | 記錄會議：即時記錄或會後整理成結構化會議記錄（結論、摘要、待辦），可選第二意見審閱 |
+| `meeting-minutes` | 記錄會議：即時記錄、會後整理，或錄音（錄音檔／麥克風／線上會議，需 toolkit）轉逐字稿後整理成結構化會議記錄（摘要、結論、待辦），可選第二意見審閱 |
 | `operation-manual` | 產出交付客戶的操作手冊與教育訓練簡報：實機探索 → 標註截圖 → 撰寫 → 審查 → 出 PDF／PPTX，並把過程中發現的規格落差整理成待開票清單（手動） |
 | `plugin-healthcheck` | 檢查 Claude Code 官方 Plugin 規範最新變化，對比本 plugin 結構，產出健康報告與重構建議（手動） |
 | `prototype-html` | 需求階段要給 PO 或客戶確認畫面時，產出單一檔案、可點切換多畫面的 HTML 原型，可套用使用者給的設計系統，資料用寫實的假資料 |
