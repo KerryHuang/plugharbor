@@ -3,6 +3,18 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.9.2] - 2026-11-04
+
+- fix: transcribe 線上會議錄音的審閱遺留問題。
+  - worker 收尾時擷取端 `stop()` 拋例外，仍會關 ffmpeg 的 stdin，最後一段照常寫好。
+  - 程序存活判斷改比對程式檔名（`python3.14`、`pythonw` 算 python），`notffmpeg`、`ffmpeg-helper` 這類名稱不再被當成錄音程序。
+  - 錄音已停後再跑 `record stop`，不再對舊的 `ffmpeg_pid` 送訊號（PID 可能已被重用）。
+  - worker 被硬殺、ffmpeg 還在寫最後一段時，`live` 仍視為錄音中，不會提早轉一段沒寫完的檔。
+  - `live` 改用作業系統檔案鎖（macOS `flock`、Windows `msvcrt.locking`，程序結束即釋放），同一素材夾連續啟動兩次不會雙開；已完成後再 `live start` 只回報完成，不再多寫一行完成標記。
+  - `live` 續做前先刪掉最後一個分段標記之後寫到一半的內容，被殺在寫入途中也不會重複追加。
+  - 分段依數字排序，第 1000 段起不再排錯。
+  - `live start` 新增 `--language`（預設 zh），並與 `transcribe` 一樣在術語提示超過上限時警告。
+
 ## [0.9.1] - 2026-11-04
 
 - fix: agent-dispatch 測試在 Windows 上改用 npm 風格的 `.cmd`＋`.js` 假 CLI（沒有副檔名的 shebang 腳本在 Windows 不能直接執行，ask 與背景 worker 的測試原本全紅）。

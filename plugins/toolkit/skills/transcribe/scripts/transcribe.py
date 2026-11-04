@@ -377,9 +377,12 @@ def _alive(pid: int, name: str = "ffmpeg") -> bool:
     """PID 還在而且是指定程式（ffmpeg 或 python worker）：當機後 PID 可能被別的程序拿走，不能只看存不存在。"""
     if platform.system() == "Windows":
         r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace")
-        return any(line.lower().startswith(f'"{name}') and f'"{pid}"' in line for line in r.stdout.splitlines())
+        image = re.compile(rf'"{re.escape(name)}w?[\d.]*t?\.exe"', re.IGNORECASE)
+        return any(image.match(line) and f'"{pid}"' in line for line in r.stdout.splitlines())
     r = subprocess.run(["ps", "-p", str(pid), "-o", "comm="], capture_output=True, text=True, errors="replace")
-    return r.returncode == 0 and name in r.stdout.lower()
+    # 比對程式檔名本身（python3.14、pythonw、python3.14t 算 python），不用子字串：notffmpeg、ffmpeg-helper 不算
+    base = Path(r.stdout.strip()).name.lower()
+    return r.returncode == 0 and re.fullmatch(rf"{re.escape(name)}w?[\d.]*t?", base) is not None
 
 
 def _child_exited(pid: int) -> bool:
@@ -460,6 +463,17 @@ def _system_state(out_dir: Path) -> Optional[dict]:
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
+def _capture_active(out_dir: Path) -> bool:
+    """錄音是否還在產生分段：worker 被硬殺後，它的 ffmpeg 還會寫完最後一段，這段期間也算在錄。"""
+    state = _read_state(out_dir)
+    if _recording(state):
+        return True
+    if not state or state.get("stopped_at") is not None or state.get("source", "mic") == "mic":
+        return False
+    fpid = (_system_state(out_dir) or {}).get("ffmpeg_pid")
+    return bool(fpid) and _alive(fpid)
+
+
 def _system_ready(system: str) -> Optional[Tuple[int, str]]:
     """system／both 的前置條件；不符回 (exit code, 訊息)。"""
     if system == "Windows":
@@ -470,7 +484,8 @@ def _system_ready(system: str) -> Optional[Tuple[int, str]]:
 
 
 def _segments(out_dir: Path) -> List[Path]:
-    return sorted(out_dir.glob("seg-*.wav"))
+    # 依數字排序：第 1000 段起檔名變四位數，字典序會排到 seg-101 前面
+    return sorted(out_dir.glob("seg-*.wav"), key=lambda p: int(p.stem.split("-")[1]) if p.stem.split("-")[1].isdigit() else -1)
 
 
 # ---- 系統聲音（線上會議對方的聲音） ----
@@ -586,7 +601,10 @@ def _system_worker(out_dir: Path, source: str, mic_device: Optional[str], segmen
     except (BrokenPipeError, OSError) as e:  # ffmpeg 先死了
         _err(f"ffmpeg 管線中斷：{e}")
     finally:
-        stop_capture()
+        try:
+            stop_capture()
+        except Exception as e:  # 擷取端收尾失敗也要關 stdin，ffmpeg 才會寫好最後一段
+            _err(f"系統聲音擷取收尾失敗：{e!r}")
         with lock:
             try:
                 st["proc"].stdin.close()
@@ -605,6 +623,51 @@ def _system_worker(out_dir: Path, source: str, mic_device: Optional[str], segmen
 LIVE_FILE = "live.json"
 TRANSCRIPT = "transcript.md"
 _MARK = re.compile(r"<!-- seg-(\d+) done -->")
+_SEG_MARK = re.compile(r"<!-- seg-\d+ (?:done|failed) -->\n")
+LOCK_FILE = "live.lock"
+
+
+def _acquire_live_lock(out_dir: Path) -> Optional[int]:
+    """同一個素材夾只能有一個 live：用作業系統的檔案鎖，程序一結束（含被硬殺）系統就會釋放。
+    回傳持有中的 fd；已有人持有回 None。"""
+    fd = os.open(out_dir / LOCK_FILE, os.O_CREAT | os.O_RDWR)
+    try:
+        if platform.system() == "Windows":
+            import msvcrt
+
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(fd)
+        return None
+    return fd
+
+
+def _release_live_lock(fd: int) -> None:
+    try:
+        if platform.system() == "Windows":
+            import msvcrt
+
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
+def _trim_unfinished(text: str) -> str:
+    """砍掉最後一個分段標記之後的內容：寫到一半被殺的段落與舊的完成標記，續做時會重寫。"""
+    ends = [m.end() for m in _SEG_MARK.finditer(text)]
+    if ends:
+        return text[: ends[-1]]
+    first = re.search(r"^\[", text, re.M)
+    return text[: first.start()] if first else text
 
 
 def next_ready(n_segments: int, done: int, recording_active: bool) -> Optional[int]:
@@ -623,12 +686,27 @@ def _read_live(out_dir: Path) -> Optional[dict]:
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
-def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optional[str], poll_sec: float = 5.0) -> int:
+def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optional[str], poll_sec: float = 5.0, language: str = "zh") -> int:
+    lock = _acquire_live_lock(out_dir)
+    if lock is None:
+        _err("這個目錄的逐段轉錄已在執行")
+        return 2
+    try:
+        return _live_run(out_dir, runner, model, prompt, poll_sec, language)
+    finally:
+        _release_live_lock(lock)
+
+
+def _live_run(out_dir: Path, runner: BackendRunner, model: str, prompt: Optional[str], poll_sec: float, language: str) -> int:
     conv = _converter()
     transcript = out_dir / TRANSCRIPT
     if not transcript.exists():
         meta = {"audio": "即時錄音（逐段轉錄）", "model": model, "transcribed_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
         transcript.write_text(render_markdown([], meta), encoding="utf-8")
+    text = transcript.read_text(encoding="utf-8")
+    trimmed = _trim_unfinished(text)
+    if trimmed != text:
+        transcript.write_text(trimmed, encoding="utf-8")
     # 以逐字稿裡的完成標記為準：程序在「寫完標記、還沒更新 live.json」之間被殺時不會重複追加
     marked = [int(m) for m in _MARK.findall(transcript.read_text(encoding="utf-8"))]
     st = _read_live(out_dir) or {}
@@ -639,7 +717,7 @@ def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optiona
     _write_json(out_dir / LIVE_FILE, st)
     while True:
         segs = _segments(out_dir)
-        active = _recording(_read_state(out_dir))
+        active = _capture_active(out_dir)
         n = next_ready(len(segs), done, active)
         if n is None:
             if not active and done >= len(segs):
@@ -652,7 +730,7 @@ def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optiona
             continue
         seg = segs[n]
         try:
-            lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, "zh") if text.strip()]
+            lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, language) if text.strip()]
             mark = f"<!-- {seg.stem} done -->"
         except Exception as e:  # 單段失敗不拖垮整場；原始分段還在，事後可對 recording.wav 重轉
             _err(f"{seg.name} 轉錄失敗：{e!r}")
@@ -665,15 +743,22 @@ def _live_loop(out_dir: Path, runner: BackendRunner, model: str, prompt: Optiona
         _write_json(out_dir / LIVE_FILE, st)
 
 
-def live_start(out_dir: Path, model: str, prompt_file: Optional[str]) -> int:
+def live_start(out_dir: Path, model: str, prompt_file: Optional[str], language: str = "zh") -> int:
     if _read_state(out_dir) is None:
         _err(f"這個目錄沒有錄音：先用 `record start --out \"{out_dir}\"` 開錄，再啟動 live")
         return 2
     st = _read_live(out_dir)
+    if st and st.get("finished") and not _capture_active(out_dir):
+        print(f"逐字稿已經完成（{st.get('done', 0)} 段）：{out_dir / TRANSCRIPT}")
+        return 0
     if st and not st.get("finished") and _alive(st["pid"], "python"):
         _err(f"這個目錄的逐段轉錄已在執行（PID {st['pid']}）")
         return 2
-    cmd = [sys.executable, str(Path(__file__).resolve()), "live", "_run", "--out", str(out_dir), "--model", model]
+    if prompt_file and Path(prompt_file).is_file():
+        n = len(Path(prompt_file).read_text(encoding="utf-8").strip())
+        if n > PROMPT_CHAR_LIMIT:
+            _err(f"警告：術語提示 {n} 字，超過 Whisper 上限（約 {PROMPT_CHAR_LIMIT} 字），開頭會被截掉；最重要的詞請放在檔尾")
+    cmd = [sys.executable, str(Path(__file__).resolve()), "live", "_run", "--out", str(out_dir), "--model", model, "--language", language]
     if prompt_file:
         cmd += ["--prompt-file", str(Path(prompt_file).resolve())]
     log = out_dir / "live.log"
@@ -813,7 +898,8 @@ def record_stop(out_dir: Path) -> int:
     system = state.get("system", platform.system())
     if _recording(state):
         _kill(state["pid"], system, _proc_name(state))
-    if state.get("source", "mic") != "mic":
+    if state.get("source", "mic") != "mic" and state.get("stopped_at") is None:
+        # 已停過就不再送訊號：舊的 ffmpeg_pid 可能已被別的程序重用
         # worker 被硬殺時它的 ffmpeg 會變孤兒，一併停掉
         fpid = (_system_state(out_dir) or {}).get("ffmpeg_pid")
         if fpid and _alive(fpid):
@@ -851,10 +937,10 @@ def cmd_record(args) -> int:
 def cmd_live(args, backend_runner: Optional[BackendRunner]) -> int:
     out_dir = Path(args.out)
     if args.action == "start":
-        return live_start(out_dir, args.model, args.prompt_file)
+        return live_start(out_dir, args.model, args.prompt_file, args.language)
     prompt = Path(args.prompt_file).read_text(encoding="utf-8").strip() if args.prompt_file else None
     runner = backend_runner or _resolve_runner(pick_backend(platform.system(), platform.machine()))
-    return _live_loop(out_dir, runner, args.model, prompt)
+    return _live_loop(out_dir, runner, args.model, prompt, language=args.language)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -893,6 +979,7 @@ def build_parser() -> argparse.ArgumentParser:
         lp.add_argument("--out", required=True)
         lp.add_argument("--model", default=DEFAULT_MODEL)
         lp.add_argument("--prompt-file")
+        lp.add_argument("--language", default="zh")
     return p
 
 

@@ -42,7 +42,7 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 1. **開錄前先問使用者是否已告知所有與會者（含線上的對方）要錄音**，沒確認就不開錄。建議戴耳機：不戴的話喇叭聲會再被麥克風收一次，逐字稿可能出現重複句（已知限制）。
 2. 環境：`doctor --record --source system`。它會印出系統錄音授權的步驟（查不到權限，只能提醒），轉述給使用者。
 3. 開錄：`record start --out "<目錄>" --source both`（只錄對方用 `system`）。開錄時沒有靜音警告，因為還沒人講話是正常的。
-4. 邊錄邊轉：`live start --out "<目錄>" [--prompt-file "<術語檔>"]`。每段錄完才轉，逐字稿追加到 `<目錄>/transcript.md`，每段結束寫一行 `<!-- seg-NNN done -->`，全部轉完寫 `<!-- live finished -->`。
+4. 邊錄邊轉：`live start --out "<目錄>" [--prompt-file "<術語檔>"] [--language zh]`。每段錄完才轉，逐字稿追加到 `<目錄>/transcript.md`，每段結束寫一行 `<!-- seg-NNN done -->`，全部轉完寫 `<!-- live finished -->`。
 5. 開錄後 1 到 2 分鐘跑 `record status --out "<目錄>"`：
    - 「對方聲音：尚未收到」：請使用者確認已授權、會議聲音從系統預設輸出播放。
    - 「逐字稿：已轉 N／M 段（落後）」：機器跟不上，轉告使用者。散會後 `live` 會在背景把剩下的轉完。

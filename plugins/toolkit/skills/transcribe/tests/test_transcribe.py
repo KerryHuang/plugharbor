@@ -954,3 +954,157 @@ def test_start_system_waits_for_slow_first_segment(rec, monkeypatch):
     monkeypatch.setattr(t, "_spawn", slow_spawn)
     monkeypatch.setattr(t.time, "sleep", sleep)
     assert t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"]) == 0
+
+
+# ---- 第三階段審閱延後的 minor ----
+
+
+def test_system_worker_closes_stdin_when_capture_stop_raises(monkeypatch, tmp_path):
+    env = _worker_env(monkeypatch, tmp_path)
+
+    def bad_capture(on_chunk):
+        env["on_chunk"] = on_chunk
+
+        def stop():
+            raise RuntimeError("catap stop failed")
+
+        return stop, 48000
+
+    monkeypatch.setattr(t, "_open_system_capture", bad_capture)
+    assert t._system_worker(tmp_path, "system", None, 300) == 0
+    assert env["stdin"].closed is True
+
+
+def test_alive_requires_exact_program_name(monkeypatch):
+    on_mac(monkeypatch)
+    out = {"stdout": ""}
+
+    class R:
+        returncode = 0
+
+        @property
+        def stdout(self):
+            return out["stdout"]
+
+    monkeypatch.setattr(t.subprocess, "run", lambda *a, **k: R())
+    for comm, name, expected in [
+        ("/usr/local/bin/notffmpeg\n", "ffmpeg", False),
+        ("/opt/x/ffmpeg-helper\n", "ffmpeg", False),
+        ("/opt/homebrew/bin/ffmpeg\n", "ffmpeg", True),
+        ("/usr/bin/python3.14\n", "python", True),
+        ("/x/mypython\n", "python", False),
+        ("/usr/bin/python3.14t\n", "python", True),
+    ]:
+        out["stdout"] = comm
+        assert t._alive(5, name) is expected, comm
+
+
+def test_alive_requires_exact_program_name_windows(monkeypatch):
+    on_windows(monkeypatch)
+
+    class R:
+        returncode = 0
+        stdout = '"ffmpeg-helper.exe","5","Console","1","10,000 K"\n'
+
+    monkeypatch.setattr(t.subprocess, "run", lambda *a, **k: R())
+    assert t._alive(5) is False
+    R.stdout = '"pythonw.exe","5","Console","1","10,000 K"\n'
+    assert t._alive(5, "python") is True
+
+
+def test_stop_again_does_not_signal_old_ffmpeg(rec):
+    import json as _json
+
+    t.main(["record", "start", "--out", str(rec["dir"]), "--source", "system"])
+    (rec["dir"] / "system.json").write_text(_json.dumps({"heard_at": None, "ffmpeg_pid": 99}), encoding="utf-8")
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    rec["killed"].clear()
+    rec["ffmpeg_alive"] = True  # PID 99 已被別的 ffmpeg 重用
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert rec["killed"] == []
+
+
+def test_capture_active_while_orphan_ffmpeg_finishing(monkeypatch, tmp_path):
+    import json as _json
+
+    t._write_state(tmp_path, {"pid": 1, "source": "system", "stopped_at": None})
+    (tmp_path / "system.json").write_text(_json.dumps({"heard_at": None, "ffmpeg_pid": 99}), encoding="utf-8")
+    alive = {1: False, 99: True}
+    monkeypatch.setattr(t, "_alive", lambda pid, name="ffmpeg": alive.get(pid, False))
+    assert t._capture_active(tmp_path) is True
+    alive[99] = False
+    assert t._capture_active(tmp_path) is False
+
+
+def test_live_start_after_finished_does_nothing(rec, capsys):
+    rec["dir"].mkdir(parents=True)
+    t._write_state(rec["dir"], {"pid": 4242, "source": "mic", "stopped_at": "2026-11-04T10:00:00"})
+    t._write_json(rec["dir"] / "live.json", {"pid": 1, "done": 3, "finished": True})
+    assert t.main(["live", "start", "--out", str(rec["dir"])]) == 0
+    assert rec["spawned"] == []
+    assert "完成" in capsys.readouterr().out
+
+
+def test_live_finished_marker_written_once(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    assert live["run"]() == 0
+    assert live["run"]() == 0
+    assert live["text"]().count("<!-- live finished -->") == 1
+
+
+def test_live_loop_refuses_second_instance(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    held = t._acquire_live_lock(live["dir"])  # 另一個 live 正持有鎖
+    assert held is not None
+    try:
+        assert live["run"]() == 2
+        assert live["calls"] == []
+    finally:
+        t._release_live_lock(held)
+
+
+def test_live_lock_released_after_run(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    (live["dir"] / "live.lock").write_text("31337", encoding="utf-8")  # 舊程序留下的檔案不算持有
+    assert live["run"]() == 0
+    fd = t._acquire_live_lock(live["dir"])
+    assert fd is not None
+    t._release_live_lock(fd)
+
+
+def test_live_passes_language(live):
+    seen = []
+
+    def runner(audio, model, prompt, language):
+        seen.append(language)
+        return [(1.0, "hello")]
+
+    _wav(live["dir"] / "seg-000.wav", 30)
+    assert t._live_loop(live["dir"], runner, "large-v3-turbo", None, language="en") == 0
+    assert seen == ["en"]
+
+
+def test_live_start_warns_long_prompt(rec, tmp_path, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    capsys.readouterr()
+    glossary = tmp_path / "g.txt"
+    glossary.write_text("詞" * (t.PROMPT_CHAR_LIMIT + 10), encoding="utf-8")
+    t.main(["live", "start", "--out", str(rec["dir"]), "--prompt-file", str(glossary)])
+    assert "截掉" in capsys.readouterr().err
+
+
+def test_segments_sorted_numerically(tmp_path):
+    for n in ("seg-001.wav", "seg-999.wav", "seg-1000.wav"):
+        (tmp_path / n).write_bytes(b"")
+    assert [p.name for p in t._segments(tmp_path)] == ["seg-001.wav", "seg-999.wav", "seg-1000.wav"]
+
+
+def test_live_drops_partial_write_on_resume(live):
+    _wav(live["dir"] / "seg-000.wav", 30)
+    _wav(live["dir"] / "seg-001.wav", 30)
+    meta = {"audio": "即時錄音（逐段轉錄）", "model": "m", "transcribed_at": "2026-11-04 10:00"}
+    head = t.render_markdown([], meta)
+    (live["dir"] / "transcript.md").write_text(
+        head + "[00:00:01] seg-000 的內容\n<!-- seg-000 done -->\n[00:00:31] seg-001 的內容\n", encoding="utf-8")
+    assert live["run"]() == 0
+    assert live["text"]().count("seg-001 的內容") == 1
