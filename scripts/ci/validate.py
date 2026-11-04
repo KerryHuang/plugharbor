@@ -212,8 +212,19 @@ EMAIL_OK = re.compile(r"(@example\.(com|org|net)|@[\w.-]+\.test$|^noreply@|@user
 CGNAT_IP = re.compile(r"\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b")
 
 
+def main_checkout() -> Path | None:
+    """在 linked worktree 裡回傳主 checkout 的根（.git 是檔案：gitdir: <主>/.git/worktrees/<名>）。"""
+    git = ROOT / ".git"
+    if not git.is_file():
+        return None
+    m = re.match(r"gitdir:\s*(.+)", git.read_text(encoding="utf-8").strip())
+    return Path(m.group(1)).resolve().parents[2] if m else None
+
+
 def load_denylist() -> list[re.Pattern]:
     f = ROOT / ".leak-denylist"
+    if not f.exists() and (main := main_checkout()):
+        f = main / ".leak-denylist"  # gitignore 的檔不會跟著開 worktree，改讀主 checkout 那份
     if not f.exists():
         return []
     pats = []
