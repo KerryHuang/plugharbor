@@ -8,19 +8,10 @@
   },
   "plugins": [
     {
-      "name": "sa-flow",
-      "source": "./plugins/sa-flow",
-      "description": "SDLC 上游規格鏈 — 需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析",
-      "version": "4.1.2",
-      "author": {
-        "name": "KerryHuang"
-      }
-    },
-    {
-      "name": "dev-flow",
-      "source": "./plugins/dev-flow",
-      "description": "規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版",
-      "version": "1.1.1",
+      "name": "lifecycle",
+      "source": "./plugins/lifecycle",
+      "description": "軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira）",
+      "version": "1.0.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -29,7 +20,7 @@
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -38,7 +29,7 @@
       "name": "backend",
       "source": "./plugins/backend",
       "description": "後端開發職責 plugin——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；通用方法加技術棧附錄（目前有 .NET）。",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -47,7 +38,7 @@
       "name": "frontend",
       "source": "./plugins/frontend",
       "description": "前端開發方法＋技術棧附錄——架構分層、元件邏輯抽取、i18n、執行期除錯；通用原則寫在 skill，Vue 3 寫法放附錄。",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -111,15 +102,6 @@
       "source": "./plugins/browser-docs",
       "description": "瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證",
       "version": "0.3.3",
-      "author": {
-        "name": "KerryHuang"
-      }
-    },
-    {
-      "name": "delivery-flow",
-      "source": "./plugins/delivery-flow",
-      "description": "專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型",
-      "version": "0.8.2",
       "author": {
         "name": "KerryHuang"
       }

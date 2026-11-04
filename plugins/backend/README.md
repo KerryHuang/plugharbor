@@ -4,7 +4,7 @@
 
 ## 定位
 
-`[職責]` 後端分層、用例、資料存取、API、背景作業、單元測試的做法。與流程類 plugin（如 `dev-flow`）、工作區工具（`workspace`）互不依賴，叫用都是可選。
+`[職責]` 後端分層、用例、資料存取、API、背景作業、單元測試的做法。與流程類 plugin（如 `lifecycle`）、工作區工具（`workspace`）互不依賴，叫用都是可選。
 
 ## 安裝
 
@@ -38,7 +38,7 @@ claude plugin install backend@plugharbor
 
 ## 與其他 plugin 的銜接（皆可選）
 
-- 派 agent 審查／選型／測試：`dev-flow:architect`、`dev-flow:developer`、`dev-flow:reviewer`、`dev-flow:tester`、`dev-flow:debugger`；沒裝 dev-flow 就用 general-purpose agent，prompt 帶角色說明。
+- 派 agent 審查／選型／測試：`lifecycle:architect`、`lifecycle:developer`、`lifecycle:reviewer`、`lifecycle:tester`、`lifecycle:debugger`；沒裝 lifecycle 就用 general-purpose agent，prompt 帶角色說明。
 - 慣例優先、TDD 循環：`workspace:convention-first`、`workspace:debugging`；沒裝就照專案既有程式與 Red-Green-Refactor 自行進行。
 
 ## License

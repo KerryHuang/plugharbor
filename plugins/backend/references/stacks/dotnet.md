@@ -1,6 +1,6 @@
 # .NET 附錄（共用）
 
-> backend 各 skill 與 `dev-flow` 通用 agent 共用的 .NET 寫法：專案結構、依賴規則、DI 註冊、各層範本、指令、agent 補充。技術專屬的長範例在各 skill 自己 references 目錄裡的 dotnet.md（見下表）。
+> backend 各 skill 與 `lifecycle` 通用 agent 共用的 .NET 寫法：專案結構、依賴規則、DI 註冊、各層範本、指令、agent 補充。技術專屬的長範例在各 skill 自己 references 目錄裡的 dotnet.md（見下表）。
 > 偵測線索：`*.csproj`／`*.sln`。範例以中性領域 `Order`（訂單）示範，namespace `MyApp.*` 為示意，請對齊專案實際命名。
 
 ## 各 skill 的 .NET 附錄索引

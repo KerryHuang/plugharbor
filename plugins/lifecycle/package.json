@@ -1,0 +1,10 @@
+{
+  "name": "lifecycle",
+  "private": true,
+  "description": "lifecycle plugin as a Pi package. Version lives in .claude-plugin/plugin.json; Pi-specific wording is in references/harness-terms.md.",
+  "license": "MIT",
+  "keywords": ["pi-package", "lifecycle"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

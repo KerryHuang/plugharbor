@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.2] - 2026-11-04
+
+- fix: 可選叫用與退路改指向 `lifecycle`（sa-flow／delivery-flow／dev-flow 已合併為 lifecycle）。
+
 ## [1.1.1] - 2026-11-03
 
 - fix: `debugging` 的 tdd-cycle 角色分工補沒裝 dev-flow 時的退路，並要求把職責 plugin 的附錄路徑帶進派工 prompt。

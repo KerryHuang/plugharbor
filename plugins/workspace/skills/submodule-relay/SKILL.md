@@ -122,4 +122,4 @@ git config --file .gitmodules --get-regexp path | awk '{print $2}' | xargs git s
 
 - `commit` — 訊息格式、逐檔暫存、並行安全
 - `worktree` — 別的 session 有未推 commit 時另開
-- `dev-flow:release`（可選，dev-flow plugin）— 發版時子模組的處理見該 skill 的 submodules reference；沒裝 dev-flow 就照本 skill 的接力順序做
+- `lifecycle:release`（可選，lifecycle plugin）— 發版時子模組的處理見該 skill 的 submodules reference；沒裝 lifecycle 就照本 skill 的接力順序做

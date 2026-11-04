@@ -54,7 +54,7 @@ description: 分層架構（Domain / Application / Infrastructure / 進入層）
 - import／using 掃描：Domain 檔案裡出現框架或 Infrastructure 命名空間即違規。
 - 專案自帶的架構測試或 lint 規則。
 
-發現違規先修方向，再談功能；系統性違規（橫跨多模組）→ 派 `dev-flow:architect` 評估（可選；沒裝 dev-flow 就用 general-purpose agent，prompt 帶角色說明：「你是架構顧問，給 2–3 個方案與 trade-off，不寫實作程式碼」）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
+發現違規先修方向，再談功能；系統性違規（橫跨多模組）→ 派 `lifecycle:architect` 評估（可選；沒裝 lifecycle 就用 general-purpose agent，prompt 帶角色說明：「你是架構顧問，給 2–3 個方案與 trade-off，不寫實作程式碼」）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
 
 ## 5. 檢查清單
 

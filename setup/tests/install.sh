@@ -129,12 +129,10 @@ ls -d "$C"/backups/plugharbor-*/skills/config-doctor >/dev/null 2>&1 || fail "co
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
 H="$TMP/h2"; mkdir -p "$H/.pi/agent"
 printf '{\n  "packages": ["npm:keep-me"],\n  "defaultModel": "x"\n}\n' > "$H/.pi/agent/settings.json"
-OUT="$(PLUGINS="toolkit research dev-flow" run "$H")" || fail "有 pi 的 install exit 非 0"
-echo "$OUT" | grep -q '^SKIP: pi dev-flow' || fail "沒有 pi 設定的 plugin 應印 SKIP：$OUT"
+OUT="$(PLUGINS="toolkit research" run "$H")" || fail "有 pi 的 install exit 非 0"
 P="$H/.pi/agent/settings.json"
 grep -q 'npm:keep-me' "$P" || fail "pi packages 既有項目被移除"
 grep -q '"defaultModel": "x"' "$P" || fail "pi settings 其他鍵被動過"
-if grep -q 'plugins/dev-flow' "$P"; then fail "沒有 pi 設定的 plugin 不該加進 packages"; fi
 REL_TK="$(sed -n 's/^ *"\(\.\.[^"]*plugins\/toolkit\)",*$/\1/p' "$P")"
 # pi 以字串方式（node path.resolve）解析相對 ~/.pi/agent 的路徑，不走實體 symlink（macOS 的 /var → /private/var）
 ABS_TK="$(python3 -c 'import os,sys;print(os.path.normpath(os.path.join(sys.argv[1], sys.argv[2])))' "$H/.pi/agent" "$REL_TK")"
@@ -161,14 +159,14 @@ OUT="$(run "$H")" || fail "沒有 herdr 時 exit 非 0"
 echo "$OUT" | grep -q '^SKIP: herdr' || fail "沒有 herdr 應印 SKIP: herdr"
 mv "$TMP/herdr.off" "$STUB/herdr"
 
-# ---------- 8) 預設只裝 user 層 5 個 ----------
+# ---------- 8) 預設只裝 user 層 4 個 ----------
 H="$TMP/h4"; mkdir -p "$H"; : > "$STUB_LOG"
 PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
-[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 5 ] || fail "預設應只裝 user 層 5 個：$(grep '^claude plugin install ' "$STUB_LOG")"
-for p in toolkit research browser-docs workspace dev-flow; do
+[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 4 ] || fail "預設應只裝 user 層 4 個：$(grep '^claude plugin install ' "$STUB_LOG")"
+for p in toolkit research browser-docs workspace; do
   grep -qx "claude plugin install $p@plugharbor --scope user" "$STUB_LOG" || fail "預設應裝 user 層 $p"
 done
-if grep -q '^claude plugin install sa-flow' "$STUB_LOG"; then fail "專案層 sa-flow 不該裝到 user 層"; fi
+if grep -q '^claude plugin install lifecycle' "$STUB_LOG"; then fail "專案層 lifecycle 不該裝到 user 層"; fi
 
 # ---------- 9) 沒有 claude：舊 hook 保留並印 STALE（沒有 toolkit 替代就不拿掉 guard） ----------
 NOCLAUDE="$TMP/stub-noclaude"
@@ -256,31 +254,31 @@ export STUB_STATE="$TMP/state"
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
 export STUB_STATE="$TMP/state-proj"; mkdir -p "$STUB_STATE"
 echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
-printf '[{"id": "sa-flow@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "ui-ux@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
+printf '[{"id": "lifecycle@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "ui-ux@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
 {
   echo 'Marketplace `plugharbor`'
-  echo "sa-flow@plugharbor   installed, enabled  1.0.0    $REPO_DIR/plugins/sa-flow"
+  echo "lifecycle@plugharbor   installed, enabled  1.0.0    $REPO_DIR/plugins/lifecycle"
   echo "ui-ux@plugharbor    not installed       1.0.0    $REPO_DIR/plugins/ui-ux"
 } > "$STUB_STATE/codex-list"
-printf 'Installed plugins:\n- sa-flow (enabled, 1.0.0)\n' > "$STUB_STATE/agy-list"
+printf 'Installed plugins:\n- lifecycle (enabled, 1.0.0)\n' > "$STUB_STATE/agy-list"
 H="$TMP/h11"; mkdir -p "$H/.pi/agent"
-python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/sa-flow"),d).replace(os.sep,"/"),os.path.relpath(os.path.join(r,"plugins/toolkit"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/lifecycle"),d).replace(os.sep,"/"),os.path.relpath(os.path.join(r,"plugins/toolkit"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
 OUT="$(run "$H" --check)" || fail "--check exit 非 0"
-for x in "claude sa-flow" "claude blog" "codex sa-flow" "agy sa-flow" "pi sa-flow"; do
+for x in "claude lifecycle" "claude blog" "codex lifecycle" "agy lifecycle" "pi lifecycle"; do
   echo "$OUT" | grep -q "STALE: ${x}（專案層" || fail "--check 應報 STALE: ${x}：$OUT"
 done
 cmp -s "$H/.pi/agent/settings.json" "$TMP/pi-before" || fail "--check 不該改 pi settings"
 : > "$STUB_LOG"
 OUT="$(PLUGINS="toolkit research blog" run "$H")" || fail "移除專案層 exit 非 0：$OUT"
-grep -qx 'claude plugin uninstall sa-flow@plugharbor --scope user' "$STUB_LOG" || fail "claude 應移除 user 層 sa-flow"
+grep -qx 'claude plugin uninstall lifecycle@plugharbor --scope user' "$STUB_LOG" || fail "claude 應移除 user 層 lifecycle"
 if grep -q 'claude plugin uninstall blog' "$STUB_LOG"; then fail "PLUGHARBOR_PLUGINS 指定的 blog 不該移除"; fi
 if grep -q 'uninstall ui-ux' "$STUB_LOG"; then fail "local scope 的 ui-ux 不該動"; fi
-grep -qx 'codex plugin remove sa-flow@plugharbor' "$STUB_LOG" || fail "codex 應移除 sa-flow"
+grep -qx 'codex plugin remove lifecycle@plugharbor' "$STUB_LOG" || fail "codex 應移除 lifecycle"
 if grep -q 'codex plugin remove ui-ux' "$STUB_LOG"; then fail "codex 沒裝的 ui-ux 不該移除"; fi
-grep -qx 'agy plugin uninstall sa-flow' "$STUB_LOG" || fail "agy 應移除 sa-flow"
+grep -qx 'agy plugin uninstall lifecycle' "$STUB_LOG" || fail "agy 應移除 lifecycle"
 P="$H/.pi/agent/settings.json"
-if grep -q 'plugins/sa-flow' "$P"; then fail "pi packages 應移除 sa-flow：$(cat "$P")"; fi
+if grep -q 'plugins/lifecycle' "$P"; then fail "pi packages 應移除 lifecycle：$(cat "$P")"; fi
 grep -q 'npm:keep-me' "$P" && grep -q 'plugins/toolkit' "$P" || fail "pi packages 其他項目被動到：$(cat "$P")"
 ls "$H"/.claude/backups/plugharbor-*/pi/settings.json >/dev/null 2>&1 || fail "pi settings 移除前未備份"
 rm "$STUB/pi"

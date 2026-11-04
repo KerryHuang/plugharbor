@@ -46,7 +46,7 @@ for L in "自動轉換舊檔" "自動轉換舊檔（建議）" "自動轉換舊�
   denied "$OUT" || fail "沒標（推薦）沒被擋：$L"
 done
 
-# 5) 預設值類標「（預設）」也算（sa-flow／sdlc 的 preludes 規定）
+# 5) 預設值類標「（預設）」也算（lifecycle／sdlc 的 preludes 規定）
 OUT="$(payload "$GOOD_Q" "自動轉換舊檔（預設）" "$GOOD_D" | "$PY" "$GUARD")"
 [ -z "$OUT" ] || fail "標（預設）不該被擋：$OUT"
 

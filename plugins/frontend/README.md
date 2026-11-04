@@ -31,7 +31,7 @@ claude plugin install frontend@plugharbor
 
 ## 搭配（皆可選）
 
-- `dev-flow:reviewer`／`dev-flow:tester`：審查與測試；沒裝就用 general-purpose subagent 附角色說明。
+- `lifecycle:reviewer`／`lifecycle:tester`：審查與測試；沒裝就用 general-purpose subagent 附角色說明。
 - `workspace:convention-first`：沒有附錄時找既有樣板；沒裝就自己 grep。
 
 ## License

@@ -13,7 +13,7 @@ test('mirror 不刪 plugharbor install-project 複製模式的複本（含 .plug
     writeFileSync(join(src, 'mine', 'SKILL.md'), 'mine')
     mkdirSync(join(dest, 'explore'), { recursive: true })
     writeFileSync(join(dest, 'explore', 'SKILL.md'), 'plugharbor copy')
-    writeFileSync(join(dest, 'explore', '.plugharbor-root'), '/clone/plugins/sa-flow')
+    writeFileSync(join(dest, 'explore', '.plugharbor-root'), '/clone/plugins/lifecycle')
     mkdirSync(join(dest, 'stale'), { recursive: true })
     writeFileSync(join(dest, 'stale', 'SKILL.md'), 'old mirror')
     mirror(src, dest)

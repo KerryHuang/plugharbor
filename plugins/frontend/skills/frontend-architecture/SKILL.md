@@ -97,7 +97,7 @@ grep -rn "ComponentName" src/presentation/    # App 本地元件
 
 ## 審查與測試
 
-需要獨立審查或補測試時，叫 `dev-flow:reviewer`／`dev-flow:tester`（可選）；沒裝就用 general-purpose subagent，附上角色說明（審查：分層、型別、i18n、主題；測試：元件與邏輯單元測試）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
+需要獨立審查或補測試時，叫 `lifecycle:reviewer`／`lifecycle:tester`（可選）；沒裝就用 general-purpose subagent，附上角色說明（審查：分層、型別、i18n、主題；測試：元件與邏輯單元測試）。派工 prompt 要帶上 §0 載入的附錄絕對路徑（`${CLAUDE_PLUGIN_ROOT}` 展開後），agent 才讀得到；general-purpose 退路也一樣。
 
 ## 相關 skills
 

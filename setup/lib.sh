@@ -29,7 +29,7 @@ ph_all_plugins() {
 }
 
 # 分層：工具類裝 user 層（每個專案都有），其餘是專案層，由 setup/install-project.sh 依專案安裝
-PH_USER_PLUGINS="toolkit research browser-docs workspace dev-flow"
+PH_USER_PLUGINS="toolkit research browser-docs workspace"
 # 改名對照：空白分隔「舊名:新名」。install.sh 從 user 層卸舊名；install-project.sh 對專案裡的舊名先卸再裝新名。
 # 每批只開放已完成的改名（第②批：職責 plugin）。PLUGHARBOR_RENAMES 只給測試覆寫。
 PH_RENAMES_DEFAULT="backend-dotnet:backend frontend-vue:frontend database-sqlserver:database desktop-avalonia:desktop kid-ui:ui-ux"

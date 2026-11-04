@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.0.2] - 2026-11-04
+
+- fix: 派工引用改為 `lifecycle:` 命名空間（sa-flow／delivery-flow／dev-flow 已合併為 lifecycle）。
+
 ## [1.0.1] - 2026-11-03
 
 - fix: 派 `dev-flow:reviewer`／`dev-flow:tester`（或 general-purpose 退路）時，把 §0 載入的附錄絕對路徑寫進派工 prompt。

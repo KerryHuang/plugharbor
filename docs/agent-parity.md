@@ -54,13 +54,12 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
 
 ## 已知落差
 
-- **pi 載入不到 dev-flow**：dev-flow 沒有 `package.json`，pi 看不到（install.sh 會印 `SKIP: pi dev-flow（沒有 pi package 設定）`）；第③批併進 lifecycle 後解決。
   其餘 plugin 都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
-- **`agent-model-guard` 只由 toolkit 註冊**：sa-flow 4.0.0 起不再註冊，不會重複。
-- **分層安裝**：user 層 5 個（toolkit、research、browser-docs、workspace、dev-flow）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（只限 local）。
+- **`agent-model-guard` 只由 toolkit 註冊**：lifecycle（前身 sa-flow 4.0.0 起）不註冊，不會重複。
+- **分層安裝**：user 層 4 個（toolkit、research、browser-docs、workspace）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（只限 local）。
 - **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
-  delivery-flow 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；sa-flow 叫用 delivery-flow／browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
+  lifecycle 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；lifecycle 叫用 browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
 - **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；
   `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以必要的共用素材各放一份。
   Claude Code、Codex、pi 都實測過（2026-11-02）：Codex 從安裝快取讀 skill，pi 從 repo 讀並照 `harness-terms.md` 把 `${CLAUDE_PLUGIN_ROOT}` 換成實際路徑。

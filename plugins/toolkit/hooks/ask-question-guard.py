@@ -4,7 +4,7 @@
 使用者常只看得到對話框、看不到前文；曾出現只寫「要選 A 還是 B」、選項沒說明的題目，
 答不出來只能回頭問（見 shared/communication.md「提問」）。本 hook 擋三件事：
 question 太短、選項 description 太短、沒有任何選項標「（推薦）」（預設值類標「（預設）」也算，
-同 sa-flow／sdlc preludes）。門檻只是最低線，寫夠長不代表自明。解析不到 stdin 時 fail-open。
+同 lifecycle／sdlc preludes）。門檻只是最低線，寫夠長不代表自明。解析不到 stdin 時 fail-open。
 """
 import json
 import sys

@@ -1,9 +1,9 @@
 # plugharbor
 
-所有 AI 工作模式的唯一來源：13 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
+所有 AI 工作模式的唯一來源：11 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
 同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、workspace、dev-flow）裝在 user 層，每個專案都有；其餘 8 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘 7 個是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 
@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/KerryHuang/plugharbor/main/setup/bo
 ```bash
 claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
 claude plugin install workspace@plugharbor                # user 層
-cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案層，只在這個專案啟用
+cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專案層，只在這個專案啟用
 ```
 
 安裝後 skills 會自動被發現，用 `/` 或自然語言觸發即可；agents 由主流程按需求派工。
@@ -30,7 +30,7 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 
 1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（toolkit 所有 hook 含 guard、pi packages 註冊與 `settings.json` 合併都需要；沒有的話 install.sh 會 WARN，但 hook 會靜默放行、guard 形同沒有，務必先裝）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
 2. **一行安裝**：上面的 `curl … | bash`，裝 user 層 4 個 plugin。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 改 user 層要裝哪些；`install.sh --check` 只比對不改。
-   **專案層**：在常用專案各跑一次 `bash ~/plugharbor/setup/install-project.sh <專案根> sa-flow delivery-flow …`（預設只自己用，`--shared` 寫進專案設定與團隊共用）。
+   **專案層**：在常用專案各跑一次 `bash ~/plugharbor/setup/install-project.sh <專案根> lifecycle backend …`（預設只自己用，`--shared` 寫進專案設定與團隊共用）。
 3. **其他 marketplace**（Claude Code 登入後）：`claude plugin install superpowers@claude-plugins-official`；其餘依需要。
 4. **通用 MCP**（金鑰與登入各自處理，不入版控）：例如 `claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest`。
 5. **終端工具**（macOS，選用）：`brew install herdr`（有裝 herdr，install.sh 會連結側欄 plugin）；用 graphify skill 才需要 `uv tool install graphifyy`。
@@ -45,11 +45,10 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [sa-flow](./plugins/sa-flow/README.md) | 4.1.2 | SDLC 上游規格鏈——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與回覆、待測票批次驗收，另含 FoxPro 舊系統分析 |
-| [dev-flow](./plugins/dev-flow/README.md) | 1.1.1 | 規格→實作→發版的開發流程——功能規劃、規格文件、從規格實作、端到端編排、Git Flow 發版，含不綁技術的 architect／developer／reviewer／tester／debugger agents |
-| [workspace](./plugins/workspace/README.md) | 1.1.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
-| [backend](./plugins/backend/README.md) | 1.0.1 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
-| [frontend](./plugins/frontend/README.md) | 1.0.1 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
+| [lifecycle](./plugins/lifecycle/README.md) | 1.0.0 | 軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira） |
+| [workspace](./plugins/workspace/README.md) | 1.1.2 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
+| [backend](./plugins/backend/README.md) | 1.0.2 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
+| [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
 | [database](./plugins/database/README.md) | 1.0.0 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
 | [ui-ux](./plugins/ui-ux/README.md) | 1.0.1 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
 | [desktop](./plugins/desktop/README.md) | 1.0.0 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
@@ -57,14 +56,12 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | [research](./plugins/research/README.md) | 0.2.1 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.3 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
-| [delivery-flow](./plugins/delivery-flow/README.md) | 0.8.2 | 專案交付流程——票務工具層與日報週報、會議記錄、訪談準備、issue 分流、QA 實機驗收、操作手冊、HTML 原型 |
 
 ### skills 與 agents
 
 | 外掛 | skills | agents |
 |------|--------|--------|
-| sa-flow | `consolidate-docs` `dev-feedback` `dev-readiness` `explore` `foxpro-analyzer` `linear-create` `linear-reply` `linear-triage` `plugin-healthcheck` `qa-sweep` `requirement` `sample-verify` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `survey-existing-system` `system-analysis` `verifying-specs` `write-doc` | `domain-advisor` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` |
-| dev-flow | `work-on` `feature` `implement` `spec` `release` | `architect` `developer` `reviewer` `tester` `debugger` |
+| lifecycle | `consolidate-docs` `dev-feedback` `dev-readiness` `explore` `feature` `foxpro-analyzer` `implement` `interview-prep` `issue-triage` `linear-create` `linear-reply` `linear-triage` `meeting-minutes` `operation-manual` `plugin-healthcheck` `prototype-html` `qa-sweep` `qa-verify` `release` `requirement` `sample-verify` `spec` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `survey-existing-system` `system-analysis` `ticket-daily-report` `ticket-ops` `ticket-weekly-report` `verifying-specs` `work-on` `write-doc` | `architect` `debugger` `developer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `reviewer` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` `tester` |
 | workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` | — |
 | backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
 | frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
@@ -75,13 +72,12 @@ cd <專案> && claude plugin install sa-flow@plugharbor --scope local   # 專案
 | research | `ai-radar` `graphify` | — |
 | blog | `blog-capture` `publish-check` `write-post` | — |
 | browser-docs | `annotate-screenshot` `live-drive` `pdf-converter` | `browser-surveyor` `doc-fidelity-reviewer` |
-| delivery-flow | `interview-prep` `issue-triage` `meeting-minutes` `operation-manual` `prototype-html` `qa-verify` `ticket-daily-report` `ticket-ops` `ticket-weekly-report` | `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` |
 
 ## 典型動線
 
-需求進來 → `sa-flow` 的 `explore` → `requirement` → `system-analysis` → `specify-backend` → `specify-frontend` → `dev-readiness` → `verifying-specs` → `linear-create` 開票；
-進實作後交給 `dev-flow` 的 `work-on` / `feature` 起頭，技術層面再取用 `backend`、`frontend`、
-`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit` / `review` 與 `dev-flow` 的 `release` 收尾，完工後以 `delivery-flow` 的 `qa-verify` 實機驗收。
+需求進來 → `lifecycle` 的探索與規格（`explore` → `requirement` → … → `verifying-specs`）→ 開票（`linear-create`，經 `ticket-ops` 換成專案的票務工具）；
+進實作後由 `lifecycle` 的 `work-on`／`feature` 起頭，技術層面再取用 `backend`、`frontend`、
+`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit`／`review` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收。
 
 ## 目錄結構
 

@@ -35,7 +35,7 @@ class AgentModelGuard(unittest.TestCase):
         self.assertEqual((rc, out), (0, ""))
 
     def test_named_agent_untouched(self):
-        rc, out = run({"tool_name": "Agent", "tool_input": {"subagent_type": "delivery-flow:qa-runner-ui"}})
+        rc, out = run({"tool_name": "Agent", "tool_input": {"subagent_type": "lifecycle:qa-runner-ui"}})
         self.assertEqual((rc, out), (0, ""))
 
     def test_fork_untouched(self):
