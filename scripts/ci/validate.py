@@ -45,6 +45,9 @@ def err(path: Path | str, msg: str) -> None:
 
 def text_files(base: Path):
     for f in sorted(base.rglob("*")):
+        # .claude/worktrees/ 是其他 worktree 的整份副本（含 gitignore 的 .private、.superpowers），不屬本 checkout
+        if f.relative_to(ROOT).parts[:2] == (".claude", "worktrees"):
+            continue
         if f.is_file() and f.suffix in TEXT_EXT and ".git" not in f.parts and "__pycache__" not in f.parts:
             yield f
 
