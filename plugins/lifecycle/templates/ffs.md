@@ -58,7 +58,7 @@ flowchart LR
 > - §5 使用者操作業務邏輯 — 連動欄位、即時計算、狀態控制
 > - §6 API 對接規格 — 端點對應；Request/Response 範例見 templates/examples/ffs-ui.md
 > - §A 重用線索 — 同類既有頁面參考，不得複製進 Dev 票
-> - §7 畫面與舊系統對應 — 條件式（舊系統遷移／FoxPro 對應時必填）
+> - §7 畫面與舊系統對應 — 條件式（舊系統遷移時必填）
 > - §8 驗收標準 — TC-Q/C/U/D/E 系列
 > - §附錄 — 輸入語意對照等見 templates/examples/ffs-ui.md
 > - §D 決策紀錄 — 本階段拍板編號（全文在 `decisions.md`）
@@ -445,12 +445,12 @@ flowchart TD
 
 ## 7. 畫面與舊系統對應
 
-> **觸發條件（與 `verifying-specs` Task 5 對齊）**：
+> **觸發條件（與 `spec-check` Task 5 對齊）**：
 >
 > 下列任一情況成立時，本章節**必填**，不可省略：
-> 1. 功能屬於舊系統遷移（CHANGELOG 提及「FoxPro」、「舊系統」、「遷移」）
+> 1. 功能屬於舊系統遷移（CHANGELOG 提及「舊系統」、「遷移」）
 > 2. 需求文件（FRD）有舊系統對應章節
-> 3. `system-analysis` SAD 文件有舊系統欄位對應分析
+> 3. `spec --stage sad` SAD 文件有舊系統欄位對應分析
 >
 > 以上均不符合時，填入：「N/A — 全新功能，無舊系統對應」即可。
 

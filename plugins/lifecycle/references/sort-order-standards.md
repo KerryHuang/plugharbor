@@ -118,7 +118,7 @@ SAD §6.5 NFR 註記排序欄位的索引狀況；已知大表（預估 10 萬�
 
 ---
 
-## 檢查基準（供 dev-readiness／verifying-specs 引用）
+## 檢查基準（供 spec-check --readiness／spec-check 引用）
 
 逐項用**判定基準**掃，不要逐行點名：
 

@@ -26,5 +26,5 @@ git merge-base --is-ancestor vx.y.z origin/develop && echo "ancestry OK" || echo
 | 症狀 | 可能根因 | 處理 |
 |------|---------|------|
 | `git rev-parse v{正式版}` 指向他 repo commit | 別的 remote tag 覆寫 local | Step 4 重 fetch |
-| Local tag 正確但 `--is-ancestor` 為 false | 上次 release Step 5 用了 release branch 或沒等 CI | 重做一次正確的 Step 5 |
+| Local tag 正確但 `--is-ancestor` 為 false | 上次 release 的 R7 反合用了 release branch 或沒等 CI | 重做一次正確的 R7 |
 | Develop 持續產 `{上次正式版}-beta.N+1` 而非 `{下一版}-beta.1` | 正式版 tag 不在 develop ancestry | 同上 |

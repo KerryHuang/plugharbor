@@ -1,6 +1,6 @@
 ---
 name: silent-failure-hunter
-description: 靜默失敗獵手：審查程式路徑中「錯誤被吞掉、資料悄悄流失」的模式，回答「為什麼欄位空了／資料少了但沒有任何錯誤」。唯讀，只回報證據與路徑，不改碼。由 linear-triage／survey-existing-system 派發，不主動觸發。
+description: 靜默失敗獵手：審查程式路徑中「錯誤被吞掉、資料悄悄流失」的模式，回答「為什麼欄位空了／資料少了但沒有任何錯誤」。唯讀，只回報證據與路徑，不改碼。由 triage／survey-existing-system 派發，不主動觸發。
 tools: Read, Bash, Glob, Grep
 model: opus
 maxTurns: 80

@@ -1,6 +1,6 @@
 ---
 name: explore
-description: "新功能起手、寫 FRD 前快速收斂需求：六維引導問答，產出探索摘要供 requirement 使用。觸發：「探索需求」「explore」。"
+description: "新功能起手、寫規格前快速收斂需求：六維引導問答，產出探索摘要供 lifecycle:spec 使用。觸發：「探索需求」「explore」。"
 argument-hint: "[功能描述]"
 model: sonnet
 ---
@@ -9,11 +9,9 @@ model: sonnet
 
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-快速收斂需求，為撰寫 FRD 準備結構化輸入。適用於需求**大致明確**但尚未整理的情況。
+快速收斂需求，為撰寫規格準備結構化輸入。適用於需求**大致明確**但尚未整理的情況。
 互動詢問一律依 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md` §互動詢問規範（AskUserQuestion＋建議置首＋一次一題＋回合可見性）。
 
-> **需求模糊、概念未定？** 建議改用 `superpowers:brainstorming` 進行完整設計探索。
->
 > **素材還很零碎、連該問什麼都不確定？** 先跑 `lifecycle:interview-prep`——把多場會議／訪談
 > 彙整成已知未知盤點，或產訪談大綱去補資料，回來再跑六維。
 
@@ -31,21 +29,6 @@ $ARGUMENTS → [功能描述]
 
 ## 執行流程
 
-### 0. Brainstorming 偵測
-
-偵測 `superpowers:brainstorming` 是否可用（搜尋 `.claude/skills/brainstorming/` 或已安裝的 superpowers plugin）：
-
-- **可用** → 使用 `AskUserQuestion` 詢問：
-
-  > 偵測到 `superpowers:brainstorming` 已安裝。
-  >
-  > - **A. 使用 brainstorming**（推薦：需求模糊、需要完整設計探索）
-  > - **B. 繼續 explore**（需求已大致明確，快速收斂即可）
-
-  使用者選 A → 終止，提示執行 `superpowers:brainstorming`；選 B → 繼續。
-
-- **不可用** → 直接繼續。
-
 ### 1. 功能定位
 
 從 `$ARGUMENTS` 或後續問答中提取：
@@ -60,7 +43,7 @@ $ARGUMENTS → [功能描述]
 ### 1.5 顧問桌啟動（可選但推薦）
 
 > 依 `${CLAUDE_PLUGIN_ROOT}/references/consultant-desk.md`：**一條規格鏈只開一次顧問桌，主場在
-> `system-analysis`**。explore 階段**預設不開**——此時證據最少，顧問產出多為泛論，
+> `lifecycle:spec` 的系統分析階段**。explore 階段**預設不開**——此時證據最少，顧問產出多為泛論，
 > 而同一批 domain 問題到 SAD 階段會再被問一次。
 >
 > **僅在需求本身的業務邊界未定**（全新業務概念、做不做得到／算不算同一件事說不清）時才開，
@@ -75,7 +58,7 @@ $ARGUMENTS → [功能描述]
    prompt: |
      context: {使用者描述 / $ARGUMENTS}
      keywords: [{從描述提取的關鍵字}]
-     docs_root: {sdlc-docs-path}
+     docs_root: {spec.dir}
    ```
    收到 `evidence_bundle` YAML。
 
@@ -116,7 +99,7 @@ $ARGUMENTS → [功能描述]
 
 #### 維度 5：舊系統對應
 
-> 這個功能是否有對應的舊系統（FoxPro / ERP / 其他）？
+> 這個功能是否有對應的舊系統（ERP／其他）？
 > - 有 → 舊系統功能名稱或代號？需要遷移資料？
 > - 無 → 全新功能
 
@@ -147,13 +130,13 @@ $ARGUMENTS → [功能描述]
 
 ### 4. 輸出探索摘要
 
-確認後，使用 Write 工具將摘要寫入（與 `lifecycle:requirement` 產出同目錄）：
+確認後，使用 Write 工具將摘要寫入（與 `lifecycle:spec` 產出同目錄）：
 
 ```
 {docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_探索摘要.md
 ```
 
-`{docs-root}` 依 `sdlc-docs-path` 設定決定（未設定則為 `docs/`）。
+`{docs-root}` ＝ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`（預設 `docs/specs`）。
 
 格式：
 
@@ -194,7 +177,7 @@ $ARGUMENTS → [功能描述]
 - 探索摘要路徑
 - 收集維度數（6/6）
 
-**下一步**：執行 `lifecycle:requirement {功能名稱}`，explore 摘要會被自動讀取作為 FRD 撰寫輸入。
+**下一步**：執行 `lifecycle:spec {功能名稱}`，explore 摘要會被自動讀取作為規格撰寫輸入。
 含 UI 的功能若需要，可先用任何方式（手繪、線框稿、原型工具）與 PO/使用者對焦畫面，再把結論補進探索摘要。
 
 ---
@@ -211,7 +194,7 @@ $ARGUMENTS → [功能描述]
 ```bash
 explore
 explore 訂單管理新增批次出貨功能
-explore 會員點數折抵從舊系統遷移至 Web
+explore 會員點數折抵改由新系統處理
 ```
 
 ## 完整開發流程

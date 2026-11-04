@@ -1,11 +1,11 @@
 # 自動驗證與修復循環
 
-> **適用範圍（刻意限縮）**：僅 **CR 調整模式**（`requirement --change`／`specify-backend --change`）
+> **適用範圍（刻意限縮）**：僅 **CR 調整模式**（`spec --stage frd --change`／`spec --stage bfs --change`）
 > 的格式完整性驗證使用本迴圈——CR 是 in-place 改既有主文件，格式破損會直接污染既有內容。
 >
 > ⚠️ **標準模式（新功能）不再跑本迴圈**。FRD／BFS 寫檔後只做一次輕量自查，
-> 正確性、DB 逐欄比對、跨文件追溯一律留到鏈末的 `dev-readiness` → `verifying-specs` 一次做完。
-> 理由：這裡的修復項與 `verifying-specs` Task 2.1／5／8.2-8.4 幾乎是同一組檢查，
+> 正確性、DB 逐欄比對、跨文件追溯一律留到鏈末的 `spec-check --readiness` → `spec-check` 一次做完。
+> 理由：這裡的修復項與 `spec-check` Task 2.1／5／8.2-8.4 幾乎是同一組檢查，
 > 中途跑一遍不會減少鏈末的工作量，只是把同一件事做兩次；而且 FRD／BFS 階段下游文件尚未產出，
 > 跨文件驗證本來就不完整。
 

@@ -27,7 +27,7 @@
 
 ## HTTP 回應契約（各 Method）
 
-> 各 Method 的成功狀態碼、成功 body 形狀、額外 header；速查另見 `skills/specify-backend/references/naming-conventions.md`「API 端點標準」。撰寫 BFS §6 時每個端點**必須明寫成功狀態碼**，不可只靠 §3 sequence 圖隱含。
+> 各 Method 的成功狀態碼、成功 body 形狀、額外 header；速查另見 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/bfs/naming-conventions.md`「API 端點標準」。撰寫 BFS §6 時每個端點**必須明寫成功狀態碼**，不可只靠 §3 sequence 圖隱含。
 
 | Method | 成功狀態碼 | 成功 Response body | 額外 header | 常見失敗 |
 |--------|-----------|-------------------|------------|---------|

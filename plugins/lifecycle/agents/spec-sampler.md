@@ -1,6 +1,6 @@
 ---
 name: spec-sampler
-description: 規格覆蓋度取樣 agent。讀一組指定的原始碼檔，逐一識別業務邏輯區塊（SCB）並比對行為規格的覆蓋度與正確性，回傳結構化取樣報告。由 sample-verify skill 分組後平行派發，不主動觸發。唯讀，不改任何檔。
+description: 規格覆蓋度取樣 agent。讀一組指定的原始碼檔，逐一識別業務邏輯區塊（SCB）並比對行為規格的覆蓋度與正確性，回傳結構化取樣報告。由 spec-check --sample skill 分組後平行派發，不主動觸發。唯讀，不改任何檔。
 tools: Read, Glob, Grep, Bash
 model: sonnet
 maxTurns: 80
@@ -9,7 +9,7 @@ color: yellow
 
 # Spec Sampler — 規格覆蓋度取樣
 
-由 `sample-verify` skill 分組後派發。職責：**讀指定的那幾支檔，逐個業務邏輯區塊比對規格，回報落差**。
+由 `spec-check --sample` skill 分組後派發。職責：**讀指定的那幾支檔，逐個業務邏輯區塊比對規格，回報落差**。
 
 存在的理由是 **context 隔離＋平行**：讀完整原始碼是大量素材，對「彙整結論」毫無用處；
 而每一組檔案之間沒有共用狀態，可以同時跑。

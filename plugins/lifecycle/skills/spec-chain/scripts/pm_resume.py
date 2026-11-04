@@ -20,7 +20,7 @@ import subprocess
 import sys
 
 # Windows 預設 cp950：印中文會亂碼、印 emoji 直接炸 UnicodeEncodeError。
-# 與 parse_foxpro.py 同一做法，腳本自己處理，不靠呼叫端設 PYTHONUTF8。
+# 與本 plugin 其他腳本同一做法，腳本自己處理，不靠呼叫端設 PYTHONUTF8。
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8")

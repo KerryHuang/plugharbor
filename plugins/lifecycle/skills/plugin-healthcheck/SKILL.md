@@ -5,6 +5,7 @@ description: >-
   適用於定期維護、版本升級、或懷疑 plugin 結構已過時。
   Use when user says "plugin 健康檢查", "plugin health check", "檢查 plugin 結構", "plugin 是否需要更新", "check plugin structure".
 argument-hint: "[--fix] [--verbose]"
+disable-model-invocation: true
 ---
 
 # Plugin 健康檢查

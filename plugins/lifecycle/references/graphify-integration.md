@@ -20,7 +20,7 @@ ${GRAPHIFY_PYTHON:-python} -c "import graphify" 2>/dev/null
 
 ## Query 區塊
 
-**使用者**：`system-analysis`、`specify-backend`、`specify-frontend`
+**使用者**：`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`
 
 **觸發時機**：取得功能名稱 / 讀取輸入參數之後，讀取任何 MD 文件之前。
 
@@ -46,7 +46,7 @@ ${GRAPHIFY_PYTHON:-python} -c "import graphify" 2>/dev/null
 
 ## Update 區塊
 
-**使用者**：`verifying-specs`（驗證後規格已修正時）
+**使用者**：`spec-check`（驗證後規格已修正時）
 
 **觸發時機**：該 skill 的文件寫入全部落地之後，在完成報告末段。
 

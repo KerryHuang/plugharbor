@@ -52,8 +52,8 @@ flowchart LR
 | 下游文件 | BFS：`{路徑}`／FFS：`{路徑}` |
 | 決策明細 | `decisions.md`（同目錄，全鏈連號） |
 | 中間產物 | `analysis/_context.yml`、`analysis/db-analysis.yml`、`analysis/reuse-scan.yml`、`analysis/consultant-notes.md`（若有） |
-| Linear 票 | {票號} |
-| 舊系統分析 | {FoxPro 分析報告路徑}（若有） |
+| 票號 | {票號} |
+| 舊系統分析 | {舊系統分析報告路徑}（若有） |
 
 ---
 
@@ -326,7 +326,7 @@ flowchart LR
 
 > SA 對系統層邊界的盤點結果，供 BFS §7（驗證）/ §8（例外）/ §8.4（並發）承接。業務層例外見 FRD §2，此處只補系統層邊界。
 > 維度編號依 `references/boundary-dimensions.md`（B1–B10、B13、M1–M4；B11／B12 屬規格階段，不在此列）。
-> **每個維度都要有結論，標「不適用」也是結論**——留白代表沒盤點過，dev-readiness 會退回。
+> **每個維度都要有結論，標「不適用」也是結論**——留白代表沒盤點過，spec-check --readiness 會退回。
 > **邊界或優先序規則超過 8 條、或規則之間有互斥／優先序關係時，必附一張決策樹（mermaid flowchart）**放在本表之前，
 > 讓讀者不必在腦中自己建樹。畫法見 `templates/examples/diagrams-and-worked-examples.md`。
 

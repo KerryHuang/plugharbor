@@ -22,7 +22,7 @@ grep '^| D-' {功能目錄}/decisions.md      # 檔案不存在 = 尚無決策�
   "updated": "2026-09-02T09:40+08:00",
   "watch": { "armed": false, "target": null },
   "stages": [
-    { "stage": "system-analysis", "worker": "order-margin-sad", "pane": "w1:p3",
+    { "stage": "sad", "worker": "order-margin-sad", "pane": "w1:p3",
       "session": "6e81fac4-a04c-432f-ab62-e56ed6975641",
       "prompt_file": ".tmp/dispatch/order-margin-sad.md",
       "output": "docs/訂單模組/訂單毛利明細表/訂單毛利明細表_系統分析文件.md",
@@ -60,7 +60,7 @@ submodule 並排下，相對路徑會靜默解析到錯的 repo，指令照樣�
 - {功能目錄}/decisions.md
 - {FRD 路徑} §0 一頁摘要、§{相關章節}
 - {SAD 路徑} §0 一頁摘要、§{相關章節}
-依 skills/spec-docs/SKILL.md：先讀 SPEC-INDEX，再 grep "^## " 定位，Read 帶 offset/limit。
+依 ${CLAUDE_PLUGIN_ROOT}/skills/spec/references/stages/index.md：先讀 SPEC-INDEX，再 grep "^## " 定位，Read 帶 offset/limit。
 
 【已拍板、不要重問】
 {decisions.md 的「決策／選定」兩欄逐列貼入}
@@ -114,7 +114,7 @@ grep -E '^\| D-[0-9]+' "$(dirname "$F")/decisions.md" | tail -5 | cut -c1-120
 sed -n '/^## D\. 決策紀錄/,/^## /p' "$F" | grep -oE 'D-[0-9]+' | sort -u | tr '\n' ' '
 
 # 第 4 項：決策傳播＋暫定標記＋版本機械閘，exit 0 才算過
-<PY> ${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-propagation.py "$(dirname "$F")"
+<PY> ${CLAUDE_PLUGIN_ROOT}/skills/spec-check/scripts/check-decision-propagation.py "$(dirname "$F")"
 ```
 
 - 章節只數編號章（`^## [0-9A-Za-z]+\.`）：`撰寫指南`、`文件資訊` 這類鷹架章產出本來就會刪或併，計入會誤擋。

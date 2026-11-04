@@ -35,7 +35,7 @@ CR 票寫成時的程式碼狀態 ≠ 合併當下的程式碼狀態。本檔列
 |---|---|
 | ✅ 全部命中 | 進入正常合併流程 |
 | ⚠️ 1-3 處 drift（路徑微改、方法重命名）| 報告標示「需人工確認 drift」，預設**不自動合併**；使用者可加 `--force-merge-with-drift` 強制執行 |
-| ❌ 核心參照 drift > 3 處 或 DB schema 不符 | **強制阻擋合併**，標「規格已過時，需 SA review」；引導使用者跑 `/lifecycle:verifying-specs` 或直接重寫 |
+| ❌ 核心參照 drift > 3 處 或 DB schema 不符 | **強制阻擋合併**，標「規格已過時，需 SA review」；引導使用者跑 `/lifecycle:spec-check` 或直接重寫 |
 
 ## 報告區塊樣板
 
@@ -51,7 +51,7 @@ CR 票寫成時的程式碼狀態 ≠ 合併當下的程式碼狀態。本檔列
 - `LeaveRepository.IsUniqueAsync` — 預期：方法簽名 `(string, string?)`，實際：`(string, string?, CancellationToken)` ⚠️
 - `db/.../LeaveAll_1.sql` — 預期存在，實際已刪除 ❌
 
-**建議動作**：標 drift，等使用者確認 / 跑 verifying-specs / 加 --force-merge-with-drift
+**建議動作**：標 drift，等使用者確認 / 跑 spec-check / 加 --force-merge-with-drift
 ```
 
 ## 跳過驗證

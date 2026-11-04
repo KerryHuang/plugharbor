@@ -1,7 +1,7 @@
 # Rebase 同步與發版前品質閘
 
 > 觸發時機：專案採線性歷史（develop 用 rebase 而非 merge-back 與 main 同步）、發版前要過品質閘、rebase 遇到 release-only commit 衝突。
-> 預設流程（SKILL.md Step 5）是 `--no-ff` 反合 `origin/main`；專案明確要求線性歷史時才用本檔做法。
+> 預設流程（SKILL.md 的 R7）是 `--no-ff` 反合 `origin/main`；專案明確要求線性歷史時才用本檔做法。
 
 ## 發版前品質閘
 

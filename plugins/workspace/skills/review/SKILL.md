@@ -7,6 +7,8 @@ description: Clean Architecture 程式碼審查——委派審查型 subagent �
 
 委派專業審查型 subagent，對變更做全面的架構與品質審查。
 
+**預設只報告**：不改檔、不 commit、不留言、不 merge，使用者明確要求才做。結論要附證據——每個變更檔歸到檢查項或寫排除理由、「查無」前先證明查法抓得到已知命中、標出被削弱的測試／拉長的 timeout／新 suppression、新套件查 registry——細則見 `references/evidence.md`，派審查 subagent 時把該檔路徑寫進 prompt。
+
 ## 審查範圍
 
 | 範圍 | 用法 | 說明 |
@@ -28,7 +30,7 @@ description: Clean Architecture 程式碼審查——委派審查型 subagent �
    4. 測試覆蓋率與測試品質
    5. 錯誤處理、效能、安全性、可擴展性
 4. **驗證與過濾** — 見下節「發現驗證與誤報排除」，只留下成立的發現。
-5. **彙整報告** — 合併結果，給出總體評估與行動項目。
+5. **彙整報告** — 合併結果，給出總體評估與行動項目，最後附「證據」段（見 `references/evidence.md` 第 6 節）。
 
 ## 審查遠端 PR／MR 並 merge
 
@@ -41,7 +43,7 @@ description: Clean Architecture 程式碼審查——委派審查型 subagent �
 1. **排除**（直接丟，不必驗證）：
    - 既有問題：這次 diff 沒碰到的行，或改動前就存在的寫法。
    - 建置、型別檢查、linter／analyzer 會抓的問題（第 2 步已跑過）。
-   - 程式碼裡已用 ignore／suppress 註解明確靜音的。
+   - 改動前就存在、已用 ignore／suppress 註解明確靜音的（這次 diff **新增**的 suppression 不排除，照 `references/evidence.md` 第 4 節列出）。
    - 吹毛求疵：命名偏好、格式、「可以更優雅」這類不影響正確性、安全、效能，也不違反專案明文慣例的意見。
 2. **驗證**：剩下的 🚫／⚠️ 發現，每條派一個獨立的唯讀 subagent（`model: sonnet`），只給該條發現與 `file:line`，
    要它讀程式碼回答「成立／不成立＋一句依據」。不成立就丟；同一則訊息平行派出。💡 次要項不驗證。

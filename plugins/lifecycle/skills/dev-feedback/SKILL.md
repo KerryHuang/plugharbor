@@ -1,8 +1,9 @@
 ---
 name: dev-feedback
-description: "把規格類 skill 開的票面摩擦追回產生它的那行開票規格，提出刪減清單（只做減法，--apply 才執行）。Use when 依 lifecycle 開的票實作或驗收時撞到摩擦：「這張票寫太多」「票面的技術指示跟實作對不上」「票面的介面說明已過期」「QA 情境跑不到」「dev-feedback」。"
-argument-hint: "[--apply] {票號}"
+description: "把規格類 skill 開的票面摩擦追回產生它的那行開票規格，提出刪減清單並寫成報告檔（只做減法，不改 plugin）。Use when 依 lifecycle 開的票實作或驗收時撞到摩擦：「這張票寫太多」「票面的技術指示跟實作對不上」「票面的介面說明已過期」「QA 情境跑不到」「dev-feedback」。"
+argument-hint: "{票號}…"
 model: sonnet
+disable-model-invocation: true
 ---
 
 # 實作端回饋：把票面摩擦刪回開票規格
@@ -24,27 +25,27 @@ model: sonnet
 ## 輸入參數
 
 ```
-$ARGUMENTS → [--apply] {票號}
+$ARGUMENTS → {票號}…
 ```
 
 | 參數 | 必填 | 說明 |
 |------|------|------|
 | `{票號}` | 是 | 摩擦來源票（Dev 或 QA 票），多張以空白分隔 |
-| `--apply` | 否 | 產出刪減清單後確認並執行，含 commit / bump / push |
 
 ## 執行流程
 
 ### 1. 驗票源
 
-`get_issue` 取票，讀描述**最後一行**的票源 flag `_from lifecycle:linear-create@{version}_`
-（舊版本開的票 flag 可能在標題前綴 `[from lifecycle:linear-create@{version}]`，兩處都認）。
+經 `lifecycle:ticket-ops` 的 `get` 取票，讀描述**最後一行**的票源 flag `_from lifecycle:ticket-create@{version}_`
+（舊版本開的票 flag 可能在標題前綴 `[from lifecycle:ticket-create@{version}]`，兩處都認）。
+lifecycle 1.0.0 前開的票 flag 是 `sa-flow:linear-create@{version}`，同樣認，版本比對改看 sa-flow 的版號、只當參考。
 現行版本取 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 的 `version`。
 
-flag 版本 ＜ 現行版時，先 `git log --oneline -- plugins/lifecycle/skills/linear-create/ plugins/sa-flow/skills/linear-create/` 看那段期間動過沒——**已改掉的不重複改**。
+flag 版本 ＜ 現行版時，先讀 `${CLAUDE_PLUGIN_ROOT}/CHANGELOG.md` 看那段期間 `ticket-create` 動過沒——**已改掉的不重複列**。
 
 <law>
-無 flag 的票不得作為修改 `skills/linear-create/` 的證據——票面內容不是本 plugin 產生的。
-此時只回報這張票可刪的段落，skill 不動。
+無 flag 的票不得作為修改 `skills/ticket-create/` 的證據——票面內容不是本 plugin 產生的。
+此時報告只列這張票可刪的段落，不列對 plugin 的刪減清單。
 </law>
 
 ### 2. 收摩擦
@@ -54,7 +55,7 @@ flag 版本 ＜ 現行版時，先 `git log --oneline -- plugins/lifecycle/skill
 ```
 - 票面寫了：{原句}（{票種}，出自 {範本段名}）
 - 實作時發生：{做了別的／回頭翻規格書／情境跑不到／被綁住}
-- 來源規格：{linear-ticket-defaults.md §章節 ｜ linear-create/SKILL.md 第 N 步 ｜ 取材章對照}
+- 來源規格：{ticket-templates.md §章節 ｜ ticket-create/SKILL.md 第 N 步 ｜ create-dispatch.md 取材章對照}
 ```
 
 證據取用序，**前面的推翻後面的**：實作者與 QA 的原話與退件留言 → 實作 commit／MR 與票面的差異
@@ -64,7 +65,7 @@ flag 版本 ＜ 現行版時，先 `git log --oneline -- plugins/lifecycle/skill
 
 | 型 | 表徵 | 來源通常在 | 刪的著力點 |
 |----|------|-----------|-----------|
-| **A 錯的技術指示** | 票面指定做法、選型、資料型別、索引、快取、欄位實作；實作端改成別的且通過驗收 | Dev 後端票範本「規格明細」「建議事項（非強制）」、Bug 票「修改細節（必填）」、取材章指到 BFS 手段層 | 刪該句；欄位要留就改寫成行為／契約敘述。「建議事項（非強制）」是高風險區——非強制卻被當規格照做 |
+| **A 錯的技術指示** | 票面指定做法、選型、資料型別、索引、快取、欄位實作；實作端改成別的且通過驗收 | Dev 後端票範本（ticket-templates.md）「規格明細」「建議事項（非強制）」、Bug 票「修改細節（必填）」、取材章指到 BFS 手段層 | 刪該句；欄位要留就改寫成行為／契約敘述。「建議事項（非強制）」是高風險區——非強制卻被當規格照做 |
 | **B 過完整的介面說明** | 票面逐欄複製 FFS §2；開發者仍回去翻 FFS（＝票面是多餘副本）；或票面已過期而實作照票做 | 票描述原則 §3 的「唯一例外」豁免、Dev 前端票範本「畫面內容規格（自 FFS §2 逐表複製）」 | 先收窄豁免——哪幾類欄位群真的只有票面有？再問整條豁免還成不成立。這是全 plugin 最大的一塊票面內容 |
 | **C 不必要的 QA use-case** | 情境在現有資料／權限下跑不到；或重複規格書契約已保證的機械性驗證（逐欄、狀態碼、CRUD）；或本該由單元測試涵蓋 | QA 票範本「E2E 情境 CheckList」、票描述原則 §5 | 跑不到的情境根因多半在**取材章**——FRD §2 沒有那個情境卻被生出來。收窄成「情境只能出自 FRD §2 的 US／BR，生不出來就少寫一條」 |
 
@@ -82,24 +83,22 @@ flag 版本 ＜ 現行版時，先 `git log --oneline -- plugins/lifecycle/skill
 每個候選做**逐句 no-op 測試**：拿掉這句，開票的人（或 model）的行為會不會變？不會就刪。
 
 <law>
-改完 `skills/linear-create/` 全目錄總行數**不得增加**；新增須在同批刪去等量以上的既有行。
+`skills/ticket-create/` 全目錄在刪減清單套用後的總行數**不得增加**；新增須在同批刪去等量以上的既有行。
 行數增加代表沒抓到根因——摩擦來自票面太長，解法不會是再寫一條規定。
 </law>
 
-### 5. 套用（`--apply`）
+### 5. 寫報告檔
 
-`AskUserQuestion` 列出即將刪改的項目與各檔行數前後，確認後改。範圍限
-`skills/linear-create/`（SKILL.md 與其 references）及票面取材章的對照。
+本 skill **不改 plugin**：刪減清單寫成報告檔，由 plugin 維護者照清單另行修改。
+報告寫到專案根 `.tmp/dev-feedback/<票號小寫>.md`（`mkdir -p`；多張票合併成一份，檔名取第一張票號）；
+該目錄不納入版本控制。寫完回報檔案路徑與清單項數，不提交、不 bump 版號。
 
-改完同批更新 `CHANGELOG.md` 與 plugin 版號（依該 repo 的版號同步規範），
-跑 `claude plugin validate .`，再交使用者決定是否提交。
-
-### 6. 輸出
+### 6. 報告格式
 
 ```markdown
 ## 實作端回饋
 
-**票源**：{票號}（flag `linear-create@{version}`，現行 {現行版}）
+**票源**：{票號}（flag `ticket-create@{version}`，現行 {現行版}）
 
 ### 摩擦與來源規格
 | # | 型 | 票面寫了 | 實作時發生 | 來源規格 |
@@ -116,7 +115,6 @@ flag 版本 ＜ 現行版時，先 `git log --oneline -- plugins/lifecycle/skill
 
 | 錯誤情境 | 處理方式 |
 |---------|---------|
-| 無 `$ARGUMENTS` / 票不存在 / Linear MCP 未設定 | 顯示原因，終止 |
+| 無 `$ARGUMENTS` / 票不存在 / `ticket-ops` 不可用（缺 `ticket.tool` 設定） | 顯示原因，終止 |
 | 票無 flag | 依 Step 1，只回報該票可刪的段落 |
 | 全部摩擦都定位不到來源規格 | skill 不動，輸出個案清單與各條理由 |
-| `claude plugin validate .` 失敗 | 回滾該項，繼續處理其他項 |

@@ -3,6 +3,7 @@ name: operation-manual
 description: "產出交付客戶的操作手冊與教育訓練簡報：實機探索 → 標註截圖 → 撰寫 → 審查 → 出 PDF／PPTX，並把過程中發現的規格落差整理成待開票清單。觸發：「寫操作手冊」「產操作手冊」「手冊簡報」「更新手冊某一章」。"
 argument-hint: "<功能目錄或 URL> [--deck-only] [--update <section-id>]"
 model: sonnet
+disable-model-invocation: true
 ---
 
 # Operation Manual — 操作手冊與簡報產出

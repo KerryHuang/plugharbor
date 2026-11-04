@@ -1,6 +1,6 @@
 ---
 name: survey-existing-system
-description: 勘察現役（in-production）系統某段行為的現況，產出系統分析師（SA）現況分析文件。當 SA 需要獨立釐清某個現有 app／服務目前怎麼運作時使用。不適用於新功能需求（用 lifecycle:explore），也不適用於 FoxPro／舊系統遷移（用 lifecycle:foxpro-analyzer 或 reverse-engineer）。觸發：「勘察現有系統」「現況分析」「看懂這個 app 的現況」「survey existing system」。
+description: 勘察現役（in-production）系統某段行為的現況，產出系統分析師（SA）現況分析文件。當 SA 需要獨立釐清某個現有 app／服務目前怎麼運作時使用。不適用於新功能需求（用 lifecycle:explore），也不適用於待汰換舊系統的遷移分析（走 lifecycle:spec，舊系統對照見其 legacy-parity 指引）。觸發：「勘察現有系統」「現況分析」「看懂這個 app 的現況」「survey existing system」。
 argument-hint: "[app 路徑或行為範圍]"
 ---
 
@@ -15,10 +15,10 @@ SA 薄編排：用既有 agent 蒐集唯讀證據，再彙整成**現況分析�
 
 蒐集前先與使用者確認：
 1. **目標**——哪個 app／服務（monorepo 或 submodule 容器下的哪個子目錄）、要勘察哪段行為／範圍。
-2. **產出**——預設 `{docs-root}`（依專案 CLAUDE.md 的 `sdlc-docs-path`，未設定為 `docs/`），
+2. **產出**——預設 `{docs-root}`（即 `spec.dir` 設定，預設 `docs/specs`），
    落點與命名依該專案的文件慣例；判不出落點就問，不自建第一階目錄。
-3. **來源判斷**——若對象是待汰換的 FoxPro／舊系統，停止並改用
-   `lifecycle:foxpro-analyzer`；本 skill 只處理**現役 in-production** 系統。
+3. **來源判斷**——若對象是待汰換的舊系統（要遷移而非維持運作），停止並改走 `lifecycle:spec`；
+   本 skill 只處理**現役 in-production** 系統。
 
 ## 蒐集證據（唯讀、委派）
 
@@ -45,4 +45,4 @@ SA 薄編排：用既有 agent 蒐集唯讀證據，再彙整成**現況分析�
 - **定稿文件在主執行緒寫，絕不透過 subagent**（subagent 在此無法可靠寫檔）。
 - **審閱檢查點**：先呈現草稿、取得 SA 確認再定稿，不自動 commit。
 - 確認後才依專案 CLAUDE.md 的 git 規則 commit；文件 repo 是 submodule 時，先 commit 子模組，再更新主 pointer。
-- 完成後依動線用 AskUserQuestion 建議下一步：要對現役功能做 CR 或加新功能 → `lifecycle:explore`；為有票的 bug 而勘察 → `lifecycle:linear-triage {票號}`；已上線但沒有規格、要逆向補 → `lifecycle:requirement`（現況文件是這三條路的共同輸入）；使用者同意才接著跑，不自動執行。
+- 完成後依動線用 AskUserQuestion 建議下一步：要對現役功能做 CR 或加新功能 → `lifecycle:explore`；為有票的 bug 而勘察 → `lifecycle:triage {票號}`；已上線但沒有規格、要逆向補 → `lifecycle:spec`（現況文件是這三條路的共同輸入）；使用者同意才接著跑，不自動執行。

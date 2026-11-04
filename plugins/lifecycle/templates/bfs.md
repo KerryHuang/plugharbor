@@ -65,7 +65,7 @@ flowchart LR
 > - §11 外部服務整合 — {一句；不適用寫「不適用」}
 > - §12 測試案例 — TC-{起}~{迄}
 > - §13 驗收標準 — 引用 §12 編號
-> - §14 規格完整性確認 — 由 verifying-specs 驗，不列清單
+> - §14 規格完整性確認 — 由 spec-check 驗，不列清單
 > - §A 既有實作結論 — 端點現況、影響範圍、重用結論（明細見 `analysis/reuse-scan.yml`）
 > - §15 待澄清事項 — CL-{起}~{迄}；§附錄 — 術語 ref FRD §8.1、參考標準
 > - §D 決策紀錄 — 本階段拍板編號（全文在 `decisions.md`）
@@ -398,7 +398,7 @@ flowchart LR
 本節定義**契約**：這張表有哪些欄位、什麼型別長度、能不能為空、語意是什麼。
 ⚠️ 不寫程式語言型別（Guid／string?／ICollection<>）、不寫原始碼檔名、不寫 ORM attribute
    ——那是實作，由 RD 決定，且能從 DB 型別直接推導。
-   （verifying-specs/references/existing-resources-check.md 早已載明：
+   （spec-check 的 verify/existing-resources-check.md 早已載明：
      DB 表已存在時 Entity 定義可自動產生，無需規格書重複定義）
 -->
 
@@ -456,7 +456,7 @@ flowchart LR
 觸發條件：任何端點回傳集合 / 有篩選排序 / 提供匯出 / 含統計，**必填**；純單筆 CRUD 可填「N/A — 非列表型」。
 原則：每維度二擇一——「依循專案既有慣例（附 codebase 路徑）」或「本功能自定義（明確值）」。
 禁止「比照既有 / 反查回填 / 對齊報表 / 依需要分頁」等 hand-wave，否則 RD 會卡住或各自臆測。
-撰寫方法與探索線索 → specify-backend/references/list-endpoint-dor.md；排序規則 → references/sort-order-standards.md。
+撰寫方法與探索線索 → spec 的 bfs/list-endpoint-dor.md；排序規則 → references/sort-order-standards.md。
 維度為常見 baseline，依專案增減。
 -->
 
@@ -680,15 +680,15 @@ flowchart LR
 | ST-001 | 送審 | {檢查項目} | {條件描述} | 阻擋並顯示錯誤 |
 | ST-002 | 核准 | {檢查項目} | {條件描述} | 阻擋並顯示錯誤 |
 
-### 7.4 FoxPro 來源驗證（若適用）
+### 7.4 舊系統來源驗證（若適用）
 
-| 規則編號 | FoxPro 來源 | 規則描述 | 驗證狀態 |
+| 規則編號 | 舊系統來源 | 規則描述 | 驗證狀態 |
 |----------|------------|----------|----------|
 | FP-001 | {檔名}.APP | {業務規則描述} | ✅ 已驗證 |
 | FP-002 | {檔名}.APP | {業務規則描述} | ⚠️ 待確認 |
 
 **驗證狀態說明：**
-- ✅ 已驗證：已在 FoxPro 原始碼中找到對應程式碼
+- ✅ 已驗證：已在舊系統原始碼中找到對應程式碼
 - ⚠️ 待確認：用戶提供但尚未在原始碼中驗證
 - ❌ 未找到：在原始碼中找不到對應邏輯
 
@@ -910,7 +910,7 @@ flowchart LR
 
 ## 14. 規格完整性確認
 
-> 完整性由鏈末 `dev-readiness`（獵未寫的）與 `verifying-specs`（驗已寫的）檢查，本章不列清單。
+> 完整性由鏈末 `spec-check --readiness`（獵未寫的）與 `spec-check`（驗已寫的）檢查，本章不列清單。
 
 ---
 
@@ -920,7 +920,7 @@ flowchart LR
 > 跨處理單元盤點、勘察日期與檔案路徑），本節**只寫結論**，不複製明細。
 
 <!--
-觸發條件：所有 BFS 必填。由 specify-backend Step 4.1.5（依 reuse-scan.md）產出。
+觸發條件：所有 BFS 必填。由 spec --stage bfs Step 4.1.5（依 reuse-scan.md）產出。
 目的：讓 §6 路由與 §5 欄位有 codebase 實查為據，而不是憑想像寫。
 
 ⚠️ 類別名稱、檔案路徑、行號、mapping 逐欄對照一律留在 reuse-scan.yml，不進本文件：

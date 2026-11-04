@@ -1,8 +1,8 @@
 # FFS §8 → 中性驗收案例格式
 
-`lifecycle:qa-verify` 只吃中性驗收案例格式（欄位定義見 `lifecycle:qa-verify` 的 acceptance-format.md），不認 FFS 的章節結構。規格鏈完工後要驗收，**先照本檔把 FFS §8 轉成案例檔，再叫用 `lifecycle:qa-verify <案例檔>`**。`qa-sweep` 的類別 4 同樣先轉檔。
+`lifecycle:qa-verify` 只吃中性驗收案例格式（欄位定義見 `lifecycle:qa-verify` 的 acceptance-format.md），不認 FFS 的章節結構。規格鏈完工後要驗收，**先照本檔把 FFS §8 轉成案例檔，再叫用 `lifecycle:qa-verify <案例檔>`**。`lifecycle:qa-verify --sweep` 的類別 4 同樣先轉檔。
 
-轉檔由主 session 做（純文字整理，不開瀏覽器、不派 agent）。檔案放功能目錄的 `analysis/acceptance.md`；`qa-sweep` 批次時放該輪 sweep 工作區。
+轉檔由主 session 做（純文字整理，不開瀏覽器、不派 agent）。檔案放功能目錄的 `analysis/acceptance.md`；批次模式時放該輪 sweep 工作區。
 
 ## 欄位對照
 

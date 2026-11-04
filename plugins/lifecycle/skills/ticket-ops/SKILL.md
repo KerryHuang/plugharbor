@@ -9,7 +9,7 @@ model: sonnet
 
 > 非 Claude Code（如 Pi）執行時，先讀 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`（Claude Code 照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-其他 skill（`issue-triage`、報表、規格類 skill）只說「建票／改階段／留言…」，實際怎麼打工具由本 skill 依設定決定。
+其他 skill（`triage`、報表、規格類 skill）只說「建票／改階段／留言…」，實際怎麼打工具由本 skill 依設定決定。
 
 ## 0. 讀設定
 

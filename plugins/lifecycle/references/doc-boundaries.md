@@ -31,8 +31,8 @@
 | 重用分析 | SAD §5 | BFS 以「延用/擴充/新建」標注引用，不重做盤點 |
 | API 端點規格（Request/Response/JSON） | BFS §6 | SAD §6.4 僅做 US→API 對應；FFS §6.1 引用 BFS（現況已對） |
 | 測試案例 | 依層次分工，不互抄 | **FRD §7 不列 TC**（業務驗收＝§2 AC；E2E 情境 owner 為 QA 票，取材 FRD §2）；BFS §12=API 層；FFS §8=UI 層。同一情境只在對應層出現 |
-| 邊界與例外清單 | SAD §6.6 | 維度定義見 `boundary-dimensions.md`（B1–B13／M1–M4，SA 盤點與 dev-readiness 驗證共用同一組編號）。BFS §7 VR／§8 例外／§8.4 並發依 §6.6 承接；dev-readiness 驗「規格有無落實 §6.6 結論」，**不重新盤點** |
-| 列表／報表端點 DoR | BFS §6.0 | 撰寫法見 `specify-backend/references/list-endpoint-dor.md`。排序穩定性與 1:N 取值等維度同步餵 SAD §6.6；分頁／效能餵 SAD §6.5 |
+| 邊界與例外清單 | SAD §6.6 | 維度定義見 `boundary-dimensions.md`（B1–B13／M1–M4，SA 盤點與 spec-check --readiness 驗證共用同一組編號）。BFS §7 VR／§8 例外／§8.4 並發依 §6.6 承接；spec-check --readiness 驗「規格有無落實 §6.6 結論」，**不重新盤點** |
+| 列表／報表端點 DoR | BFS §6.0 | 撰寫法見 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/bfs/list-endpoint-dor.md`。排序穩定性與 1:N 取值等維度同步餵 SAD §6.6；分頁／效能餵 SAD §6.5 |
 | 排序五要素 | **分層**：業務語意 = FRD §4；策略 = SAD §6.6；明確值 = BFS §6.0（後端）／FFS §2（畫面與明細） | 規則見 `sort-order-standards.md`。FRD 寫「最新在前」，SAD 定由誰排與白名單，BFS／FFS 才寫欄位＋決勝欄＋NULL 位置＋序語意 |
 | NFR（效能／並發／資料量／權限／稽核） | FRD §6（業務目標值） | SAD §6.5 逐項寫約束／現況／陷阱（不寫手段，手段進 TD），不重述目標值；BFS 只在端點層補約束 |
 
@@ -92,8 +92,8 @@ CR 文件本身已是 delta-only（僅記錄異動 + ref 原始文件），縱�
 
 ## 撰寫 / 驗證時的引用
 
-- requirement / system-analysis / specify-backend / specify-frontend skill 在「撰寫前」步驟應引用本檔，確認各章是否該 ref 而非重抄。
-- verifying-specs 增加檢查項（去重三項為 **BLOCKER**，其餘 WARNING）：
+- spec skill 的 FRD／SAD／BFS／FFS 棒在「撰寫前」步驟應引用本檔，確認各章是否該 ref 而非重抄。
+- spec-check 增加檢查項（去重三項為 **BLOCKER**，其餘 WARNING）：
 
 | 檢查項目 | 等級 |
 |---------|------|
@@ -135,7 +135,7 @@ CR 文件本身已是 delta-only（僅記錄異動 + ref 原始文件），縱�
 
 每份 FRD / SAD / BFS / FFS 必須在 `§0 一頁摘要` 之後、「文件資訊」之前含 `<!-- SPEC-INDEX v1 -->` 區塊（`§0` 與 `§D` 各列一行）。
 格式依專案的 SPEC-INDEX 規範；無規範時，每章列一行：章節、編號區間、一句摘要。撰寫類 skill 產出文件時同批產生；
-`verifying-specs` 檢查索引章節與實際 `^## ` 章節是否一一對應（不對應 = WARNING）。
+`spec-check` 檢查索引章節與實際 `^## ` 章節是否一一對應（不對應 = WARNING）。
 
 ## BFS §6 表達法
 
@@ -150,10 +150,10 @@ CR 文件本身已是 delta-only（僅記錄異動 + ref 原始文件），縱�
 
 ## 票↔文件雙向註記
 
-Linear 票與規格／分析文件要能互相找到，`qa-verify`、`qa-sweep` 從票號反查 FFS §8 就靠這條。
+票與規格／分析文件要能互相找到，`qa-verify`（含批次模式）從票號反查 FFS §8 就靠這條。
 
-- **開文件相關的票時**：票面註明對應文件路徑（`linear-create` 的「參考文件」表）。
+- **開文件相關的票時**：票面註明對應文件路徑（`ticket-create` 的「參考文件」表）。
 - **文件裡**：記所屬票號——檔頭註記，或 CR 文件用票號檔名後綴（`{功能}_功能調整{前端／後端}規格書_{票號}.md`，`consolidate-docs` 以 `*_{票號}.md` 比對）。
 - **票進入 Done**：跑 `lifecycle:consolidate-docs`，把票號後綴的變更文件合併回主規格並刪除票號來源檔。
-- 開立／關閉狀態看 `lifecycle:ticket-daily-report`，**不要**另外維護手動票號清單。
+- 開立／關閉狀態看 `lifecycle:ticket-report`，**不要**另外維護手動票號清單。
 - 檔名慣例以 docs repo 的 `README.md`「文件命名規則」為準（有的話）。

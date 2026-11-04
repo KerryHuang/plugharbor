@@ -1,6 +1,6 @@
 ---
 name: qa-verify
-description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收案例檔（markdown 或 YAML，格式見 acceptance-format.md）或票號（從票面重現步驟產案例），派 agent 對實機逐條驗，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對，產 qa-report.md 與規格校正清單，有票號則回票。觸發：「驗收 [案例檔]」「qa-verify [票號]」「這支功能開發完了幫我驗」。不開 Bug 票（處置欄由人填）。
+description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收案例檔（markdown 或 YAML，格式見 acceptance-format.md）或票號（從票面重現步驟產案例），派 agent 對實機逐條驗，機械判定 PASS／FAIL／前端未擋／BLOCKED／未執行／無法比對，產 qa-report.md 與規格校正清單，有票號則回票。加 `--sweep` 為批次模式：撈指派給我的待測票、分類、逐張驗後依結果寫回階段與留言。觸發：「驗收 [案例檔]」「qa-verify [票號]」「這支功能開發完了幫我驗」「掃待測票」「qa-sweep」。不開 Bug 票（單張流程處置欄由人填）。
 ---
 
 # qa-verify — 驗收案例 → 實機 E2E 驗收
@@ -11,6 +11,11 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 
 `<PY>` ＝ `command -v python3 || command -v python`（不要寫死）。`<plugin>` ＝ `${CLAUDE_PLUGIN_ROOT}`。
 `<ws>` ＝ 專案根的**字面絕對路徑**。所有指令不 `cd`。
+
+## 模式
+
+- 預設：單張流程（下方 Step 0–7）。
+- `--sweep [票號] [--dry-run]`：批次模式，做法讀 `${CLAUDE_SKILL_DIR}/references/batch-mode.md`（純後端 Bug 票另見 `references/backend-verify.md`）。批次模式逐張回到單張流程的 Step 0–7 測試，自己只負責撈票、分類、寫回。
 
 ## Step 0：前置檢查（缺什麼停在那裡）
 

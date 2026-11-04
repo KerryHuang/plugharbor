@@ -14,7 +14,7 @@ import argparse, io, re, sys
 from manual_brand import resolve_brand
 
 # Windows 預設 cp950：印中文會亂碼、印 emoji 直接炸 UnicodeEncodeError（實測）。
-# 與 parse_foxpro.py 同一做法，腳本自己處理，不靠呼叫端設 PYTHONUTF8。
+# 腳本自己處理 UTF-8，不靠呼叫端設 PYTHONUTF8。
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8")

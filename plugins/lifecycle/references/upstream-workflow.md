@@ -15,7 +15,7 @@ sdlc-docs-path: ../docs
 
 ```
 需求文件 → (驗證) → 系統分析 → 功能規格書 → 就緒度檢核 → (驗證) → [交付實作]
-  FRD        自動      SAD         BFS+FFS    dev-readiness  自動
+  FRD        自動      SAD         BFS+FFS    spec-check --readiness  自動
   PM角色               SA角色      開發者角色  資深開發者
 ```
 
@@ -23,7 +23,7 @@ sdlc-docs-path: ../docs
 
 ```
 調整需求文件 → (驗證) → 系統分析 → 調整規格書 → 就緒度檢核 → (驗證) → [交付實作]
-  CR-FRD        自動      SAD       CR-BFS+CR-FFS  dev-readiness  自動
+  CR-FRD        自動      SAD       CR-BFS+CR-FFS  spec-check --readiness  自動
 ```
 
 > 驗證通過後交付下游進行實作、測試、審查、提交；完工後以 `lifecycle:qa-verify`（先照 `${CLAUDE_PLUGIN_ROOT}/references/ffs8-to-acceptance.md` 把 FFS §8 轉成中性驗收案例） 對實機驗收。
@@ -37,7 +37,7 @@ sdlc-docs-path: ../docs
 | 系統分析（SAD） | 工作流/資訊流/資料流 | SA | 如何實現 |
 | 功能規格書（BFS / CR-BFS） | 技術規格 | 後端開發（RD） | 怎麼做 |
 | 前端規格書（FFS / CR-FFS） | UI 規格 | 前端開發（PG） | 畫面怎麼呈現 |
-| 就緒度檢核（dev-readiness） | 就緒度報告 + 回寫 | 資深開發者 | 邊界寫齊了沒 |
+| 就緒度檢核（spec-check --readiness） | 就緒度報告 + 回寫 | 資深開發者 | 邊界寫齊了沒 |
 | 規格驗證 | 品質報告 | 架構師 | 能不能做 |
 
 ## 步驟間關係
@@ -50,4 +50,4 @@ sdlc-docs-path: ../docs
 | 就緒度檢核 | 功能規格書 | 規格驗證 |
 | 規格驗證 | 任何已完成的文件 | 修復或通過 |
 | 舊系統分析 | 舊系統檔案 | 需求文件或系統分析 |
-| Linear 開票 | 需求文件（建議） | 開始開發 |
+| 開票 | 需求文件（建議） | 開始開發 |

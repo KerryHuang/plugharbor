@@ -16,19 +16,19 @@
 
 | 交棒點 | 為什麼不能自動 |
 |--------|--------------|
-| `system-analysis` → `specify-backend` | SAD Step 8.5 是技術方案拍板點，方案選錯後面全白做 |
-| `verifying-specs` → `linear-create` | 開票是**對外動作**（指派他人、產生 SLA），一律先確認 |
-| `requirement` 的**分流判定**（Step 9.8） | 選 lite 就不寫 SAD，判錯要回頭補；讓人看過五條判準再走 |
+| `spec --stage sad` → `spec --stage bfs` | SAD Step 8.5 是技術方案拍板點，方案選錯後面全白做 |
+| `spec-check` → `ticket-create` | 開票是**對外動作**（指派他人、產生 SLA），一律先確認 |
+| `spec --stage frd` 的**分流判定**（Step 9.8） | 選 lite 就不寫 SAD，判錯要回頭補；讓人看過五條判準再走 |
 | 任何 skill 出現「方案分歧」「體積超標放行」「PO 裁決」 | 這些本來就是問句，沒有預設答案 |
 
 ### B. 可自動接棒（滿足**全部**續行條件時直接續跑）
 
 | 交棒點 | 說明 |
 |--------|------|
-| `requirement` → 下一棒 | 下一棒**依分流結果**：`chain_profile=standard` → `system-analysis`（SAD 中途的 8.5 確認門仍會停下）；`chain_profile=lite` → **直接 `specify-backend`**。⚠ 分流本身是 Step 9.8 的 `AskUserQuestion`，屬硬性停點，先確認再接棒 |
-| `specify-backend` → `specify-frontend` | 後端契約定了，前端規格是承接，無新決策 |
-| `specify-frontend` → `dev-readiness` | 檢核是驗證動作，不是決策 |
-| `dev-readiness`（結論 ✅）→ `verifying-specs` | 兩者都是驗證，且 dev-readiness 已明訂 ✅ 即交棒 |
+| `spec --stage frd` → 下一棒 | 下一棒**依分流結果**：`chain_profile=standard` → `spec --stage sad`（SAD 中途的 8.5 確認門仍會停下）；`chain_profile=lite` → **直接 `spec --stage bfs`**。⚠ 分流本身是 Step 9.8 的 `AskUserQuestion`，屬硬性停點，先確認再接棒 |
+| `spec --stage bfs` → `spec --stage ffs` | 後端契約定了，前端規格是承接，無新決策 |
+| `spec --stage ffs` → `spec-check --readiness` | 檢核是驗證動作，不是決策 |
+| `spec-check --readiness`（結論 ✅）→ `spec-check` | 兩者都是驗證，且 spec-check --readiness 已明訂 ✅ 即交棒 |
 
 ## 續行條件（**全部**滿足才自動接棒）
 
@@ -50,8 +50,8 @@
 2. 直接執行下一棒。
 3. 續跑的棒**同樣適用本協定**——它跑完也照樣判斷，可以連續自動接棒到遇上硬性停點為止。
 
-典型的一段連跑：`specify-backend` → `specify-frontend` → `dev-readiness` → `verifying-specs`，
-中間三個往返全部消掉；到 `verifying-specs` 完成後停下，等人決定開票。
+典型的一段連跑：`spec --stage bfs` → `spec --stage ffs` → `spec-check --readiness` → `spec-check`，
+中間三個往返全部消掉；到 `spec-check` 完成後停下，等人決定開票。
 
 ## 接棒在哪個 session 跑
 

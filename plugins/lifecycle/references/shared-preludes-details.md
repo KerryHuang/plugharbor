@@ -23,7 +23,7 @@
 查過仍定不了的才是真問題，只有三種情況才發問：(a) 不同答案導致實質不同的工作（lite／standard、方案 A／B）；
 (b) 業務裁決（欄寬、撞名復活或建新列、範圍納不納某畫面）；(c) 不可逆或高影響（補主鍵、刪 View、force push、跨客戶批次異動）。
 
-> 實證：`linear-create` 規定問九輪，實際只問一輪——先查同族功能既有票，labels、priority、estimate、due、命名全部推導得到，省八輪往返、品質未降。
+> 實證：`ticket-create` 規定問九輪，實際只問一輪——先查同族功能既有票，labels、priority、estimate、due、命名全部推導得到，省八輪往返、品質未降。
 
 自我檢查：這題我查過同族既有產出了嗎？查得到，為什麼還在問？
 
@@ -54,12 +54,12 @@
 
 ## 規格鏈中途裁決：暫定不停下，開票前集中問
 
-跑規格鏈（`spec-chain` 或人工依序跑 requirement → … → verifying-specs）時：
+跑規格鏈（`spec-chain` 或人工依序跑 spec 各棒 → … → spec-check）時：
 
 1. **先過漏斗前兩層**：依上節「問題漏斗」先實證（同族規格與票、專案慣例、上游文件、codebase 先例，加上舊系統原始碼與測試環境 DB 實查）、再交顧問（SAD 顧問桌或當場單點諮詢）；能定的直接定案，平台／UI 題照先例定案。
 2. **其餘裁決不停下來問**：採建議選項當暫定、繼續做。`decisions.md` 記一列 `狀態`＝`暫定`，
    正文引用處寫「（暫定，D-xxx 待確認）」——欄位與標記格式見 `${CLAUDE_PLUGIN_ROOT}/references/decision-record.md`「暫定決策」。
-3. **開票前顧問分流（補網）**：中途已過漏斗、仍留下的暫定題，開票前再整批過一次——到 `linear-create` 硬停點前，彙整全部 `狀態`＝`暫定` 的列，整批派一次
+3. **開票前顧問分流（補網）**：中途已過漏斗、仍留下的暫定題，開票前再整批過一次——到 `ticket-create` 硬停點前，彙整全部 `狀態`＝`暫定` 的列，整批派一次
    `lifecycle:domain-advisor`（`mode: triage`），逐題分三類：
    - **撤題**：實證推翻問題前提，decisions.md 該列改定案並寫明「前提不成立」與證據，不問使用者。
    - **顧問裁定**：結論是對齊舊系統行為，或套用專案已收錄的通用預設／平台先例，且有一手證據
@@ -116,14 +116,14 @@
 | 3 | 以語意單位全檔 grep，不用行號清單 | 同一敘述換句話說就掃不到 |
 | 4 | **取代不追加**：被取代的舊敘述必刪；回寫後正文淨增 >10% 在 `decisions.md` 記一列理由 | 每輪回寫只加不減，文件體積在鏈上單向成長 |
 
-> 實證：dev-readiness 五項回寫後 `verifying-specs` 抓 5 項 CRITICAL，4 項同一根因——回寫沒掃乾淨。
+> 實證：spec-check --readiness 五項回寫後 `spec-check` 抓 5 項 CRITICAL，4 項同一根因——回寫沒掃乾淨。
 
-> 這與 `dev-readiness` 的「回寫前先重讀該檔」是兩件事：那條防覆蓋並行修改，本條防漏落點。
+> 這與 `spec-check --readiness` 的「回寫前先重讀該檔」是兩件事：那條防覆蓋並行修改，本條防漏落點。
 
 ## Step 0.3: Plugin 版本對版
 
 執行中的 skill 內容來自快取，不會因 repo 更新自動生效；落差常在鏈**進行中**發生。
-鏈起頭與每個硬性停點（SAD→BFS、dev-readiness→verifying-specs、verifying-specs→linear-create）各對一次。
+鏈起頭與每個硬性停點（SAD→BFS、spec-check --readiness→spec-check、spec-check→ticket-create）各對一次。
 比對對象為 marketplace（`kerryhuang-plugins`）上的最新版本；查不到則略過。
 
 > 實證：多次因 plugin 版本落差，下游依舊版規範產出而需整份重寫；票面新規範已落地、執行時仍跑舊版。
@@ -149,13 +149,13 @@ docs 與程式碼同 repo 時略過。docs 在獨立 repo 時，開工前先 pul
 
 | 產物 | 路徑 | 首個產出者 | 內容 |
 |------|------|-----------|------|
-| DB 結構事實 | `analysis/db-analysis.yml` | `system-analysis`（lite 鏈為 `specify-backend`） | 欄位、型別、長度、可空、約束、FK、狀態欄語意、抽樣。**首段 `_index:` 列 tables 清單** |
-| 既有實作盤點 | `analysis/reuse-scan.yml` | `system-analysis` | 路由清單、Handler／Entity／Repository 對照、共用 API、跨模組引用點 |
+| DB 結構事實 | `analysis/db-analysis.yml` | `spec --stage sad`（lite 鏈為 `spec --stage bfs`） | 欄位、型別、長度、可空、約束、FK、狀態欄語意、抽樣。**首段 `_index:` 列 tables 清單** |
+| 既有實作盤點 | `analysis/reuse-scan.yml` | `spec --stage sad` | 路由清單、Handler／Entity／Repository 對照、共用 API、跨模組引用點 |
 | 現有畫面勘察 | `analysis/ui-survey.md` | 最先做 UI 分析者 | URL、截圖、DOM 欄位清單、操作按鈕、攔截端點、操作記錄 |
 | 顧問桌結論 | `analysis/consultant-notes.md` | 開桌的 skill | 日期、編制、逐項結論與證據、未解爭點 |
-| 功能上下文 | `analysis/_context.yml` | 鏈上第一棒 | 功能名、模組、目錄、各文件路徑、票號、`chain_profile`、`chain_origin`（`foxpro`＝由 `foxpro-analyzer` 寫入的舊系統移植鏈）。**≤5KB 純指標，禁放分析內容**（膨脹到 19KB 被 5 棒重複讀） |
+| 功能上下文 | `analysis/_context.yml` | 鏈上第一棒 | 功能名、模組、目錄、各文件路徑、票號、`chain_profile`、`chain_origin`（`legacy`＝舊系統移植鏈，由寫舊系統分析報告的那一棒寫入）。**≤5KB 純指標，禁放分析內容**（膨脹到 19KB 被 5 棒重複讀） |
 | 決策 | `decisions.md` | 鏈上第一個拍板者 | 見 `decision-record.md` |
-| 實作錨點 | `analysis/impl-anchors/{規格檔名}.yml` | `sample-verify` | 規則編號 → 程式執行位置、各 repo 上次比對的 commit、無法斷言區塊。**只放指標**；規格正文不得出現這些類別／方法名 |
+| 實作錨點 | `analysis/impl-anchors/{規格檔名}.yml` | `spec-check --sample` | 規則編號 → 程式執行位置、各 repo 上次比對的 commit、無法斷言區塊。**只放指標**；規格正文不得出現這些類別／方法名 |
 
 讀寫協定：先讀對應檔命中即用；每筆記 `source`／`scanned_at`；缺項才補查並追加回同一檔；
 `scanned_at` 後有 migration／codebase／畫面改版→重查受影響項；這些是中間產物，結論要進規格仍依 owner 矩陣。
@@ -181,7 +181,7 @@ docs 與程式碼同 repo 時略過。docs 在獨立 repo 時，開工前先 pul
 ## 顧問桌
 
 派發 `domain-advisor` 的時機、編制與流程唯一定義在 `consultant-desk.md`；
-`requirement`／`system-analysis`／`dev-readiness`／`specify-frontend` 一律引用，不各自定義。
+`spec --stage frd`／`spec --stage sad`／`spec-check --readiness`／`spec --stage ffs` 一律引用，不各自定義。
 
 ## PDF 轉檔通則
 

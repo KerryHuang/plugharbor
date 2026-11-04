@@ -1,7 +1,7 @@
 # 決策紀錄（`decisions.md`，跨階段交接契約）
 
-> 適用：`requirement`（FRD）、`system-analysis`（SAD）、`specify-backend`（BFS）、
-> `specify-frontend`（FFS）、`dev-readiness`／`verifying-specs`／`linear-reply`（回寫）、編排規格鏈的呼叫端（讀取）。
+> 適用：`spec --stage frd`（FRD）、`spec --stage sad`（SAD）、`spec --stage bfs`（BFS）、
+> `spec --stage ffs`（FFS）、`spec-check --readiness`／`spec-check`／`ticket-reply`（回寫）、編排規格鏈的呼叫端（讀取）。
 >
 > **範圍限定：本版僅涵蓋標準模式。** CR（調整模式）與 `cr-frd`／`cr-bfs`／`cr-ffs` 範本
 > **尚未納入**——回票改規格所產生的決策目前不會落檔。CR 的決策形狀與標準模式不同
@@ -71,9 +71,9 @@ SA／PO 定「會被外面看見」的事：業務行為、資料語意、API �
 
 規格正文的落點只寫提醒段，不寫方案：`> ⚠ TD-001（見 decisions.md）：約束…；現況…；陷阱…`。
 Dev 票的「規格明細」列出 TD 編號。**約束、現況、陷阱三樣是 SA 在技術面的責任**——把地雷標出來，不幫人選路；
-三樣寫空（「要能撐多實例」）等於沒留置，`dev-readiness` 會退回補三樣，不會退回要選型。
+三樣寫空（「要能撐多實例」）等於沒留置，`spec-check --readiness` 會退回補三樣，不會退回要選型。
 
-完工回寫（PR 合併後）：每筆 TD 的「選定」改成實際做法、「否決」補 Dev 的取捨、日期更新；`verifying-specs`
+完工回寫（PR 合併後）：每筆 TD 的「選定」改成實際做法、「否決」補 Dev 的取捨、日期更新；`spec-check`
 在 CHANGELOG 出現「完工回寫」後仍有「待實作定案」→ WARNING。
 
 ## 三項設計約束
@@ -92,7 +92,7 @@ Dev 票的「規格明細」列出 TD 編號。**約束、現況、陷阱三樣�
 | **否決的選項與原因** | **強制欄，不得留空。** 確實沒有其他方案時填「無其他方案」——但先自問一次真的沒有嗎 |
 | 依據 | 須可追溯：表名、檔名、票號、domain-advisor 留痕、PO 口頭。**不得只寫「討論後決定」** |
 | 拍板 | `PO`／`SA`／`顧問`／`證據`；**TD 一律 `Dev`**。`證據`＝由實查定案（如附測試環境查詢結果），不是人拍板——分開標，接手者看得出哪些是查證、哪些是人決定 |
-| 階段 | 該決策**產生**的階段（`FRD`／`SAD`／`BFS`／`FFS`／`dev-readiness`／`verifying-specs`／`linear-reply`）；TD 填 `實作` |
+| 階段 | 該決策**產生**的階段（`FRD`／`SAD`／`BFS`／`FFS`／`spec-check --readiness`／`spec-check`／`ticket-reply`）；TD 填 `實作` |
 | 日期 | `YYYY-MM-DD` |
 | 狀態 | `定案`／`暫定`；TD 填 `—`。規則見下節「暫定決策」 |
 
@@ -108,7 +108,7 @@ Dev 票的「規格明細」列出 TD 編號。**約束、現況、陷阱三樣�
 - 平台／UI 慣例題（分頁、空值與數字格式、對話框、匯出列印管道、錯誤與空狀態）照 codebase 先例直接定案，**不立 D**；正文規則旁寫一句先例出處即可。被使用者推翻的才記。
 - 舊鏈的 `decisions.md` 沒有 `狀態` 欄時，從舊鏈接續就在表頭補 `狀態` 欄，既有列填 `定案`。
 
-`skills/verifying-specs/scripts/check-decision-propagation.py` 的 R5 機械檢查兩件事：暫定 D 在正文有沒有裸引用、定案 D 有沒有殘留暫定標記；沒有 `狀態` 欄的舊鏈 R5 跳過。
+`${CLAUDE_PLUGIN_ROOT}/skills/spec-check/scripts/check-decision-propagation.py` 的 R5 機械檢查兩件事：暫定 D 在正文有沒有裸引用、定案 D 有沒有殘留暫定標記；沒有 `狀態` 欄的舊鏈 R5 跳過。
 
 ## append 協定
 
@@ -119,14 +119,14 @@ grep -n '^| D-' "$D" | tail -1          # 取最大號，下一列接續
 ```
 
 - 首個寫入者建檔；後續每棒 **append 到表尾**，不改既有列。
-- `dev-readiness`／`verifying-specs`／`linear-reply` 的裁決回寫也 append 到同一檔，`階段` 填自己。
+- `spec-check --readiness`／`spec-check`／`ticket-reply` 的裁決回寫也 append 到同一檔，`階段` 填自己。
   照建議採納且無實質取捨的項不記，只記「使用者改選過的項」與「有實質取捨的項」。
 - 同一次寫檔要同時做兩件事：append `decisions.md`、在本文件 `§D` 列本階段編號與一句結論、更新 SPEC-INDEX 那行。
 - 「體積放行」也是決策（見 `spec-dedup-and-budget.md`）：決策＝體積放行、依據＝哪章為何不可拆。
 - 本階段確實沒有任何拍板時，`§D` 保留表頭寫一列「無」，`decisions.md` 不動。章節不在，下一棒分不出
   「這次沒決策」與「上一棒漏做了」。
 
-## 讀法（下一棒、規格鏈編排者、verifying-specs）
+## 讀法（下一棒、規格鏈編排者、spec-check）
 
 ```bash
 grep -n '^| D-' {功能目錄}/decisions.md            # 全鏈已拍板清單
@@ -135,13 +135,13 @@ grep -n '^| D-' {功能目錄}/decisions.md | grep '| SAD |'   # 只看某階段
 
 - 編排者的派工 prompt 把「決策／選定」兩欄貼進去，標明「已拍板、不要重問」。
 - 檔案不存在＝尚未有人拍板，**不是缺陷**；prompt 明寫「本棒若有拍板，依 `decision-record.md` 建檔」。
-- `verifying-specs`：各文件 `§D` 列的每個編號都必須在 `decisions.md` 找得到（WARNING）；`§D` 未指向 `decisions.md`（WARNING）。
+- `spec-check`：各文件 `§D` 列的每個編號都必須在 `decisions.md` 找得到（WARNING）；`§D` 未指向 `decisions.md`（WARNING）。
 
 ## 引用他鏈決策
 
 「依據」欄要引另一條規格鏈的 D 編號時，先開那份 `decisions.md` 讀原列，並對程式碼確認它實際寫入的表／欄位。讀不到或對不上就標 `[推論]`，不寫成定案。
 
-> 事故：某次依「另一條鏈的 D 編號規定到站時會寫某欄位」裁定覆寫規則，寫進三份文件；verifying-specs 複驗才發現
+> 事故：某次依「另一條鏈的 D 編號規定到站時會寫某欄位」裁定覆寫規則，寫進三份文件；spec-check 複驗才發現
 > 那條 D 寫的是另一張表的欄位，新系統根本沒有程式寫原欄位，只能撤回改立新 D、四份文件再修一輪。
 > 他鏈決策的標題和本鏈欄位語意相近，憑記憶對上就當證據；錯誤會傳到全部下游文件。
 
@@ -153,7 +153,7 @@ grep -n '^| D-' {功能目錄}/decisions.md | grep '| SAD |'   # 只看某階段
 | 使用者推翻了建議做法 | skill 內部的執行順序選擇 |
 | domain-advisor 對 domain 邊界／狀態機歸屬的裁示 | 已經寫在正文規則裡、沒有被否決過的東西 |
 | 體積放行、規格鏈分流 | 純格式偏好 |
-| `dev-readiness` 阻塞項中有實質取捨的裁決 | 逐條照抄建議的例行項（含審查 agent／verifying-specs／dev-readiness 照建議收的修正，正文寫審查編號即可） |
+| `spec-check --readiness` 阻塞項中有實質取捨的裁決 | 逐條照抄建議的例行項（含審查 agent／spec-check／spec-check --readiness 照建議收的修正，正文寫審查編號即可） |
 
 ## Red Flags
 

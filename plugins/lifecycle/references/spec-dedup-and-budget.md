@@ -1,6 +1,6 @@
 # 規格去重閘、必畫圖與體積預算
 
-> 適用：`requirement`（FRD／CR-FRD）、`system-analysis`（SAD）、`specify-backend`（BFS／CR-BFS）、`specify-frontend`（FFS／CR-FFS）撰寫前置檢查。
+> 適用：`spec --stage frd`（FRD／CR-FRD）、`spec --stage sad`（SAD）、`spec --stage bfs`（BFS／CR-BFS）、`spec --stage ffs`（FFS／CR-FFS）撰寫前置檢查。
 > 搭配 `doc-boundaries.md`（owner 矩陣、ref 寫法）、SPEC-INDEX 規範（定向讀寫）使用，本檔不重複兩者已定義的規則，只給各文件各自的套用值。
 > **寫作 skill 先讀本檔「各文件套用值」自己那一列即可**；只在某章該不該 ref 有疑義時，才 `grep` `doc-boundaries.md` 對應產物列，不整檔載入。
 
@@ -54,7 +54,7 @@ awk '/^## 1\./{p=1} /^## D\./{p=0} p && !/📎/' "$F" | wc -c
 ```
 
 **📎 ref 行不計入預算。** ref 三要素（檔名＋章節＋標題）是 `doc-boundaries.md` 要求的格式，
-一處約 120 B；verifying-specs 一次補齊數十處 ref，就可能把 BFS／FFS／SAD 三份同時推超預算，
+一處約 120 B；spec-check 一次補齊數十處 ref，就可能把 BFS／FFS／SAD 三份同時推超預算，
 只能靠放行決策收場——預算與格式兩條規則各自對，互相打架時輸的是讀者。排除 📎 行後，
 預算量的才是「正文自己寫了多少」。
 
@@ -71,7 +71,7 @@ awk '/^## 1\./{p=1} /^## D\./{p=0} p && !/📎/' "$F" | wc -c
 
 真的要放行（拆了會讓讀者跨檔跳讀反而更差）→ 在 `decisions.md` 記一列：決策＝「體積放行」、依據＝哪一章、為何不可拆。
 **放行是例外不是慣例**：同一條鏈第二次放行即代表預算或格式規則有問題，回報 `toolkit:retrospective` 而不是再記一列。
-沒有這一列的超標檔＝缺陷，`verifying-specs` 報 WARNING。
+沒有這一列的超標檔＝缺陷，`spec-check` 報 WARNING。
 
 > 早期版本把預算定成「提示非硬門檻」，結果「體積照現況放行」成了 changelog 常態句，
 > 去重閘後三類文件中位數反而上升（FRD 28.7→38.6KB、BFS 37.7→43.0KB）。預算只在寫檔那一刻量一次

@@ -25,7 +25,7 @@
 4. **落檔**：確認過的例子直接寫成驗收條件的正反例，後續 QA 沿用同一筆。
 
 ## 核心原則：不猜測
-先找答案→找不到才問（附建議）→確認後才寫→寫前總清查。禁 `[需要澄清]`。
+先找答案→找不到才問（附建議）→確認後才寫→寫前總清查。當下問不到（subagent 無法問人、使用者暫不答）就在原處標 `[NEEDS CLARIFICATION: 具體問題]`，不自行補值；交棒前清零，殘留即 `spec-check` BLOCKER。不用其他變體（如 `[需要澄清]`）。
 
 ## 核心原則：分析嚴謹度閘
 下結論（需新建／沒有／根因是 X）前逐項過六條閘：來源查齊、深度到源頭、現況對齊、維度齊全、domain 邊界必叫顧問、證據優先；結論標 Confirmed／Likely／Unknown。全文與踩雷索引見 `analysis-rigor.md`。
@@ -69,7 +69,7 @@ lifecycle 單獨安裝就能用；`browser-docs`、`toolkit` 都是可選。標�
 
 | 用到 | 哪裡 | 沒裝時 |
 |---|---|---|
-| `browser-docs:browser-surveyor`、`live-drive` | requirement／system-analysis／specify-frontend 的 C 路畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依 FRD／BFS 推導 |
+| `browser-docs:browser-surveyor`、`live-drive` | spec 的 FRD／SAD／FFS 棒 C 路畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依 FRD／BFS 推導 |
 | `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
 | `toolkit:agent-dispatch` | spec-chain、顧問討論的 herdr pane 模式 | 同「不在 herdr」：spec-chain 改單 session 逐棒接手（handoff-protocol.md），顧問討論改 subagent 模式 |
 | `toolkit:retrospective` | dev-feedback、預算放行的轉交 | 列在本 skill 報告的建議裡，不轉交 |

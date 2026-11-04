@@ -62,7 +62,7 @@
 
 | 狀態 | 條件 | 處理方式 |
 |------|------|---------|
-| ✅ 一致 | 規格書/FoxPro 定義與 DB 資料吻合 | 無需處理 |
+| ✅ 一致 | 規格書/舊系統定義與 DB 資料吻合 | 無需處理 |
 | ⚠️ DB 有額外值 | DB 存在規格書未列舉的值 | 需確認含義並補充規格 |
 | ⚠️ 精度差異 | 小數位數或長度不一致 | 以 DB 為準修正 |
 | ❌ 不一致 | 型態/格式根本不同 | CRITICAL 缺失 |
@@ -100,20 +100,16 @@
 
 ### 事件類型對應
 
-| FoxPro 事件 | 典型用途 | Web 版對應 |
+| 舊系統事件（依舊系統實際命名） | 典型用途 | Web 版對應 |
 |------------|----------|-----------|
-| `form.Init` | 載入初始資料 | GET API（查詢） |
-| `form.Load` | 設定預設值 | 前端初始化 |
-| `cmdAdd.Click` | 新增記錄 | POST API |
-| `cmdEdit.Click` | 進入編輯模式 | PUT API |
-| `cmdSave.Click` | 儲存資料 | POST/PUT API |
-| `cmdDelete.Click` | 刪除記錄 | DELETE API |
-| `cmdPrint.Click` | 列印 | 列印 API |
-| `cmdFind.Click` | 查詢 | GET Paged API |
-| `txtXxx.Valid` | 欄位離開驗證 | FluentValidation |
-| `txtXxx.InteractiveChange` | 即時輸入反應 | 前端邏輯 |
-| `cboXxx.InteractiveChange` | 選項變更觸發 | 前端聯動或 API |
-| `grdXxx.AfterRowColChange` | Grid 行列切換 | 前端事件 |
+| 表單載入／初始化 | 載入初始資料、設定預設值 | 查詢 API＋前端初始化 |
+| 表單關閉 | 清理資源 | 前端 cleanup／路由 |
+| 新增／編輯／儲存／刪除按鈕 | 異動記錄 | 對應的寫入 API |
+| 列印、查詢按鈕 | 輸出、檢索 | 列印 API（若有）、分頁查詢 API |
+| 欄位離開驗證 | 單欄驗證 | VR 規則（後端驗證＋前端提示） |
+| 即時輸入／選項變更 | 連動、即時反應 | 前端邏輯或查詢 API |
+| 表格列切換 | 明細連動 | 前端事件 |
+| 計時器 | 定時事件 | 排程或推播 |
 
 ---
 
@@ -162,7 +158,7 @@ find {application_layer}/{Module}/ -name "*Handler*"
 
 ## 全新功能分析清單
 
-全新功能（非 FoxPro 遷移）**必須**額外分析：
+全新功能（非舊系統遷移）**必須**額外分析：
 
 | # | 分析項目 | 說明 | 嚴重等級 |
 |---|---------|------|---------|

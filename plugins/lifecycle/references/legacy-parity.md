@@ -1,6 +1,6 @@
 # 舊系統移植的 parity 模式
 
-> 適用：由舊系統分析（如 `foxpro-analyzer`）起頭的規格鏈。
+> 適用：由舊系統分析（舊系統分析報告，不限技術）起頭的規格鏈。
 > 要整個重新設計就不走舊系統分析，改走 `explore`，不受本檔限制。
 
 **移植期間，新系統的邏輯方向預設對齊舊系統**——資料口徑、寫入形狀、值域語意兩邊一致。
@@ -41,22 +41,22 @@
 ## 追溯編號
 
 - 舊系統分析產出的規則以 `FX-` 前綴編號（如 `FX-VR-03` 驗證規則、`FX-BR-07` 業務規則）。
-- parity 鏈中，每條 VR／BR 必須對到 `FX-` 編號，**或** `decisions.md` 中一條標 P-FIX／P-EXT 的裁決；兩者皆無＝孤兒規則，`verifying-specs --cross` 會擋下。
+- parity 鏈中，每條 VR／BR 必須對到 `FX-` 編號，**或** `decisions.md` 中一條標 P-FIX／P-EXT 的裁決；兩者皆無＝孤兒規則，`spec-check --cross` 會擋下。
 
 ## 鏈旗標：`analysis/_context.yml` 的 `chain_origin`
 
 parity 模式要跟著整條鏈走，不能靠各棒自己猜。
 
-- **寫入**：舊系統分析完成時寫 `chain_origin: foxpro`（同檔記分析報告路徑）。
+- **寫入**：舊系統分析完成時寫 `chain_origin: legacy`（同檔記分析報告路徑）。
   後續任一棒讀到 `_context.yml` 沒有這欄，但功能目錄有舊系統分析報告 → 補寫並告知使用者。
-- **讀取**：`requirement`、`system-analysis`、`specify-backend`、`specify-frontend`、`dev-readiness`、`verifying-specs` 開工先讀；有這欄就套用本檔。
+- **讀取**：`spec --stage frd`、`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`、`spec-check --readiness`、`spec-check` 開工先讀；有這欄就套用本檔。
 - **不提供關閉旗標**：要偏離就逐條走 P-EXT 裁決；要整個重新設計就改走 `explore`。
 
 ## 各棒落點
 
 - **舊系統分析**：遷移建議逐條標「對齊」或「偏離（附三要件對應）」；報告另立「偏離候選」節，只列 P-FIX 與變體，**不列新功能**。
-- **requirement**：§6 PM 加值**不挖隱含需求**；只寫舊系統既有行為（追溯 `FX-` 編號）與 P-FIX，P-EXT 只能進獨立的「偏離候選（預設不做）」節。
-- **system-analysis**：邊界盤點含「並存期語意分裂」檢查；偏離項的並存影響寫入風險表。
+- **spec --stage frd**：§6 PM 加值**不挖隱含需求**；只寫舊系統既有行為（追溯 `FX-` 編號）與 P-FIX，P-EXT 只能進獨立的「偏離候選（預設不做）」節。
+- **spec --stage sad**：邊界盤點含「並存期語意分裂」檢查；偏離項的並存影響寫入風險表。
 - **domain-advisor**：parity 鏈中做**對齊審查**（哪裡會與舊系統不同、既有 bug 要不要照搬），不挖隱含需求。
-- **specify-backend／specify-frontend**：VR／BR／欄位只寫 FRD 已有的（`FX-` 或裁決編號），不自行新增；版面以外的任何新增都退回 FRD 走 P-EXT 裁決。
-- **dev-readiness**：獵到的缺口先查舊系統現行行為——有 → 建議答案就是舊行為，標「對齊」；舊行為是 bug → 標 P-FIX；舊系統沒有、也非平台必要 → 標「不處理（parity）」，不列阻塞。
+- **spec --stage bfs／spec --stage ffs**：VR／BR／欄位只寫 FRD 已有的（`FX-` 或裁決編號），不自行新增；版面以外的任何新增都退回 FRD 走 P-EXT 裁決。
+- **spec-check --readiness**：獵到的缺口先查舊系統現行行為——有 → 建議答案就是舊行為，標「對齊」；舊行為是 bug → 標 P-FIX；舊系統沒有、也非平台必要 → 標「不處理（parity）」，不列阻塞。

@@ -12,11 +12,11 @@
 
 > 偵測到 CR 模式但未提供 ticket 編號。
 >
-> 1. 是，協助我建立（呼叫 `lifecycle:linear-create`）
+> 1. 是，協助我建立（呼叫 `lifecycle:ticket-create`）
 > 2. 我已有票號，讓我補上
 > 3. 取消
 
-- 選 1 → 派發 `lifecycle:linear-create`，建票完成後從回傳結果取得 ticket 編號，繼續 CR 流程
+- 選 1 → 派發 `lifecycle:ticket-create`，建票完成後從回傳結果取得 ticket 編號，繼續 CR 流程
 - 選 2 → 等待使用者輸入票號後繼續
 - 選 3 → 終止
 
@@ -72,7 +72,7 @@
 2. 在 changelog 表格**最上方**（緊接 `<!-- CHANGELOG -->` 之後）插入一列：
 
    ```
-   | v{X.Y} | [{ticket}](linear://{ticket}) | {today_date} | {修改摘要} |
+   | v{X.Y} | {ticket} | {today_date} | {修改摘要} |
    ```
 
    版本號規則：取現有最高版本號，次版本號 +1（如 v1.2 → v1.3）
@@ -83,9 +83,9 @@
 
 ---
 
-## Step 4：更新 Linear 票
+## Step 4：更新票
 
-使用 `mcp__linear__save_issue` 更新票的 description，寫入：
+經 `lifecycle:ticket-ops` 更新票的 description（不直接呼叫特定票務工具），寫入：
 
 ```markdown
 ## 本次規格變更

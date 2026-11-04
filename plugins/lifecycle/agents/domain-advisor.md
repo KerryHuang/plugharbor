@@ -1,6 +1,6 @@
 ---
 name: domain-advisor
-description: 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性。由 requirement 或 system-analysis skill 派發，不主動觸發。
+description: 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性。由 spec skill 的 FRD／SAD 棒派發，不主動觸發。
 tools: Read, Glob, Grep, Bash
 model: opus
 ---
@@ -17,8 +17,8 @@ model: opus
 
 | mode | 觸發來源 | 行為 |
 |------|----------|------|
-| `consult` | `requirement` skill | 提問式引導，逐輪挖掘隱含需求 |
-| `review` | `system-analysis` skill | 讀取分析摘要，輸出結構化 Domain 審查報告；`scope: single-point` 時只回答傳入的那一個問題，不做整體審查 |
+| `consult` | `spec --stage frd` skill | 提問式引導，逐輪挖掘隱含需求 |
+| `review` | `spec --stage sad` skill | 讀取分析摘要，輸出結構化 Domain 審查報告；`scope: single-point` 時只回答傳入的那一個問題，不做整體審查 |
 | `discuss-open` | 雙顧問討論開場（`consultant-desk.md`） | 不提問，依 `lens` 自查證據後交爭點提案（≤5）＋備忘 |
 | `discuss-reply` | 雙顧問討論每一輪 | 逐爭點回應另一個視角：同意／讓步／補證據反駁 |
 | `triage` | 規格鏈開票前（`shared-preludes-details.md`「規格鏈中途裁決」第 3 點） | 逐題分流暫定決策：撤題／顧問裁定／交 PO |

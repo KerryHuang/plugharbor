@@ -39,7 +39,7 @@ sdlc-program-code-inventory: {相對於 docs-root 的盤點文件路徑，例：
 
 ---
 
-## Step A：分析階段 — 查代碼（`system-analysis` 適用）
+## Step A：分析階段 — 查代碼（`spec --stage sad` 適用）
 
 功能涉及**新頁面**或**既有頁面的權限行為**時，於系統分析下結論前執行：
 
@@ -83,7 +83,7 @@ sdlc-program-code-inventory: {相對於 docs-root 的盤點文件路徑，例：
 
 > 教訓：seed 若漏給欄位、讓旗標吃 default，多數環境可能僥倖正確，例外環境卻會讓該功能對所有人隱形；即使前一支 migration 已明文警告，照抄前例仍會重蹈覆轍——**照抄前例不等於對，前例可能就是壞的**。
 
-## Step C：規格階段 — 寫進文件（`specify-backend` / `specify-frontend` 適用）
+## Step C：規格階段 — 寫進文件（`spec --stage bfs` / `spec --stage ffs` 適用）
 
 ### BFS（後端規格書）
 

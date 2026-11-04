@@ -40,30 +40,30 @@
 ## 兩條鏈
 
 ```
-standard  explore → requirement → system-analysis → specify-backend
-          → specify-frontend → dev-readiness → verifying-specs → linear-create
+standard  explore → spec --stage frd → spec --stage sad → spec --stage bfs
+          → spec --stage ffs → spec-check --readiness → spec-check → ticket-create
 
-lite      explore → requirement → specify-backend
-          → specify-frontend → dev-readiness(限縮) → verifying-specs → linear-create
-                    ↑ 跳過 system-analysis
+lite      explore → spec --stage frd → spec --stage bfs
+          → spec --stage ffs → spec-check --readiness(限縮) → spec-check → ticket-create
+                    ↑ 跳過 spec --stage sad
 ```
 
-### lite 跳過 system-analysis，但它的必要產物不能憑空消失
+### lite 跳過 spec --stage sad，但它的必要產物不能憑空消失
 
 SAD 的三流分析（工作流／資訊流／資料流）對單表 CRUD 幾乎是機械展開——那才是可以省的部分。
 **下列四項是 SAD 真正的產出，lite 下改由他人承接**：
 
 | SAD 原本負責 | lite 改由誰 | 落點 |
 |-------------|-----------|------|
-| 涉及資料表清單、ER 關聯 | `specify-backend` | BFS §1.3（本來就有這節，改為第一手產出而非 ref SAD） |
-| 重用分析結論（既有可用／需擴充／需新建） | `specify-backend` | BFS §A.3，勘察明細照常落 `analysis/reuse-scan.yml` |
-| US → API 對應 | `specify-backend` | BFS §6.1 端點總覽的「對應 US」欄 |
-| **邊界盤點 B1~B10** | `specify-backend` **撰寫當下直接盤** | BFS §7／§8／§8.4；三段責任壓成兩段（原：SAD 盤點→BFS 落實→dev-readiness 複核） |
+| 涉及資料表清單、ER 關聯 | `spec --stage bfs` | BFS §1.3（本來就有這節，改為第一手產出而非 ref SAD） |
+| 重用分析結論（既有可用／需擴充／需新建） | `spec --stage bfs` | BFS §A.3，勘察明細照常落 `analysis/reuse-scan.yml` |
+| US → API 對應 | `spec --stage bfs` | BFS §6.1 端點總覽的「對應 US」欄 |
+| **邊界盤點 B1~B10** | `spec --stage bfs` **撰寫當下直接盤** | BFS §7／§8／§8.4；三段責任壓成兩段（原：SAD 盤點→BFS 落實→spec-check --readiness 複核） |
 
 > ⚠ **邊界盤點不可省，只是換人做。** 它是抓漏主力——省掉它，省下的時間會在
-> `dev-readiness` 或鏈末原封不動還回來，而且那時候要改的文件更多。
+> `spec-check --readiness` 或鏈末原封不動還回來，而且那時候要改的文件更多。
 
-### lite 下 dev-readiness 的限縮
+### lite 下 spec-check --readiness 的限縮
 
 - **只跑** B1（空值必填）／B2（邊界值精度）／B3（唯一性含已刪除）／B9（既有資料相容）／B11（畫面內容完備）／B13（參數化來源一致）
 - **跳過**領域特化維度（若專案有定義）——單表字典不涉流程狀態、成本歸集等領域邏輯
@@ -78,7 +78,7 @@ lite **預設不開**。單表字典的 domain 風險集中在「軟刪同名怎
 
 ## 判定的執行
 
-`requirement` 收尾時（FRD 已定稿、開放議題已收斂）逐條過上表五條，然後：
+`spec --stage frd` 收尾時（FRD 已定稿、開放議題已收斂）逐條過上表五條，然後：
 
 1. 以文字列出五條的判定結果與依據（一條一行），**不要只講結論**
 2. `AskUserQuestion` 確認：`走 lite（推薦）` / `走 standard` — 推薦項依判定結果置首，
@@ -94,7 +94,7 @@ profile_decided_at: "2026-08-13"
 
 ## 中途升級（lite → standard）
 
-lite 執行中發現任一判定條件其實不成立 → **立即停下告知使用者**，補做 `system-analysis` 後回到
+lite 執行中發現任一判定條件其實不成立 → **立即停下告知使用者**，補做 `spec --stage sad` 後回到
 standard 鏈。**不要**在 lite 鏈上硬撐著把 SAD 的內容塞進 BFS——那會產出一份四不像的規格書，
 而且下游不知道該去哪讀。
 
@@ -102,13 +102,13 @@ standard 鏈。**不要**在 lite 鏈上硬撐著把 SAD 的內容塞進 BFS—�
 
 - 寫 BFS 時發現需要交易，或需要跨表寫入
 - 寫 BFS 時發現狀態欄位有合法／非法轉換要定義
-- `dev-readiness` 在 B4／B5／B6／B10 抓到實質內容
+- `spec-check --readiness` 在 B4／B5／B6／B10 抓到實質內容
 - migration 從「加欄位」擴大成補主鍵、改型別或建索引
 
 ## 邊界（明確不做）
 
 - **不因 lite 而降低規格品質標準**——欄位表完備性、驗證規則、例外清單、驗收條件一律照舊
-- **不省 `verifying-specs`**——文件變少不代表跨文件一致性風險消失，反而因為 SAD 不在、
+- **不省 `spec-check`**——文件變少不代表跨文件一致性風險消失，反而因為 SAD 不在、
   BFS 一次承擔更多責任而更需要驗
-- **不省 `dev-readiness`**——只限縮維度，不跳過
+- **不省 `spec-check --readiness`**——只限縮維度，不跳過
 - CR（`--change`）模式不套用本分流，依既有文件範圍決定

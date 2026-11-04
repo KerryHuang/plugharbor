@@ -1,6 +1,6 @@
 # 分析嚴謹度閘（上游分析下結論前）
 
-> 在 `explore`／`requirement`／`system-analysis`／`linear-triage` 根因分析等上游階段，
+> 在 `explore`／`spec`／`triage` 根因分析等上游階段，
 > 下**結論**前逐項過這六條閘。每一條都對應一次真實踩過的坑。碰到不確定就先查證，不憑印象定論。
 > 經 `shared-preludes.md` 適用於所有 lifecycle skill；顧問桌的「FRD 例外」對應第 5 條（見 `consultant-desk.md`）。
 
@@ -45,6 +45,6 @@
 | 規律不是約束 | 說「重號／違規」前先答鍵是什麼；很多舊庫的表沒有 PK，業務鍵可能重號，JOIN 前寫明為何一對一 | 本列 |
 | 集合性質不能逐列篩選 | 連號／缺號要以母實體取全部子列 | `analysis-standards.md`「集合性質不能逐列篩選」 |
 | 引他鏈決策編號 | 先讀該 `decisions.md` 原列並對程式碼 | `decision-record.md`「引用他鏈決策」 |
-| 修正棒要親手改 | 派 subagent 整節重寫會長出新 CRITICAL | `skills/verifying-specs/SKILL.md` |
+| 修正棒要親手改 | 派 subagent 整節重寫會長出新 CRITICAL | `skills/spec-check/SKILL.md` |
 | 翻案級斷言 | 「欄位不存在／dead code」採信前自己 grep | `dispatch-conventions.md` §四 |
 | 測試環境的時間序列 | 「某日起停寫」可能是測試環境快照沒更新的假象；下時間序列結論前先確認資料新鮮度，必要時經同意對正式環境唯讀查 | 本列 |

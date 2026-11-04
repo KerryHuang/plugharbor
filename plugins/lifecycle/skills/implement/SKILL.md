@@ -1,15 +1,20 @@
 ---
 name: implement
-description: 適用於從功能規格書自動執行完整實作流程——分支前置檢查、規格品質閘門、分階段委派實作、規格系統性比對、多角色程式碼審查修正迴圈、收尾自動鏈。支援標準模式與 TDD 模式。觸發語：「開始實作」「實作這個功能」「跑 implement」「照規格做」「implement feature」。
+description: 照規格把功能從開分支做到交付——讀前次經驗、規劃任務清單與進度 ledger 落檔、每個 task 派全新 subagent、規格比對、審查修正迴圈、關卡式收尾、完工寫 LEARNINGS.md；支援 TDD。Use when 「開始實作」「實作這個功能」「照規格做」「開新功能」「開發這個功能」「從頭到尾做完」「端到端開發」「work on」「implement feature」。
+argument-hint: "<功能名或規格路徑> [--tdd]"
 ---
 
-# 執行實作流程
+# 實作功能
 
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-從功能規格書自動跑完整實作：分支檢查 → 規格品質閘門 → 分階段委派 → 規格比對 → 多角色審查迴圈 → 收尾。標準流程位置：`需求 → 規格 → 實作 → commit`。
+從規格到交付的一條龍：讀經驗 → 分支 → 規格閘門 → 規劃落檔 → 基線 → 逐 task 派工 → 規格比對 → 審查迴圈 → 完成驗證 → 寫經驗 → 關卡式收尾。
 
-> **本 skill 為通用骨架**。原始版本強綁特定技術棧（.NET 分層架構、CQRS/MediatR、EF Core migration、特定 CI/議題系統）與專案內部命令，此處已抽離為與語言/框架無關的階段編排。落地時把「委派 agent」「build/test 指令」「分層順序」替換成專案實際的做法即可。
+三條不變的紀律：
+
+- **規格是唯一依據**：實作、審查、驗收都對照 `<spec.dir>` 底下的規格，不對照對話記憶。
+- **狀態落檔、不靠對話**：任務清單、進度 ledger、每個 task 的 brief 與報告都寫進 `.tmp/implement/<feature>/`（不進 git）；中斷後讀 ledger 接續。格式見 `${CLAUDE_PLUGIN_ROOT}/skills/implement/references/ledger.md`。
+- **主 session 只統整、派工、判讀**：寫碼、寫測試、審查都派 subagent；主 session 只讀 ledger 與報告的結論行。
 
 ## 使用者輸入
 
@@ -17,215 +22,134 @@ description: 適用於從功能規格書自動執行完整實作流程——分�
 $ARGUMENTS
 ```
 
-繼續前**必須**先考慮使用者輸入（若不為空）。
+繼續前**必須**先考慮使用者輸入（若不為空）。含 `--tdd`、或規格／任務清單有 `[TDD]` 標記時走 TDD 順序（見 planning.md）。
 
-## TDD 模式檢測
-
-檢查參數含 `--tdd` 或 tasks 檔含 `[TDD]` 標記：
-
-| 模式 | 執行順序 |
-|------|----------|
-| 標準模式 | 核心邏輯 → 資料存取 → 應用層 → 測試 |
-| TDD 模式 | 核心邏輯 → 資料存取 → **測試（Red）→ 應用層（Green）** |
-
-## 流程總覽
-
-```mermaid
-flowchart TD
-    S0[0. 分支環境前置檢查]
-    S1[1. 定位與準備<br/>讀 tasks / specs]
-    S2[2. 規格品質閘門]
-    S3[3. 解析任務結構]
-    S4[4. 驗證開發環境<br/>build pass]
-    S5[5. 逐階段委派任務]
-    S7[7. 規格系統性比對 + 更新 CheckList]
-    S8[8. 預備 Review 資料]
-    S9[9. 多角色程式碼審查修正迴圈]
-    S9PASS{Review 通過?}
-    S10[10. 完成驗證<br/>build + test 全綠]
-    S11Q{11. 收尾模式 A/B/C/D?}
-    S11A[A. 自動鏈式<br/>commit → PR → review → e2e → 收尾]
-    S11B[B. 每 stage 手動 confirm]
-    S11C[C. 回步驟 9 再 review]
-    S11D[D. 只 commit 後結束]
-    END([實作完成])
-
-    S0 --> S1 --> S2 --> S3 --> S4 --> S5 --> S7 --> S8 --> S9 --> S9PASS
-    S9PASS -->|否，回開發修| S5
-    S9PASS -->|是| S10 --> S11Q
-    S11Q --> S11A --> END
-    S11Q --> S11B --> END
-    S11Q --> S11C --> S9
-    S11Q --> S11D --> END
-
-    classDef decision fill:#fff9c4,stroke:#f57f17,color:#000
-    class S9PASS,S11Q decision
-```
-
-## 執行流程
-
-### 0. 分支與環境前置檢查
+## 0. 讀設定與前次經驗
 
 ```bash
-BRANCH=$(git branch --show-current)
-echo "分支: $BRANCH | 目錄: $(pwd)"
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/specs
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # lean｜full，預設 lean
+```
+
+- 讀 `<spec.dir>/LEARNINGS.md`（沒有就略過）。挑出跟本功能相關的條目，抄進 ledger 的「已定決策與注意」段，之後每份 brief 都帶上。
+- `.tmp/implement/<feature>/ledger.md` 已存在 → 這是續做：讀 ledger，從第一個沒完成的步驟或 task 接續，不重跑已完成的。
+
+## 1. 分支與工作區
+
+```bash
+git branch --show-current && git status --short
 ```
 
 | 檢查項 | 規則 | 失敗處理 |
 |--------|------|----------|
-| 分支對應此 ticket / 功能 | 分支名應含規格或 tasks 中的識別碼 | 停止，提示切換分支或 cd 到正確 worktree |
-| 非主分支 | 不可在 main/develop 上實作 | 停止 |
-| Worktree 目錄一致 | 若在 worktree 中，目錄名應含分支識別碼 | 警告使用者確認 |
+| 工作區乾淨 | 沒有未提交變更 | 停下問使用者（先 commit 或保留），不自動 stash |
+| 非主幹 | 不在 main／develop 上實作 | 開 `feature/<name>`（從專案慣例的基底分支） |
+| 分支對應本功能 | 分支名含功能或票的識別碼 | 停下，提示切分支或 cd 到正確 worktree |
+| worktree 一致 | 在 worktree 裡時，目錄名含分支識別碼 | 提醒使用者確認 |
 
-> 參考 `workspace:worktree` skill（沒裝就直接用 worktree 的 add 指令）。
+要平行開發時用 `workspace:worktree`（可選；沒裝就 `git worktree add <路徑> -b feature/<name>`）。
 
-### 1. 定位與準備
+## 2. 定位規格與品質閘門
 
-找到對應的功能規格書。若 tasks 檔不存在 → 自動從規格書生成；若無架構計畫 → 使用專案預設架構。
+- 規格在 `<spec.dir>/` 底下找本功能的檔（`scale: full` 時是 FRD／SAD／BFS／FFS 一組）。找不到 → 停下，建議先跑 `lifecycle:spec`；使用者明說不寫規格時，把他的描述寫進 ledger「目標」段當依據，回報標「無規格」。
+- 規格裡還有 `[NEEDS CLARIFICATION]` → 停下問使用者，不猜。
+- 跑 `lifecycle:spec-check` 驗規格品質：
+  - 通過 → 繼續。
+  - 有條件通過（0 critical、有 warning）→ 告知使用者，繼續。
+  - 不通過 → 修規格後重驗，**最多 3 次**；3 次仍不過 → 列剩餘缺失，請使用者決定。
 
-### 2. 規格品質閘門（自動觸發）
+## 3. 規劃：任務清單與 ledger 落檔
 
-實作前**必須**先驗證規格書品質（若專案有 verifying-specs 之類的 skill 則呼叫它）：
+1. 建 `.tmp/implement/<feature>/`，確認 `.tmp/` 在專案 `.gitignore`（沒有就提醒使用者加，不自行改 `.gitignore`）。
+2. 派一個規劃 subagent（top 等級），輸入：規格路徑、ledger 的已定決策、`${CLAUDE_PLUGIN_ROOT}/skills/implement/references/planning.md`。它負責：
+   - 找受影響的層級與模組、可重用的既有實作（照專案慣例，不引入新風格）。
+   - 產 `tasks.md`：每個 task 有 ID、目標、對應的規格段落、要讀與要改的檔、驗收指令、依賴、可平行標記 `[P]`。
+   - 標出整合點、風險與邊緣案例。
+   有技術選型或架構取捨時，另派 `lifecycle:architect` 出 ADR，結論寫進 ledger「已定決策」。
+3. **context 預算檢查**：每個 task 的 brief 加上它要讀的檔，必須塞得進一個 subagent 的 context（判準見 dispatch.md）；塞不下就拆。主 session 自己只讀 ledger 與報告結論，不讀實作檔。
+4. 把計畫摘要（task 數、順序、平行組、風險）給使用者確認一次，確認後才開工。
 
-- ✅ 通過 → 繼續實作。
-- ⚠️ 有條件通過（0 critical, >0 warning）→ 警告使用者，繼續。
-- ❌ 不通過（>0 critical）→ **阻止實作**，自動修復 → 重新驗證（最多 3 次）。3 次仍不過 → 報告剩餘缺失，請使用者決定。
+## 4. 基線
 
-### 3. 解析任務結構
+跑專案的 build 與測試，確認起點是綠的。基線就紅 → 停下告知使用者，不在紅基線上開工（否則之後分不清是誰弄壞的）。
 
-從 tasks 檔提取任務階段、相依性、檔案路徑、並行標記 `[P]`、使用者故事標籤等。
+## 5. 逐 task 派工
 
-### 4. 驗證開發環境
+派工規則（角色、模型等級、路由、prompt 寫法）見 `${CLAUDE_PLUGIN_ROOT}/skills/implement/references/dispatch.md`。重點：
 
-跑專案的 build 指令，確認基線可編譯通過再開始。
+- **每個 task 開全新 subagent**，不續用上一個。prompt 只給 brief 路徑與已定決策；brief 先寫成 `briefs/<task-id>.md`。
+- subagent 把完整報告寫進 `reports/<task-id>.md`，回覆只回一行狀態＋報告路徑。
+- 依 `tasks.md` 的依賴逐段執行；`[P]` 且不碰同一批檔的 task 同一則訊息平行派；碰同一檔的必須依序。
+- **完成判準在主 session**：subagent 說完成不算，主 session 跑該 task 的驗收指令（或派驗證）看到通過才在 `tasks.md` 打勾、更新 ledger。
+- 驗收不過 → 派新 subagent 修（brief 附上一份報告路徑與失敗輸出），**最多 3 次**；仍不過 → 停下，列失敗與已試做法，請使用者決定。
+- 非平行 task 失敗 → 暫停後續；平行 task 失敗 → 其餘照跑，失敗的列進 ledger。
+- 測試或建置失敗要找根因時，用 `workspace:debugging`（可選；沒裝就派 `lifecycle:debugger`：先寫重現失敗的測試，再修，再驗無回歸）。
 
-### 5. 逐階段委派任務
+## 6. 規格系統性比對
 
-- 編碼委派給開發角色，測試委派給測試角色。
-- 逐階段執行，每階段完成才進下一階段。
-- 順序任務依序、並行任務 `[P]` 可同時；影響相同檔案的任務必須依序。
-- 在 tasks 檔標記完成（如 `- [X] T001`）。
+全部 task 完成後，派一個 subagent 對照規格逐條比對（不抽查），報告寫 `reports/spec-trace.md`：
 
-**錯誤處理**：非並行任務失敗 → 暫停；並行任務 `[P]` 失敗 → 繼續成功的、報告失敗的。
-
-## 各階段詳細（依專案架構調整層名與順序）
-
-### 階段 1：核心 / 領域邏輯
-
-實體 / 資料模型、其組態、對外介面。
-
-> 若採 domain design：避免貧血模型（手寫 entity 應含業務邏輯）；命名語意化（依業務概念命名，而非用底層資料表/欄位代碼命名）。
-
-### 階段 2：資料存取層
-
-存取實作、資料庫 schema / migration。
-
-> Schema 變更需同步對應的 schema source（migration 與手寫 SQL / view 定義不能各說各話）。
-
-### 階段 3：應用層
-
-按使用者故事順序實作命令與查詢（含輸入驗證、映射）。
-
-> TDD 模式在此走 Red → Green → Refactor。
-
-### 階段 4：對外介面層
-
-控制器 / route handler。
-
-> **契約對齊**：暴露給端點的輸入模型，其必填 / 長度 / 格式限制應與資料層組態、驗證器一致，讓 API schema（OpenAPI 等）直接反映限制，避免前端送到後端才被擋。
-
-### 階段 5：測試
-
-- **單元測試（必須）**：跑專案單元測試。
-- **整合測試（條件觸發）**：涉及資料存取組態、原生 SQL、特殊型別 / 定序、軟刪除、分頁、查詢轉譯等時**必須**跑。
-- **失敗處理**：單元測試失敗 → 必須修、阻止繼續；整合測試因環境不可用 → 標 Skip；整合測試邏輯錯 → 必須修。
-
-> 修錯前**必須**三方比對（規格書 + codebase + 真實資料），別靠靜態猜測。
-
-### 階段 6：品質檢查
-
-跑完整 build + test。並做輕量靜態掃描（依專案風險點自訂），常見項目：
-
-| 檢查項 | 判定 |
-|--------|------|
-| 架構分層違規（上層直接引用下層實作） | ❌ 阻止 |
-| 潛在注入（字串串接 SQL/命令） | ❌ 阻止 |
-| 阻塞式 async 呼叫 | ⚠️ 警告，列入 review |
-| 端點缺授權標記 | ⚠️ 警告，列入 review |
-| 對外介面缺型別 / schema 標記（致 API schema 空泛） | ⚠️ 警告，列入 review |
-
-### 7. 規格系統性比對 + 更新 CheckList
-
-實作完成後**必須**三層比對，確認規格書每條都實作：
-
-- **層一 端點比對**：規格書列的端點 vs 實際存在的端點，逐一確認。
-- **層二 業務/驗證規則比對**：規格書的規則 ID（BL/VR/BR 之類）vs 實作 + 測試，逐一確認有實作且有測試。
-- **層三 更新 CheckList**：比對無缺（無 ❌）後，把規格書 / tasks 的完成項打勾。
+- **層一 介面**：規格列的端點／畫面／指令 vs 實際存在的，逐一確認。
+- **層二 規則**：規格的業務／驗證規則 ID vs 實作＋測試，逐條確認有實作也有測試。
+- **層三 勾選**：比對無缺後，把規格與任務清單的完成項打勾。
 
 | 結果 | 處理 |
 |------|------|
-| ❌ 有端點或規則未實作 | **阻止**，補實作後重比 |
-| ⚠️ 有實作但缺測試 | 委派測試角色補，列入報告 |
-| ✅ 全部完成 | 更新 CheckList，進步驟 8 |
+| 有介面或規則未實作 | 補 task 回步驟 5，補完重比 |
+| 有實作缺測試 | 派 `lifecycle:tester` 補 |
+| 全部完成 | 進步驟 7 |
 
-### 8. 預備 Review 資料
+## 7. 審查修正迴圈（最多 3 輪）
 
-```bash
-git diff --name-only $(git merge-base HEAD develop)..HEAD
+- 有裝 workspace：用 `workspace:review`（可選）審本分支相對基底分支的變更；它的證據規則（每個變更檔歸到檢查項、「查無」先證明指令抓得到、標出被削弱的測試與新 suppression）照做。
+- 沒裝 workspace 的退路：同一則訊息平行派 `lifecycle:reviewer`（程式碼）、`lifecycle:architect`（分層與依賴方向）、一個規格對照審查者（規格 vs 程式 vs 真實資料），報告各自落檔（reviewer 唯讀，由主 session 代寫，見 dispatch.md）；至少做到「每個變更檔歸到某檢查項或寫排除理由」，並剔除既有問題、linter 會抓的、吹毛求疵三類。
+- 分級：重大必修／主要要修／次要列參考。重大與主要派 developer 修 → 重跑 build＋test → 再審一輪。
+- **最多 3 輪**；第 3 輪仍有重大問題 → 停下，列剩餘問題，請使用者決定。
+
+## 8. 完成驗證
+
+用 `workspace:quality-check`（可選；沒裝就跑專案自帶的 build、全部測試、lint）。全綠、所有 task 打勾、規格比對無缺、審查通過，才算實作完成。各項分開記進 ledger，不拿一項代替另一項。
+
+## 9. 寫經驗（LEARNINGS.md）
+
+完成驗證後、收尾前，在 `<spec.dir>/LEARNINGS.md` 最上方加一段（檔案不存在就建立）：
+
+```markdown
+## yyyy-mm-dd <功能名>
+- <下次規劃前該先知道的事：踩過的坑、規格常漏的地方、拆 task 的教訓、哪個指令會騙人>
 ```
 
-### 9. 多角色程式碼審查修正迴圈
+只寫下次用得上的通則，一段最多 5 條，不寫流水帳；跟既有條目重複就改寫舊條目而不是再加。
 
-多個角色**平行審查**，各自產報告後彙整：
+## 10. 收尾（關卡式）
 
-| 角色 | 審查焦點 | 不負責 |
-|------|---------|--------|
-| 程式碼審查者 | 命名風格、測試覆蓋、安全、效能（含 N+1 查詢）、框架用法 | 架構分層（架構者負責） |
-| 架構審查者 | 跨模組依賴方向、職責邊界、API 一致性、分層違規 | 程式碼風格（審查者負責） |
-| 領域審查者 | 規格 vs 程式碼業務邏輯 vs 真實資料的一致性、領域建模 | 程式碼與架構細節 |
+用一次提問讓使用者選收尾模式；推薦 A：
 
-**流程**：平行審查 → 彙整分級（🚫 重大必修 / ⚠️ 主要自動修 / 💡 次要列參考）→ 套 `workspace:review` skill 的「發現驗證與誤報排除」（沒裝 workspace 就至少剔除既有問題、linter 會抓的、吹毛求疵三類），剔除不成立的 🚫／⚠️ → 委派開發角色修 → 修後重跑 build + test → 回到平行審查再一輪（最多 3 輪）。超過 3 輪仍有重大問題 → 停止，報告剩餘，請使用者決定。
-
-### 10. 完成驗證
-
-驗證所有任務完成、功能符合規格、測試通過、多角色審查通過。
-
-### 11. 收尾 — 模式選擇
-
-實作 + review fix loop 完成後，用一次詢問讓使用者選收尾模式：
-
-| 選項 | 說明 |
+| 模式 | 內容 |
 |------|------|
-| **A. 自動鏈式（建議）** | commit → push → 建 draft PR → **對已 commit 最終狀態再跑一次對抗式 review + fix** → 端到端 / 整合測試 + fix → 規格對齊回填 → 提示「解除 Draft」。中途 agent 卡死才停 |
-| B. 每 stage 手動 confirm | 每個 stage 跑前都詢問，保留 escape hatch |
-| C. 再 review 一次 | 回步驟 9 重跑多角色審查 |
-| D. 只 commit 後手動接手 | 結束在 commit，後續使用者主導 |
+| **A. 自動鏈式（推薦）** | commit → push → draft PR → 對已 commit 的最終狀態再審一次並修 → 端到端／整合測試並修 → 規格回填 → 提示解除 draft |
+| B. 每關手動確認 | 同 A，每關開跑前先問 |
+| C. 再審一次 | 回步驟 7 |
+| D. 只 commit | 停在 commit，push 與 PR 由使用者手動 |
 
-**選項 A 的關鍵紀律**：
-- **完成點 = 走完 review-PR + e2e + 規格對齊**，不是 commit 或步驟 9 的實作期 review 跑完就宣告 done。
-- 步驟 9 的實作期 review 與「對已 commit 最終狀態的獨立對抗式 review」**不同**：後者常抓到前者漏的功能缺口（實務教訓：獨立 review 抓到實作期漏掉、完全未實作的某條規則）。auto-flow 必須**自動接續**，不靠使用者手動追問。
-- review 後若又產生 fix/refactor commit → 對新 HEAD 再確認，不留「最新 commit 未審」缺口。
-- 收尾只**提示**解除 Draft / merge，**不自動 merge**（merge 屬使用者領地）。
+每一關都記進 ledger 的關卡表，中斷後從**第一個沒過的關卡**接續；**不自動 merge**（merge 屬使用者），使用者要求代為 merge 時一律帶 `--match-head-commit`。關卡定義與細節見 `${CLAUDE_PLUGIN_ROOT}/skills/implement/references/closing.md`。
 
-**Agent-first 自解**：收尾期間遇技術/業務/資料疑慮，優先派對應 agent 自解（除錯 / 資料探勘 / 領域顧問），真的卡死才升級給使用者。
-
-**長流程心跳**：auto-flow 全跑常 >5 分鐘 → 每個 stage 的 start/done/skip/fail 都 emit 心跳；單一階段 >5 分鐘再補 mid-stage 進度；連續失敗走升級階梯並告知使用者。
+提交訊息用 `workspace:commit`（可選；沒裝就照 Conventional Commits 手寫），一律逐檔指名 `git add`，不用 `git add -A`。
 
 ## 錯誤恢復
 
 | 問題 | 處理 |
 |------|------|
-| Migration 失敗 | 走專案 migration 失敗修復流程（直接改後重跑，非硬回退） |
-| 建置失敗 | clean → restore → build |
-| 測試失敗 | 單獨跑該測試、開詳細輸出定位 |
+| 建置失敗 | 清快取 → 還原相依 → 重建；仍失敗走步驟 5 的除錯退路 |
+| 測試失敗 | 單獨跑該測試、開詳細輸出；修之前三方比對（規格、程式、真實資料），不靠靜態猜 |
+| migration 失敗 | 照專案的 migration 修復流程（修正後重跑，不硬回退） |
+| 同一問題連修 3 次不過 | 停下重估，落檔失敗原因與已排除的假設再換方向 |
 
-## 使用的角色（依專案 agent 配置對應）
+## 相關 skill
 
-| 角色 | 用途 | 觸發時機 |
-|------|------|----------|
-| 開發者 | 編碼實作 | 階段 1-4、步驟 9 自動修正 |
-| 測試者 | 撰寫測試 | 階段 5 或 TDD Red Phase |
-| 架構審查者 | 分層合規、依賴方向、職責 | 步驟 9 平行審查 |
-| 領域審查者 | 規格 vs 業務邏輯 vs 資料事實一致性 | 步驟 9 平行審查 |
-| 除錯者 | 建置 / 測試失敗定位 | 失敗時 |
-| 程式碼審查者 | 程式碼品質 | 步驟 9 平行審查 |
+- `lifecycle:spec`、`lifecycle:spec-check` — 規格的產出與驗證（步驟 2）
+- `lifecycle:qa-verify` — 收尾後的實機驗收
+- `lifecycle:release` — 發版
+- `workspace:review`、`workspace:quality-check`、`workspace:debugging`、`workspace:commit`、`workspace:worktree` — 可選
+
+`workspace:` 開頭的是 workspace plugin 的 skill（user 層，通常已裝）；沒裝時照各處寫的退路做，並在回報寫一行「未安裝 workspace，已改用 …」。

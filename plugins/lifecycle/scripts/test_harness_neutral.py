@@ -173,7 +173,7 @@ class HarnessTerms(unittest.TestCase):
         self.assertEqual(missing, set())
 
     def test_no_main_session_fallback_for_agents(self) -> None:
-        # 多數 skill 寫明主 session 不做 agent 的工作（linear-create 主 session 不呼叫 save_issue）
+        # 多數 skill 寫明主 session 不做 agent 的工作（ticket-create 主 session 不呼叫票務工具）
         self.assertNotIn("改在當前 session 依 agent 內文逐一執行", terms_text())
 
 

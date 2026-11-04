@@ -1,6 +1,7 @@
 ---
 name: spec-chain
-description: "跨 session 協調多棒 SA 規格鏈：每棒決定就地做、派 subagent 或開 herdr worker，並獨立驗收產出。需要 herdr。觸發：「跑規格鏈」「spec-chain」。"
+description: "跨 session 協調 full 規模規格鏈（spec 各棒 → spec-check → ticket-create）：每棒決定就地做、派 subagent 或開 herdr worker，並獨立驗收產出。需要 herdr，手動叫用。Use when 使用者輸入 /spec-chain 或說「跑規格鏈」。"
+disable-model-invocation: true
 argument-hint: "[票號或功能描述]"
 ---
 
@@ -36,15 +37,15 @@ herdr 通用操作一律依 `toolkit:agent-dispatch`（長任務模式）；機�
 | 否 | 是 | subagent（便宜的隔離；PM 嚴守不碰 submodule，這格主要由 worker 內部使用，派工 prompt 明寫） |
 | 是 | 否／是 | session（subagent 觸及不到人，只有此項值得升級成 session） |
 
-鏈上各棒：`linear-triage` PM 自己；`explore`、`requirement`、`system-analysis`、`specify-backend`、`specify-frontend`、`dev-readiness`、`verifying-specs`、`linear-create` 全派 session。`dev-readiness`、`verifying-specs`、`linear-create` 不准 PM 就地跑（實測 context 暴漲到 926k）；`linear-create` 由 worker 讓使用者確認票樹，PM 只收票號。`verifying-specs` 棒的 claude worker 以 `herdr agent start ... -- --model sonnet` 起（照清單驗證、最機械，不必用最貴的模型）；其餘棒繼承預設模型。
+鏈上各棒：`triage` PM 自己；`explore`、`spec --stage frd`、`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`、`spec-check --readiness`、`spec-check`、`ticket-create` 全派 session。`spec-check --readiness`、`spec-check`、`ticket-create` 不准 PM 就地跑（實測 context 暴漲到 926k）；`ticket-create` 由 worker 讓使用者確認票樹，PM 只收票號。`spec-check` 棒的 claude worker 以 `herdr agent start ... -- --model sonnet` 起（照清單驗證、最機械，不必用最貴的模型）；其餘棒繼承預設模型。
 
-**不可並行**：`specify-backend → specify-frontend`（FFS 硬相依 BFS）；`dev-readiness` 獨佔；同一功能目錄的任意兩棒（共用 `analysis/_context.yml`、`db-analysis.yml` 會互蓋）。不同票可並行。驗收發現上游要修而下游已在跑時：後派的限定窄任務、prompt 點名「不要碰這兩個共用檔」；做不到就等下游跑完。
+**不可並行**：`spec --stage bfs → spec --stage ffs`（FFS 硬相依 BFS）；`spec-check --readiness` 獨佔；同一功能目錄的任意兩棒（共用 `analysis/_context.yml`、`db-analysis.yml` 會互蓋）。不同票可並行。驗收發現上游要修而下游已在跑時：後派的限定窄任務、prompt 點名「不要碰這兩個共用檔」；做不到就等下游跑完。
 
 路由結果以文字列給使用者（哪一棒、派給誰、為什麼），該回合不接工具呼叫，逐棒列到下一個硬性停點、一次確認。使用者經另一個 session 轉達「由你跑完這條鏈」時，路由與接棒的確認門算過；push、開票、改 DB、關別人的 pane 與規格內容裁決仍回使用者本人。
 
 ## Task 3：派工
 
-- **派 session**：依 `toolkit:agent-dispatch` 長任務第 0～3 步。cwd 一律專案根（不要拿 submodule 目錄）。prompt 模板見 worker-protocol.md，必含：貼上 `decisions.md`「決策／選定」兩欄並標「已拍板、不要重問」（無 `decisions.md` 則寫明本棒建檔從 D-001 起）、讀哪幾份文件哪幾章（走 `lifecycle:spec-docs`）、「本棒跑完就停，不接下一棒」（可接棒時 PM 驗收後另開新 worker，每棒從乾淨 context 起跑）、回報走落檔 ＋ `SendMessage`（驗收只看檔案）。
+- **派 session**：依 `toolkit:agent-dispatch` 長任務第 0～3 步。cwd 一律專案根（不要拿 submodule 目錄）。prompt 模板見 worker-protocol.md，必含：貼上 `decisions.md`「決策／選定」兩欄並標「已拍板、不要重問」（無 `decisions.md` 則寫明本棒建檔從 D-001 起）、讀哪幾份文件哪幾章（走 `lifecycle:spec --stage index`）、「本棒跑完就停，不接下一棒」（可接棒時 PM 驗收後另開新 worker，每棒從乾淨 context 起跑）、回報走落檔 ＋ `SendMessage`（驗收只看檔案）。
 - 🔴 派工後立刻寫 `_pm-run.json` 一列 `dispatched` 並更新 `watch`，不只記在 context。只寫此檔，不寫 `_context.yml`。
 - **派 subagent**（`Agent`）：prompt 必含回報格式（只回摘要與結論，不貼原始碼全文）與邊界（只讀不改，發現該改處回報位置理由）。
 
@@ -58,8 +59,8 @@ herdr 通用操作一律依 `toolkit:agent-dispatch`（長任務模式）；機�
 
 1. 產出檔存在且非空殼：體積 ≥ 範本、編號章數 ≥ 範本、無殘留範本佔位符，三條缺一不可，不自訂判準。
 2. `decisions.md` 有本棒新列、「否決的選項與原因」非空，且產出檔 `§D` 列了同一批編號。
-3. SPEC-INDEX 與章節一一對應：照 `${CLAUDE_PLUGIN_ROOT}/skills/spec-docs/references/spec-index-format.md`「Full index」規則 6 的指令跑，看 `diff` 空不空。
-4. 跑機械閘 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-propagation.py {功能目錄}`：exit 非 0 照輸出先回派修，通過才進第 5 項。它擋 R1～R4 決策傳播、R5 暫定標記（`狀態`＝暫定的 D，正文要寫「（暫定，D-xxx 待確認）」）、R6 文件資訊版本＝CHANGELOG 最高版本，這三類靠讀正文抓不完（實測驗收後窄修回派 86 則，暫定漏標 31、版本不同步 29）。
+3. SPEC-INDEX 與章節一一對應：照 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/index/spec-index-format.md`「Full index」規則 6 的指令跑，看 `diff` 空不空。
+4. 跑機械閘 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/spec-check/scripts/check-decision-propagation.py {功能目錄}`：exit 非 0 照輸出先回派修，通過才進第 5 項。它擋 R1～R4 決策傳播、R5 暫定標記（`狀態`＝暫定的 D，正文要寫「（暫定，D-xxx 待確認）」）、R6 文件資訊版本＝CHANGELOG 最高版本，這三類靠讀正文抓不完（實測驗收後窄修回派 86 則，暫定漏標 31、版本不同步 29）。
 5. worker 宣稱依循的上游決策確實存在：派 subagent 比對，只收「宣稱｜D 編號｜有無」表。
 
 驗收完把 `_pm-run.json` 該棒改 `verified` 或 `rejected`。`verified` 就依 `toolkit:agent-dispatch` 長任務第 5 步關該 pane 並重排；可自動接棒且續行條件全滿足 → 回 Task 3 派下一棒新 worker，否則停下回報。

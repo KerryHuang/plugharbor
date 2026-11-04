@@ -1,13 +1,14 @@
 ---
 name: consolidate-docs
-description: Consolidates ticket-suffixed CR spec docs (e.g. `*_ABC-395.md`) back into their main spec files after the Linear ticket reaches Done. Verifies technical references against the live codebase / DB before merging, rewrites cross-doc links, and deletes the ticket source. Use when user types `/lifecycle:consolidate-docs`, asks to「整理 docs」「合併票號文件」「整併變更單」, or wants to clean docs/ after a CR cycle closes.
+description: Consolidates ticket-suffixed CR spec docs (e.g. `*_ABC-395.md`) back into their main spec files after the ticket reaches the `done` stage. Verifies technical references against the live codebase / DB before merging, rewrites cross-doc links, and deletes the ticket source. Use when user types `/lifecycle:consolidate-docs`, asks to「整理 docs」「合併票號文件」「整併變更單」, or wants to clean docs/ after a CR cycle closes.
+disable-model-invocation: true
 ---
 
 # Consolidate Docs
 
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-> 掃描 `{docs-root}`（依 `sdlc-docs-path`，未設定為 `docs/`）下所有帶 Linear 票號後綴的 CR 文件，若該票已 Done，先對 codebase / DB 事實驗證，再合併回主規格、改寫連結、刪除票號檔。
+> 掃描 `{docs-root}`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）下所有帶票號後綴的 CR 文件，經 `lifecycle:ticket-ops` 的 `get` 查階段，若該票已 `done`，先對 codebase / DB 事實驗證，再合併回主規格、改寫連結、刪除票號檔。
 
 ## When to Use
 
@@ -62,7 +63,7 @@ description: Consolidates ticket-suffixed CR spec docs (e.g. `*_ABC-395.md`) bac
 | Task | 主題 |
 |---|---|
 | 1 | Scan ticket-suffixed files |
-| 2 | Query Linear statuses (batched) |
+| 2 | Query ticket stages via ticket-ops (batched) |
 | 3 | Generate merge plan + resolve main-file mapping |
 | 4 | Verify technical references vs codebase / DB |
 | 5 | Scan cross-doc link references |
@@ -81,9 +82,9 @@ description: Consolidates ticket-suffixed CR spec docs (e.g. `*_ABC-395.md`) bac
 
 **Verification**：取得 `{path, base, identifier, candidate-main-path}` 清單 + 數量；多票號檔已分離出「需人工裁決」桶。
 
-### Step 2: Query Linear
+### Step 2: Query ticket stages
 
-對每個 identifier `mcp__linear__get_issue`：取 `state.name`、`title`、`description` 前 200 字、`url`。分類 Done / 其他 / 查無。
+對每個 identifier 經 `lifecycle:ticket-ops` 的 `get`（不直接呼叫票務工具）：取階段、標題、body 前 200 字、url。分類 done / 其他 / 查無。`ticket-ops` 不可用（缺 `ticket.tool` 設定）→ 停，不猜票況。
 
 **Verification**：每張票分類完成；異常票（API 錯誤、查無）顯式記錄。
 
@@ -91,7 +92,7 @@ description: Consolidates ticket-suffixed CR spec docs (e.g. `*_ABC-395.md`) bac
 
 對每張 Done 票決議：
 - 主文件存在 → 規劃「章節新增 / 取代 / 補充」
-- 主文件不存在 → 票號檔內容當主文件草稿，移除「變更摘要」「修訂歷史」「Linear Ticket」等過渡性前言
+- 主文件不存在 → 票號檔內容當主文件草稿，移除「變更摘要」「修訂歷史」「Ticket」等過渡性前言
 
 **Verification**：每張 Done 票都有明確的主文件路徑與合併動作；無歧義映射。
 
@@ -144,7 +145,7 @@ dry-run 模式跳過此步，提示「執行 `/lifecycle:consolidate-docs --appl
 ### 合併後：更新 SPEC-INDEX
 
 CR 章節併回主文後，主文件章節與編號區間已變。依
-`../spec-docs/references/spec-index-format.md`
+`../spec/references/index/spec-index-format.md`
 重新產生 `<!-- SPEC-INDEX v1 -->` 區塊（主文件是一般規格 → 用完整格式，逐章一行、含編號區間，非 CR 的一行式異動摘要）；並確認合併後主文件仍在體積預算內，超標則回報使用者。
 
 ### Step 8: Graphify 圖譜增量更新（條件式，僅 `--apply` 後）
@@ -157,7 +158,7 @@ CR 章節併回主文後，主文件章節與編號區間已變。依
 digraph consolidate {
     rankdir=TB;
     scan [shape=box, label="Step 1: Scan ticket files"];
-    linear [shape=box, label="Step 2: Query Linear"];
+    linear [shape=box, label="Step 2: Query ticket stages"];
     plan [shape=box, label="Step 3: Plan merge"];
     verify [shape=box, label="Step 4: Verify vs codebase"];
     drift [shape=diamond, label="Drift OK?"];
@@ -195,7 +196,7 @@ These thoughts mean you're rationalizing:
 | Excuse | Reality |
 |---|---|
 | 「驗證範圍太廣，跳過附錄表」 | 核心 100% 不能砍；附錄抽 30% 是底線 |
-| 「Linear API 慢，先合併再說」 | Status 沒查 = 可能合進 In Progress 票的半成品 |
+| 「票務查詢慢，先合併再說」 | 階段沒查 = 可能合進 in-progress 票的半成品 |
 | 「主檔風格本來就不一致」 | 命名標準化是合併附帶責任，不要留技術債 |
 | 「探索摘要也合併進去」 | 探索摘要是過渡產物，沒有主檔；應 git rm 不是合併 |
 | 「全部用 LLM 重整一遍」 | 預設追加 §X 章節保留溯源；深度重整另開 SA review |
@@ -216,9 +217,9 @@ These thoughts mean you're rationalizing:
 - ❌ 不修改非 `.md` 檔的連結（程式碼註解中的路徑不動）
 - ❌ 不在 dry-run 模式下寫任何檔（report 除外）
 - ❌ 不刪除主文件中與票號檔無關的內容
-- ❌ 不對驗證 drift 做自動修補（交給 `/lifecycle:verifying-specs` 或人工）
+- ❌ 不對驗證 drift 做自動修補（交給 `/lifecycle:spec-check` 或人工）
 
 ## References
 
 - `references/verification-rules.md` — Step 4 抽取規則、驗證手段、drift 處置矩陣完整細節
-- 相關 skill：`lifecycle:verifying-specs`（更深入的單份規格 vs codebase 驗證）、`lifecycle:requirement` / `lifecycle:specify-backend` / `lifecycle:specify-frontend`（CR 票文件產生器）
+- 相關 skill：`lifecycle:spec-check`（更深入的單份規格 vs codebase 驗證）、`lifecycle:spec`（CR 票文件產生器）

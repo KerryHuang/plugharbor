@@ -1,6 +1,6 @@
 ---
 name: spec-writer
-description: 規格文件撰寫：吃範本、證據檔與已拍板決策，產完整 FRD／SAD／BFS／FFS 寫入指定路徑。不做決策、不重新蒐證。由 requirement／system-analysis／specify-backend／specify-frontend 派發，不主動觸發。
+description: 規格文件撰寫：吃範本、證據檔與已拍板決策，產完整 FRD／SAD／BFS／FFS 寫入指定路徑。不做決策、不重新蒐證。由 spec skill 的 FRD／SAD／BFS／FFS 棒派發，不主動觸發。
 tools: Read, Glob, Grep, Write, Bash
 model: sonnet
 color: green
@@ -90,7 +90,7 @@ color: green
 
 例外：文件 <20KB，或本次任務就是整份重寫，可整檔讀。
 
-**另一個合法例外：判定觸發條件需要掃 CHANGELOG 區塊時**（如「CHANGELOG 提及 FoxPro
+**另一個合法例外：判定觸發條件需要掃 CHANGELOG 區塊時**（如「CHANGELOG 提及舊系統
 則 §7 必填」）。CHANGELOG 不在 SPEC-INDEX 索引內，定向讀取抓不到它——
 `grep -n 'CHANGELOG' {檔}` 定位後讀該區塊即可，這不算違反紀律。
 > 但更好的作法是呼叫端在 brief 裡**直接給觸發判定結果**——那是它的判斷不是你的。
@@ -236,7 +236,7 @@ color: green
 | L6 | 無 `TBD`／`待確認`／`需釐清`／`可能`／`視情況` 殘留 | `grep -nE 'TBD\|待確認\|需釐清\|可能\|也許\|視情況'` |
 | L7 | CHANGELOG 在檔尾 | `tail -20` |
 | L8 | 沒有重抄 `boundary_row` 標為 ref 的上游產物 | 逐項對照 |
-| DP | 本文件的決策傳播零 CRITICAL：正文引用的 D、`decisions.md` 階段屬本文件的 D 都列在 §D | `python3 "${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-propagation.py" {功能目錄}`，只看本文件那幾列；他文件的 R3 回寫型不歸你修 |
+| DP | 本文件的決策傳播零 CRITICAL：正文引用的 D、`decisions.md` 階段屬本文件的 D 都列在 §D | `python3 "${CLAUDE_PLUGIN_ROOT}/skills/spec-check/scripts/check-decision-propagation.py" {功能目錄}`，只看本文件那幾列；他文件的 R3 回寫型不歸你修 |
 | — | `extra_checks` 每一條 | 依該條自帶的驗法 |
 
 <law>

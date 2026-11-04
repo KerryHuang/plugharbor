@@ -13,7 +13,7 @@ model: sonnet
 
 **不做**：主動備會、開票、自動接需求流程、語音轉錄（輸入一律是使用者貼入的文字）。
 
-**下游**：記錄要分類開票 → `lifecycle:issue-triage`；累積多場記錄要盤「已知什麼、還缺什麼」
+**下游**：記錄要分類開票 → `lifecycle:triage`；累積多場記錄要盤「已知什麼、還缺什麼」
 或準備下一場訪談 → `lifecycle:interview-prep`。
 
 **互動原則**：互動詢問依 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md` §互動詢問規範（一次一題、能選就不打字）。
@@ -120,7 +120,7 @@ prompt: |
 
 回報最終檔案路徑（即時模式 = 回填骨架檔；事後模式 = 新寫檔），以及 HedgeDoc 筆記網址（若已發布）。
 
-完成後依動線用 AskUserQuestion 建議下一步：需求還沒收斂、要準備下一輪訪談 → `lifecycle:interview-prep`；會中有一批回饋要分類開票 → `lifecycle:issue-triage`（會議記錄只記錄，不分類也不開票）；使用者同意才接著跑，不自動執行。
+完成後依動線用 AskUserQuestion 建議下一步：需求還沒收斂、要準備下一輪訪談 → `lifecycle:interview-prep`；會中有一批回饋要分類開票 → `lifecycle:triage`（會議記錄只記錄，不分類也不開票）；使用者同意才接著跑，不自動執行。
 
 ## 錯誤處理
 
