@@ -11,6 +11,8 @@
 | agy | `-p <p> --sandbox --disable-slash-commands` | `-p <p> --dangerously-skip-permissions` | 同 probe |
 | pi | `-p <p> --no-tools --no-session` | `-p <p> --tools bash --no-session` | 同 probe |
 
+背景 worker（agent-dispatch `bg.mjs`）另有 `worker` 模式：claude `-p <p> --permission-mode acceptEdits --allowedTools Bash`、pi `-p <p> --tools read,bash,edit,write --no-session`，codex 與 agy 同 driver。
+
 說明：
 
 - ask 模式下 codex 會保留使用者設定（模型、MCP），代表日常實際的用法。

@@ -53,7 +53,6 @@ async function main(argv) {
 
   // 參數擋不住寫檔的 CLI（agy）只能靠指示；四家一律加，行為一致。
   const guarded = `唯讀任務：不要建立、修改或刪除任何檔案，不要執行有副作用的指令；只讀取與回答。\n\n${prompt}`
-  let last = 1
   for (let i = 0; i < list.length; i++) {
     const c = { ...list[i], ...(o.model && { model: o.model }), ...(o.effort && { effort: o.effort }) }
     const bin = resolveBin(c.cli)
@@ -68,8 +67,7 @@ async function main(argv) {
       blockCli(stateFile, c.cli, q.resetAt, 'quota')
       const next = list.slice(i + 1).find(n => resolveBin(n.cli))
       console.error(`[ask] ${c.cli} 額度用盡，封鎖到 ${fmt(q.resetAt)}${next && !o.to ? `，改派 ${next.cli}` : ''}`)
-      last = r.code ?? 1
-      if (o.to) { process.stdout.write(r.out); return last }
+      if (o.to) { process.stdout.write(r.out); return r.code ?? 1 }
       continue
     }
     const out = o.out ?? `${file}.out.md`

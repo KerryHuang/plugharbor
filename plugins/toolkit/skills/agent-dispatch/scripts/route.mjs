@@ -87,3 +87,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(`已標記 ${cli} 到 ${new Date(t).toISOString()} 前不派（${f}）`)
   }
 }
+// 並行上限：爭用時調降的值只在 parallelResetAt 之前有效，到期回到路由表的值
+export const parallelLimit = (state, routing, now = Date.now()) =>
+  state.maxParallel && (state.parallelResetAt ?? 0) > now ? state.maxParallel : routing.maxParallel

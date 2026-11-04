@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildArgs, quotaInfo } from '../agent-mesh-check/scripts/clis.mjs'
+import { buildArgs, quotaInfo, run, scrubEnv } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, delimiter } from 'node:path'
@@ -41,7 +41,7 @@ test('buildArgs 帶 model 與 effort：pi 用 model:thinking，沒 model 用 --t
 
 test('quotaInfo 解析 ISO 重置時間', () => {
   const t = '2026-11-04T10:00:00Z'
-  assert.deepEqual(quotaInfo(`Error: usage limit reached. Resets at ${t}`), { resetAt: Date.parse(t) })
+  assert.deepEqual(quotaInfo(`Error: usage limit reached. Resets at ${t}`, Date.parse('2026-11-04T09:00:00Z')), { resetAt: Date.parse(t) })
 })
 
 test('quotaInfo 沒有重置時間預設 1 小時', () => {
@@ -50,6 +50,39 @@ test('quotaInfo 沒有重置時間預設 1 小時', () => {
 
 test('quotaInfo 解析相對時間', () => {
   assert.deepEqual(quotaInfo('quota hit, try again in 15 minutes', 0), { resetAt: 15 * 60_000 })
+})
+
+test('run：npm 的 .cmd shim 改直接用 node 執行，多行參數與 %VAR% 原樣傳遞', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-cmd-'))
+  mkdirSync(join(d, 'node_modules', 'x', 'bin'), { recursive: true })
+  writeFileSync(join(d, 'node_modules', 'x', 'bin', 'x.js'), 'process.stdout.write(JSON.stringify(process.argv.slice(2)))')
+  writeFileSync(join(d, 'x.cmd'), '@ECHO off\r\nSETLOCAL\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\x\\bin\\x.js" %*\r\n')
+  const r = await run(join(d, 'x.cmd'), ['line1\nline2', '%PATH%'])
+  assert.equal(r.out, JSON.stringify(['line1\nline2', '%PATH%']))
+})
+
+test('run：解析不了的 .cmd 遇到多行參數直接失敗，不默默截斷', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-cmd-'))
+  writeFileSync(join(d, 'y.cmd'), '@echo off\r\nsomething.exe %*\r\n')
+  const r = await run(join(d, 'y.cmd'), ['a\nb'])
+  assert.equal(r.code, null)
+  assert.match(r.out, /多行/)
+})
+
+test('quotaInfo：只看輸出尾段，前面 prompt 或 log 裡談到 rate limit 不算', () => {
+  const out = 'The handler returns 429 when the rate limit is hit.\n' + 'x'.repeat(3000) + '\nError: model not found'
+  assert.equal(quotaInfo(out, 0), null)
+})
+
+test('quotaInfo：相對時間優先於 log 前綴的 ISO 時間', () => {
+  const now = Date.parse('2026-11-04T09:00:00Z')
+  assert.deepEqual(quotaInfo('[2026-11-04T10:00:00] usage limit. Try again in 2 hours.', now), { resetAt: now + 2 * 3_600_000 })
+})
+
+test('quotaInfo：重置時間不在未來 7 天內就用預設 1 小時', () => {
+  const now = Date.parse('2026-11-04T09:00:00Z')
+  assert.deepEqual(quotaInfo('usage limit reached, resets 2099-01-01T00:00Z', now), { resetAt: now + 3_600_000 })
+  assert.deepEqual(quotaInfo('usage limit reached, resets 2026-11-01T00:00Z', now), { resetAt: now + 3_600_000 })
 })
 
 test('quotaInfo 正常輸出回 null', () => {
@@ -198,7 +231,8 @@ test('ask：長輸出寫進結果檔，stdout 只放摘要', () => {
 })
 
 // ── 背景 worker ──
-import { detectEnv, prepare, supervise, running, ghosttyAvailable, ghosttySplitScript } from './scripts/bg.mjs'
+import { detectEnv, prepare, supervise, running, ghosttyAvailable, ghosttySplitScript, start, statusOf, wait } from './scripts/bg.mjs'
+import { parallelLimit } from './scripts/route.mjs'
 import { execFileSync } from 'node:child_process'
 
 test('detectEnv：herdr 優先，其次 ghostty，最後背景', () => {
@@ -229,6 +263,8 @@ function driverShim() {
 const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
 if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing result'); process.exit(1) }
+if (process.env.SHIM_RESULT === 'quota') { console.log('Error: usage limit reached'); process.exit(1) }
+if (process.env.SHIM_RESULT === '429') { fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成'); console.log('handler returns 429 on rate limit'); process.exit(1) }
 fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt')
 `)
   chmodSync(f, 0o755)
@@ -288,4 +324,84 @@ function promptStub() { const p = join(mkdtempSync(join(tmpdir(), 'ad-p-')), 'p.
 test('statePath 比照 mesh 的規則', () => {
   assert.equal(statePath({ XDG_STATE_HOME: '/s' }, 'linux'), join('/s', 'agent-dispatch', 'state.json'))
   assert.match(statePath({ LOCALAPPDATA: 'C:\\L' }, 'win32'), /agent-dispatch/)
+})
+
+test('buildArgs worker 模式：claude 自動接受編輯，pi 開讀寫工具，codex／agy 同 driver', () => {
+  const c = buildArgs('claude', 'worker', 'P')
+  assert.deepEqual(c.slice(0, 2), ['-p', 'P'])
+  assert.ok(c.join(' ').includes('--permission-mode acceptEdits'))
+  assert.ok(c.join(' ').includes('--allowedTools Bash'))
+  assert.ok(buildArgs('pi', 'worker', 'P').join(' ').includes('--tools read,bash,edit,write'))
+  assert.deepEqual(buildArgs('codex', 'worker', 'P'), buildArgs('codex', 'driver', 'P'))
+  assert.deepEqual(buildArgs('agy', 'worker', 'P'), buildArgs('agy', 'driver', 'P'))
+})
+
+test('scrubEnv 清掉 AGENT_DISPATCH_RESULT，巢狀派工不會被 Stop hook 當成 worker', () => {
+  assert.equal(scrubEnv({ AGENT_DISPATCH_RESULT: '/r.md', PATH: '/b' }).AGENT_DISPATCH_RESULT, undefined)
+})
+
+test('背景 worker：結果檔已寫，輸出碰巧有 429 → 仍判 done，不封鎖', async () => {
+  const { job, status } = await runJob({ SHIM_RESULT: '429' })
+  assert.equal(status.state, 'done')
+  assert.equal(readState(job.statusFile.replace(/[^/\\]+[/\\]status\.json$/, 'state.json')).blocks.claude, undefined)
+})
+
+test('背景 worker：額度用盡 → 並行上限降 1 並記 1 小時後恢復；到期後回到路由表的值', async () => {
+  const t0 = Date.now()
+  const { job } = await runJob({ SHIM_RESULT: 'quota' })
+  const s = readState(job.statusFile.replace(/[^/\\]+[/\\]status\.json$/, 'state.json'))
+  assert.equal(s.maxParallel, 3)
+  assert.ok(s.parallelResetAt > t0 + 3_500_000 && s.parallelResetAt <= Date.now() + 3_600_000)
+  const routing = loadRouting()
+  assert.equal(parallelLimit(s, routing, t0), 3)
+  assert.equal(parallelLimit(s, routing, s.parallelResetAt + 1), routing.maxParallel)
+  assert.equal(parallelLimit({ blocks: {} }, routing), routing.maxParallel)
+})
+
+test('背景 worker：監督程序內出錯 → 寫 failed 與錯誤訊息，不留 running', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-sup-'))
+  const ws = join(root, 'w'); mkdirSync(ws)
+  const statusFile = join(ws, 'status.json')
+  writeFileSync(statusFile, JSON.stringify({ state: 'running', pid: process.pid }))
+  writeFileSync(join(ws, 'job.json'), JSON.stringify({ name: 'w', cli: 'no-such-cli', timeout: 5, worktree: ws,
+    resultFile: join(ws, 'result.md'), statusFile, stateFile: join(root, 's.json'), prompt: 'x' }))
+  assert.equal(await supervise(ws), 'failed')
+  const st = JSON.parse(readFileSync(statusFile, 'utf8'))
+  assert.equal(st.state, 'failed')
+  assert.ok(st.error)
+})
+
+function deadPid() { return spawnSync(process.execPath, ['-e', '']).pid }
+
+test('statusOf：running 但程序已不在 → failed（supervisor gone）', () => {
+  const ws = mkdtempSync(join(tmpdir(), 'ad-st-'))
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: deadPid() }))
+  assert.equal(statusOf(ws).state, 'failed')
+  assert.match(statusOf(ws).note, /supervisor gone/)
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid }))
+  assert.equal(statusOf(ws).state, 'running')
+})
+
+test('wait：等到狀態不再是 running；逾時回 timeout', async () => {
+  const ws = mkdtempSync(join(tmpdir(), 'ad-wait-'))
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid }))
+  assert.equal((await wait(ws, { timeoutMs: 300, intervalMs: 50 })).state, 'timeout')
+  setTimeout(() => writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'done', pid: process.pid })), 150)
+  assert.equal((await wait(ws, { timeoutMs: 5000, intervalMs: 50 })).state, 'done')
+})
+
+test('start：狀態檔立刻記監督程序的 pid，不是 start 自己的', async () => {
+  const repo = tmpRepo()
+  const root = mkdtempSync(join(tmpdir(), 'ad st '))
+  const prompt = join(root, 'p.md'); writeFileSync(prompt, 'do it')
+  const old = process.env.PATH, oldN = process.env.AGENT_DISPATCH_NO_NOTIFY
+  Object.assign(process.env, { PATH: driverShim() + delimiter + old, AGENT_DISPATCH_NO_NOTIFY: '1' })
+  try {
+    const job = start({ repo, name: 's1', cli: 'claude', promptFile: prompt, ws: join(root, 's1'), state: join(root, 'state.json') })
+    assert.notEqual(JSON.parse(readFileSync(job.statusFile, 'utf8')).pid, process.pid)
+    assert.equal((await wait(job.ws, { timeoutMs: 20000, intervalMs: 100 })).state, 'done')
+  } finally {
+    process.env.PATH = old
+    oldN === undefined ? delete process.env.AGENT_DISPATCH_NO_NOTIFY : (process.env.AGENT_DISPATCH_NO_NOTIFY = oldN)
+  }
 })

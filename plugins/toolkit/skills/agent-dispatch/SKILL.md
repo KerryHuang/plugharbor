@@ -81,7 +81,7 @@ argument-hint: "[對象] <任務>"
 - prompt 必須寫明結果檔的絕對路徑，以及「寫完結果檔才算完成，寫完就停」；還要寫明已經定案的決定和已排除的方向。
 - 「不要刪暫存資料夾，把要清的路徑列在結果檔」。
 - 並行多個 worker 時，各自的結果檔與工作區分開，並寫明「另一個 worker 正在寫 X，不要碰」。並行上限預設 4，遇到額度錯誤或逾時就降。
-- **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（herdr `--wait`）或完工通知。背景 worker 用 `bg.mjs status` 只在被通知或使用者問起時看一次。
+- **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（herdr `--wait`）或完工通知。背景 worker 在 macOS 等通知、用 `bg.mjs status` 看一次；其他平台用 `bg.mjs wait` 阻塞等結束。
 - **完成的唯一證據是結果檔存在**。
 
 ## 6. herdr pane 步驟

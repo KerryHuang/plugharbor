@@ -8,13 +8,14 @@
 第一次執行時 macOS 會問要不要允許終端機控制 Ghostty（自動化權限），要同意。
 
 ```bash
-# 開分割：在 <cwd> 執行 <指令>，印出新分割的 id；--result 會設成分割內的 AGENT_DISPATCH_RESULT
-node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-split --cwd "<cwd>" --result "<結果檔>" "<指令>"
+# 開分割：在 <cwd> 執行 <指令>，印出新分割的 id
+node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-split --cwd "<cwd>" "<指令>"
 # 收工：用 id 關掉（指令結束後分割不會自己關）
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-close <id>
 ```
 
 - `<指令>` 用該 CLI 的互動模式帶初始 prompt，例如 `claude "$(cat <prompt 檔>)"`，讓使用者看得到、必要時能直接在分割裡回答。
+- 分割內不設 `AGENT_DISPATCH_RESULT`：互動 worker 有人在場，Stop hook 若在它每次想問人時擋下，它可能寫出「待決」的結果檔被當成完成。
 - 完成的證據是結果檔存在。主控不輪詢：Claude worker 寫完結果檔後用 SendMessage 回報；其他 CLI 的 worker 由使用者看到分割結束後告知，或主控用阻塞方式等結果檔。
 
 ### Spike 結論（2026-11-04，macOS，Ghostty 1.4.0）
@@ -39,24 +40,26 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-close <id>
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --repo <repo> --name <短名> --to <cli> \
   [--model <模型>] [--effort <等級>] [--timeout <秒，預設 3600>] --ws <工作目錄> <prompt 檔>
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" status --ws <工作目錄>   # 只讀，不等待
+node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <秒>]   # 阻塞到結束；done→0、逾時→124、其他→1
 ```
 
 - `--ws` 是這個 worker 專用的工作目錄。多個 worker 放在同一個上層目錄下，並行上限以那一層計算。
 - 工作目錄內容：
   - `wt/`：worktree，分支 `dispatch/<短名>`。
   - `job.json`：派工設定。
-  - `status.json`：狀態，`running`／`done`／`failed`／`quota`。
+  - `status.json`：狀態，`running`／`done`／`failed`／`quota`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）。
   - `result.md`：worker 寫的結果。
   - `log.txt`：CLI 的完整輸出。
 - 並行上限：
   - 預設 4（`routing.json` 的 `maxParallel`）。
-  - 遇到額度用盡或逾時就降 1，最低 1，寫進狀態檔。
-  - 恢復時用 `node route.mjs` 的狀態檔手動調回，或刪掉 `maxParallel` 欄位。
+  - 遇到額度用盡或逾時就降 1，最低 1，寫進狀態檔（`maxParallel`、`parallelResetAt`）。
+  - 1 小時後自動恢復成路由表的值；要提早恢復就刪掉狀態檔裡這兩個欄位。
 - 結束時：
-  - 結果檔在 → `done`。
-  - 沒寫結果檔 → `failed`，並附輸出最後 2000 字元。
-  - 額度錯誤 → `quota`，同時封鎖該家。
-- macOS 會跳桌面通知。其他平台未支援，請看 `status.json`。
+  - 結果檔在 → `done`（不論輸出內容）。
+  - 沒寫結果檔、輸出尾段是額度錯誤 → `quota`，同時封鎖該家。
+  - 其他 → `failed`，並附輸出最後 2000 字元；監督程序本身出錯也寫 `failed` 與 `error`。
+- CLI 參數用 `worker` 模式：claude `--permission-mode acceptEdits --allowedTools Bash`、pi `--tools read,bash,edit,write`，codex／agy 同 driver。
+- macOS 會跳桌面通知。其他平台沒有通知，主控用 `bg.mjs wait` 阻塞等結束。
 - 收工：
   1. 使用者審 `wt/` 的改動。
   2. 由主控合併。

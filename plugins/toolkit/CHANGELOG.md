@@ -17,6 +17,10 @@
   - 新增「審查」「額度」「交棒」三節。交棒的做法放在新的 `skills/agent-dispatch/references/handoff-protocol.md`：交接上限 8000 字元，對方回覆「已接手」才算交出，否則所有權留在原 session。
   - 長任務改成三層偵測：herdr、Ghostty、背景；不再一律禁止背景 worker，改成條件成立才用。
   - 路由表的 12 組模型都實際 ping 過（2026-11-04），參數表補在 `skills/agent-mesh-check/references/cli-notes.md`。
+- fix: Windows 上 npm 的 `.cmd` shim 改用 node 直接執行 JS 入口，不經 cmd.exe，多行 prompt 不再於第一個換行被截斷；解析不了的 `.cmd` 遇到多行參數直接報錯。
+- fix: 額度判定只看輸出最後 2000 字元，「in N minutes/hours」優先於 ISO 時間，重置時間不在未來 7 天內就用預設 1 小時；背景 worker 有結果檔一律判 `done`。
+- fix: 背景 worker 的並行上限調降 1 小時後自動恢復；`start` 立刻記監督程序 pid；監督程序出錯寫 `failed`，程序已不在時 `status` 顯示 `failed`；新增 `bg.mjs wait` 給沒有完工通知的平台阻塞等待。
+- fix: 背景 worker 改用 `worker` 參數模式（claude 自動接受編輯、pi 開讀寫工具）；`scrubEnv` 清掉 `AGENT_DISPATCH_RESULT`，Ghostty 互動分割不再設它，避免 Stop hook 干擾巢狀派工與互動提問。
 
 ## [0.8.0] - 2026-11-03
 
