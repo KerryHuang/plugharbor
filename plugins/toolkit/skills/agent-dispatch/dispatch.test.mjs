@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { buildArgs, quotaInfo, run, scrubEnv } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, delimiter } from 'node:path'
+import { join, delimiter, basename } from 'node:path'
 import { loadRouting, readState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
 
 const has = (args, ...seq) => {
@@ -162,18 +162,28 @@ import { summarize } from './scripts/ask.mjs'
 
 const ASK = fileURLToPath(new URL('./scripts/ask.mjs', import.meta.url))
 
+// 假 CLI：POSIX 寫成可執行的 shebang 腳本；Windows 不能直接執行沒有副檔名的檔，改寫 npm 風格的 .cmd＋.js
+function writeShim(f, code) {
+  if (process.platform === 'win32') {
+    writeFileSync(`${f}.js`, code)
+    writeFileSync(`${f}.cmd`, `@"%~dp0\\${basename(f)}.js" %*\r\n`)
+    return
+  }
+  writeFileSync(f, `#!${process.execPath}\n${code}`)
+  chmodSync(f, 0o755)
+}
+
 // 假 CLI：環境變數 SHIM_<名稱>=quota 時印額度錯誤；=long 時印 20000 字；否則印「answer from <名稱>」
 function shimDir() {
   const d = mkdtempSync(join(tmpdir(), 'ad-bin-'))
   for (const name of ['claude', 'codex']) {
     const f = join(d, name)
-    writeFileSync(f, `#!${process.execPath}
+    writeShim(f, `
 const mode = process.env['SHIM_${name.toUpperCase()}']
 if (mode === 'quota') { console.log('Error: usage limit reached, try again in 2 hours'); process.exit(1) }
 if (mode === 'long') { process.stdout.write('y'.repeat(20000)); process.exit(0) }
 console.log('answer from ${name} ' + process.argv.slice(2).join(' '))
 `)
-    chmodSync(f, 0o755)
   }
   return d
 }
@@ -259,7 +269,7 @@ test('ghosttySplitScript：引號與反斜線都跳脫，帶工作目錄與環�
 function driverShim() {
   const d = mkdtempSync(join(tmpdir(), 'ad-drv-'))
   const f = join(d, 'claude')
-  writeFileSync(f, `#!${process.execPath}
+  writeShim(f, `
 const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
 if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing result'); process.exit(1) }
@@ -267,7 +277,6 @@ if (process.env.SHIM_RESULT === 'quota') { console.log('Error: usage limit reach
 if (process.env.SHIM_RESULT === '429') { fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成'); console.log('handler returns 429 on rate limit'); process.exit(1) }
 fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt')
 `)
-  chmodSync(f, 0o755)
   return d
 }
 

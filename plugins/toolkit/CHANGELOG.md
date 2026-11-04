@@ -3,6 +3,10 @@
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.9.1] - 2026-11-04
+
+- fix: agent-dispatch 測試在 Windows 上改用 npm 風格的 `.cmd`＋`.js` 假 CLI（沒有副檔名的 shebang 腳本在 Windows 不能直接執行，ask 與背景 worker 的測試原本全紅）。
+
 ## [0.9.0] - 2026-11-04
 
 - feat: agent-dispatch 派工可指定模型與思考等級（`clis.mjs` 的 `buildArgs` 加 `model`／`effort`，四個 CLI 各用自己的參數），並能從錯誤訊息辨認額度用盡與重置時間（`quotaInfo`，抓不到時間就預設封鎖 1 小時）。
