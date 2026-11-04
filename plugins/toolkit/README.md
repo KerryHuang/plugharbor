@@ -21,6 +21,7 @@ claude plugin install toolkit@plugharbor
 | PostToolUseFailure、UserPromptSubmit | `loop-guard.py` | 同一輪同一失敗第 3 次注入「停下重估」提示，之後再犯只提醒使用者；subagent 各自計數，換一則 user 訊息歸零 |
 | Notification、Stop | `notification.sh` | 等你回應／完工時的桌面通知與音效（macOS、Linux、Windows Git Bash） |
 | Stop | `context-size-reminder.py` | context 越過級距時提醒 |
+| Stop | `dispatch-stop-guard.py` | 被 agent-dispatch 派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次 |
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
@@ -55,9 +56,20 @@ retrospective:
 
 本機語音轉逐字稿（`skills/transcribe/scripts/transcribe.py`）：Mac Apple Silicon 用 mlx-whisper、其他平台用 faster-whisper，輸出經 OpenCC `s2twp` 轉台灣繁體，每段 `[hh:mm:ss] 文字`。依賴（ffmpeg、轉錄套件、`opencc-python-reimplemented`）由使用者自裝，`transcribe.py doctor` 列出缺件與安裝指令。不上雲端、不分講者。另有 `record devices|start|status|stop`：背景用麥克風錄音、每 300 秒一個 16 kHz wav 分段，錄音與 session 脫鉤，`stop` 合併成 `recording.wav`；錄音需要 ffmpeg（`doctor --record` 檢查）。線上會議可用 `record start --source system|both` 一併錄系統播放的對方聲音（Mac 需 macOS 14.2+、Python 3.11+、`catap`，用 Core Audio tap，不必裝虛擬音訊驅動；Windows 尚未驗證、暫不開放），`live start` 會在錄音中逐段轉錄到 `transcript.md`。
 
+## agent-dispatch
+
+把工作交給另一個 agent CLI。路由規則在 `skills/agent-dispatch/references/routing.json`：任務類型 × 難度（top／standard／cheap）查表，得出 CLI＋模型＋思考等級的候選順序，並濾掉 agent-mesh-check 沒通過的 CLI 與額度封鎖中的 CLI。
+
+- **短問答**（`scripts/ask.mjs`）：額度用盡自動改派下一家，輸出超過 16000 字元只回摘要、全文落檔。
+- **長任務**：依序用 herdr pane、Ghostty 分割（macOS）、背景 worker（`scripts/bg.mjs`，在獨立 git worktree 執行）。
+- **其他**：
+  - 改動碰到安全、資料、DB 結構、公開介面，或超過 300 行時，挑不同家族的模型審查。
+  - 額度狀態存在 `~/.local/state/agent-dispatch/state.json`；Windows 存在 `%LOCALAPPDATA%`。
+
 ## 測試
 
 ```bash
+node --test plugins/toolkit/skills/agent-dispatch/dispatch.test.mjs plugins/toolkit/skills/agent-mesh-check/agent-mesh.test.mjs
 python3 -m pytest plugins/toolkit/hooks/tests -v
 python3 plugins/toolkit/skills/retrospective/scripts/test_chain_cost.py
 python3 -m pytest plugins/toolkit/skills/transcribe/tests -v   # 需 opencc-python-reimplemented

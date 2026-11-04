@@ -12,6 +12,11 @@
   - **Ghostty 分割**：macOS 用 Ghostty 1.4 的 AppleScript 開看得見的分割，可帶工作目錄與環境變數，收工時用 id 關掉。spike 結論見 `skills/agent-dispatch/references/background-worker.md`。
   - **背景 worker**：每個 worker 開獨立 git worktree（分支 `dispatch/<名>`），由 detached 監督程序執行，結束後依結果檔寫入 `done`／`failed`／`quota` 狀態並發 macOS 通知。並行上限 4，遇到額度或逾時就降。Windows 尚未實機驗證。
 - feat: 新增 Stop hook `dispatch-stop-guard.py`：被派出的 worker（環境變數 `AGENT_DISPATCH_RESULT` 有設）沒寫結果檔就想結束時擋下一次，要它先寫結果；一般 session 不受影響，壞輸入與 `stop_hook_active` 一律放行。
+- docs: agent-dispatch SKILL 改寫。
+  - 選對象：沒指定時依任務類型查表，回報照抄「交給誰、用哪級、理由」。
+  - 新增「審查」「額度」「交棒」三節。交棒的做法放在新的 `skills/agent-dispatch/references/handoff-protocol.md`：交接上限 8000 字元，對方回覆「已接手」才算交出，否則所有權留在原 session。
+  - 長任務改成三層偵測：herdr、Ghostty、背景；不再一律禁止背景 worker，改成條件成立才用。
+  - 路由表的 12 組模型都實際 ping 過（2026-11-04），參數表補在 `skills/agent-mesh-check/references/cli-notes.md`。
 
 ## [0.8.0] - 2026-11-03
 

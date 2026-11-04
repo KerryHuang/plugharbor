@@ -16,6 +16,17 @@
 - ask 模式下 codex 會保留使用者設定（模型、MCP），代表日常實際的用法。
 - driver 的 codex 一定要 `danger-full-access`：read-only 沙箱會擋網路，被叫起的 CLI 就連不到模型。
 
+## 指定模型與思考等級（2026-11-04 在 macOS 實測：claude 2.1.317、codex 0.166.0、agy 1.4.12、pi 1.4.0）
+
+`clis.mjs` 的 `buildArgs(name, mode, prompt, { model, effort })` 依下表組參數；agent-dispatch 路由表（`../../agent-dispatch/references/routing.json`）的 12 組都實際 ping 過。
+
+| CLI | 模型 | 思考等級 | 查可用模型 |
+|---|---|---|---|
+| claude | `--model <別名或 ID>`（`opus`、`sonnet`、`haiku`） | `--effort <level>` | 別名即可 |
+| codex | `-m <model>` | `-c model_reasoning_effort=<level>` | 沒有列表指令；看 `~/.codex/config.toml` 的 `model` |
+| agy | `--model <id>` | `--effort <level>`（模型 ID 本身也帶等級，如 `gemini-3.8-flash-high`） | `agy models` |
+| pi | `--model <provider>/<id>:<thinking>` | 沒給模型時 `--thinking <level>` | `pi --list-models`；走 Claude 訂閱用 `claude-bridge/` |
+
 ## 已知坑
 
 - **stdin 一律關閉**：`pi -p` 只要 stdin 沒關，就會無限等待。用 shell 呼叫時加 `< /dev/null`。

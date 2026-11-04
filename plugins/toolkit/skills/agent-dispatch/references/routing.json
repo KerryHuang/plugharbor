@@ -13,22 +13,22 @@
   },
   "tiers": {
     "top": [
-      { "cli": "codex", "model": "gpt-5.5", "effort": "high" },
+      { "cli": "codex", "model": "gpt-6.1-sol", "effort": "high" },
       { "cli": "claude", "model": "opus", "effort": "high" },
-      { "cli": "agy", "model": "gemini-3-pro", "effort": "high" },
-      { "cli": "pi", "model": "anthropic/opus", "effort": "high" }
+      { "cli": "agy", "model": "gemini-3.8-flash-high", "effort": "high" },
+      { "cli": "pi", "model": "claude-bridge/claude-opus-5-5", "effort": "high" }
     ],
     "standard": [
       { "cli": "claude", "model": "sonnet", "effort": "medium" },
-      { "cli": "codex", "model": "gpt-5.5", "effort": "medium" },
-      { "cli": "agy", "model": "gemini-3-pro", "effort": "medium" },
-      { "cli": "pi", "model": "anthropic/sonnet", "effort": "medium" }
+      { "cli": "codex", "model": "gpt-6.1-sol", "effort": "medium" },
+      { "cli": "agy", "model": "gemini-3.8-flash-medium", "effort": "medium" },
+      { "cli": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium" }
     ],
     "cheap": [
-      { "cli": "agy", "model": "gemini-3-flash", "effort": "low" },
+      { "cli": "agy", "model": "gemini-3.8-flash-low", "effort": "low" },
       { "cli": "claude", "model": "haiku", "effort": "low" },
-      { "cli": "codex", "model": "gpt-5.5-mini", "effort": "low" },
-      { "cli": "pi", "model": "anthropic/haiku", "effort": "low" }
+      { "cli": "codex", "model": "gpt-6.1-sol", "effort": "low" },
+      { "cli": "pi", "model": "claude-bridge/claude-haiku-5-5", "effort": "low" }
     ]
   },
   "family": { "claude": "anthropic", "pi": "anthropic", "codex": "openai", "agy": "google" },
