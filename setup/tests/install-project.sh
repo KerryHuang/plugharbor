@@ -44,7 +44,7 @@ run "$P" sa-flow ui-ux >/dev/null || fail "重跑 exit 非 0"
 # ---------- 2) 已裝且版號相同略過、不同 update；其他專案的同名 local 不算 ----------
 P2="$(newproj p2)"; : > "$STUB_LOG"
 printf '[{"id": "sa-flow@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"},\n {"id": "ui-ux@plugharbor", "version": "0.0.1", "scope": "local", "projectPath": "%s"},\n {"id": "blog@plugharbor", "version": "%s", "scope": "local", "projectPath": "/other"}]\n' \
-  "$(ver sa-flow)" "$P2" "$P2" "$(ver blog)" > "$STUB_STATE/claude-list"
+  "$(ver sa-flow)" "$(native "$P2")" "$(native "$P2")" "$(ver blog)" > "$STUB_STATE/claude-list"
 OUT="$(run "$P2" sa-flow ui-ux blog)" || fail "版號比對 exit 非 0：$OUT"
 echo "$OUT" | grep -q "UP-TO-DATE: claude sa-flow" || fail "版號相同應 UP-TO-DATE：$OUT"
 if grep -q 'claude plugin \(install\|update\) sa-flow' "$STUB_LOG"; then fail "版號相同不該重裝"; fi
@@ -105,9 +105,9 @@ rm "$STUB/cygpath"
 
 # ---------- 8) 改名對照：本專案裝著舊名 → 先卸舊名再裝新名；命令列給舊名自動換新名；pi 舊路徑換新 ----------
 P8="$(newproj p8)"; : > "$STUB_LOG"; : > "$STUB_CWD_LOG"
-printf '[{"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "%s"},\n {"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "/other"}]\n' "$P8" > "$STUB_STATE/claude-list"
+printf '[{"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "%s"},\n {"id": "old-kid@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "/other"}]\n' "$(native "$P8")" > "$STUB_STATE/claude-list"
 mkdir -p "$P8/.pi"
-printf '{"packages": ["npm:keep-me", "%s"]}\n' "$REPO_DIR/plugins/old-kid" > "$P8/.pi/settings.json"
+printf '{"packages": ["npm:keep-me", "%s"]}\n' "$(native "$REPO_DIR/plugins/old-kid")" > "$P8/.pi/settings.json"
 OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" ui-ux)" || fail "改名 --check exit 非 0：$OUT"
 echo "$OUT" | grep -q '^RENAME: claude old-kid → ui-ux' || fail "--check 應報 RENAME: claude：$OUT"
 echo "$OUT" | grep -q '^RENAME: pi old-kid → ui-ux' || fail "--check 應報 RENAME: pi：$OUT"
@@ -119,7 +119,7 @@ I="$(grep -n "^claude plugin install ui-ux@plugharbor --scope local @ $P8$" "$ST
 [ "$(grep -c 'uninstall old-kid' "$STUB_LOG")" = 1 ] || fail "別的專案的 old-kid 不該卸"
 S="$P8/.pi/settings.json"
 if grep -q 'plugins/old-kid' "$S"; then fail "pi 舊路徑應移除：$(cat "$S")"; fi
-grep -q "$REPO_DIR/plugins/ui-ux" "$S" && grep -q 'npm:keep-me' "$S" || fail "pi 應加新路徑、保留其他：$(cat "$S")"
+grep -q "$(native "$REPO_DIR/plugins/ui-ux")" "$S" && grep -q 'npm:keep-me' "$S" || fail "pi 應加新路徑、保留其他：$(cat "$S")"
 OUT="$(PLUGHARBOR_RENAMES="old-kid:ui-ux" run --check "$P8" old-kid)" || fail "命令列給舊名 exit 非 0：$OUT"
 echo "$OUT" | grep -q '^RENAME: old-kid → ui-ux（改用新名）' || fail "命令列舊名應自動換新名：$OUT"
 rm "$STUB_STATE/claude-list"
