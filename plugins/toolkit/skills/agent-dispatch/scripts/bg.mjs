@@ -7,12 +7,12 @@
 //   node bg.mjs wait --ws <dir> [--timeout <秒>]   阻塞到狀態不再是 running（沒有完工通知的平台用）
 //   node bg.mjs ghostty-split --cwd <dir> "<指令>"   印出新分割的 id（macOS、在 Ghostty 裡）
 //   node bg.mjs ghostty-close <id>
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolveBin, buildArgs, scrubEnv, run, quotaInfo } from '../../agent-mesh-check/scripts/clis.mjs'
-import { loadRouting, statePath, readState, writeState, blockCli, parallelLimit } from './route.mjs'
+import { loadRouting, statePath, readState, writeState, blockCli, parallelLimit, sleepSync } from './route.mjs'
 
 const self = fileURLToPath(import.meta.url)
 const readJson = f => { try { return JSON.parse(readFileSync(f, 'utf8')) } catch { return null } }
@@ -49,36 +49,70 @@ export const ghosttyCloseScript = id =>
 
 const alive = pid => { try { process.kill(pid, 0); return true } catch (e) { return e.code === 'EPERM' } }
 
-// wsRoot 底下各工作目錄中，狀態是 running 且程序還活著的數量
+// wsRoot 底下各工作目錄中，狀態是 running 且程序還活著、沒過期的數量
 export function running(wsRoot) {
   if (!existsSync(wsRoot)) return 0
-  return readdirSync(wsRoot, { withFileTypes: true }).filter(d => d.isDirectory()).filter(d => {
-    const s = readJson(join(wsRoot, d.name, 'status.json'))
-    return s?.state === 'running' && alive(s.pid)
-  }).length
+  return readdirSync(wsRoot, { withFileTypes: true }).filter(d => d.isDirectory())
+    .filter(d => statusOf(join(wsRoot, d.name))?.state === 'running').length
+}
+
+// 同一個上層目錄的「數 running → 寫 running」要互斥：mkdir 當鎖（原子操作），超過 60 秒沒釋放視為過期
+const LOCK_STALE_MS = 60_000
+function withLock(dir, fn, waitMs = 10_000) {
+  mkdirSync(dir, { recursive: true })
+  const lock = join(dir, '.agent-dispatch.lock')
+  const end = Date.now() + waitMs
+  for (;;) {
+    try { mkdirSync(lock); break } catch (e) {
+      if (e.code !== 'EEXIST') throw e
+      try { if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) { rmSync(lock, { recursive: true, force: true }); continue } } catch { continue }
+      if (Date.now() >= end) throw new Error(`拿不到並行鎖 ${lock}：另一個 start 進行中（超過 60 秒沒釋放會自動視為過期）`)
+      sleepSync(100)
+    }
+  }
+  try { return fn() } finally { rmSync(lock, { recursive: true, force: true }) }
 }
 
 // 建 worktree、寫 job.json 與 running 狀態；超過並行上限就拋錯。不啟動程序（start 才啟動）。
-export function prepare({ repo, name, cli, model, effort, promptFile, ws, state, timeout = 3600 }) {
+// 參數與 prompt 檔先驗完才建 worktree，失敗不留孤兒 worktree／分支。
+export function prepare({ repo, name, cli, model, effort, promptFile, ws, state, timeout = 3600, lockWaitMs }) {
   ws = resolve(ws)
-  const stateFile = state ?? statePath()
-  const limit = parallelLimit(readState(stateFile), loadRouting())
-  if (running(dirname(ws)) >= limit) throw new Error(`並行已達上限 ${limit}，等其他 worker 結束再派`)
+  if (!(Number.isFinite(timeout) && timeout > 0)) throw new Error(`--timeout 要是正數（秒），收到 ${timeout}`)
   if (!resolveBin(cli)) throw new Error(`${cli} 不在 PATH 上（未安裝？）`)
-  mkdirSync(ws, { recursive: true })
-  const worktree = join(ws, 'wt')
-  execFileSync('git', ['-C', resolve(repo), 'worktree', 'add', '-q', worktree, '-b', `dispatch/${name}`], { stdio: 'pipe' })
-  const resultFile = join(ws, 'result.md')
-  const statusFile = join(ws, 'status.json')
-  const prompt = `${readFileSync(promptFile, 'utf8')}
+  const body = readFileSync(promptFile, 'utf8')
+  const stateFile = state ?? statePath()
+  return withLock(dirname(ws), () => {
+    const limit = parallelLimit(readState(stateFile), loadRouting())
+    if (running(dirname(ws)) >= limit) throw new Error(`並行已達上限 ${limit}，等其他 worker 結束再派`)
+    mkdirSync(ws, { recursive: true })
+    const worktree = join(ws, 'wt')
+    execFileSync('git', ['-C', resolve(repo), 'worktree', 'add', '-q', worktree, '-b', `dispatch/${name}`], { stdio: 'pipe' })
+    const resultFile = join(ws, 'result.md')
+    const statusFile = join(ws, 'status.json')
+    // 開頭固定一行：prompt 檔以 ---（frontmatter）開頭時不會被 CLI 當成選項
+    const prompt = `背景 worker 任務（規則見最後一段）：
+
+${body}
 
 ---
 你是背景 worker，沒有人能即時回答你的問題。
-- 只在目前目錄（獨立 git worktree）改檔；不要切分支、不要 push、不要動主線。
+- 只在目前目錄（獨立 git worktree）改檔；不要切分支、不要 push、不要動主線（git 的 push／fetch 在這裡已被關閉）。
 - 完成或遇到需要使用者決策時，把結果寫到 ${resultFile}（完成／失敗／待決、做了什麼、要清的路徑），寫完就停。寫完結果檔才算完成。`
-  writeJson(join(ws, 'job.json'), { name, cli, model, effort, timeout, worktree, resultFile, statusFile, stateFile, prompt })
-  writeJson(statusFile, { state: 'running', pid: process.pid, cli, startedAt: new Date().toISOString() })
-  return { ws, worktree, statusFile, resultFile }
+    writeJson(join(ws, 'job.json'), { name, cli, model, effort, timeout, worktree, resultFile, statusFile, stateFile, prompt })
+    writeJson(statusFile, { state: 'running', pid: process.pid, cli, startedAt: new Date().toISOString() })
+    return { ws, worktree, statusFile, resultFile }
+  }, lockWaitMs)
+}
+
+// worker 程序的環境：清巢狀標記與推送用 token（scrubEnv），並用 GIT_CONFIG_* 只對 worker 關掉 git 的所有遠端傳輸，
+// push 一律失敗（fetch 也會失敗）。protocol.<名>.allow 優先於 protocol.allow，常見的幾種都蓋掉。不寫進 repo 設定，主 repo 不受影響。
+const GIT_PROTOCOLS = ['', 'file.', 'git.', 'ssh.', 'http.', 'https.', 'ext.']
+export function workerEnv(env, resultFile) {
+  const out = { ...scrubEnv(env), AGENT_DISPATCH_RESULT: resultFile }
+  let n = Number(out.GIT_CONFIG_COUNT) || 0
+  for (const p of GIT_PROTOCOLS) { out[`GIT_CONFIG_KEY_${n}`] = `protocol.${p}allow`; out[`GIT_CONFIG_VALUE_${n}`] = 'never'; n++ }
+  out.GIT_CONFIG_COUNT = String(n)
+  return out
 }
 
 function notify(title, msg) {
@@ -96,18 +130,22 @@ export async function supervise(ws) {
   try {
     const r = await run(resolveBin(job.cli), buildArgs(job.cli, 'worker', job.prompt, job), {
       cwd: job.worktree, timeoutMs: job.timeout * 1000,
-      env: { ...scrubEnv(process.env), AGENT_DISPATCH_RESULT: job.resultFile } })
+      env: workerEnv(process.env, job.resultFile) })
     writeFileSync(join(ws, 'log.txt'), r.out)
     const done = existsSync(job.resultFile)
     const q = !done && r.code !== 0 && !r.timedOut ? quotaInfo(r.out) : null
     const state = done ? 'done' : q ? 'quota' : 'failed'
-    if (q) blockCli(job.stateFile, job.cli, q.resetAt, 'quota')
-    if (q || r.timedOut) {  // 爭用（額度、逾時）→ 並行上限降 1（最低 1），1 小時後自動恢復
-      const s = readState(job.stateFile)
-      writeState(job.stateFile, { ...s, maxParallel: Math.max(1, parallelLimit(s, loadRouting()) - 1), parallelResetAt: Date.now() + 3_600_000 })
-    }
-    writeJson(job.statusFile, { ...status, state, code: r.code, timedOut: r.timedOut, endedAt: new Date().toISOString(),
-      ...(state !== 'done' && { tail: r.out.slice(-2000) }) })
+    // 先寫最終狀態：之後改共用狀態檔（封鎖、降並行）失敗也不能把 done 翻成 failed
+    const final = { ...status, state, code: r.code, timedOut: r.timedOut, endedAt: new Date().toISOString(),
+      ...(state !== 'done' && { tail: r.out.slice(-2000) }) }
+    writeJson(job.statusFile, final)
+    try {
+      if (q) blockCli(job.stateFile, job.cli, q.resetAt, 'quota')
+      if (q || r.timedOut) {  // 爭用（額度、逾時）→ 並行上限降 1（最低 1），1 小時後自動恢復
+        const s = readState(job.stateFile)
+        writeState(job.stateFile, { ...s, maxParallel: Math.max(1, parallelLimit(s, loadRouting()) - 1), parallelResetAt: Date.now() + 3_600_000 })
+      }
+    } catch (e) { writeJson(job.statusFile, { ...final, stateError: String(e?.message ?? e) }) }
     notify(`worker ${job.name}：${state}`, state === 'done' ? job.resultFile : '看 status.json 與 log.txt')
     return state
   } catch (e) {
@@ -126,10 +164,17 @@ export function start(opts) {
   return job
 }
 
-// 狀態檔寫 running 但程序已不在（被殺、重開機）→ 視為 failed
-export function statusOf(ws) {
+// 狀態檔寫 running 但程序已不在（被殺、重開機）→ 視為 failed。
+// pid 可能被別的程序重用：已超過 startedAt＋job 的 timeout＋60 秒緩衝仍是 running，也視為 failed（stale）。
+const STALE_MS = 60_000
+export function statusOf(ws, now = Date.now()) {
   const s = readJson(join(ws, 'status.json'))
-  return s?.state === 'running' && !alive(s.pid) ? { ...s, state: 'failed', note: 'supervisor gone' } : s
+  if (s?.state !== 'running') return s
+  if (!alive(s.pid)) return { ...s, state: 'failed', note: 'supervisor gone' }
+  const timeout = readJson(join(ws, 'job.json'))?.timeout
+  const started = Date.parse(s.startedAt)
+  if (timeout > 0 && now > started + timeout * 1000 + STALE_MS) return { ...s, state: 'failed', note: 'stale：超過 timeout 仍是 running（pid 可能已被重用）' }
+  return s
 }
 
 // 阻塞等到狀態不再是 running；逾時回 { state: 'timeout' }

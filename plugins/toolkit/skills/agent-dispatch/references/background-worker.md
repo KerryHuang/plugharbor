@@ -43,11 +43,12 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" status --ws <工作目錄>   # 只讀�
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <秒>]   # 阻塞到結束；done→0、逾時→124、其他→1
 ```
 
-- `--ws` 是這個 worker 專用的工作目錄。多個 worker 放在同一個上層目錄下，並行上限以那一層計算。
+- `--ws` 是這個 worker 專用的工作目錄。多個 worker 放在同一個上層目錄下，並行上限以那一層計算；放在不同上層目錄的 worker 互相不計。`start` 用那一層的 `.agent-dispatch.lock` 目錄當鎖，避免同時 start 都通過上限檢查；鎖超過 60 秒沒釋放視為過期。
+- `--timeout` 要是正數；參數或 prompt 檔有問題時在建 worktree 之前就報錯，不留孤兒分支。
 - 工作目錄內容：
   - `wt/`：worktree，分支 `dispatch/<短名>`。
   - `job.json`：派工設定。
-  - `status.json`：狀態，`running`／`done`／`failed`／`quota`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）。
+  - `status.json`：狀態，`running`／`done`／`failed`／`quota`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）；超過 `startedAt`＋timeout＋60 秒仍是 running（pid 被重用）也顯示 `failed`（`note: stale…`）。
   - `result.md`：worker 寫的結果。
   - `log.txt`：CLI 的完整輸出。
 - 並行上限：
@@ -58,7 +59,12 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
   - 結果檔在 → `done`（不論輸出內容）。
   - 沒寫結果檔、輸出尾段是額度錯誤 → `quota`，同時封鎖該家。
   - 其他 → `failed`，並附輸出最後 2000 字元；監督程序本身出錯也寫 `failed` 與 `error`。
+  - 最終狀態先寫，再改共用狀態檔（封鎖、降並行）；後者失敗只在 `status.json` 加 `stateError`，不改變最終狀態。
 - CLI 參數用 `worker` 模式：claude `--permission-mode acceptEdits --allowedTools Bash`、pi `--tools read,bash,edit,write`，codex／agy 同 driver。
+- **信任模型、不是沙箱**：上面的權限讓 worker 能跑任意 shell，「只改 worktree、不 push、不動主線」主要靠 prompt。腳本另有兩道防線，都只對 worker 程序生效、不寫進 repo 設定：
+  - 不傳推送用 token：`GH_TOKEN`、`GITHUB_TOKEN`、`GH_ENTERPRISE_TOKEN`、`GITHUB_ENTERPRISE_TOKEN`、`GITLAB_TOKEN`、`GLAB_TOKEN`。確定要傳就設 `AGENT_DISPATCH_KEEP_ENV=名1,名2`。
+  - 用 `GIT_CONFIG_COUNT`／`KEY`／`VALUE` 設 `protocol.allow=never`（含 file、git、ssh、http、https、ext 各自的 `protocol.<名>.allow`）：git 的 push 與 fetch 都會失敗，remote 明設 `pushurl` 也一樣。worker 需要 fetch 的工作不要用背景 worker。
+  - 擋不住的：worker 自己清掉這些環境變數，或繞過 git 推送（如 `gh` 用 keychain 裡的登入、`curl` 打 API）。需要硬隔離就改用容器或另一個帳號。
 - macOS 會跳桌面通知。其他平台沒有通知，主控用 `bg.mjs wait` 阻塞等結束。
 - 收工：
   1. 使用者審 `wt/` 的改動。

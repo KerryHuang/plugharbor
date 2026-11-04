@@ -2,6 +2,19 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.11.3] - 2026-11-04
+
+agent-dispatch 重新審查的 12 項修正：
+- fix: 逾時殺整個程序樹（POSIX 程序群組、Windows `taskkill /T /F`），孫程序握著 stdout 時不再卡住、worker 不會一直停在 running。
+- fix: prompt 以 `-` 開頭（如 YAML frontmatter）時，CLI 不再當成選項報錯；背景 worker 的 prompt 加固定前綴。
+- fix: 背景 worker 預設不傳 GH_TOKEN／GITHUB_TOKEN／GITLAB_TOKEN 等推送用 token（`AGENT_DISPATCH_KEEP_ENV` 放行），並以 git 協定設定擋下 worker 的 push；文件寫明這是信任模型、不是沙箱。
+- fix: Windows 上命令列超過上限時，直接回明確錯誤，不再出現誤導的 spawn 錯誤。
+- fix: 並行上限加鎖；狀態檔寫入遇到 EPERM／EBUSY 會重試，寫不進去也不會把結果翻成 failed；pid 被重用時超時的 running 判成 failed。
+- fix: 先驗參數與 prompt 檔再建 worktree，失敗不留孤兒分支；`--timeout` 必須是正數。
+- fix: 跨家族審查的路徑判斷認得 Windows 反斜線；mesh 結果過時時，新裝的 CLI 不會被濾掉。
+- fix: ask 模式的 claude／pi 給唯讀工具（Read、Grep、Glob／read、grep、find、ls），能自己讀檔回答。
+- fix: 額度判定只看尾段且要有錯誤字樣，避免誤封鎖；`route.mjs block` 檢查 CLI 名稱。
+
 ## [0.11.2] - 2026-11-04
 
 - fix: agent-dispatch 背景 worker（claude）寫不進結果檔。worker 的 cwd 是工作區的 `wt/`，結果檔在上一層，`acceptEdits` 只放行 cwd 底下；改為啟動時帶 `--add-dir <結果檔所在目錄>`。真 CLI 實測由 failed 轉 done。

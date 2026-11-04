@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildArgs, quotaInfo, run, scrubEnv } from '../agent-mesh-check/scripts/clis.mjs'
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
+import { CLIS, buildArgs, quotaInfo, run, scrubEnv } from '../agent-mesh-check/scripts/clis.mjs'
+import { mkdtempSync, writeFileSync, readFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, delimiter, basename } from 'node:path'
-import { loadRouting, readState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
+import { loadRouting, readState, writeState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
 
 const has = (args, ...seq) => {
   const i = args.indexOf(seq[0])
@@ -12,10 +12,10 @@ const has = (args, ...seq) => {
 }
 
 test('buildArgs 不給 opts 時與既有輸出相同', () => {
-  assert.deepEqual(buildArgs('claude', 'ask', 'p'), ['-p', 'p', '--tools', ''])
+  assert.deepEqual(buildArgs('claude', 'ask', 'p'), ['-p', 'p', '--tools', 'Read,Grep,Glob'])
   assert.deepEqual(buildArgs('codex', 'ask', 'p'), ['exec', '--ephemeral', '--skip-git-repo-check', '-s', 'read-only', 'p'])
   assert.deepEqual(buildArgs('agy', 'ask', 'p'), ['-p', 'p', '--sandbox', '--disable-slash-commands'])
-  assert.deepEqual(buildArgs('pi', 'ask', 'p'), ['-p', 'p', '--no-tools', '--no-session'])
+  assert.deepEqual(buildArgs('pi', 'ask', 'p'), ['-p', 'p', '--tools', 'read,grep,find,ls', '--no-mcp', '--no-session'])
 })
 
 test('buildArgs 帶 model 與 effort：claude', () => {
@@ -49,7 +49,7 @@ test('quotaInfo 沒有重置時間預設 1 小時', () => {
 })
 
 test('quotaInfo 解析相對時間', () => {
-  assert.deepEqual(quotaInfo('quota hit, try again in 15 minutes', 0), { resetAt: 15 * 60_000 })
+  assert.deepEqual(quotaInfo('Error: quota hit, try again in 15 minutes', 0), { resetAt: 15 * 60_000 })
 })
 
 test('run：npm 的 .cmd shim 改直接用 node 執行，多行參數與 %VAR% 原樣傳遞', async () => {
@@ -148,15 +148,15 @@ test('blockCli 寫入後讀得回來', () => {
   JSON.parse(readFileSync(f, 'utf8'))
 })
 
-test('meshAvailable：取 layer 2 pass；沒資料回 null', () => {
+test('meshAvailable：只排除第 2 層明確沒過的；結果裡沒有的（之後才裝）視為可用；沒資料回 null', () => {
   assert.equal(meshAvailable(undefined), null)
-  const last = { results: [{ layer: 2, a: 'claude', status: 'pass' }, { layer: 2, a: 'agy', status: 'auth' }, { layer: 1, a: 'pi', status: 'pass' }] }
-  assert.deepEqual([...meshAvailable(last)], ['claude'])
+  const last = { results: [{ layer: 2, a: 'claude', status: 'pass' }, { layer: 2, a: 'agy', status: 'auth' }, { layer: 1, a: 'pi', status: 'skip' }] }
+  assert.deepEqual([...meshAvailable(last)].sort(), ['claude', 'codex', 'pi'])
 })
 
 // ── ask.mjs：改派與長結果 ──
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { summarize } from './scripts/ask.mjs'
 
@@ -272,6 +272,11 @@ function driverShim() {
   writeShim(f, `
 const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
+if (process.env.SHIM_RESULT === 'push') {
+  const r = require('node:child_process').spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/leak'], { encoding: 'utf8' })
+  fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, JSON.stringify({ push: r.status, gh: process.env.GH_TOKEN ?? null }))
+  process.exit(0)
+}
 if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing result'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'quota') { console.log('Error: usage limit reached'); process.exit(1) }
 if (process.env.SHIM_RESULT === '429') { fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成'); console.log('handler returns 429 on rate limit'); process.exit(1) }
@@ -288,15 +293,16 @@ function tmpRepo() {
   return repo
 }
 
-async function runJob(env) {
+async function runJob(env, { state, setup } = {}) {
   const repo = tmpRepo()
+  setup?.(repo)
   const root = mkdtempSync(join(tmpdir(), 'ad ws '))
   const prompt = join(root, 'p.md'); writeFileSync(prompt, 'do it')
   const old = { PATH: process.env.PATH, ...Object.fromEntries(Object.keys(env).map(k => [k, process.env[k]])) }
   // shim 放最前面：蓋過真的 claude，git 仍找得到
   Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
   try {
-    const job = prepare({ repo, name: 't1', cli: 'claude', promptFile: prompt, ws: join(root, 't1'), state: join(root, 'state.json') })
+    const job = prepare({ repo, name: 't1', cli: 'claude', promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
     await supervise(job.ws)
     return { repo, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
   } finally {
@@ -423,4 +429,131 @@ test('start：狀態檔立刻記監督程序的 pid，不是 start 自己的', a
     process.env.PATH = old
     oldN === undefined ? delete process.env.AGENT_DISPATCH_NO_NOTIFY : (process.env.AGENT_DISPATCH_NO_NOTIFY = oldN)
   }
+})
+
+// ── 審查修正（第 2–12 項）──
+const ROUTE = fileURLToPath(new URL('./scripts/route.mjs', import.meta.url))
+const branches = repo => execFileSync('git', ['-C', repo, 'branch', '--list', 'dispatch/*'], { encoding: 'utf8' }).trim()
+
+test('buildArgs：prompt 以 - 開頭時，四家各模式組出的 prompt 參數都不以 - 開頭', () => {
+  for (const c of CLIS) for (const m of ['probe', 'driver', 'ask', 'worker']) {
+    const a = buildArgs(c, m, '---\nname: x\n---')
+    const p = a.find(x => x.includes('name: x'))
+    assert.ok(p && !p.startsWith('-'), `${c} ${m}: ${JSON.stringify(a)}`)
+  }
+  assert.equal(buildArgs('claude', 'ask', 'plain')[1], 'plain')
+})
+
+test('prepare：prompt 檔以 --- 開頭，worker prompt 不以 - 開頭', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-fm-'))
+  const p = join(root, 'p.md'); writeFileSync(p, '---\ntitle: x\n---\nbody')
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    const job = prepare({ repo: tmpRepo(), name: 'fm', cli: 'claude', promptFile: p, ws: join(root, 'fm'), state: join(root, 's.json') })
+    const { prompt } = JSON.parse(readFileSync(join(job.ws, 'job.json'), 'utf8'))
+    assert.ok(!prompt.startsWith('-'))
+    assert.ok(prompt.includes('---\ntitle: x'))
+  } finally { process.env.PATH = old }
+})
+
+test('scrubEnv 濾掉推送用 token，AGENT_DISPATCH_KEEP_ENV 可放行', () => {
+  const env = { GH_TOKEN: 'a', GITHUB_TOKEN: 'b', GITLAB_TOKEN: 'c', GLAB_TOKEN: 'd', PATH: '/b' }
+  assert.deepEqual(scrubEnv(env), { PATH: '/b' })
+  const kept = scrubEnv({ ...env, AGENT_DISPATCH_KEEP_ENV: 'GH_TOKEN, GLAB_TOKEN' })
+  assert.equal(kept.GH_TOKEN, 'a'); assert.equal(kept.GLAB_TOKEN, 'd'); assert.equal(kept.GITHUB_TOKEN, undefined)
+})
+
+test('背景 worker：env 沒有 GH_TOKEN，worker 裡的 git push 被擋、bare repo 沒收到', async () => {
+  const bare = mkdtempSync(join(tmpdir(), 'ad-bare-'))
+  execFileSync('git', ['init', '-q', '--bare', bare])
+  const { status, job } = await runJob({ SHIM_RESULT: 'push', GH_TOKEN: 'secret' }, { setup: repo => {
+    execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', bare])
+    execFileSync('git', ['-C', repo, 'config', 'remote.origin.pushurl', bare])  // 明設 pushurl 也要擋
+  } })
+  assert.equal(status.state, 'done')
+  const r = JSON.parse(readFileSync(job.resultFile, 'utf8'))
+  assert.equal(r.gh, null)
+  assert.notEqual(r.push, 0)
+  assert.equal(execFileSync('git', ['-C', bare, 'for-each-ref'], { encoding: 'utf8' }), '')
+})
+
+test('prepare：上層目錄的鎖被占用且未過期 → 拋錯；過期的鎖會被清掉、用完釋放', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-lock-'))
+  const lock = join(root, '.agent-dispatch.lock'); mkdirSync(lock)
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    const args = n => ({ repo: tmpRepo(), name: n, cli: 'claude', promptFile: promptStub(), ws: join(root, n), state: join(root, 's.json'), lockWaitMs: 200 })
+    assert.throws(() => prepare(args('a')), /鎖/)
+    const past = new Date(Date.now() - 120_000); utimesSync(lock, past, past)
+    prepare(args('b'))
+    assert.ok(!existsSync(lock))
+  } finally { process.env.PATH = old }
+})
+
+test('writeState：rename 遇到 EPERM／EBUSY 會重試', () => {
+  const f = join(mkdtempSync(join(tmpdir(), 'ad-ws-')), 'state.json')
+  let n = 0
+  const flaky = (a, b) => { if (n++ < 2) throw Object.assign(new Error('busy'), { code: n === 1 ? 'EPERM' : 'EBUSY' }); return renameSync(a, b) }
+  writeState(f, { blocks: {}, x: 1 }, { rename: flaky })
+  assert.equal(readState(f).x, 1)
+  assert.equal(n, 3)
+})
+
+test('背景 worker：狀態檔寫不進去也不會把 quota 翻成 failed', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-ro-'))
+  const notDir = join(d, 'file'); writeFileSync(notDir, 'x')
+  const { status } = await runJob({ SHIM_RESULT: 'quota' }, { state: join(notDir, 'state.json') })
+  assert.equal(status.state, 'quota')
+})
+
+test('statusOf：running 但已超過 startedAt＋timeout＋緩衝 → failed（stale），pid 重用也不會永遠 running', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-stale-'))
+  const ws = join(root, 'w'); mkdirSync(ws)
+  writeFileSync(join(ws, 'job.json'), JSON.stringify({ timeout: 1 }))
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid, startedAt: new Date(Date.now() - 120_000).toISOString() }))
+  assert.equal(statusOf(ws).state, 'failed')
+  assert.match(statusOf(ws).note, /stale/)
+  assert.equal(running(root), 0)
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid, startedAt: new Date().toISOString() }))
+  assert.equal(statusOf(ws).state, 'running')
+})
+
+test('prepare：prompt 檔讀不到或 timeout 不合法 → 拋錯且不留 worktree／分支', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-bad-'))
+  const repo = tmpRepo()
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    assert.throws(() => prepare({ repo, name: 'm', cli: 'claude', promptFile: join(root, 'missing.md'), ws: join(root, 'm'), state: join(root, 's.json') }))
+    assert.throws(() => prepare({ repo, name: 'n', cli: 'claude', promptFile: promptStub(), ws: join(root, 'n'), state: join(root, 's.json'), timeout: NaN }), /timeout/)
+    assert.equal(branches(repo), '')
+    assert.ok(!existsSync(join(root, 'm', 'wt')) && !existsSync(join(root, 'n', 'wt')))
+  } finally { process.env.PATH = old }
+})
+
+test('ask：--timeout 不是正數 → exit 2', () => {
+  assert.equal(ask(['--to', 'claude', '--timeout', 'abc']).status, 2)
+  assert.equal(ask(['--to', 'claude', '--timeout', '0']).status, 2)
+})
+
+test('needsCrossReview：Windows 反斜線路徑也命中', () => {
+  assert.equal(needsCrossReview({ paths: ['src\\api\\x.ts'], lines: 1 }, routing), true)
+})
+
+test('quotaInfo：尾段談到 credits／quota 但沒有錯誤上下文 → null', () => {
+  assert.equal(quotaInfo('Done.\nCredits used: 12\nquota remaining 80%', 0), null)
+})
+
+test('quotaInfo：只看最後 20 行', () => {
+  assert.equal(quotaInfo('Error: rate limit exceeded\n' + 'ok\n'.repeat(25), 0), null)
+  assert.ok(quotaInfo('ok\n'.repeat(25) + 'Error: usage limit reached', 0))
+})
+
+test('route.mjs block：未知的 CLI 名稱回 2、不寫狀態', () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-blk-'))
+  const r = spawnSync(process.execPath, [ROUTE, 'block', 'nosuch', '2099-01-01T00:00:00Z'], { encoding: 'utf8', env: { ...process.env, XDG_STATE_HOME: d } })
+  assert.equal(r.status, 2)
+  assert.ok(!existsSync(join(d, 'agent-dispatch', 'state.json')))
 })

@@ -33,6 +33,8 @@ async function main(argv) {
     else { console.error(usage); return 2 }
   }
   if (!file || (o.to ? !CLIS.includes(o.to) : !(o.type || o.tier))) { console.error(usage); return 2 }
+  o.timeout = Number(o.timeout)
+  if (!(Number.isFinite(o.timeout) && o.timeout > 0)) { console.error(`--timeout 要是正數（秒）\n${usage}`); return 2 }
   if (o.to && !resolveBin(o.to)) { console.error(`${o.to} 不在 PATH 上（未安裝？）`); return 127 }
   let prompt
   try { prompt = readFileSync(file, 'utf8') } catch (e) { console.error(`讀不到 prompt 檔：${e.message}`); return 2 }

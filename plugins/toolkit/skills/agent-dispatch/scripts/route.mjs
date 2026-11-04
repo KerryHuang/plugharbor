@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { CLIS } from '../../agent-mesh-check/scripts/clis.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -27,12 +28,20 @@ export function readState(file) {
   } catch { return { blocks: {} } }
 }
 
-// 先寫暫存檔再 rename：並行的 worker 同時改也不會讀到半個檔
-export function writeState(file, state) {
+export const sleepSync = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+
+// 先寫暫存檔再 rename：並行的 worker 同時改也不會讀到半個檔。
+// Windows 上目標檔正被別的程序開著時 rename 會 EPERM／EBUSY，短暫重試幾次。
+export function writeState(file, state, { rename = renameSync } = {}) {
   mkdirSync(dirname(file), { recursive: true })
   const tmp = `${file}.${process.pid}.tmp`
   writeFileSync(tmp, JSON.stringify(state, null, 2) + '\n')
-  renameSync(tmp, file)
+  for (let i = 0; ; i++) {
+    try { rename(tmp, file); return } catch (e) {
+      if (i >= 5 || !['EPERM', 'EBUSY'].includes(e.code)) throw e
+      sleepSync(50 * (i + 1))
+    }
+  }
 }
 
 export function blockCli(file, cli, until, reason) {
@@ -41,10 +50,14 @@ export function blockCli(file, cli, until, reason) {
   writeState(file, s)
 }
 
-// agent-mesh-check last.json：layer 2（自己回話）通過的才算可用；沒資料回 null＝未知，不濾
+// agent-mesh-check last.json：只排除 layer 2（自己回話）明確沒過的；結果裡沒有的（之後才裝、當時沒裝）視為可用。
+// 沒資料回 null＝未知，不濾。
 export function meshAvailable(last) {
   if (!last || !Array.isArray(last.results)) return null
-  return new Set(last.results.filter(r => r.layer === 2 && r.status === 'pass').map(r => r.a))
+  const self = last.results.filter(r => r.layer === 2)
+  const failed = new Set(self.filter(r => r.status !== 'pass').map(r => r.a))
+  for (const r of self) if (r.status === 'pass') failed.delete(r.a)
+  return new Set(CLIS.filter(c => !failed.has(c)))
 }
 
 export function readMesh(file) {
@@ -62,7 +75,8 @@ export function candidates({ type, tier, routing, state, available, now = Date.n
 
 export function needsCrossReview({ paths = [], lines = 0 }, routing) {
   const { pathPatterns, maxLines } = routing.crossReview
-  return lines > maxLines || paths.some(p => pathPatterns.some(re => new RegExp(re, 'i').test(p)))
+  // Windows 路徑（src\api\x）先換成 /，路徑樣式只寫 / 一種
+  return lines > maxLines || paths.some(p => pathPatterns.some(re => new RegExp(re, 'i').test(p.replace(/\\/g, '/'))))
 }
 
 // 審查者：top 候選裡第一個不同家族的；湊不到就退回同家（crossFamily:false，回報要寫明）
@@ -80,6 +94,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const t = Date.parse(until ?? '')
   if (cmd !== 'block' || !cli || Number.isNaN(t)) {
     console.error('用法：node route.mjs block <cli> <到期時間，ISO 格式> [理由]')
+    process.exitCode = 2
+  } else if (!CLIS.includes(cli)) {
+    console.error(`未知的 CLI：${cli}（可用：${CLIS.join('、')}）`)
     process.exitCode = 2
   } else {
     const f = statePath()

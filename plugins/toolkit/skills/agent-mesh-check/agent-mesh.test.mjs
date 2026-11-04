@@ -5,7 +5,7 @@ import { join, delimiter } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { CLIS, resolveBin, buildArgs, scrubEnv, run, classify } from './scripts/clis.mjs'
+import { CLIS, resolveBin, buildArgs, scrubEnv, run, classify, cmdLineError } from './scripts/clis.mjs'
 import { pairs, resolveFrom, statePath, diffVersions, callerScript, sweepStale } from './scripts/mesh.mjs'
 
 const ASK = fileURLToPath(new URL('../agent-dispatch/scripts/ask.mjs', import.meta.url))
@@ -52,6 +52,28 @@ test('run 逾時會殺掉子程序', async () => {
   const r = await run(process.execPath, ['-e', 'setTimeout(()=>{},10000)'], { timeoutMs: 300 })
   assert.equal(r.timedOut, true)
   assert.ok(Date.now() - t < 2000)
+})
+
+test('run 逾時連孫程序一起殺：孫程序握著 stdout 也在 3 秒內回 timedOut', async () => {
+  const t = Date.now()
+  const code = `require('node:child_process').spawn(process.execPath, ['-e', 'setTimeout(()=>{},8000)'], { stdio: 'inherit' }); setTimeout(()=>{},8000)`
+  const r = await run(process.execPath, ['-e', code], { timeoutMs: 1000 })
+  assert.equal(r.timedOut, true)
+  assert.ok(Date.now() - t < 3000, `${Date.now() - t}ms`)
+})
+
+test('run：Windows 命令列超過上限直接回錯誤，不 spawn', async () => {
+  const exe = await run(join(tmpdir(), 'no-such.exe'), ['a'.repeat(40000)], { platform: 'win32' })
+  assert.equal(exe.code, null)
+  assert.match(exe.out, /prompt 太長.*32767/)
+  const dir = mkdtempSync(join(tmpdir(), 'mesh-len-'))
+  try {
+    writeFileSync(join(dir, 'y.cmd'), '@echo off\r\nsomething.exe %*\r\n')
+    const cmd = await run(join(dir, 'y.cmd'), ['a'.repeat(9000)], { platform: 'win32' })
+    assert.match(cmd.out, /prompt 太長.*8191/)
+    assert.equal(cmdLineError(join(dir, 'y.cmd'), ['a'.repeat(9000)], 'darwin'), null)
+    assert.equal(cmdLineError('x.exe', ['short'], 'win32'), null)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('pairs：入口為中心 vs --full', () => {

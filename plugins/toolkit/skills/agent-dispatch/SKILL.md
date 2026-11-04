@@ -49,7 +49,7 @@ argument-hint: "[對象] <任務>"
    - 額度用盡時腳本會自己封鎖那一家並改派下一家，stderr 會印「改派 X」，回報時一併說明。
 4. 轉述時寫明是哪個 CLI 說的，不要把它的結論包裝成你自己的；它說錯的地方要指出來。
 
-短問答一律唯讀，因為無互動模式下沒人能按確認。`ask.mjs` 會在 prompt 前加唯讀指示；agy 沒有參數層的唯讀（見 cli-notes），只靠這行指示。需要改檔的工作改用長任務，不要為了方便放寬權限。
+短問答一律唯讀，因為無互動模式下沒人能按確認。`ask.mjs` 會在 prompt 前加唯讀指示；claude 與 pi 只開讀檔、搜尋類工具（能自己看 `--cwd` 底下的檔案），codex 是 read-only 沙箱；agy 沒有參數層的唯讀（見 cli-notes），只靠這行指示。需要改檔的工作改用長任務，不要為了方便放寬權限。
 
 ## 4. 審查
 
@@ -70,6 +70,8 @@ argument-hint: "[對象] <任務>"
    - 只在獨立 git worktree 裡改檔，不改主線、不 push。
    - 你合併前會先讓使用者審。
 
+   這是**信任模型、不是沙箱**：worker 有 shell 與寫檔權限（claude acceptEdits＋Bash、codex danger-full-access、agy 跳過確認），「只改 worktree」主要靠 prompt。腳本另外做兩道防線：不傳推送用 token（`GH_TOKEN`、`GITHUB_TOKEN`、`GITLAB_TOKEN`、`GLAB_TOKEN` 等），並對 worker 程序關掉 git 的遠端傳輸（push 必失敗）。
+
    ```bash
    node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --repo <repo> --name <短名> --to <cli> --model <m> --effort <e> --ws <工作目錄> <prompt 檔>
    ```
@@ -80,7 +82,7 @@ argument-hint: "[對象] <任務>"
 
 - prompt 必須寫明結果檔的絕對路徑，以及「寫完結果檔才算完成，寫完就停」；還要寫明已經定案的決定和已排除的方向。
 - 「不要刪暫存資料夾，把要清的路徑列在結果檔」。
-- 並行多個 worker 時，各自的結果檔與工作區分開，並寫明「另一個 worker 正在寫 X，不要碰」。並行上限預設 4，遇到額度錯誤或逾時就降。
+- 並行多個 worker 時，各自的結果檔與工作區分開，並寫明「另一個 worker 正在寫 X，不要碰」。並行上限預設 4（背景 worker 以同一個 `--ws` 上層目錄計），遇到額度錯誤或逾時就降。
 - **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（herdr `--wait`）或完工通知。背景 worker 在 macOS 等通知、用 `bg.mjs status` 看一次；其他平台用 `bg.mjs wait` 阻塞等結束。
 - **完成的唯一證據是結果檔存在**。
 
