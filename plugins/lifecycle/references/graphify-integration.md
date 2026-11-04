@@ -20,7 +20,7 @@ ${GRAPHIFY_PYTHON:-python} -c "import graphify" 2>/dev/null
 
 ## Query 區塊
 
-**使用者**：`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`
+**使用者**：`spec --stage frd`（判「需新建」前）、`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`
 
 **觸發時機**：取得功能名稱 / 讀取輸入參數之後，讀取任何 MD 文件之前。
 

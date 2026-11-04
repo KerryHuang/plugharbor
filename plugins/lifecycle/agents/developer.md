@@ -54,7 +54,7 @@ model: sonnet
 2. 只找到 1 個 → 模仿，但確認該寫法是否合理
 3. 找不到 → 觸發**反問**（見下）
 
-有裝 workspace 可用 `workspace:convention-first`（可選）。**禁止**「我覺得這樣寫比較好」單方面引入 Result Pattern、FluentBuilder、自定 Pipeline 等新風格。
+有裝 workspace 可用 `workspace:convention-first`（可選；沒裝就照上面三步 grep 既有實作當樣板）。**禁止**「我覺得這樣寫比較好」單方面引入 Result Pattern、FluentBuilder、自定 Pipeline 等新風格。
 
 ## 何時反問 architect／user
 

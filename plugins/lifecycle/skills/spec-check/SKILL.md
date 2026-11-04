@@ -8,6 +8,8 @@ argument-hint: "[--readiness|--sample] [文件路徑或功能目錄] [--cross] [
 
 > 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
+`analysis/_context.yml` 記 `ffs: skipped`（無畫面功能，見 `${CLAUDE_PLUGIN_ROOT}/references/chain-profile.md`）時，FFS 是刻意不產，不列為缺漏、不要求補寫。
+
 實作前回答一個問題：**開發者能不能只看這份規格就寫 code，而且寫出來在現有架構與真實資料上跑得通？**
 三個模式各管一段，不重疊：
 
@@ -33,7 +35,7 @@ argument-hint: "[--readiness|--sample] [文件路徑或功能目錄] [--cross] [
 verify 不能中途問使用者（模式一律由旗標決定），且要讀大量規格與 DB 結果。為保住主 session 的 context：
 
 1. 派一個 `general-purpose` subagent，模型用 sonnet（照清單驗證，最機械），prompt 帶：plugin 根絕對路徑、`references/modes/verify.md` 的絕對路徑、原始參數（文件路徑、`--cross`／`--recheck`／`--quick`／`--full`）、「依該檔執行，報告落檔後只回報告路徑、結論等級與 CRITICAL／BLOCKER 清單」。
-2. 子 agent 內再派平行維度 agent 時一律前景派工（同一則訊息多個呼叫，不背景）。
+2. 子 agent 內再派平行維度 agent 時一律前景派工（同一則訊息多個呼叫，不背景）；環境若只能背景跑，就等完成通知再讀結果，不提早下結論。
 3. 主 session 收回後依該檔「鏈末條件」與 `${CLAUDE_PLUGIN_ROOT}/references/handoff-protocol.md` 決定下一步；修正後的第二輪帶 `--recheck`。
 
 機械閘門可單獨跑：
@@ -66,12 +68,12 @@ lean 規格只有一份檔，不跑 verify 的五維度與跨文件。主 sessio
 | 7 | 範圍寫了「不包含」；`[推論]` 都附依據 | WARNING |
 
 結論：0 CRITICAL／BLOCKER 且 0 WARNING → ✅ 可直接開發；只有 WARNING → ⚠️ 需修正後開發；其餘 → ❌ 不可開發。
-結果以文字回報（不另落報告檔），修正後重跑同一張表；同一份規格連續第三輪仍不過就停下回報使用者。
+結果以文字回報（lean 不另落報告檔；落檔的只有 verify 模式，見 `references/modes/verify.md` Task 7），修正後重跑同一張表；同一份規格連續第三輪仍不過就停下回報使用者。
 
 ## 錯誤處理
 
 | 情境 | 處理 |
 |------|------|
 | 同時帶 `--readiness` 與 `--sample` | 停下問要跑哪一個 |
-| 唯讀 DB 查詢工具不可用 | 該模式檔的降級規則照做；lean 第 4 項改以程式碼與既有規格查證並註明 |
+| 唯讀 DB 查詢工具不可用 | 該模式檔的降級規則照做（verify：DB 實查項標「未查證（無 DB 工具）」，不擋）；lean 第 4 項改以程式碼與既有規格查證並註明 |
 | subagent 未回報告路徑 | 不自己補跑 verify；回報失敗並建議重派 |

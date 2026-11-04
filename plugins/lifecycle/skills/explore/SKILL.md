@@ -12,8 +12,8 @@ model: sonnet
 快速收斂需求，為撰寫規格準備結構化輸入。適用於需求**大致明確**但尚未整理的情況。
 互動詢問一律依 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md` §互動詢問規範（AskUserQuestion＋建議置首＋一次一題＋回合可見性）。
 
-> **素材還很零碎、連該問什麼都不確定？** 先跑 `lifecycle:interview-prep`——把多場會議／訪談
-> 彙整成已知未知盤點，或產訪談大綱去補資料，回來再跑六維。
+> **素材還很零碎、連該問什麼都不確定？** 請使用者先輸入 `/interview-prep`（`lifecycle:interview-prep`
+> 是手動 skill，模型叫不起來）——把多場會議／訪談彙整成已知未知盤點，或產訪談大綱去補資料，回來再跑六維。
 
 ## 輸入參數
 
@@ -34,11 +34,13 @@ $ARGUMENTS → [功能描述]
 從 `$ARGUMENTS` 或後續問答中提取：
 
 - **功能名稱**：2-6 個字的短名稱
-- **所屬模組**：識別功能歸屬的業務模組（**取自 `{docs-root}` 既有第一階目錄，禁止自創**；新增模組先問使用者）
+- **功能代號**：`<feature>`，kebab-case ASCII（lean 規格檔名同此）
+- **所屬模組**：**lean 不問**（lean 規格不分模組）。full 才識別：取自 `{docs-root}` 既有第一階目錄，不自創；
+  既有第一階目錄為空（新專案）→ 直接請使用者給新模組名；新增模組也先問使用者
 
-若無法從描述中確定模組，在六維收斂結束前使用 `AskUserQuestion` 詢問：
+full 且無法從描述中確定模組時，在六維收斂結束前使用 `AskUserQuestion` 詢問：
 
-> 這個功能屬於哪個業務模組？（列出 `{docs-root}` 既有模組目錄供選）
+> 這個功能屬於哪個業務模組？（列出 `{docs-root}` 既有模組目錄供選；目錄為空就請使用者給新模組名）
 
 ### 1.5 顧問桌啟動（可選但推薦）
 
@@ -113,7 +115,7 @@ $ARGUMENTS → [功能描述]
 
 ```
 功能名稱：{從描述中提取}
-所屬模組：{模組名稱}
+所屬模組：{模組名稱；lean 省略}
 業務痛點：{維度 1}
 主要使用者：{維度 2}
 功能邊界：
@@ -130,13 +132,14 @@ $ARGUMENTS → [功能描述]
 
 ### 4. 輸出探索摘要
 
-確認後，使用 Write 工具將摘要寫入（與 `lifecycle:spec` 產出同目錄）：
+確認後，使用 Write 工具將摘要寫入（與 `lifecycle:spec` 產出同目錄，依 `scale`）：
 
 ```
-{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_探索摘要.md
+lean：{docs-root}/<feature>_探索摘要.md                     # 與 lean 規格 <feature>.md 同名同目錄
+full：{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_探索摘要.md
 ```
 
-`{docs-root}` ＝ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`（預設 `docs/specs`）。
+`scale` ＝ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale`（預設 lean）；`{docs-root}` ＝ `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`（預設 `docs/specs`）。
 
 格式：
 
@@ -145,7 +148,7 @@ $ARGUMENTS → [功能描述]
 
 > 產出時間：{YYYY-MM-DD}
 > 來源：lifecycle:explore
-> 所屬模組：{模組名稱}
+> 所屬模組：{模組名稱；lean 省略此行}
 
 ## 業務痛點
 {內容}
@@ -177,7 +180,7 @@ $ARGUMENTS → [功能描述]
 - 探索摘要路徑
 - 收集維度數（6/6）
 
-**下一步**：執行 `lifecycle:spec {功能名稱}`，explore 摘要會被自動讀取作為規格撰寫輸入。
+**下一步**：執行 `lifecycle:spec {功能名稱}`（lean 帶 `<feature>`），spec 依上方路徑讀取探索摘要作為撰寫輸入。
 含 UI 的功能若需要，可先用任何方式（手繪、線框稿、原型工具）與 PO/使用者對焦畫面，再把結論補進探索摘要。
 
 ---

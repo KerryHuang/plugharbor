@@ -26,6 +26,8 @@ $ARGUMENTS → [--change] {功能描述}
 
 依 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md`（核心原則：不猜測、技術中立、Docs 同步、Graphify 查詢）。
 
+**無畫面功能不跑本棒**：先讀 `analysis/_context.yml`，已記 `ffs: skipped`（FRD Step 9.8 判定、使用者確認過，見 `${CLAUDE_PLUGIN_ROOT}/references/chain-profile.md`「無畫面功能不產 FFS」）→ 不產 FFS，告知使用者後直接接 `lifecycle:spec-check --readiness`。
+
 ---
 
 ## 標準模式執行流程
@@ -36,14 +38,14 @@ $ARGUMENTS → [--change] {功能描述}
 
 ### 0.4. 載入 FRD §4 畫面設計（必要）
 
-**先讀 `analysis/_context.yml`** 取各文件路徑（依 `shared-preludes.md` Step 0.8）——本 skill 需要 FRD／SAD／BFS 三份，路徑已登記就一次取齊，不逐份 find。未登記才 `find docs/ -name "*需求文件*.md" -path "*{功能名稱}*"`，找到後寫回。三份文件一律定向讀取（先看章節標題再讀需要的段落），不整檔載入。
+**先讀 `analysis/_context.yml`** 取各文件路徑（依 `shared-preludes.md` Step 0.8）——本 skill 需要 FRD／SAD／BFS 三份，路徑已登記就一次取齊，不逐份 find。未登記才 `find {docs-root}/ -name "*需求文件*.md" -path "*{功能名稱}*"`，找到後寫回。三份文件一律定向讀取（先看章節標題再讀需要的段落），不整檔載入。
 
 - **找到 FRD** → 讀取並提取：每個畫面（SCR-XX）的業務目的與操作表、業務層有話要說的欄位（必填理由、計算規則、連動語意、權限差異）作為 FFS §2 業務輸入——**FFS §2 是完整欄位表的唯一 owner**（四類欄位群齊備要求在功能層級把關，格式與來源欄兩階段寫法見 `${CLAUDE_PLUGIN_ROOT}/references/screen-spec-format.md`），完整欄位集合取材自 `ui-survey.md`／原型 HTML／BFS §6 Response／`db-analysis.yml`；§5 欄位規格對應 FFS §4 欄位驗證規則表；操作表對應 FFS §2 操作表（偏離標準 CRUD 動線另對應 §3）；§2.1 US-XX 用於 FFS §6.1／§8 追溯欄（舊 FRD 只有 §1.5 UC 清單時，以其「對應使用者故事」欄換算成 US-XX）。
 - **未找到** → `AskUserQuestion` 詢問使用者是否有 FRD；若無則依 BFS 和功能描述推導 UI
 
 ### 0.45. 載入 SAD（若存在）
 
-路徑取自 `analysis/_context.yml`；未登記才 `find docs/ -name "*系統分析文件*.md" -path "*{功能名稱}*"`（找到後寫回）。
+路徑取自 `analysis/_context.yml`；未登記才 `find {docs-root}/ -name "*系統分析文件*.md" -path "*{功能名稱}*"`（找到後寫回）。
 
 - **找到 SAD** → 提取：**§2.2 角色與系統互動表**（含 `對應 US` 欄）→ FFS §2 操作表「權限」欄的依據；偏離標準 CRUD 動線者另作為 §3 依據。**§6.4 US→API 對應表** → FFS §6 的 US 追溯來源。
 - **未找到** → 先看 `_context.yml` 的 `chain_profile`：**`lite`** → SAD 本來就不存在（分流時刻意跳過），改自 FRD §4 操作表取權限、**BFS §6.1 端點總覽「對應 US」欄**取 US→API；**`standard` 或未登記** → 繼續（僅依 BFS 和 FRD），功能明顯複雜時先向使用者確認是否漏跑 `spec --stage sad`。
@@ -56,7 +58,7 @@ $ARGUMENTS → [--change] {功能描述}
 
 ### 0.5. 載入 BFS（必要）
 
-路徑取自 `analysis/_context.yml`；未登記才 `find docs/ -name "*後端功能規格書*.md" -path "*{功能名稱}*"`（找到後寫回）。
+路徑取自 `analysis/_context.yml`；未登記才 `find {docs-root}/ -name "*後端功能規格書*.md" -path "*{功能名稱}*"`（找到後寫回）。
 
 - **找到 BFS** → 定向讀取 §6（端點清單、Request/Response 欄位表）、§7 VR、§2 業務規則，作為前端 API 對接的依據。
 - **未找到 BFS** → `AskUserQuestion`：「尚未找到對應的後端規格書，請提供 BFS 路徑，或先執行 `spec --stage bfs` 產出後端規格。」
@@ -70,7 +72,7 @@ $ARGUMENTS → [--change] {功能描述}
 
 ### 2. 確定儲存位置
 
-**先讀 `analysis/_context.yml`** 取功能目錄；未登記才探索專案慣例，確定後寫回該檔。若無慣例，預設 `docs/{模組名稱}/{功能名稱}/{功能名稱}_前端功能規格書.md`。
+**先讀 `analysis/_context.yml`** 取功能目錄；未登記才探索專案慣例，確定後寫回該檔。若無慣例，預設 `{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_前端功能規格書.md`（`{docs-root}` ＝ `config.py get spec.dir`）。
 
 ### 3. 載入規格範本
 
@@ -91,7 +93,7 @@ FFS 須含「功能代碼綁定」段落：route ↔ 代碼對應、綁定方式
 依 `${CLAUDE_PLUGIN_ROOT}/references/ui-analysis-guide.md`「前置條件與偵測」：
 
 - **`analysis/ui-survey.md` 已涵蓋且未過期** → 直接讀用作為 §2 欄位表的取材來源，**不重問 URL、不重跑勘察**
-- **未涵蓋** → `AskUserQuestion`（`提供系統 URL 做現有畫面分析（推薦）` / `跳過，依 FRD/BFS 推導`）；選提供 → 派 `browser-docs:browser-surveyor` 勘察（沒裝 browser-docs 就不問 URL，直接標「未取得畫面證據」依 FRD/BFS 推導）（派工樣板見 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/ffs/browser-survey-dispatch.md`），它落檔 `analysis/ui-survey.md` 後作為 §2 輸入
+- **未涵蓋** → `AskUserQuestion`（`提供系統 URL 做現有畫面分析（推薦）` / `跳過，依 FRD/BFS 推導`；無 URL 可勘察（CLI、尚無既有畫面等）時改推薦「跳過」置首）；選提供 → 派 `browser-docs:browser-surveyor` 勘察（沒裝 browser-docs 就不問 URL，直接標「未取得畫面證據」依 FRD/BFS 推導）（派工樣板見 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/ffs/browser-survey-dispatch.md`），它落檔 `analysis/ui-survey.md` 後作為 §2 輸入
 - **勘察失敗**（agent 回報連不上）→ 請使用者照 `browser-docs:live-drive` 的 browser-doctor 起手檢查印出的標準寫法改註冊後重啟 session；不阻斷本 skill——標記「未取得畫面證據」續行，§2 改依 FRD/BFS 推導並在該節註明
 
 > **主 session 不開瀏覽器。** DOM snapshot 與截圖對「寫 FFS」毫無用處卻會擠爆 context——你要的是 `ui-survey.md` 裡的欄位表。**不要 Read 截圖進 context**。

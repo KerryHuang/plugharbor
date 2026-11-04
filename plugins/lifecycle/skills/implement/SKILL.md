@@ -42,7 +42,7 @@ git branch --show-current && git status --short
 
 | 檢查項 | 規則 | 失敗處理 |
 |--------|------|----------|
-| 工作區乾淨 | 沒有未提交變更 | 停下問使用者（先 commit 或保留），不自動 stash |
+| 工作區乾淨 | 沒有未提交變更 | 未提交變更只有 `<spec.dir>` 下的規格／探索摘要（explore、spec 不 commit）→ 不停下：先照下一列開功能分支，逐檔 `git add` 這些檔，commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
 | 非主幹 | 不在 main／develop 上實作 | 開 `feature/<name>`（從專案慣例的基底分支） |
 | 分支對應本功能 | 分支名含功能或票的識別碼 | 停下，提示切分支或 cd 到正確 worktree |
 | worktree 一致 | 在 worktree 裡時，目錄名含分支識別碼 | 提醒使用者確認 |
@@ -55,12 +55,11 @@ git branch --show-current && git status --short
 - 規格裡還有 `[NEEDS CLARIFICATION]` → 停下問使用者，不猜。
 - 跑 `lifecycle:spec-check` 驗規格品質：
   - 通過 → 繼續。
-  - 有條件通過（0 critical、有 warning）→ 告知使用者，繼續。
-  - 不通過 → 修規格後重驗，**最多 3 次**；3 次仍不過 → 列剩餘缺失，請使用者決定。
+  - 有條件通過（⚠️，0 critical、有 warning）或不通過 → 修規格後重驗（⚠️ 也是修正後才開發，與 spec-check 一致），**最多 3 次**；3 次仍不過 → 列剩餘缺失，請使用者決定。
 
 ## 3. 規劃：任務清單與 ledger 落檔
 
-1. 建 `.tmp/implement/<feature>/`，確認 `.tmp/` 在專案 `.gitignore`（沒有就提醒使用者加，不自行改 `.gitignore`）。
+1. 建 `.tmp/implement/<feature>/`，確認 `.tmp/` 在專案 `.gitignore`（沒有就提醒使用者加，不自行改 `.gitignore`）；使用者同意加的話，把 `.gitignore` 寫進 `tasks.md` 第一個 task 的「改」欄，免得審查把它當成範圍外變更。
 2. 派一個規劃 subagent（top 等級），輸入：規格路徑、ledger 的已定決策、`${CLAUDE_PLUGIN_ROOT}/skills/implement/references/planning.md`。它負責：
    - 找受影響的層級與模組、可重用的既有實作（照專案慣例，不引入新風格）。
    - 產 `tasks.md`：每個 task 有 ID、目標、對應的規格段落、要讀與要改的檔、驗收指令、依賴、可平行標記 `[P]`。
@@ -68,6 +67,11 @@ git branch --show-current && git status --short
    有技術選型或架構取捨時，另派 `lifecycle:architect` 出 ADR，結論寫進 ledger「已定決策」。
 3. **context 預算檢查**：每個 task 的 brief 加上它要讀的檔，必須塞得進一個 subagent 的 context（判準見 dispatch.md）；塞不下就拆。主 session 自己只讀 ledger 與報告結論，不讀實作檔。
 4. 把計畫摘要（task 數、順序、平行組、風險）給使用者確認一次，確認後才開工。
+
+**小改動減量**（步驟不變，只減派工數）：規格範圍看得出只需單一 task、預估影響檔案少（約 ≤ 3 個、不跨層）時——
+- 步驟 3 的規劃由主 session 自己寫 `tasks.md`，不派規劃 subagent；寫出來超過一個 task 或檔案變多，就改回派規劃 subagent。
+- 步驟 6 與步驟 7 合併：只派一個 `lifecycle:reviewer`，一次做規格逐條比對與程式碼審查（報告同時寫 `reports/spec-trace.md` 的內容與審查發現），不跑多角色審查。
+- 其餘（步驟 5 派 developer、步驟 8 完成驗證、收尾 G4 再審）照原流程。使用者要求完整流程時一律照完整流程。判定結果與理由記進 ledger「已定決策」。
 
 ## 4. 基線
 
@@ -101,8 +105,9 @@ git branch --show-current && git status --short
 
 ## 7. 審查修正迴圈（最多 3 輪）
 
-- 有裝 workspace：用 `workspace:review`（可選）審本分支相對基底分支的變更；它的證據規則（每個變更檔歸到檢查項、「查無」先證明指令抓得到、標出被削弱的測試與新 suppression）照做。
-- 沒裝 workspace 的退路：同一則訊息平行派 `lifecycle:reviewer`（程式碼）、`lifecycle:architect`（分層與依賴方向）、一個規格對照審查者（規格 vs 程式 vs 真實資料），報告各自落檔（reviewer 唯讀，由主 session 代寫，見 dispatch.md）；至少做到「每個變更檔歸到某檢查項或寫排除理由」，並剔除既有問題、linter 會抓的、吹毛求疵三類。
+- **審查範圍**：此時實作還沒 commit，範圍是「工作樹相對基底分支的變更（含未提交）」：`git diff <base>`（不是 `<base>..HEAD`，那會漏掉未 commit 的實作），未追蹤的新檔另用 `git status --short` 列出一併審。
+- 有裝 workspace：用 `workspace:review`（可選）審上述範圍；它的證據規則（每個變更檔歸到檢查項、「查無」先證明指令抓得到、標出被削弱的測試與新 suppression）照做。
+- 沒裝 workspace 的退路：同一則訊息平行派 `lifecycle:reviewer`（程式碼）、`lifecycle:architect`（分層與依賴方向）、一個規格對照審查者（規格 vs 程式 vs 真實資料），報告各自落檔（reviewer 自己寫報告檔、只回結論行，見 dispatch.md）；至少做到「每個變更檔歸到某檢查項或寫排除理由」，並剔除既有問題、linter 會抓的、吹毛求疵三類。
 - 分級：重大必修／主要要修／次要列參考。重大與主要派 developer 修 → 重跑 build＋test → 再審一輪。
 - **最多 3 輪**；第 3 輪仍有重大問題 → 停下，列剩餘問題，請使用者決定。
 

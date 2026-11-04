@@ -22,8 +22,10 @@
 在目標專案的 CLAUDE.md（或 CLAUDE.local.md）中加入：
 
 ```markdown
-sdlc-program-code-inventory: {相對於 docs-root 的盤點文件路徑，例：system/feature-inventory.md}
+lifecycle-program-code-inventory: {相對於 docs-root 的盤點文件路徑，例：system/feature-inventory.md}
 ```
+
+舊名 `sdlc-program-code-inventory` 仍認。
 
 **路徑解析規則**：
 

@@ -16,10 +16,12 @@
 
 模式 B 同 A，每關開跑前先問使用者。模式 D 只到 G1。
 
+沒有 PR 可走（模式 D，或專案沒有 remote）時，feature 不會經 PR 進 develop：G1 後提示使用者自己 `git checkout develop && git merge --no-ff feature/<name>`（`lifecycle:release` 的 R1 從 develop 起），不代為 merge。
+
 ## 紀律
 
 - **完成點是 G6**：不是 commit，也不是步驟 7 的實作期審查跑完。G4 對最終狀態的獨立審查常抓到實作期漏掉的整條規則，不能省。
-- G4 之後若又有修正 commit → HEAD 變了，回 G4 對新 HEAD 再審，不留「最新 commit 未審」的缺口。
+- G4 之後若又有修正 commit → HEAD 變了，回 G4 對新 HEAD 再審，不留「最新 commit 未審」的缺口。G6 規格回填只改 `<spec.dir>` 下的文件、不動程式碼，不算修正 commit，不需回 G4；回填時改到程式碼才算。
 - push 失敗、CI 紅燈 → 該關記「未過」並停在該關，不跳過去做下一關。
 - 遇到技術、業務、資料疑慮，先派對應 agent 自解（`lifecycle:debugger`、資料探勘、領域顧問），真的卡住才升級給使用者。
 - 長流程每關開始與結束都回報一行進度；單關超過 5 分鐘補一行中途進度。

@@ -10,15 +10,17 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 
 ## 鍵
 
+「必填」指**用到時才必填**：沒用到該鍵的流程不檢查，到用的 skill 才因退出碼 2 詢問。例如只跑 `spec` 全鏈不需要任何 `ticket.*` 或 `publish-target`。
+
 | 鍵 | 說明 | 預設 |
 |----|------|------|
 | `scale` | 產出規模：`lean`（一份規格、一張票、不拆角色）或 `full`（FRD／SAD／BFS／FFS 與 PM／SA／QA／Dev 四角色票樹）。只決定產出哪些檔、拆幾張票，流程相同 | `lean` |
 | `spec.dir` | 規格與 `LEARNINGS.md` 的目錄（相對專案根） | `docs/specs` |
-| `ticket.tool` | 票務工具：`linear`、`github`、`jira` | 無（必填） |
+| `ticket.tool` | 票務工具：`linear`、`github`、`jira` | 無（票務操作時必填：`ticket-ops` 及經它開票、改票的 skill，如 `ticket-create`、`ticket-reply`） |
 | `ticket.team` | Linear 的 team 名稱或 key | 無（`linear` 時必填） |
 | `ticket.repo` | GitHub Issues 的 `owner/repo` | 無（`github` 時必填） |
-| `ticket.states` | 抽象階段 → 工具的狀態名（Linear、Jira）或 label（GitHub）對照 | 無（必填） |
-| `publish-target` | 會議記錄等文件的發布位置，`file:<相對目錄>` 或 `hedgedoc:<url>` | 無（必填；詢問時建議 `file:docs/meetings`） |
+| `ticket.states` | 抽象階段 → 工具的狀態名（Linear、Jira）或 label（GitHub）對照 | 無（票務操作時必填，`ticket-ops` 缺鍵時與 `ticket.tool` 一併詢問） |
+| `publish-target` | 會議記錄等文件的發布位置，`file:<相對目錄>` 或 `hedgedoc:<url>` | 無（`meeting-minutes` 發布時必填；詢問時建議 `file:docs/meetings`） |
 | `manual-brand` | 操作手冊封面的品牌文字（字串）。`--brand` 優先；留空或不設則封面不印品牌 | 無（選填） |
 | `qa.environments` | `qa-verify` 可驗收的環境清單，每項 `{name, url, writable}`；`writable` 為 true 才允許建資料與送出 | 無（`qa-verify` 必填） |
 

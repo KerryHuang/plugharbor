@@ -1,6 +1,6 @@
 ---
 name: scout
-description: 證據蒐集：codebase／DB／文件勘察結果，供 domain-advisor 與規格撰寫共用。只列證據不解讀。由 explore 派發，不主動觸發。
+description: 證據蒐集：codebase／DB／文件勘察結果，供 domain-advisor 與規格撰寫共用。只列證據不解讀。由 explore 與 spec 的 FRD、SAD 棒派發，不主動觸發。
 model: sonnet
 maxTurns: 100
 ---

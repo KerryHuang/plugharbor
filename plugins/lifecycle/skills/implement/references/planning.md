@@ -1,6 +1,6 @@
 # 規劃指引（給規劃 subagent）
 
-產 `tasks.md` 時照本檔。層名與順序依專案實際架構調整；專案沒有分層就照它既有的模組切法。**照既有慣例寫，不單方面引入新風格**（有裝 workspace 可參考 `workspace:convention-first`，可選）。
+產 `tasks.md` 時照本檔。層名與順序依專案實際架構調整；專案沒有分層就照它既有的模組切法。**照既有慣例寫，不單方面引入新風格**（有裝 workspace 可參考 `workspace:convention-first`，可選；沒裝就先 grep 既有同類實作當樣板）。
 
 ## 規劃前要做的分析
 

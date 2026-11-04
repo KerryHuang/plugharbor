@@ -3,6 +3,7 @@
 **Hotfix 預設走 Fast Path，不問 QA**（線上急修，通常不需 rc 測試）。罕見情境需 QA 時才轉 Full。衝突、等 CI、rollback 同 `merge-to-main.md`。
 
 同樣分關卡記在 `.tmp/release/hotfix-<ascii-slug>/gates.md`（slug 只用小寫 ASCII 與 `-`）：H1 建分支、H2 修復＋品質閘（記「已檢查 SHA」）、H3 merge 到 main＋CI 建 patch tag、H4 合回 develop、H5 清理。續做時依序重跑各關檢查，從第一個沒過的接續。
+無 remote／無 CI 時同主流程 R0 的本機模式：H3 改手動建 annotated patch tag，push 與等 CI 記「本機模式跳過」。
 
 ```
 main → hotfix/描述 (CI: 正式版 patch tag) → main + develop

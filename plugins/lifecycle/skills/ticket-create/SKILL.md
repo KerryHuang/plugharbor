@@ -36,7 +36,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale
 
 ### 1. 前置
 
-本 skill 不直接呼叫任何票務工具；缺 `ticket.tool` 等設定時 `lifecycle:ticket-ops` 會自己問並寫入設定。ticket-ops 回報工具不可用時，原樣轉告使用者後終止。
+本 skill 不直接呼叫任何票務工具；缺 `ticket.*` 設定時由 `lifecycle:ticket-ops` 的設定流程問使用者並寫入設定，補完後繼續。只有 ticket-ops 回報工具不可用，或使用者拒絕補設定時，才原樣轉告後終止。
 
 ### 2. 判類型
 
@@ -61,7 +61,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale
 
 找已完成的規格（目錄取 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）。找到就在票描述附路徑，並只讀取材需要的章節，不整檔載入。沒有規格就依 `ticket-templates.md` 從描述生成。
 
-草稿含：每張票的標題、階段、labels、描述全文、parent、相依表（每條相依的依據）。`full` 的票間相依：SA 等 PM、Dev 等 SA、QA 等 Dev（Bug：QA 等 Dev），均以 `blocked_by` 表達；父子之間不另掛。
+草稿含：每張票的標題、階段、labels、描述全文、parent、相依表（每條相依的依據）。開票前先看規格進度（目錄同上）：`lean` 規格檔或 `full` 的 FRD 已存在時，PM 子票預設階段 `in-review`（需求內容已成文、待人確認，而非 `todo`；使用者確認過可改 `done`）；SA 子票視 BFS／FFS 是否已完成調整（兩者都在 → 同 PM 的預設；未備 → 照步驟 4）。只改預設階段，流程不變，使用者可在步驟 6 改。`full` 的票間相依：SA 等 PM、Dev 等 SA、QA 等 Dev（Bug：QA 等 Dev），均以 `blocked_by` 表達；父子之間不另掛。
 
 ### 6. 確認
 
@@ -72,7 +72,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale
 - `lean`：自己依序呼叫 `lifecycle:ticket-ops` 的 `create`。
 - `full`：把確認後的草稿寫成 ticket-plan 檔，派 subagent 照檔建票，只收回票號表；做法見 `create-dispatch.md`。
 
-建票規則（票源 flag、相依寫入、失敗處理）見 `create-dispatch.md`「建票規則」。
+建票規則（父子關係、票源 flag、相依寫入、失敗處理）見 `create-dispatch.md`「建票規則」。
 
 ### 8. 回報
 
@@ -85,6 +85,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale
 | 情境 | 處理 |
 |------|------|
 | 描述空白 | 請使用者提供，終止 |
-| `ticket-ops` 回報工具不可用或設定缺 | 原樣轉告，終止 |
+| `ticket-ops` 回報工具不可用，或使用者拒絕補 `ticket.*` 設定 | 原樣轉告，終止（設定缺而使用者願補時不走此列，見步驟 1） |
 | 建票中途失敗 | 列出已成功的票，不自行換參數重試；使用者決定補開或收尾 |
 | 相依被後端拒絕 | 停下回報，不改掛弱關聯蒙混 |

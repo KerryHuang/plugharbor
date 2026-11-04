@@ -2,7 +2,7 @@
 
 ## §1.5 視覺素材收集
 
-詢問使用者是否有既有畫面截圖或設計稿：
+詢問使用者是否有既有畫面截圖或設計稿（**豁免**：純後端／CLI／排程／資料修正功能不問，同 `stages/frd.md` Step 0.5）：
 
 - **有提供** → 記錄並儲存為 `assets/{功能名稱}_mockup.{副檔名}`，§4 直接嵌入作為**參考**
 - **未提供** → **不繪製 ASCII 版面**。§4 依 `${CLAUDE_PLUGIN_ROOT}/references/screen-spec-format.md`

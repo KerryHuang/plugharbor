@@ -92,6 +92,22 @@ profile_reason: "五條全中：單表寫入、無狀態機、單一畫面、無
 profile_decided_at: "2026-08-13"
 ```
 
+## 無畫面功能不產 FFS
+
+與 standard／lite 正交：功能**沒有畫面**（純後端、CLI、批次／排程）時不產 FFS，兩條鏈都適用。
+
+- **由誰判**：`spec --stage frd` Step 9.8 分流時一併判定，`AskUserQuestion` 請使用者確認（`不產 FFS（推薦）` / `仍產 FFS`，
+  推薦依判定結果置首；description 寫明依據，如「FRD §4 無 SCR 畫面」）。
+- **落點**：`analysis/_context.yml` 記 `ffs: skipped` 與 `ffs_skip_reason`；`decisions.md` append 一列（決策＝「不產 FFS」、拍板＝`PO`、階段＝`FRD`）。
+- **下游**：`spec --stage ffs` 讀到 `ffs: skipped` 就不跑；BFS 後直接接 `spec-check --readiness`。
+- **不得自行宣告**：`spec-writer` 等 agent 不得在文件裡自己寫「FFS 不適用」——那是決策，只能來自上述確認與 decisions.md。
+  中途發現其實有畫面 → 停下告知使用者，改回產 FFS。
+
+```yaml
+ffs: skipped
+ffs_skip_reason: "CLI 旗標，無畫面"
+```
+
 ## 中途升級（lite → standard）
 
 lite 執行中發現任一判定條件其實不成立 → **立即停下告知使用者**，補做 `spec --stage sad` 後回到

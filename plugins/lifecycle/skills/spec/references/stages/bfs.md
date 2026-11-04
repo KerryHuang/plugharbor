@@ -36,7 +36,7 @@ $ARGUMENTS → [--change] {功能描述}
 
 ### 0.3. 載入 FRD §4 畫面設計（若存在）
 
-**先讀 `analysis/_context.yml`** 取 FRD 路徑（依 `shared-preludes.md` Step 0.8）；未登記才 `find docs/ -name "*需求文件*.md" -path "*{功能名稱}*"`，找到後寫回。
+**先讀 `analysis/_context.yml`** 取 FRD 路徑（依 `shared-preludes.md` Step 0.8）；未登記才 `find {docs-root}/ -name "*需求文件*.md" -path "*{功能名稱}*"`，找到後寫回。
 
 - **找到 FRD** → 讀 §4（定向讀取，不整檔載入）：業務層欄位規格（必填理由、計算規則、連動語意、權限差異）併入 §5 欄位規格（含算例），作為 Request 欄位業務語意依據——完整欄位集合另由 `db-analysis.yml` 表結構＋SAD §3.2 IF-XX 推導（FRD §4 不含完整欄位群，owner 是 FFS §2）。輸入語意推型別：數值（小數 N 位）→decimal、日期／日期範圍→date、開關→bool、單選固定清單→列舉、單選可搜尋／開窗→外鍵 id。操作表跟 SAD §6.4 US→API 對應表交叉確認，每個「執行後行為」都要有對應端點；「權限」欄是授權設計輸入。
 - **未找到** → 從 `db-analysis.yml` 與 DB schema 推導欄位命名
@@ -53,10 +53,10 @@ VR／BR／Request 與 Response 欄位只寫 FRD 已有、可追溯到 `FX-` 編�
 
 ### 0.5. 載入 SAD（若存在）
 
-**先讀 `analysis/_context.yml`** 取 SAD 路徑；未登記才 `find docs/ -name "*系統分析文件*.md" -path "*{功能名稱}*"`，找到後寫回。
+**先讀 `analysis/_context.yml`** 取 SAD 路徑；未登記才 `find {docs-root}/ -name "*系統分析文件*.md" -path "*{功能名稱}*"`，找到後寫回。
 
 - **找到 SAD** → 定向讀取：推薦技術方案、初步 API 端點建議、涉及資料表清單、重用結論表、Light API 需求清單、Migration 預判、跨模組影響；重點 **§6.4 US→API 對應表**（BFS 端點設計起點，每個 US-XX 展開為具體端點；舊 SAD 的 UC-XX 為 legacy 沿用其對應）與 **§3.2 資訊流 IF-XX**（Request/Response 欄位與轉換邏輯依據）。
-- **未找到** → `AskUserQuestion` 是否執行 DB 深度分析：**是** → 若專案有 DB 分析顧問／工具則派工（`tables` 從描述推測），結果寫入 `db-analysis.yml` 並注入步驟 4/4.2/5；無則依步驟 4 自行以唯讀 DB 查詢工具查表結構；**否** → 繼續（步驟 4 只做基本 COLUMNS 查詢）
+- **未找到** → `chain_profile: lite`（本來就沒有 SAD）或專案無 DB → 不問，直接略過，步驟 4 照常；其餘 → `AskUserQuestion` 是否執行 DB 深度分析（`執行 DB 深度分析（推薦）`：standard 鏈缺 SAD，表結構要另補 ／ `跳過，只做基本查詢`）：**是** → 若專案有 DB 分析顧問／工具則派工（`tables` 從描述推測），結果寫入 `db-analysis.yml` 並注入步驟 4/4.2/5；無則依步驟 4 自行以唯讀 DB 查詢工具查表結構；**否** → 繼續（步驟 4 只做基本 COLUMNS 查詢）
 
 ### 0.7 Graphify 查詢（條件式）
 > 參考 `${CLAUDE_PLUGIN_ROOT}/references/graphify-integration.md` — **Query 區塊**（graphify 未安裝時靜默跳過）
@@ -67,7 +67,7 @@ VR／BR／Request 與 Response 欄位只寫 FRD 已有、可追溯到 `FX-` 編�
 
 ### 2. 確定儲存位置
 
-**先讀 `analysis/_context.yml`** 取功能目錄；未登記才探索專案慣例，確定後寫回該檔。若無慣例，預設 `docs/{模組名稱}/{功能名稱}/{功能名稱}_後端功能規格書.md`。
+**先讀 `analysis/_context.yml`** 取功能目錄；未登記才探索專案慣例，確定後寫回該檔。若無慣例，預設 `{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_後端功能規格書.md`（`{docs-root}` ＝ `config.py get spec.dir`）。
 
 ### 3. 載入規格範本
 
@@ -178,7 +178,7 @@ agent 容易判成非定案而放行。
 
 報告：規格書路徑、章節完成狀態、所有疑問已釐清確認。若本次發現 canonical schema 描述疑義 → 一併列出供使用者後續校正。
 
-**下一步**：依 `${CLAUDE_PLUGIN_ROOT}/references/handoff-protocol.md` 續行條件判定——滿足 → **自動續跑 `lifecycle:spec --stage ffs {功能描述}`**（宣告後直接執行，不另問）；否則停下說明未滿足項。架構師級驗證留待鏈末 `lifecycle:spec-check`（FFS 產出後 `--cross` 一次驗完整）。**完工回寫提醒**：PR 合併後依實作修訂本 BFS（端點路由、欄位命名、Migration 細節），changelog 註「完工回寫：實作對齊」（見 `${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`）。
+**下一步**：依 `${CLAUDE_PLUGIN_ROOT}/references/handoff-protocol.md` 續行條件判定——滿足 → **自動續跑 `lifecycle:spec --stage ffs {功能描述}`**（宣告後直接執行，不另問；`_context.yml` 記 `ffs: skipped` 時改續跑 `lifecycle:spec-check --readiness`）；否則停下說明未滿足項。架構師級驗證留待鏈末 `lifecycle:spec-check`（FFS 產出後 `--cross` 一次驗完整）。**完工回寫提醒**：PR 合併後依實作修訂本 BFS（端點路由、欄位命名、Migration 細節），changelog 註「完工回寫：實作對齊」（見 `${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`）。
 
 ---
 
@@ -210,7 +210,7 @@ agent 容易判成非定案而放行。
 
 依 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/bfs/completion-reports.md` 輸出完成報告。
 
-**下一步**：執行 `lifecycle:spec --stage ffs --change {ticket} {功能描述}` 更新 FFS 主文件；**完工回寫提醒**：本次 CR 開發完成後，須依實際實作回頭修訂 BFS（changelog 註記「完工回寫：實作對齊」）。
+**下一步**：執行 `lifecycle:spec --stage ffs --change {ticket} {功能描述}` 更新 FFS 主文件（`_context.yml` 記 `ffs: skipped` 則略過）；**完工回寫提醒**：本次 CR 開發完成後，須依實際實作回頭修訂 BFS（changelog 註記「完工回寫：實作對齊」）。
 
 ---
 

@@ -25,9 +25,9 @@
 
 | 結論 | 條件 |
 |------|------|
-| ✅ **通過** | 0 CRITICAL, 0 WARNING |
-| ⚠️ **有條件通過** | 0 CRITICAL, >0 WARNING |
-| ❌ **不通過** | >0 CRITICAL |
+| ✅ **可直接開發** | 0 CRITICAL, 0 BLOCKER, 0 WARNING |
+| ⚠️ **需修正後開發** | 0 CRITICAL, 0 BLOCKER, >0 WARNING |
+| ❌ **不可開發，需重大修訂** | >0 CRITICAL 或 >0 BLOCKER |
 
 ## 缺失清單
 

@@ -6,13 +6,13 @@
 
 | 操作 | 指令 |
 |---|---|
-| `create` | `gh issue create --repo R --title T --body-file F --label L[,L2]`；`stage` 轉成 `labels_add` 併入 `--label` |
+| `create` | `gh issue create --repo R --title T --body-file F --label L[,L2]`；`stage` 轉成 `labels_add` 併入 `--label`。帶 `parent` 時，body 加一行 `parent: #p`（建完後回填父票 task list，見「父子票」） |
 | `set_stage` | `gh issue edit N --repo R --add-label … --remove-label …`；`close` 為真時再 `gh issue close N --repo R --reason completed｜"not planned"` |
 | `comment` | `gh issue comment N --repo R --body-file F` |
 | `attach` | 見下 |
 | `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,body,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url --limit 1000`（`body` 用來解析 `parent: #n`、`blocked-by: #n`）；時間範圍用 `--search "created:A..B"`、`--search "closed:A..B"`、`--search "updated:A..B"`，**一次只放一個時間欄位**——同一個 search 裡的多個條件是 AND，`created:… closed:…` 只會回窗內建立且窗內關閉的票。**不得靜默截斷**，見下「查詢不截斷」。`階段` 由 `stage:*` label 與 `state` 還原，label 不在 `ticket.states` 對照內時回 `unmapped:<name>`（叫用端列為未分類，不計入任何階段） |
 | `get` | `gh issue view N --repo R --json number,title,body,state,stateReason,labels,url,updatedAt`；`children` 解析 body 內 `- [ ] #n`／`- [x] #n` 項目的 n；`parent` 取 body 內 `parent: #n` 那一行（父子票慣例見下），沒有就是 null；`stage` 由 `stage:*` label 與 `state` 還原 |
-| `link_blocked_by` | 見下 |
+| `link_blocked_by` | 見下「blocked-by」：被擋票 body 加 `blocked-by: #n`，blocker 票留一則留言 |
 
 `query` 欄位對映：`closedAt` 且 `stateReason` 為 `COMPLETED` 才填 `completedAt`；以 not planned 關閉的票 `completedAt` 為 null，不算交付。`createdAt`、`url` 直接取；`assignee` 取 `assignees` 陣列第一位的 `login`，陣列為空則 null。`priority` 取自 label `priority:<level>`（level 為 urgent／high／medium／low），無此 label 為 `none`。`dueDate` 恆為 null（GitHub 不支援）。
 
@@ -31,6 +31,7 @@
 
 - 內文 task list：父票 body 放 `- [ ] #n`，GitHub 會顯示進度；子票 body 放 `parent: #p`。
 - 若 repo 啟用了 sub-issues，可改用它；啟用與否要先實測，沒把握就用 task list。
+- 建父子票順序：先建父票，子票 `create` 帶 `parent`（body 寫 `parent: #p`）；全部子票建完後，把 `- [ ] #n` 清單回填父票 body（`gh issue view` 讀回原文、附加、`gh issue edit --body-file`）。
 - 沒有像 Linear 那樣的自動 rollup 與自動化。
 
 ## blocked-by
@@ -39,7 +40,9 @@ GitHub 沒有穩定可用的 CLI 級 blocked-by 欄位，採慣例：
 
 1. 被擋住的票 body 加一行 `blocked-by: #n`。
 2. 被擋住的票掛 label `blocked`（若 repo 有此 label）。
-3. blocker 票 body 的 task list 或留言提到被擋住的票。
+3. blocker 票留一則留言：`gh issue comment N --repo R --body "blocks #m"`（不改 blocker body，避免整份取代風險）。
+
+實際指令（被擋票 #m、blocker #n）：先 `gh issue view m --repo R --json body -q .body > F` 讀回原文，附加一行 `blocked-by: #n` 後 `gh issue edit m --repo R --body-file F`，再 `gh issue edit m --repo R --add-label blocked`（無此 label 先 `gh label create blocked --repo R`），最後對 n 留言。建票當下已知相依時，可直接在 `create` 的 body 寫入 `blocked-by: #n`（需先建 blocker），省去 edit。
 
 限制：沒有「blocker 完成時通知」的語意。要通知就在關閉 blocker 時留言 `@` 下一關。叫用端要拿到「降級為內文慣例」的說明。
 

@@ -20,7 +20,7 @@ subagent_type: "lifecycle:scout"
 prompt: |
   context: {使用者的需求描述 ／ 探索摘要重點}
   keywords: [{功能關鍵字}, {推測的 Entity 名}, {推測的資料表名}]
-  docs_root: {sdlc-docs-path}
+  docs_root: {spec.dir}
   scope: FRD 階段的淺勘——只要回答「有沒有既有的同類東西、大致涉及什麼」，
          不做完整重用盤點（那是 spec --stage sad Step 3 的範圍）
   scan:

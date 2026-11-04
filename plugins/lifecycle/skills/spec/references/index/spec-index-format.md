@@ -81,4 +81,4 @@ Each ticket type reads only these chapters:
 | Dev backend | BFS §0, §5, §6, §7, §8 |
 | Dev frontend | FFS §2, §3, §6 + BFS §6 endpoint overview |
 
-`linear-ticket-defaults.md` has its own chapter index; read the index, then `sed -n '/^## {ticket type}/,/^## /p'` for that ticket type's template section.
+Ticket description templates live in `${CLAUDE_PLUGIN_ROOT}/skills/ticket-create/references/ticket-templates.md`; locate the ticket type's section with `grep -n "^## "`, then read only that range with offset/limit.

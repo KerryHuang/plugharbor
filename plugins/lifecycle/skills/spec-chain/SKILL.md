@@ -39,7 +39,7 @@ herdr 通用操作一律依 `toolkit:agent-dispatch`（長任務模式）；機�
 
 鏈上各棒：`triage` PM 自己；`explore`、`spec --stage frd`、`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`、`spec-check --readiness`、`spec-check`、`ticket-create` 全派 session。`spec-check --readiness`、`spec-check`、`ticket-create` 不准 PM 就地跑（實測 context 暴漲到 926k）；`ticket-create` 由 worker 讓使用者確認票樹，PM 只收票號。`spec-check` 棒的 claude worker 以 `herdr agent start ... -- --model sonnet` 起（照清單驗證、最機械，不必用最貴的模型）；其餘棒繼承預設模型。
 
-**不可並行**：`spec --stage bfs → spec --stage ffs`（FFS 硬相依 BFS）；`spec-check --readiness` 獨佔；同一功能目錄的任意兩棒（共用 `analysis/_context.yml`、`db-analysis.yml` 會互蓋）。不同票可並行。驗收發現上游要修而下游已在跑時：後派的限定窄任務、prompt 點名「不要碰這兩個共用檔」；做不到就等下游跑完。
+**不可並行**：`spec --stage bfs → spec --stage ffs`（FFS 硬相依 BFS；`_context.yml` 記 `ffs: skipped` 時 BFS 後直接接 `spec-check --readiness`）；`spec-check --readiness` 獨佔；同一功能目錄的任意兩棒（共用 `analysis/_context.yml`、`db-analysis.yml` 會互蓋）。不同票可並行。驗收發現上游要修而下游已在跑時：後派的限定窄任務、prompt 點名「不要碰這兩個共用檔」；做不到就等下游跑完。
 
 路由結果以文字列給使用者（哪一棒、派給誰、為什麼），該回合不接工具呼叫，逐棒列到下一個硬性停點、一次確認。使用者經另一個 session 轉達「由你跑完這條鏈」時，路由與接棒的確認門算過；push、開票、改 DB、關別人的 pane 與規格內容裁決仍回使用者本人。
 

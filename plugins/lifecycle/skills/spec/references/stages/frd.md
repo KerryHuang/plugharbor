@@ -35,7 +35,7 @@ $ARGUMENTS → [--change] {需求描述}
 
 依優先順序搜尋前置探索文件作為需求分析輸入：**①** `lifecycle:explore` 探索摘要（`{docs-root}/**/*_探索摘要.md`）
 **②** 既有設計文件（`{docs-root}` 下 `*-design.md`）。找到任一 → 讀取並沿用，繼續下一步；兩者皆未找到 →
-`AskUserQuestion`：`先執行 lifecycle:explore` / `需求已明確，直接撰寫 FRD`。選「直接撰寫」才繼續，選其他則終止等待使用者完成。
+`AskUserQuestion`：`先執行 lifecycle:explore` / `需求已明確，直接撰寫 FRD`——推薦項置首標「（推薦）」：使用者描述已涵蓋痛點、使用者、範圍邊界 → 推薦「直接撰寫」；否則推薦「先執行 explore」。選「直接撰寫」才繼續，選其他則終止等待使用者完成。
 
 > 讀取既有規格文件（探索摘要、設計文件、舊版 FRD）一律定向讀取所需章節，不整檔載入。完整 pipeline 見 `${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`。
 
@@ -95,7 +95,7 @@ $ARGUMENTS → [--change] {需求描述}
 
 **先讀 `analysis/_context.yml`**（依 `shared-preludes.md` Step 0.8）取功能目錄；未登記才探索專案既有目錄慣例，
 確定後**寫入 `_context.yml`**（功能名稱、模組、功能目錄、本文件路徑），供下游直接沿用。
-若專案無既有慣例，預設 `{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_需求文件.md`（模組名取自既有第一階目錄，禁止自創）。
+若專案無既有慣例，預設 `{docs-root}/{模組名稱}/{功能名稱}/{功能名稱}_需求文件.md`（模組名取自既有第一階目錄，禁止自創；既有第一階目錄為空（新專案）→ 直接請使用者給新模組名，見 `shared-preludes.md` Step 0.6）。
 
 ### 4. 載入範本
 
@@ -186,7 +186,7 @@ L9/L10/L14/L15/L16 已由 agent 的 L1~L5 自檢涵蓋，**不要重跑**。只�
 ### 9.5 BDD .feature 衍生（可選，條件觸發）
 
 FRD 通過驗證後，若功能有**業務規則分支或狀態轉換**（純 CRUD 查詢、單一 AC 的功能豁免），用
-`AskUserQuestion` 詢問是否衍生 Gherkin `.feature` 檔。產出**必須**依 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/frd/bdd-feature-guide.md`：
+`AskUserQuestion` 詢問是否衍生 Gherkin `.feature` 檔（`衍生 .feature（推薦）`：有分支規則時 QA 與測試可直接對照 ／ `不衍生`）。產出**必須**依 `${CLAUDE_PLUGIN_ROOT}/skills/spec/references/frd/bdd-feature-guide.md`：
 FRD §2.2 為唯一權威、.feature 是機械轉譯、`# language: zh-TW`、單檔置於 `{docs-root}/{模組}/{功能}/features/`、
 tag 追溯（`@US-xx @BR-xxx @VR-xxx`）。
 
@@ -199,6 +199,8 @@ tag 追溯（`@US-xx @BR-xxx @VR-xxx`）。
 `profile_decided_at`。分流確認後 append 一列到 `decisions.md`（決策＝「規格鏈分流」、選定＝
 `standard`／`lite`、依據＝命中的判準、拍板＝`PO`、階段＝`FRD`），FRD `§D` 列該編號——這一列是
 `spec --stage bfs` Step 0.45 分流確認的**唯一書面依據**。
+同一步依 `chain-profile.md`「無畫面功能不產 FFS」判定本功能有沒有畫面：沒有（純後端、CLI、批次）→ `AskUserQuestion` 確認後記
+`ffs: skipped`＋理由到 `_context.yml`、append 一列到 `decisions.md`；有畫面則不記。
 
 ### 10. 報告完成
 

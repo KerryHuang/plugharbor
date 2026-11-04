@@ -57,7 +57,7 @@ lite       ... → spec --stage frd ───────→ spec --stage bfs �
 │  [ lifecycle:spec ]                                     │
 │       lean：<spec.dir>/<feature>.md 一份                │
 │       full：--stage frd → sad → bfs → ffs               │
-│         FRD（PM）→ SAD（SA，lite 可略過）→ BFS → FFS     │
+│  FRD（PM）→ SAD（SA，lite 可略過）→ BFS → FFS（無畫面略過）│
 │              ↓                                          │
 │  [ lifecycle:spec-check --readiness ]                   │
 │       開發者視角：獵未答的邊界／業務規則缺口              │
@@ -197,7 +197,7 @@ Step 0.5／0.7 前置檢查每 session 只做一次。
 
 ## 文件目錄結構（full）
 
-`{docs-root}` 即 `spec.dir`（`config.py get spec.dir`，預設 `docs/specs`）。lean 只在其下產 `<feature>.md`。
+`{docs-root}` 即 `spec.dir`（`config.py get spec.dir`，預設 `docs/specs`）。lean 只在其下產 `<feature>.md`（探索摘要為同名的 `<feature>_探索摘要.md`，`<feature>` 為 kebab-case ASCII）。
 
 ```
 {docs-root}/

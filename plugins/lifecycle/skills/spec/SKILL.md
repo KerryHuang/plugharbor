@@ -49,7 +49,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 | 類別 | 判準 | 處理 |
 |------|------|------|
 | **機械決策** | 有可查的唯一正解，或專案慣例已定：命名、欄位型別、沿用哪個既有元件、排序預設、錯誤碼格式、檔案位置 | 自己查證後定案，記入決策表（`拍板`＝`SA` 或 `證據`），**不問人** |
-| **品味決策** | 多個方案都合理、取捨牽涉業務價值或使用者體驗：範圍要不要含某情境、狀態流程怎麼設計、例外時使用者看到什麼、要不要偏離既有行為 | 一次一題問人，附推薦選項與代價，答完記入決策表（`拍板`＝`PO`） |
+| **品味決策** | 多個方案都合理、取捨牽涉業務價值或使用者體驗：範圍要不要含某情境、狀態流程怎麼設計、例外時使用者看到什麼、要不要偏離既有行為 | 一次一題問人，附推薦選項與代價，答完記入決策表（`拍板`＝`PO`，即回答的人；lean 通常就是使用者） |
 
 - 品味決策全部收齊才進撰寫；撰寫中冒出新的品味決策 → 停筆先問，不先寫一版再改。
 - 判不出類別時當品味決策處理。
@@ -70,7 +70,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 
 產出 `<spec.dir>/<feature>.md`（`<feature>` 用 kebab-case 短名）。範本與自查清單：`references/lean-template.md`。
 
-1. **定位**：`<spec.dir>/<feature>.md` 已存在 → 視為更新（等同 `--change`）；否則新建。有探索摘要或設計文件（`lifecycle:explore`、brainstorming 產出）就沿用，不重問已定案的事。
+1. **定位**：`<spec.dir>/<feature>.md` 已存在 → 視為更新（等同 `--change`）；否則新建。有探索摘要或設計文件（`lifecycle:explore`、brainstorming 產出）就沿用，不重問已定案的事。探索摘要位置：lean 為同名檔 `<spec.dir>/<feature>_探索摘要.md`；full 為功能目錄下的 `*_探索摘要.md`。找不到才問使用者有沒有。
 2. **蒐證**：搜既有程式碼與規格找可重用元件、受影響範圍；涉及資料表且有唯讀 DB 工具時查表結構。範圍大時派 `lifecycle:scout` 落檔，主 session 只讀結論。
 3. **收決策**：依共通原則 1，列待決事項 → 機械決策自己定 → 品味決策逐題問。
 4. **撰寫**：照範本寫；決策寫進 §5 決策表，不另開 `decisions.md`。
@@ -91,7 +91,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 | `ffs` | 前端規格 | `*_前端功能規格書.md`（FFS／CR-FFS） | `references/stages/ffs.md` |
 
 - 範本在 `${CLAUDE_PLUGIN_ROOT}/templates/`（`frd.md`、`sad.md`、`bfs.md`、`ffs.md`，CR 用 `cr-*.md`）。
-- 文件落 `{docs-root}/{模組}/{功能}/`：`{docs-root}` 取專案 `CLAUDE.md` 的 `sdlc-docs-path`，未設定則用 `spec.dir`。
+- 文件落 `{docs-root}/{模組}/{功能}/`：`{docs-root}` ＝ `config.py get spec.dir`。
 - 鏈的順序、standard／lite 分流（lite 跳過 SAD）、交棒條件：`${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`、`chain-profile.md`、`handoff-protocol.md`。
 - 決策全鏈落同目錄 `decisions.md`（`${CLAUDE_PLUGIN_ROOT}/references/decision-record.md`）。共通原則 1 的分類在各棒的確認門與決策落檔步驟套用：機械決策不進確認門。
 - 起點判定（無 `--stage`）：讀 `analysis/_context.yml` 與功能目錄已有文件，從第一份缺的開始；全都有 → 停下問使用者要改哪一份或跑 `spec-check`。

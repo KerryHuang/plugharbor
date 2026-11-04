@@ -1,6 +1,6 @@
 ---
 name: release
-description: 分關卡發版：建 release branch、品質閘、merge 回 main 等 CI 建 tag、反合 develop、清理；處理線上急修（hotfix）；中斷後從第一個沒過的關卡接續，merge 前驗 HEAD 沒被推新 commit。前提是專案採 Git Flow＋Semantic Release（tag／版號由 CI 依 Conventional Commits 產生）。Use when 「發版」「出 release」「跑 hotfix」「合回 develop」「release flow」「semantic release」「發版到一半斷了」。
+description: 分關卡發版：建 release branch、品質閘、merge 回 main 等 CI 建 tag、反合 develop、清理；處理線上急修（hotfix）；中斷後從第一個沒過的關卡接續，merge 前驗 HEAD 沒被推新 commit。前提是專案採 Git Flow＋Semantic Release（tag／版號由 CI 依 Conventional Commits 產生）；無 remote／無 CI 時走本機模式。Use when 「發版」「出 release」「跑 hotfix」「合回 develop」「release flow」「semantic release」「發版到一半斷了」。
 argument-hint: "[release|hotfix] [版本號或說明]"
 ---
 
@@ -12,7 +12,7 @@ argument-hint: "[release|hotfix] [版本號或說明]"
 
 ## 重要前提
 
-- **不手動建 tag、不手動 bump 版號**：都由 CI（semantic-release）依 Conventional Commits 產生。
+- **不手動建 tag、不手動 bump 版號**：都由 CI（semantic-release）依 Conventional Commits 產生。唯一例外是 R0 判定的本機模式。
 - **子模組有改動**：先 commit 並 push 子模組，再回主 repo 更新 ref（見 `references/submodules.md`）。
 - **長流程**：release／hotfix 含多段 merge 與等 CI，常超過 5 分鐘。每關開始與結束都回報一行，等 CI 時定時回報，別讓使用者以為卡住。
 - force push、`reset --hard`、刪遠端分支：先列出確切指令與目標，取得使用者明確同意。
@@ -25,21 +25,27 @@ argument-hint: "[release|hotfix] [版本號或說明]"
 
 | 關卡 | 內容 | 通過檢查 |
 |---|---|---|
-| R0 | 選路徑（Fast／Full） | `gates.md` 有記錄 |
-| R1 | develop 乾淨、未重複發版 | `git status --short` 空；`git submodule status` 無 `+`；`git ls-remote --tags origin vx.y.z` 無輸出 |
+| R0 | 偵測本機模式、選路徑（Fast／Full） | `gates.md` 有記錄 |
+| R1 | develop 乾淨、未重複發版 | `git status --short` 空；`git submodule status` 無 `+`；`git ls-remote --exit-code --tags origin vx.y.z` exit code 為 2（查無該 tag）；exit 0＝已發版，其他非 0（無 remote、連線失敗）＝檢查失敗，不算通過 |
 | R2 | 品質閘 | 對 release branch HEAD 跑 build／lint／test 全綠；記下該 HEAD 為「已檢查 SHA」 |
 | R3 | 建 release branch | `git rev-parse --verify release/x.y.z` 成功；Full Path 另驗 `origin/release/x.y.z` 存在 |
 | R4 | （Full）QA 驗 rc | QA 對「已檢查 SHA」的 rc 回報通過，記進 `gates.md` |
 | R5 | merge 到 main | merge 前 release branch HEAD 等於「已檢查 SHA」；`origin/main` 含 `merge release/x.y.z` |
-| R6 | CI 建正式 tag | `git ls-remote --tags origin vx.y.z` 有輸出；`origin/main` 頭是 `chore(release): x.y.z` |
+| R6 | CI 建正式 tag | `git ls-remote --exit-code --tags origin vx.y.z` exit 0；`origin/main` 頭是 `chore(release): x.y.z` |
 | R7 | 反合 develop | `git merge-base --is-ancestor vx.y.z origin/develop` 成功 |
 | R8 | 清理 | `release/x.y.z` 本地（Full 含遠端）已刪 |
 
 R2 之後 release branch 若有新 commit（例如 R4 修 rc bug），「已檢查 SHA」失效：回 R2 對新 HEAD 重跑。這是 merge 前防止「檢查後有人推新 commit」的唯一依據，細節與 `--match-head-commit` 用法見 `references/merge-to-main.md`。
 
-## R0：選路徑
+## R0：偵測本機模式、選路徑
 
-進任何動作前先問使用者：**本次需要 QA 測 rc 版嗎？**（推薦 Fast，除非專案要求 QA）
+先跑 `git remote`。輸出為空，或使用者說明專案沒有 CI／沒有 Semantic Release → 告知使用者，確認後走**本機模式**：
+
+- 只走 Fast Path。凡是 fetch、pull、push、PR、等 CI 的指令與檢查都跳過，`gates.md` 該項記「本機模式跳過」；遠端檢查改看本地（R1 用 `git tag -l vx.y.z` 無輸出、R5／R7 看本地 `main`／`develop`）。
+- 版號：R5 merge 進 `main` 後，依專案實際的版本檔（如 package.json、pyproject.toml、版本常數）bump，commit `chore(release): x.y.z`。
+- R6 改為手動建 annotated tag：`git tag -a vx.y.z -m "release x.y.z"`，打在該 commit；通過檢查為 `git tag -l vx.y.z` 有輸出且 `main` 頭是 `chore(release): x.y.z`。R7 改從本地 `main` 反合。
+
+非本機模式時接著問使用者：**本次需要 QA 測 rc 版嗎？**（推薦 Fast，除非專案要求 QA）
 
 | 項目 | Fast Path | Full Path |
 |---|---|---|
@@ -131,12 +137,12 @@ git tag -d vx.y.z-rc.1 && git push origin --delete vx.y.z-rc.1   # 多餘的 rc 
 
 - 「直接 commit 到 main／develop 就好」→ 所有修復與功能**必須**走 branch，版號由 CI 從 branch merge 觸發。
 - 「直接 merge 到 main，不用等 QA」（Full Path）→ rc 測試是必要關卡。
-- 「我手動建 tag 比較快」→ 會跟 Semantic Release 衝突。
+- 「我手動建 tag 比較快」→ 會跟 Semantic Release 衝突。例外：R0 判定的本機模式，R6 本來就是手動建 annotated tag。
 - 「子模組沒改什麼，不用處理」→ dirty submodule ref 會讓別人拉 code 出問題。
 - 「檢查過了，後來那個 commit 很小，直接 merge」→ HEAD 不等於「已檢查 SHA」就回 R2。
 - 「`gates.md` 寫通過，直接跳到下一關」→ 續做一律重跑檢查指令，不信舊紀錄。
 - 「R5 merge 要加 `[skip ci]`」→ 不加；`[skip ci]` 只用於 R7 反合與衝突情境 A。
-- 「R7 用 release branch 或本地 main 反合就好」→ 只能用 `origin/main`。
+- 「R7 用 release branch 或本地 main 反合就好」→ 只能用 `origin/main`（本機模式沒有 remote，才用本地 `main`）。
 - 「force push 一下就好」→ 先列出確切指令與目標分支，取得使用者明確同意。
 
 ## 快速參考
@@ -144,7 +150,7 @@ git tag -d vx.y.z-rc.1 && git push origin --delete vx.y.z-rc.1   # 多餘的 rc 
 | 動作 | 指令 |
 |---|---|
 | 最新正式 tag | `git tag --sort=-creatordate \| grep -v "beta\|rc" \| head -5` |
-| 遠端有沒有該 tag | `git ls-remote --tags origin vx.y.z` |
+| 遠端有沒有該 tag | `git ls-remote --exit-code --tags origin vx.y.z`（看 exit code：0 有、2 沒有、其他＝檢查失敗） |
 | 現有 release branch | `git branch -a \| grep release` |
 | submodule 狀態 | `git submodule status` |
-| main 目前版本 | `git show origin/main:package.json \| grep '"version"'` |
+| main 目前版本 | `git show origin/main:<版本檔>`（專案的版本檔，如 package.json、pyproject.toml、版本常數） |

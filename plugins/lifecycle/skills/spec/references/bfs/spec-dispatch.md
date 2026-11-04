@@ -55,7 +55,7 @@ prompt: |
 ## 為什麼技術中立要放 `extra_checks` 而非 brief
 
 brief 是「寫什麼」，`extra_checks` 是「不通過就不算完成」。技術中立是 plugin 的
-`<law>`（見 plugin 的 `CLAUDE.md`），越線的代價是 Dev 照著規格實作了 SA 無權決定的手段，
+硬規則（見 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md`「核心原則：技術中立」），越線的代價是 Dev 照著規格實作了 SA 無權決定的手段，
 且完工回寫時無從分辨哪些是契約、哪些是當初順手寫的建議。屬硬閘，不是撰寫偏好。
 
 

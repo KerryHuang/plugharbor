@@ -15,7 +15,7 @@ subagent_type: "lifecycle:scout"
 prompt: |
   context: {功能描述與 FRD 摘要}
   keywords: [{Entity 名}, {資料表名}, {功能關鍵字}]
-  docs_root: {sdlc-docs-path}
+  docs_root: {spec.dir}
   scan:
     - 相關資料模型（Entity 定義）
     - 相關 API（Controller 路由清單）

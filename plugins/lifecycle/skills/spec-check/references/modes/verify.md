@@ -5,12 +5,13 @@
 ## 輸入參數
 
 ```
-$ARGUMENTS → [document-path] [--cross {功能目錄}] [--recheck] [--quick|--full]
+$ARGUMENTS → [document-path|功能目錄] [--cross {功能目錄}] [--recheck] [--quick|--full]
 ```
 
 | 參數 | 必填 | 模式 | 說明 |
 |------|------|------|------|
-| `document-path` | 否* | 單文件 | 要驗證的 FRD/SAD/BFS 路徑；執行 Task 1~7 |
+| `document-path` | 否* | 單文件 | 要驗證的 FRD/SAD/BFS/FFS 路徑（或 lean 單檔 `<spec.dir>/<feature>.md`，走 SKILL.md 的 lean 檢查）；執行 Task 1~7 |
+| `功能目錄` | 否* | 跨文件 | 直接給目錄（無 `--cross`）等同 `--cross {目錄}` |
 | `--cross {目錄}` | 否* | 跨文件 | 驗證目錄下所有相關文件；執行 Task 1+8 |
 | `--recheck` | 否 | 複驗 | **修正後的第二輪**：只驗修正是否落地、有無引入新矛盾；不重跑上一輪已通過的事實查證 |
 | `--quick` | 否 | 快速 | 跳過 D5／D6，只派 D2/D3/D4；適合迭代修正、純新功能 |
@@ -92,8 +93,11 @@ R6 文件資訊版本≠CHANGELOG 最高版本——**每筆 CRITICAL，原樣�
 
 | 文件特徵 | 類型 | 範本路徑 |
 |----------|------|---------|
-| `FRD-*` | 功能需求文件 | `${CLAUDE_PLUGIN_ROOT}/templates/frd.md` |
-| `BFS-*` | 後端功能規格書 | `${CLAUDE_PLUGIN_ROOT}/templates/bfs.md` |
+| `FRD-*`／`*_需求文件.md` | 功能需求文件 | `${CLAUDE_PLUGIN_ROOT}/templates/frd.md` |
+| `SAD-*`／`*_系統分析文件.md` | 系統分析文件 | `${CLAUDE_PLUGIN_ROOT}/templates/sad.md` |
+| `BFS-*`／`*_後端功能規格書.md` | 後端功能規格書 | `${CLAUDE_PLUGIN_ROOT}/templates/bfs.md` |
+| `FFS-*`／`*_前端功能規格書.md` | 前端功能規格書 | `${CLAUDE_PLUGIN_ROOT}/templates/ffs.md` |
+| `<spec.dir>/<feature>.md`（無 SPEC-INDEX） | lean 單檔規格 | 不適用本檔，改走 SKILL.md「lean 規格檢查」 |
 | `CR-*` | 功能調整文件 | 對應 CR 範本；**必須**執行 [CR 交叉驗證](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/cr-validation.md) |
 
 ---
@@ -137,7 +141,7 @@ R6 文件資訊版本≠CHANGELOG 最高版本——**每筆 CRITICAL，原樣�
 subagent_type: "lifecycle:report-writer"
 prompt: |
   report_type: verification
-  out_path: {報告絕對路徑}
+  out_path: {報告絕對路徑，見下方「報告路徑」}
   template: ${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/report-template.md
   dataset: {五維度缺失清單彙整檔的絕對路徑}
   constraints: |
@@ -145,6 +149,9 @@ prompt: |
     每條缺失保留原始等級與證據定位，不得合併或省略
   siblings: 無
 ```
+
+**報告路徑**：單文件／`--cross` 皆落在功能目錄：`{功能目錄}/{功能名稱}_規格驗證報告.md`，`--cross` 為 `{功能目錄}/{功能名稱}_規格驗證報告_cross.md`；
+lean 單檔為 `<spec.dir>/<feature>_規格驗證報告.md`。複驗（`--recheck`）覆寫同檔。
 
 **報告必須包含**：架構師評估摘要（一段話結論）、驗證結果表、缺失清單、
 DB 實際資料驗證明細、現有資源盤點。
@@ -183,6 +190,7 @@ DB 實際資料驗證明細、現有資源盤點。
 ### 8.2 FRD ↔ SAD 一致性 / 8.3 SAD ↔ BFS 一致性 / 8.4 BFS ↔ 計劃/任務 一致性
 
 檢查項目與等級 → [${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/cross-doc-checklists.md](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/cross-doc-checklists.md)（8.2～8.4 段落）。
+**lite 鏈（目錄無 SAD）**：8.2、8.3 無對象，改比 FRD ↔ BFS：FRD 每個使用者故事、欄位規格、業務規則在 BFS 有對應（CRITICAL）；SAD 才有的項目（生命週期位置、§6.6 邊界結論、Migration 預判）略過並於報告註明「lite 鏈，無 SAD」。
 
 ### 8.5 追溯矩陣（--cross --full 時產出）
 
@@ -197,7 +205,7 @@ DB 實際資料驗證明細、現有資源盤點。
 **技術決策留置（TD）三項**（依 `${CLAUDE_PLUGIN_ROOT}/references/decision-record.md`「技術決策留置」）：① 規格正文出現手段定案（指定鎖種類／快取／佇列／儲存實作／重試做法）而 `decisions.md` 無對應 TD → WARNING「越線定案」；② TD 的依據缺「約束／現況／陷阱」任一 → WARNING；③ CHANGELOG 含「完工回寫」但 `decisions.md` 仍有「待實作定案」的 TD → WARNING。TD 未定案本身**不是** CRITICAL，不擋開發。
 
 依 `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md`「撰寫/驗證時的引用」逐項檢查：**去重三項為 BLOCKER**——
-下游未重抄上游 owner 產物（狀態圖/流程圖/ER/快照）改 ref+增量、跨文件編號一致（VR-001 不寫 VR-01）、
+下游未重抄上游 owner 產物（同一視角的狀態圖/流程圖/ER/快照）改 ref+增量（**不同視角的圖不算重複**，見 `${CLAUDE_PLUGIN_ROOT}/references/spec-dedup-and-budget.md`，不得據此判 BLOCKER）、跨文件編號一致（VR-001 不寫 VR-01）、
 BFS 內部無自我重複（§2.4↔§4.2、§3↔§4.1、§12/13/14）；**SPEC-INDEX、正文體積（FRD/SAD/FFS ≤30KB、BFS ≤45KB）
 與另五項（版本資訊雙寫／必畫圖缺／公式無算例／引用檔不存在／§D 未指向 decisions.md）為 WARNING**。
 逐項判準、偵測指令與門檻細節 → [${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/cross-doc-checklists.md](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/verify/cross-doc-checklists.md)「8.8」、
@@ -243,11 +251,12 @@ BFS 內部無自我重複（§2.4↔§4.2、§3↔§4.1、§12/13/14）；**SPEC
 | 無參數（兩者皆缺） | 先從對話上下文推斷最近提及或讀取的規格書路徑；若能確認則自動使用並告知用戶「偵測到：\<path\>，開始驗證」；若無法確認才提示用法並終止 |
 | 文件路徑找不到 | 提示路徑錯誤，終止 |
 | 唯讀 DB 查詢工具不可用 | Task 2 全部標記「未驗證 — 唯讀 DB 查詢工具不可用」，繼續其他 Task；報告最終結論自動降為 ⚠️ |
+| 專案無 DB 工具（非「工具故障」，是根本沒配置） | DB 實查項（D2 逐欄、實際資料）標「未查證（無 DB 工具）」，不擋；結論不因此降級，報告註明未查證範圍與建議由有 DB 權限者補驗 |
 | Grep/Glob 找不到現有資源 | 標注「現有資源未找到」，不視為 CRITICAL，繼續 |
 
 ## Red Flags
 
-**禁止捷徑**：標題在 ≠ 內容完整、必須用唯讀 DB 查詢工具查 DB 比對、必須查資料值、必須 Grep 搜尋現有 API/Entity、驗證規則逐一比對、必須追蹤完整資料流路徑。
+**禁止捷徑**：標題在 ≠ 內容完整、有 DB 工具時必須用唯讀 DB 查詢工具查 DB 比對（無 DB 工具：標「未查證（無 DB 工具）」，不擋，不得假裝查過）、必須查資料值、必須 Grep 搜尋現有 API/Entity、驗證規則逐一比對、必須追蹤完整資料流路徑。
 
 ## References
 

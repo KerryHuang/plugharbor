@@ -6,7 +6,7 @@ Spec documents are read by **section**, never whole. A BFS runs 60–150 KB; loa
 
 ## Terms
 
-- **Docs root** — the documentation repository root, resolved from the project `CLAUDE.md` key `sdlc-docs-path`; when unset, the `spec.dir` setting (`config.py get spec.dir`, default `docs/specs`). Every path below is relative to it.
+- **Docs root** — the documentation repository root, the `spec.dir` setting (`config.py get spec.dir`, default `docs/specs`). Every path below is relative to it.
 - **Docs project** — the codebase-memory-mcp project whose `root_path` equals the docs root.
 - **Section** — one Markdown heading and the body up to the next heading of the same or higher level. The graph stores each heading as a `Section` node whose `start_line` is the heading line; the body is not part of the node.
 - **SPEC-INDEX** — the `<!-- SPEC-INDEX v1 -->` block that lists every chapter of a spec. Format rules: [${CLAUDE_PLUGIN_ROOT}/skills/spec/references/index/spec-index-format.md](${CLAUDE_PLUGIN_ROOT}/skills/spec/references/index/spec-index-format.md).

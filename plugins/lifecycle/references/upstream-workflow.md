@@ -2,10 +2,11 @@
 
 ## Docs 目錄設定
 
-Plugin 與文件產出分開管理。在專案的 CLAUDE.md 中設定文件目錄：
+Plugin 與文件產出分開管理。文件目錄由 `.plugharbor/lifecycle.yml` 的 `spec.dir` 設定（預設 `docs/specs`）：
 
-```markdown
-sdlc-docs-path: ../docs
+```yaml
+spec:
+  dir: ../docs
 ```
 
 未設定時預設使用專案內 `docs/` 目錄；本文其餘處以 `{docs-root}` 代稱。

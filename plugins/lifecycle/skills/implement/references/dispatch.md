@@ -1,6 +1,6 @@
 # 派工：角色、模型等級與路由
 
-通用派工慣例（主 session 不讀正文、平行怎麼切、回報紀律）見 `${CLAUDE_PLUGIN_ROOT}/references/dispatch-conventions.md`；本檔只寫 implement 特有的部分。
+通用派工慣例（主 session 不讀正文、平行怎麼切、回報紀律）見 `${CLAUDE_PLUGIN_ROOT}/references/dispatch-conventions.md`（`${CLAUDE_PLUGIN_ROOT}` 在本檔不會展開：＝本 plugin 根目錄，即本檔所在目錄往上三層 `../../../`）；本檔只寫 implement 特有的部分。
 
 ## 角色與模型等級
 
@@ -44,4 +44,4 @@ brief：.tmp/implement/<feature>/briefs/<task-id>.md（先讀，照做）
 
 不在 prompt 裡貼規格全文或前一個 task 的對話；需要的東西都放 brief。
 
-`lifecycle:reviewer` 是唯讀（沒有寫檔與 Bash）：它的報告由主 session 原樣落檔到 `reports/review-<輪>.md`（機械落檔，不改內容），它列的「待主對話查證」套件由主 session 查 registry。
+`lifecycle:reviewer` 不改程式碼、沒有 Bash，但能寫報告檔：prompt 指定報告路徑 `.tmp/implement/<feature>/reports/review-<輪>.md`，它自己把完整報告寫進去，回覆只回結論行（重大／主要／次要件數＋「待主對話查證」套件名）與報告路徑。主 session 只讀結論行，要細節再讀報告的發現段；「待主對話查證」的套件由主 session 查 registry。

@@ -30,7 +30,7 @@
 ## 步驟
 | 步驟 | 狀態 | 證據 |
 |---|---|---|
-| 2 規格閘門 | 通過 | reports/spec-check.md |
+| 2 規格閘門 | 通過 | lean 檢查表：spec-check 回報的結論行（不落檔）；verify 模式：lean 單檔 `<spec.dir>/<feature>_規格驗證報告.md`、full `{功能目錄}/{功能名稱}_規格驗證報告[_cross].md` |
 | 5 task 派工 | 7/9 | 見 tasks.md |
 
 ## 驗收（分開記）

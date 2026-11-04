@@ -122,7 +122,7 @@ CR 文件本身已是 delta-only（僅記錄異動 + ref 原始文件），縱�
 
 | 項目 | 值 |
 |------|-----|
-| 規範生效日 | **導入本 plugin 的日期**（由專案在 CLAUDE.md 記 `sdlc-spec-rules-since: YYYY-MM-DD`；未設定＝全部文件都適用，不豁免） |
+| 規範生效日 | **導入本 plugin 的日期**（由專案在 CLAUDE.md 記 `lifecycle-spec-rules-since: YYYY-MM-DD`（舊名 `sdlc-spec-rules-since` 仍認）；未設定＝全部文件都適用，不豁免） |
 | 適用維度 | 畫面內容規格完備性（B11）、輸出類需求管道中立（B12） |
 | 豁免條件 | 文件建立日早於生效日 **且** 本次未觸及該畫面 |
 | 豁免效果 | 檢查降為 INFO，列入待辦清單，**不阻塞** |
