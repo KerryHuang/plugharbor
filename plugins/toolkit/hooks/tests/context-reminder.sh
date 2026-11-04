@@ -24,12 +24,13 @@ print(json.dumps({"type":"assistant","isSidechain":True,"message":{"usage":{"inp
 run() { printf '{"session_id":"s1","transcript_path":"%s","hook_event_name":"Stop"}' "$T" | HOME="$H" USERPROFILE="$H" "$PY" "$HOOK"; }
 
 turn 120000; [ -z "$(run)" ] || fail "120K 不該提醒（也不該被 sidechain 900K 誤觸）"
-turn 230000; OUT="$(run)"; echo "$OUT" | grep -q '"systemMessage"' || fail "230K 應提醒"
-echo "$OUT" | grep -q '230K' || fail "訊息應帶 230K：$OUT"
-turn 240000; [ -z "$(run)" ] || fail "同一級距（200～250K）不重複提醒"
-turn 260000; [ -n "$(run)" ] || fail "跨到下一級距 260K 應再提醒"
+turn 350000; [ -z "$(run)" ] || fail "350K 未達 400K 門檻不該提醒（換題建議改由 agent 在主題轉換時提）"
+turn 430000; OUT="$(run)"; echo "$OUT" | grep -q '"systemMessage"' || fail "430K 應提醒"
+echo "$OUT" | grep -q '430K' || fail "訊息應帶 430K：$OUT"
+turn 440000; [ -z "$(run)" ] || fail "同一級距（400～450K）不重複提醒"
+turn 460000; [ -n "$(run)" ] || fail "跨到下一級距 460K 應再提醒"
 turn 150000; [ -z "$(run)" ] || fail "掉回門檻下不提醒"
-turn 210000; [ -n "$(run)" ] || fail "compact 後再長回 210K 應重新提醒"
+turn 410000; [ -n "$(run)" ] || fail "compact 後再長回 410K 應重新提醒"
 OUT="$(echo 'not json' | HOME="$H" "$PY" "$HOOK")"; RC=$?
 [ "$RC" = 0 ] && [ -z "$OUT" ] || fail "壞輸入應靜默 exit 0"
 OUT="$(printf '{"session_id":"s2","transcript_path":"%s/none.jsonl"}' "$TMP" | HOME="$H" "$PY" "$HOOK")"
