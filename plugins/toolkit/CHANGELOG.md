@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.11.1] - 2026-11-04
+
+- fix: transcribe 小小 doctor 缺中文語音時的下載路徑改成新版 macOS 名稱（閱讀與朗讀 → 系統聲音 ⓘ → 聲音），舊名稱留在括號。
+
 ## [0.11.0] - 2026-11-04
 
 - feat: transcribe 小小依首次真人試用調整。

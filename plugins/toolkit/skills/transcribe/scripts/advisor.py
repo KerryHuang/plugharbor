@@ -559,7 +559,7 @@ def _probe_volume(device: str, seconds: float, say_text: Optional[str] = None) -
 
 def cmd_doctor(device: str, meeting_mic: str) -> int:
     checks: List[Tuple[str, bool, str]] = [
-        (f"say 中文聲音 {VOICE}", _has_voice(VOICE), f"系統設定 → 輔助使用 → 朗讀內容 → 系統聲音 → 管理聲音，下載「{VOICE}」"),
+        (f"say 中文聲音 {VOICE}", _has_voice(VOICE), f"系統設定 → 輔助使用 → 閱讀與朗讀 → 系統聲音旁的 ⓘ → 聲音，搜尋並下載「{VOICE}」（舊版 macOS 叫「朗讀內容 → 管理聲音」）"),
         ("claude CLI", shutil.which("claude") is not None, "安裝 Claude Code，並確認 `claude` 在 PATH"),
         ("ffmpeg", shutil.which("ffmpeg") is not None, "brew install ffmpeg"),
     ]
