@@ -264,7 +264,7 @@ printf '[{"id": "sa-flow@plugharbor", "version": "1.0.0", "scope": "user"},\n {"
 } > "$STUB_STATE/codex-list"
 printf 'Installed plugins:\n- sa-flow (enabled, 1.0.0)\n' > "$STUB_STATE/agy-list"
 H="$TMP/h11"; mkdir -p "$H/.pi/agent"
-python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/sa-flow"),d),os.path.relpath(os.path.join(r,"plugins/toolkit"),d)]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/sa-flow"),d).replace(os.sep,"/"),os.path.relpath(os.path.join(r,"plugins/toolkit"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
 OUT="$(run "$H" --check)" || fail "--check exit 非 0"
 for x in "claude sa-flow" "claude blog" "codex sa-flow" "agy sa-flow" "pi sa-flow"; do
@@ -315,7 +315,7 @@ printf '[{"id": "old-tool@plugharbor", "version": "0.9.0", "scope": "user"}]\n' 
 } > "$STUB_STATE/codex-list"
 printf 'Installed plugins:\n- old-tool (enabled, 0.9.0)\n' > "$STUB_STATE/agy-list"
 H="$TMP/h13"; mkdir -p "$H/.pi/agent"
-python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/old-tool"),d)]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/old-tool"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
 OUT="$(PLUGHARBOR_RENAMES="old-tool:toolkit" run "$H" --check)" || fail "改名 --check exit 非 0：$OUT"
 for x in claude codex agy pi; do

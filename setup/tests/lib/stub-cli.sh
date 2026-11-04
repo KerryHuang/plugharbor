@@ -30,8 +30,12 @@ done
 for t in node python3 python git; do
   p="$(command -v "$t" 2>/dev/null || true)"
   # 只連可執行的實體路徑（Windows 的 python Store stub 跑不起來就略過）
-  # 建不了 symlink（Windows 沒開開發人員模式；WindowsApps 的 app execution alias 也連不了）就改寫一支轉呼叫的 wrapper
+  # Windows（Git Bash）一律寫轉呼叫的 wrapper：沒有 symlink 權限時 ln -sf 會默默改成複製，
+  # 複製出去的 git.exe 離開 /mingw64/bin 就載不到 DLL；WindowsApps 的 app execution alias 也連不了
   if [ -n "$p" ] && [ -f "$p" ] && "$p" --version >/dev/null 2>&1; then
-    ln -sf "$p" "$TOOLS/$t" 2>/dev/null || { printf '#!/bin/sh\nexec "%s" "$@"\n' "$p" > "$TOOLS/$t"; chmod +x "$TOOLS/$t"; }
+    case "$(uname -s)" in
+      MINGW*|MSYS*|CYGWIN*) printf '#!/bin/sh\nexec "%s" "$@"\n' "$p" > "$TOOLS/$t"; chmod +x "$TOOLS/$t" ;;
+      *) ln -sf "$p" "$TOOLS/$t" ;;
+    esac
   fi
 done
