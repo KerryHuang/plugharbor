@@ -591,3 +591,99 @@ def test_bare_wake_expires_when_no_question_follows(loop):
     loop["texts"] = ["嘿，小小。", "好，那下週再看"]
     assert loop["run"]() == 0
     assert loop["asked"] == []
+
+
+# ---- 本機同步播放：耳機兩邊播、喇叭只走喇叭（不讓麥克風再收一次） ----
+
+
+def _profile(*items):
+    return {"SPAudioDataType": [{"_items": list(items)}]}
+
+
+def _default_out(**kw):
+    return {"_name": "X", "coreaudio_default_audio_output_device": "spaudio_yes", **kw}
+
+
+def test_route_builtin_speakers_is_speakers():
+    p = _profile(_default_out(coreaudio_device_transport="coreaudio_device_type_builtin",
+                              coreaudio_output_source="MacBook Air的揚聲器"))
+    assert a.output_route(p) == "speakers"
+
+
+def test_route_english_internal_speakers_is_speakers():
+    p = _profile(_default_out(coreaudio_device_transport="coreaudio_device_type_builtin",
+                              coreaudio_output_source="spaudio_internal_speakers"))
+    assert a.output_route(p) == "speakers"
+
+
+def test_route_bluetooth_is_headphones():
+    p = _profile(_default_out(_name="AirPods", coreaudio_device_transport="coreaudio_device_type_bluetooth"))
+    assert a.output_route(p) == "headphones"
+
+
+def test_route_builtin_headphone_jack_is_headphones():
+    p = _profile(_default_out(coreaudio_device_transport="coreaudio_device_type_builtin",
+                              coreaudio_output_source="外接耳機"))
+    assert a.output_route(p) == "headphones"
+
+
+def test_route_unknown_falls_back_to_headphones():
+    """認不出就兩邊都播：寧可對方聽到回音，也不能讓對方完全聽不到。"""
+    assert a.output_route(_profile(_default_out(coreaudio_device_transport="coreaudio_device_type_usb"))) == "headphones"
+    assert a.output_route({}) == "headphones"
+
+
+def test_say_targets_headphones_plays_virtual_mic_and_local():
+    assert a.say_targets("headphones", "BlackHole 2ch") == ["BlackHole 2ch", None]
+
+
+def test_say_targets_speakers_plays_local_only():
+    """喇叭播出會被麥克風收進會議：虛擬麥克風再送一份就重複，所以只走喇叭。"""
+    assert a.say_targets("speakers", "BlackHole 2ch") == [None]
+
+
+# ---- 叫小小散會：不送 claude，提醒要在 Claude 輸入 ----
+
+
+@pytest.mark.parametrize("q", ["散會", "三會哈哈哈哈", "散會。", "會議結束"])
+def test_end_meeting_phrase_gets_fixed_reply(loop, q):
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = [f"嘿，小小，{q}"]
+    assert loop["run"]() == 0
+    assert loop["asked"] == []
+    assert loop["spoken"] == [a.END_LINE]
+    assert "輸入" in a.END_LINE and f"- 小小：{a.END_LINE}" in loop["md"]()
+
+
+def test_question_mentioning_meeting_end_still_asks(loop):
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = ["嘿，小小，散會後要做什麼？"]
+    assert loop["run"]() == 0
+    assert loop["asked"][0][0] == "散會後要做什麼"
+
+
+# ---- 完整逐字稿：最近 N 分鐘之外的上下文要能查 ----
+
+
+def test_prompt_points_to_full_transcript():
+    prompt = a.build_claude_cmd(MODE, "Q", "ctx", transcript_path="/x/會議/transcript.md")[2]
+    assert "/x/會議/transcript.md" in prompt and "發音相近" in prompt
+
+
+def test_prompt_without_transcript_has_no_path():
+    assert "transcript.md" not in a.build_claude_cmd(MODE, "Q", "ctx")[2]
+
+
+def test_loop_passes_transcript_path_when_present(loop, monkeypatch):
+    (loop["dir"] / "transcript.md").write_text("[00:00:01] 前情", encoding="utf-8")
+    seen = []
+
+    def ask_fn(mode, question, context, on_slow=lambda: None, **kw):
+        seen.append(kw.get("transcript_path"))
+        return ("好。", True)
+
+    write_seg(loop["dir"], 0, utts(1.0))
+    loop["texts"] = ["嘿，小小，前面談了什麼？"]
+    assert a.run_loop(loop["dir"], MODE, lambda *x: [(0.0, loop["texts"].pop(0))], ask_fn=ask_fn,
+                      speak_fn=lambda t, d: (1000.0, 1001.0), clock=lambda: 1000.0, from_start=True) == 0
+    assert seen == [str(loop["dir"] / "transcript.md")]

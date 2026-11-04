@@ -52,7 +52,7 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 
 ## 會議 AI 顧問「小小」
 
-在線上會議錄音（`--source both`）上加一個只在被點名時開口的顧問：有人說「嘿，小小，……」，它把最近 5 分鐘逐字稿和問題交給 `claude -p`，再用 `say` 把兩三句口語回答送進虛擬麥克風。腳本是 `${CLAUDE_PLUGIN_ROOT}/skills/transcribe/scripts/advisor.py`（以下簡寫 `advisor.py`，用跑 `record` 的同一個 python3 執行），只支援 Mac。
+在線上會議錄音（`--source both`）上加一個只在被點名時開口的顧問：有人說「嘿，小小，……」，它把最近 5 分鐘逐字稿和問題交給 `claude -p`，再用 `say` 把兩三句口語回答送進會議。運作方式要先跟使用者講明：**小小不加入會議**，它借使用者的麥克風說話。腳本是 `${CLAUDE_PLUGIN_ROOT}/skills/transcribe/scripts/advisor.py`（以下簡寫 `advisor.py`，用跑 `record` 的同一個 python3 執行），只支援 Mac。
 
 1. **一次性設定**（`advisor.py doctor` 缺什麼會印步驟）：
    - 安裝 BlackHole 2ch（`brew install --cask blackhole-2ch`，裝完 `sudo killall coreaudiod` 重啟音訊服務，不必重開機）。
@@ -64,10 +64,11 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 4. **啟動**：先照上一節開錄（`record start --source both`，可同時跑 `live start`），再
    `advisor.py start --out "<目錄>" --mode-file "<場合檔>" [--prompt-file "<術語檔>"] [--context-min 5]`。
    - exit 2：目錄沒在錄、錄音只有麥克風、場合檔不合格、術語檔含「小小」（會讓 Whisper 吐出整串「小小小」），或已有一個小小在跑。exit 3：沒啟動成功，附 `advisor.log` 尾段。
-5. **會中**：`advisor.py status --out "<目錄>"` 看已回答、待補幾題。4 秒還沒答它會先說「我查一下。」；30 秒逾時說「這題我會後補在會議記錄。」並記為待補。思考或播放中又被叫一次會略過，記在 `advisor.md`。
-6. **紀錄**：每次發言寫進 `<目錄>/advisor.md`（`### HH:MM:SS`、`- 問：`、`- 小小：`；待補多一行 `<!-- advisor pending -->`），與 `transcript.md` 分開，整理會議記錄時依時間合併。小小自己的聲音會被系統錄音錄進去，所以播放前後 1.5 秒內轉出的句子不比對喚醒詞、不放進上下文；`transcript.md` 裡那段合成語音的辨識結果在整理時以 `advisor.md` 原文為準。
-7. 錄音停止後小小會自己結束；要提早下線用 `advisor.py stop --out "<目錄>"`。
-8. 已知限制：只驗過合成語音（結果見 CHANGELOG），真人聲音經會議軟體的辨識率未驗證；喚醒要說「嘿，小小」，單說「小小」不算。
+5. **聲音走向**（每次開口前看系統預設輸出）：耳機時送虛擬麥克風給會議、同時在耳機播給使用者聽；喇叭時只從喇叭播，由實體麥克風收進會議——兩邊都送的話對方會聽到兩份（回音）。認不出的裝置當耳機處理。喇叭模式下對方聽到的是麥克風收音，會議軟體的雜音抑制不能選會濾掉合成語音的強度。
+6. **會中**：`advisor.py status --out "<目錄>"` 看已回答、待補幾題。4 秒還沒答它會先說「我查一下。」；30 秒逾時說「這題我會後補在會議記錄。」並記為待補。思考或播放中又被叫一次會略過，記在 `advisor.md`。有人叫它「散會」時不送 claude，固定回「要結束錄音，請在 Claude 輸入「散會」。」——小小不能停止錄音。送 claude 時除了最近 N 分鐘，也會給完整 `transcript.md` 的路徑，要它遇到不熟的名詞先查前文（場合檔要有讀檔工具才查得到）。
+7. **紀錄**：每次發言寫進 `<目錄>/advisor.md`（`### HH:MM:SS`、`- 問：`、`- 小小：`；待補多一行 `<!-- advisor pending -->`），與 `transcript.md` 分開，整理會議記錄時依時間合併。小小自己的聲音會被系統錄音錄進去，所以播放前後 1.5 秒內轉出的句子不比對喚醒詞、不放進上下文；`transcript.md` 裡那段合成語音的辨識結果在整理時以 `advisor.md` 原文為準。
+8. 錄音停止後小小會自己結束；要提早下線用 `advisor.py stop --out "<目錄>"`。
+9. 已知限制：合成語音驗過（結果見 CHANGELOG），真人聲音只試過一場，辨識率還不能下結論；喚醒要說「嘿，小小」，單說「小小」不算。
 
 ## Exit code
 

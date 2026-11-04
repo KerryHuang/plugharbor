@@ -216,11 +216,15 @@ def load_mode(path: Path) -> dict:
     return mode
 
 
-def build_claude_cmd(mode: dict, question: str, context: str) -> List[str]:
+def build_claude_cmd(mode: dict, question: str, context: str, transcript_path: Optional[str] = None) -> List[str]:
+    # 問題是語音辨識結果、常有同音錯字；最近 N 分鐘之外談過的事只在完整逐字稿裡
+    full = (f"整場會議的完整逐字稿在 {transcript_path}：問到不熟的名詞、人名或專案，先在完整逐字稿找發音相近的詞再回答，"
+            "不要只憑下面這段就說沒提過。\n") if transcript_path else ""
     prompt = (
         f"{mode['persona']}\n"
         "你正在線上會議中被點名發言，回答會用語音唸出來：只用 2～3 句繁體中文口語回答，不用條列、不用 Markdown；"
-        "沒把握的事直接說會後確認，不要猜。逐字稿裡單獨出現的「小小」多半是口語（小小的問題），不是在叫你，不必提起。\n\n"
+        "沒把握的事直接說會後確認，不要猜。逐字稿裡單獨出現的「小小」多半是口語（小小的問題），不是在叫你，不必提起。\n"
+        f"{full}\n"
         f"最近的會議逐字稿：\n{context}\n\n問題：{question}"
     )
     # 只放場合檔列出的工具：--tools 限定可用的內建工具（Edit、Write 根本不存在）、
@@ -234,11 +238,12 @@ def build_claude_cmd(mode: dict, question: str, context: str) -> List[str]:
 
 
 def ask(mode: dict, question: str, context: str, timeout: float = 30.0,
-        on_slow: Callable[[], None] = lambda: None, slow_after: float = 4.0) -> Tuple[str, bool]:
+        on_slow: Callable[[], None] = lambda: None, slow_after: float = 4.0,
+        transcript_path: Optional[str] = None) -> Tuple[str, bool]:
     """回傳 (回答, 是否成功)。slow_after 秒還沒答就呼叫一次 on_slow；逾時或失敗回傳 FALLBACK。"""
     try:
         # stdin 給 /dev/null：實測缺 stdin 時 claude -p 會先等 3 秒
-        proc = subprocess.Popen(build_claude_cmd(mode, question, context), stdin=subprocess.DEVNULL,
+        proc = subprocess.Popen(build_claude_cmd(mode, question, context, transcript_path), stdin=subprocess.DEVNULL,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=mode.get("cwd"))
     except OSError as e:
         tr._err(f"無法執行 claude：{e!r}")
@@ -266,12 +271,51 @@ VOICE = "Meijia"
 DEFAULT_DEVICE = "BlackHole 2ch"
 
 
+_SPEAKER_HINTS = ("揚聲器", "喇叭", "speaker")
+
+
+def output_route(profile: dict) -> str:
+    """從 `system_profiler SPAudioDataType -json` 判斷系統預設輸出：'speakers' 或 'headphones'。
+
+    只有確定是喇叭才回 speakers；認不出一律當耳機（兩邊都播）——寧可對方聽到回音，也不能讓對方完全聽不到。
+    """
+    for group in profile.get("SPAudioDataType", []):
+        for it in group.get("_items", []):
+            if it.get("coreaudio_default_audio_output_device") != "spaudio_yes":
+                continue
+            if it.get("coreaudio_device_transport") != "coreaudio_device_type_builtin":
+                return "headphones"  # 藍牙、USB 等：多半是耳機，認錯也只是回音
+            src = f"{it.get('coreaudio_output_source', '')} {it.get('_name', '')}".lower()
+            return "speakers" if any(h in src for h in _SPEAKER_HINTS) else "headphones"
+    return "headphones"
+
+
+def _audio_profile() -> dict:
+    try:
+        r = subprocess.run(["system_profiler", "SPAudioDataType", "-json"], capture_output=True, text=True, timeout=5)
+        return json.loads(r.stdout or "{}")
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return {}
+
+
+def say_targets(route: str, device: str) -> List[Optional[str]]:
+    """耳機：送虛擬麥克風給會議、也送本機讓自己聽到。喇叭：只走喇叭，由麥克風收進會議，不然對方會聽到兩份。
+
+    None 代表系統預設輸出。
+    """
+    return [None] if route == "speakers" else [device, None]
+
+
 def speak(text: str, device: str) -> Tuple[float, float]:
-    """用 macOS `say` 唸到指定輸出裝置（虛擬麥克風），回傳播放起訖時間（epoch 秒）。"""
+    """用 macOS `say` 唸給會議（虛擬麥克風）與自己（本機輸出），回傳播放起訖時間（epoch 秒）。"""
+    targets = say_targets(output_route(_audio_profile()), device)
     start = time.time()
-    r = subprocess.run(["say", "-v", VOICE, "-a", device, text], capture_output=True, text=True)
-    if r.returncode != 0:
-        tr._err(f"say 失敗（exit {r.returncode}）：{r.stderr.strip()[-300:]}")
+    procs = [subprocess.Popen(["say", "-v", VOICE] + (["-a", t] if t else []) + [text],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True) for t in targets]
+    for proc in procs:
+        _, err = proc.communicate()
+        if proc.returncode != 0:
+            tr._err(f"say 失敗（exit {proc.returncode}）：{(err or '').strip()[-300:]}")
     return start, time.time()
 
 
@@ -280,6 +324,9 @@ def speak(text: str, device: str) -> Tuple[float, float]:
 STATE = "advisor.json"
 LOG_MD = "advisor.md"
 UTT_WAV = "advisor-utt.wav"
+END_LINE = "要結束錄音，請在 Claude 輸入「散會」。"
+# 叫小小散會：小小沒有停錄音的能力，也不該有（口語順口提到就誤停）；「三會」是實測的辨識錯字
+_END = re.compile(r"(?:散會|三會|会议结束|會議結束)[哈呵啦了吧囉喔。.!！~～\s]*")
 WAKE_FOLLOWUP_SEC = 8.0  # 只說「嘿，小小」後，這麼久內的下一句才算問題
 FEED_CHUNK = RATE // 10 * 2  # VAD 每次餵 0.1 秒：句子的時間推估精度
 
@@ -322,11 +369,18 @@ def run_loop(out_dir: Path, mode: dict, runner, ask_fn=ask, speak_fn=speak, cloc
         mask.add(s, e)
 
     def answer(question: str, t: float) -> float:
+        if _END.fullmatch(question.strip(_EDGE)):
+            s, e = speak_fn(END_LINE, device)
+            mask.add(s, e)
+            _append_md(out_dir, t, [f"- 問：{question}", f"- 小小：{END_LINE}"])
+            return e
         cutoff = clock() - context_min * 60
         while recent and recent[0][0] < cutoff:
             recent.popleft()
         context = "\n".join(f"[{_hms(ts)}] {line}" for ts, line in recent)
-        text, ok = ask_fn(mode, question, context, on_slow=lambda: say_line(SLOW_LINE))
+        full = out_dir / "transcript.md"
+        text, ok = ask_fn(mode, question, context, on_slow=lambda: say_line(SLOW_LINE),
+                          transcript_path=str(full) if full.exists() else None)
         s, e = speak_fn(text, device)
         mask.add(s, e)
         tr._err(f"[{_hms(t)}] 句尾後 {s - t:.1f} 秒開口：{question}")
