@@ -196,7 +196,8 @@ WARNED_COPY=0
 pin_root() {  # $1=目錄 $2=plugin 根（原生形式）
   local rep f
   rep="$(printf '%s' "$2" | sed 's/[&|\\]/\\&/g')"
-  grep -rl --include='*.md' '\${CLAUDE_PLUGIN_ROOT}' "$1" 2>/dev/null | while IFS= read -r f; do
+  # 沒有檔案含 plugin 根時 grep 回 1，在 pipefail 下會讓整支腳本無聲中止
+  { grep -rl --include='*.md' '\${CLAUDE_PLUGIN_ROOT}' "$1" 2>/dev/null || true; } | while IFS= read -r f; do
     sed "s|\${CLAUDE_PLUGIN_ROOT}|$rep|g" "$f" > "$f.ph-tmp" && mv "$f.ph-tmp" "$f"
   done
 }

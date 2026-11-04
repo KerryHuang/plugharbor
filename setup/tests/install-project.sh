@@ -87,10 +87,13 @@ if grep -q 'claude plugin install' "$STUB_LOG"; then fail "--check 不該安裝"
 [ ! -e "$P6/.pi/settings.json" ] || fail "--check 不該寫 pi 設定"
 
 # ---------- 7) Git Bash（有 cygpath）：交給 Windows 原生 python 的路徑要先轉成 C:/ 形式 ----------
+export REAL_CYGPATH="$(command -v cygpath 2>/dev/null || true)"
 cat > "$STUB/cygpath" <<'SH'
 #!/usr/bin/env bash
 [ "$1" = "-m" ] && shift
 echo "cygpath -m $1" >> "$STUB_LOG"
+# 真的 Git Bash 上轉呼叫原本的 cygpath：原樣回傳 /c/... 會讓 Windows 原生 python 比對不到路徑
+if [ -n "${REAL_CYGPATH:-}" ]; then exec "$REAL_CYGPATH" -m "$1"; fi
 printf '%s\n' "$1"
 SH
 chmod +x "$STUB/cygpath"
@@ -183,6 +186,10 @@ OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --che
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(f) 重跑 exit 非 0"
 if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
+# (f2) 複製模式遇到完全不含 ${CLAUDE_PLUGIN_ROOT} 的 skill（ui-ux-pro-max）不能中止（grep 沒命中＋pipefail）
+P9f2="$(newproj p9f2)"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f2" ui-ux)" || fail "(f2) 不含 plugin 根的 skill 讓複製模式中止：$OUT"
+[ -f "$P9f2/.agents/skills/ui-ux-pro-max/SKILL.md" ] || fail "(f2) 應複製 ui-ux-pro-max"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
 echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 換過路徑的複本應視為一致：$OUT"
 # (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除

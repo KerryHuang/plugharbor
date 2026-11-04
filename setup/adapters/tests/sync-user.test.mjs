@@ -35,7 +35,7 @@ test('sync produces guidance and read-only agents from repo sources, with no ski
     assert.deepEqual(syncUser({ home, repo, mcpNames: ['example-mcp'] }).changed, [])
     const agent = readFileSync(join(home, '.codex/agents/reviewer.toml'), 'utf8')
     assert.ok(agent.includes('sandbox_mode = "read-only"'))
-    assert.ok(agent.includes('plugharbor/runtime.md'))
+    assert.ok(agent.replace(/\\+/g, '/').includes('plugharbor/runtime.md'))
     assert.ok(agent.includes('[mcp_servers."example-mcp"]\ncommand = "disabled-by-reviewer-policy"\nenabled = false'))
     assert.ok(!agent.includes('model = "opus"'))
     const codex = readFileSync(join(home, '.codex/AGENTS.md'), 'utf8')
@@ -111,7 +111,7 @@ test('migration replaces legacy claude-home hooks when installing support', () =
     const text = readFileSync(join(home, '.codex/hooks.json'), 'utf8')
     assert.ok(!text.includes('claude-home'))
     assert.ok(text.includes('foreign-hook'))
-    assert.ok(text.includes('/plugharbor/session-start.mjs'))
+    assert.ok(text.replace(/\\+/g, '/').includes('/plugharbor/session-start.mjs'))
   } finally { done(home, repo) }
 })
 

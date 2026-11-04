@@ -138,7 +138,9 @@ if grep -q 'plugins/dev-flow' "$P"; then fail "沒有 pi 設定的 plugin 不該
 REL_TK="$(sed -n 's/^ *"\(\.\.[^"]*plugins\/toolkit\)",*$/\1/p' "$P")"
 # pi 以字串方式（node path.resolve）解析相對 ~/.pi/agent 的路徑，不走實體 symlink（macOS 的 /var → /private/var）
 ABS_TK="$(python3 -c 'import os,sys;print(os.path.normpath(os.path.join(sys.argv[1], sys.argv[2])))' "$H/.pi/agent" "$REL_TK")"
-[ -n "$REL_TK" ] && [ "$ABS_TK" = "$REPO_DIR/plugins/toolkit" ] || fail "pi packages 未加指向 toolkit 的相對路徑：$(cat "$P")"
+# 期望值也經同一個 python normpath：Windows 上兩邊都會變成 C:\ 形式，直接比 $REPO_DIR（/c/...）比不上
+EXP_TK="$(python3 -c 'import os,sys;print(os.path.normpath(sys.argv[1]))' "$REPO_DIR/plugins/toolkit")"
+[ -n "$REL_TK" ] && [ "$ABS_TK" = "$EXP_TK" ] || fail "pi packages 未加指向 toolkit 的相對路徑：$(cat "$P")"
 [ "$(head -2 "$P" | tail -1 | tr -d ' ')" = '"packages":[' ] || fail "pi settings 鍵順序被改：$(cat "$P")"
 PB="$(ls "$H"/.claude/backups/plugharbor-*/pi/settings.json 2>/dev/null | head -1)"
 [ -n "$PB" ] && grep -q 'npm:keep-me' "$PB" && ! grep -q 'plugins/toolkit' "$PB" || fail "pi settings 改動前未備份原檔"
@@ -286,10 +288,13 @@ export STUB_STATE="$TMP/state"
 
 # ---------- 18) Git Bash（有 cygpath）：交給 Windows 原生 python 的 pi 路徑要先轉成 C:/ 形式 ----------
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
+export REAL_CYGPATH="$(command -v cygpath 2>/dev/null || true)"
 cat > "$STUB/cygpath" <<'SH'
 #!/usr/bin/env bash
 [ "$1" = "-m" ] && shift
 echo "cygpath -m $1" >> "$STUB_LOG"
+# 真的 Git Bash 上轉呼叫原本的 cygpath：原樣回傳 /c/... 會讓 Windows 原生 python 比對不到路徑
+if [ -n "${REAL_CYGPATH:-}" ]; then exec "$REAL_CYGPATH" -m "$1"; fi
 printf '%s\n' "$1"
 SH
 chmod +x "$STUB/cygpath"

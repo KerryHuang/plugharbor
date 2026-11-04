@@ -35,10 +35,13 @@ printf 'Installed plugins:\n- toolkit (enabled, 0.1.0)\n' > "$STUB_STATE/agy-lis
 printf -- '- plugharbor.sidebar (Sidebar) enabled [local:/x]\n' > "$STUB_STATE/herdr-list"
 : > "$STUB_LOG"
 # Git Bash（有 cygpath）：從 stdin 交給 python 的 plugin 路徑不會被 MSYS 自動轉換，要先轉成 C:/ 形式
+export REAL_CYGPATH="$(command -v cygpath 2>/dev/null || true)"
 cat > "$STUB/cygpath" <<'SH'
 #!/usr/bin/env bash
 [ "$1" = "-m" ] && shift
 echo "cygpath -m $1" >> "$STUB_LOG"
+# 真的 Git Bash 上轉呼叫原本的 cygpath：原樣回傳 /c/... 會讓 Windows 原生 python 比對不到路徑
+if [ -n "${REAL_CYGPATH:-}" ]; then exec "$REAL_CYGPATH" -m "$1"; fi
 printf '%s\n' "$1"
 SH
 chmod +x "$STUB/cygpath"
@@ -55,7 +58,7 @@ if grep -q '\.claude/hooks/herdr-parent-tag' "$C/settings.json"; then fail "hook
 grep -q '/opt/other/herdr-parent-tag.py' "$C/settings.json" || fail "別的路徑的 herdr-parent-tag.py 條目不該移除"
 ls "$C"/backups/plugharbor-uninstall-*/settings.json >/dev/null 2>&1 || fail "settings.json 改動前未備份"
 ls "$C"/backups/plugharbor-uninstall-*/codex/hooks.json >/dev/null 2>&1 || fail "Codex hooks.json 改動前未備份"
-PB="$(ls "$C"/backups/plugharbor-uninstall-*/pi/settings.json 2>/dev/null | head -1)"
+PB="$(ls "$C"/backups/plugharbor-uninstall-*/pi/settings.json 2>/dev/null | head -1 || true)"
 [ -n "$PB" ] && grep -q 'plugins/toolkit' "$PB" || fail "pi settings 改動前未備份原檔"
 [ -f "$C/backups/plugharbor-20260101-000000/CLAUDE.md" ] || fail "既有備份不該被移除"
 [ -d "$C/projects/demo/memory" ] || fail "repo 不管的目錄不該被移除"
