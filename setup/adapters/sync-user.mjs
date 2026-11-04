@@ -267,15 +267,19 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const install = args.includes('--install')
     const at = args.indexOf('--repo')
     const repo = at >= 0 ? resolve(args[at + 1] ?? '') : resolve(here, '../..')
-    if (at >= 0 && (!args[at + 1] || args[at + 1].startsWith('--'))) throw new Error('用法：sync-user.mjs --install [--quiet] [--repo <dir>]（--repo 需要路徑）')
+    if (at >= 0 && (!args[at + 1] || args[at + 1].startsWith('--'))) throw new Error('用法：sync-user.mjs --install [--quiet] [--repo <dir>] [--home <dir>]（--repo 需要路徑）')
+    // --home：Windows 上 node 的 homedir() 讀 USERPROFILE、不看 HOME，install.sh 明確傳入
+    const ah = args.indexOf('--home')
+    if (ah >= 0 && (!args[ah + 1] || args[ah + 1].startsWith('--'))) throw new Error('用法：--home 需要路徑')
+    const home = ah >= 0 ? resolve(args[ah + 1]) : homedir()
     let mcpNames
     const kept = []
     if (install) {
-      kept.push(...installSupport({ repo }).kept)
+      kept.push(...installSupport({ repo, home }).kept)
       // codex 未安裝或失敗時沿用 manifest 內記錄的清單。
       try { mcpNames = JSON.parse(execFileSync('codex', ['mcp', 'list', '--json'], { encoding: 'utf8' })).map(x => x.name) } catch {}
     }
-    const result = syncUser({ repo, mcpNames })
+    const result = syncUser({ repo, home, mcpNames })
     const changed = result.changed
     kept.push(...result.kept)
     if (!args.includes('--quiet')) console.log(`user 副本已同步：${changed.length} 個檔案。`)

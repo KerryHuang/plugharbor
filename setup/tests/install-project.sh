@@ -15,6 +15,13 @@ newproj() {  # $1=名稱 → 建 git repo，印出實體路徑
   local d="$TMP/$1"; mkdir -p "$d"; git -C "$d" init -q; (cd "$d" && pwd -P)
 }
 URL="https://github.com/KerryHuang/plugharbor.git"
+# Git Bash 上腳本寫給原生程式（pi、.plugharbor-root）的是 C:/ 形式，斷言要用同一形式比
+native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s\n' "$1"; fi; }
+# 這台能不能建 symlink（Windows 沒開開發人員模式就不能）：不能時 install-project 走複製退路
+CAN_LINK=0; mkdir -p "$TMP/lt"; MSYS=winsymlinks:nativestrict ln -s "$TMP/lt" "$TMP/lt-link" 2>/dev/null && [ -L "$TMP/lt-link" ] && CAN_LINK=1
+linked() {  # $1=.agents/skills/<skill>：能建 symlink 就要是 link，不能就要是帶 marker 的複本
+  if [ "$CAN_LINK" -eq 1 ]; then [ -L "$1" ]; else [ -d "$1" ] && [ -f "$1/.plugharbor-root" ]; fi
+}
 
 # ---------- 1) 預設 local：claude 在專案根裝 --scope local；pi 寫 .pi/settings.json 並加進 exclude；codex／agy 略過 ----------
 P="$(newproj "p 一")"; : > "$STUB_LOG"; : > "$STUB_CWD_LOG"
@@ -24,10 +31,10 @@ grep -qx "claude plugin install sa-flow@plugharbor --scope local @ $P" "$STUB_CW
 grep -qx "claude plugin install ui-ux@plugharbor --scope local @ $P" "$STUB_CWD_LOG" || fail "claude 應裝 ui-ux"
 if grep -q 'marketplace add' "$STUB_LOG"; then fail "user 層已有 marketplace，local 模式不該再 add"; fi
 S="$P/.pi/settings.json"
-grep -q "$REPO_DIR/plugins/sa-flow" "$S" || fail "pi 應寫入 sa-flow 的絕對路徑：$(cat "$S" 2>/dev/null)"
+grep -q "$(native "$REPO_DIR/plugins/sa-flow")" "$S" || fail "pi 應寫入 sa-flow 的絕對路徑：$(cat "$S" 2>/dev/null)"
 grep -qx '.pi/settings.json' "$P/.git/info/exclude" || fail ".pi/settings.json 應加進 .git/info/exclude"
-[ -L "$P/.agents/skills/explore" ] || fail "codex／agy 應建 .agents/skills/explore 的 link：$OUT"
-[ -L "$P/.agents/skills/designing-ui" ] || fail "codex／agy 應建 ui-ux 的 skill link"
+linked "$P/.agents/skills/explore" || fail "codex／agy 應建 .agents/skills/explore 的 link：$OUT"
+linked "$P/.agents/skills/designing-ui" || fail "codex／agy 應建 ui-ux 的 skill link"
 if grep -q -E '^(codex|agy) plugin (add|install)' "$STUB_LOG"; then fail "codex／agy 不該用 plugin 指令安裝專案層 plugin"; fi
 # 重跑：pi 不重複、exclude 不重複
 run "$P" sa-flow ui-ux >/dev/null || fail "重跑 exit 非 0"
@@ -116,6 +123,7 @@ rm "$STUB_STATE/claude-list"
 
 # ---------- 9) Codex／agy：.agents/skills/<skill> → ../plugharbor/<plugin>/skills/<skill>，plugin 根是 realpath 往上兩層 ----------
 realp() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"; }
+if [ "$CAN_LINK" -eq 1 ]; then
 P9="$(newproj "p 九")"
 OUT="$(run "$P9" sa-flow)" || fail "symlink 安裝 exit 非 0：$OUT"
 L="$P9/.agents/skills/explore"
@@ -132,12 +140,14 @@ OUT="$(run "$P9" sa-flow)" || fail "(b) 重跑 exit 非 0"
 echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
 [ "$(grep -cx '.agents/plugharbor/' "$EX")" = 1 ] || fail "(b) exclude 重複"
 [ "$(grep -cx '.agents/skills/explore' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
+fi
 # (c) 使用者自己的同名實體目錄：SKIP、內容不動
 P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/write-doc"; echo mine > "$P9c/.agents/skills/write-doc/SKILL.md"
 OUT="$(run "$P9c" sa-flow)" || fail "(c) exit 非 0"
 echo "$OUT" | grep -q "^SKIP: .*write-doc 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
 [ "$(cat "$P9c/.agents/skills/write-doc/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/write-doc" ] || fail "(c) 使用者目錄被動到"
 # (d) 失效的 plugharbor link：--check 報 BROKEN，實跑移除；別人的失效 link 不動
+if [ "$CAN_LINK" -eq 1 ]; then
 ln -s "$REPO_DIR/plugins/no-such/skills/x" "$P9/.agents/skills/x"
 ln -s "/nowhere/else" "$P9/.agents/skills/theirs"
 OUT="$(run --check "$P9" sa-flow)" || fail "(d) --check exit 非 0"
@@ -146,6 +156,9 @@ echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/x' || fail "(d) --check 應報
 OUT="$(run "$P9" sa-flow)" || fail "(d) 實跑 exit 非 0"
 [ ! -L "$P9/.agents/skills/x" ] || fail "(d) 失效 link 應移除：$OUT"
 [ -L "$P9/.agents/skills/theirs" ] || fail "(d) 不是 plugharbor 的 link 不該動"
+else
+echo "SKIP: 這台不能建 symlink，略過 9(a)(b)(d)"
+fi
 # (e) --shared：不建 link
 P9e="$(newproj p9e)"
 OUT="$(run --shared "$P9e" sa-flow)" || fail "(e) exit 非 0"
@@ -154,23 +167,30 @@ echo "$OUT" | grep -q '^SKIP: codex/agy 不支援 --shared' || fail "(e) 應印 
 # (f) 建不了 symlink（Windows 無開發人員模式）：複製 skill，同目錄 .plugharbor-root 記 plugin 根
 P9f="$(newproj p9f)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow)" || fail "(f) exit 非 0：$OUT"
-echo "$OUT" | grep -q '^WARN: 無法建 symlink，改用複製' || fail "(f) 應 WARN：$OUT"
+echo "$OUT" | grep -q '^NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式' || fail "(f) 強制複製應印 NOTE、不說建不了 symlink：$OUT"
+if echo "$OUT" | grep -q '無法建 symlink'; then fail "(f) 強制複製不該說無法建 symlink：$OUT"; fi
 D="$P9f/.agents/skills/explore"
+ROOT_SA="$(native "$REPO_DIR/plugins/sa-flow")"
 [ -d "$D" ] && [ ! -L "$D" ] && [ -f "$D/SKILL.md" ] || fail "(f) 應複製 skill 目錄"
-[ "$(cat "$D/.plugharbor-root")" = "$REPO_DIR/plugins/sa-flow" ] || fail "(f) .plugharbor-root 應記 plugin 根：$(cat "$D/.plugharbor-root" 2>/dev/null)"
+[ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(f) .plugharbor-root 應記 plugin 根：$(cat "$D/.plugharbor-root" 2>/dev/null)"
+# Codex 不會讀 .plugharbor-root，也追不到複本的 plugin 根：複本裡的 ${CLAUDE_PLUGIN_ROOT} 要換成 clone 的絕對路徑
+if grep -rq '\${CLAUDE_PLUGIN_ROOT}' "$D"; then fail "(f) 複本仍有 \${CLAUDE_PLUGIN_ROOT}：$(grep -rn '\${CLAUDE_PLUGIN_ROOT}' "$D" | head -2)"; fi
+grep -q "$ROOT_SA/references/" "$D/SKILL.md" || fail "(f) 複本應把 plugin 根換成 $ROOT_SA"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
 echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
 echo changed >> "$D/SKILL.md"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(f) 重跑 exit 非 0"
-cmp -s "$D/SKILL.md" "$REPO_DIR/plugins/sa-flow/skills/explore/SKILL.md" || fail "(f) 重跑應更新複本"
+if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
+OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(f) --check exit 非 0"
+echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 換過路徑的複本應視為一致：$OUT"
 # (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除
 echo "/old/clone/plugins/sa-flow" > "$D/.plugharbor-root"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(g) --check exit 非 0"
 echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(g) marker 過期應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" sa-flow >/dev/null || fail "(g) 實跑 exit 非 0"
-[ "$(cat "$D/.plugharbor-root")" = "$REPO_DIR/plugins/sa-flow" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
+[ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
 mkdir -p "$P9f/.agents/skills/gone"; echo x > "$P9f/.agents/skills/gone/SKILL.md"; echo "$REPO_DIR/plugins/no-such" > "$P9f/.agents/skills/gone/.plugharbor-root"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" sa-flow)" || fail "(g) --check exit 非 0"
 echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/gone' || fail "(g) 失效複本應報 BROKEN：$OUT"

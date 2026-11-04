@@ -453,7 +453,8 @@ elif command -v node >/dev/null 2>&1; then
   # adapter 會合併 ~/.codex/hooks.json（含使用者自己的 hook）；內容有變才把原檔留進備份
   CODEX_HOOKS="$HOME/.codex/hooks.json"; CODEX_HOOKS_ORIG=""
   if [ -f "$CODEX_HOOKS" ]; then CODEX_HOOKS_ORIG="$(mktemp)"; cp "$CODEX_HOOKS" "$CODEX_HOOKS_ORIG"; fi
-  if node "$REPO_DIR/setup/adapters/sync-user.mjs" --install --quiet --repo "$REPO_DIR"; then
+  # --home：Windows 的 node 不看 HOME（讀 USERPROFILE），明確傳入
+  if node "$REPO_DIR/setup/adapters/sync-user.mjs" --install --quiet --repo "$REPO_DIR" --home "$(ph_native_path "$HOME")"; then
     echo "OK:   adapter（Codex／pi／agy user 層副本）"
   else
     echo "FAIL: adapter（setup/adapters/sync-user.mjs）"; FAILS=$((FAILS + 1))

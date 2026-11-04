@@ -329,6 +329,19 @@ test('CLI --install reports kept legacy files, and --repo needs a value', () => 
   } finally { done(home, repo) }
 })
 
+test('CLI --home 指定目標，不靠 node 的 homedir()（Windows 上它讀 USERPROFILE、不讀 HOME）', () => {
+  const { home, repo } = fixture()
+  const other = mkdtempSync(join(tmpdir(), 'other-home-'))
+  try {
+    const cli = fileURLToPath(new URL('../sync-user.mjs', import.meta.url))
+    const env = { ...process.env, HOME: other, USERPROFILE: other, PATH: '/nonexistent' }
+    const r = spawnSync(process.execPath, [cli, '--install', '--quiet', '--repo', repo, '--home', home], { env, encoding: 'utf8' })
+    assert.equal(r.status, 0, r.stderr)
+    assert.ok(existsSync(join(home, '.codex/hooks.json')))
+    assert.ok(!existsSync(join(other, '.codex')))
+  } finally { done(home, repo); rmSync(other, { recursive: true, force: true }) }
+})
+
 test('notification script resolves from the recorded repo, then legacy path, else null', () => {
   const { home, repo } = fixture()
   try {

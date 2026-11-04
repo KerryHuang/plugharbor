@@ -30,5 +30,8 @@ done
 for t in node python3 python git; do
   p="$(command -v "$t" 2>/dev/null || true)"
   # 只連可執行的實體路徑（Windows 的 python Store stub 跑不起來就略過）
-  if [ -n "$p" ] && [ -f "$p" ] && "$p" --version >/dev/null 2>&1; then ln -sf "$p" "$TOOLS/$t"; fi
+  # 建不了 symlink（Windows 沒開開發人員模式；WindowsApps 的 app execution alias 也連不了）就改寫一支轉呼叫的 wrapper
+  if [ -n "$p" ] && [ -f "$p" ] && "$p" --version >/dev/null 2>&1; then
+    ln -sf "$p" "$TOOLS/$t" 2>/dev/null || { printf '#!/bin/sh\nexec "%s" "$@"\n' "$p" > "$TOOLS/$t"; chmod +x "$TOOLS/$t"; }
+  fi
 done

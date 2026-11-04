@@ -192,15 +192,33 @@ try_link() {  # $1=目標 $2=link；成功建出 symlink 才 return 0
   rm -rf "$2"; return 1
 }
 WARNED_COPY=0
-copy_skill() {  # $1=plugin $2=skill
-  local d="$AG/skills/$2"
-  [ "$WARNED_COPY" -eq 1 ] || { echo "WARN: 無法建 symlink，改用複製；plugharbor 更新後要重跑本腳本"; WARNED_COPY=1; }
-  rm -rf "$d"; cp -R "$REPO_DIR/plugins/$1/skills/$2" "$d"
-  ph_native_path "$REPO_DIR/plugins/$1" > "$d/.plugharbor-root"
+# 複本裡的 ${CLAUDE_PLUGIN_ROOT} 換成 clone 的 plugin 絕對路徑：複本不是 symlink，Codex 追不到 plugin 根，也不讀 .plugharbor-root
+pin_root() {  # $1=目錄 $2=plugin 根（原生形式）
+  local rep f
+  rep="$(printf '%s' "$2" | sed 's/[&|\\]/\\&/g')"
+  grep -rl --include='*.md' '\${CLAUDE_PLUGIN_ROOT}' "$1" 2>/dev/null | while IFS= read -r f; do
+    sed "s|\${CLAUDE_PLUGIN_ROOT}|$rep|g" "$f" > "$f.ph-tmp" && mv "$f.ph-tmp" "$f"
+  done
 }
-same_copy() {  # $1=複本 $2=來源 $3=plugin；內容相同且 .plugharbor-root 指向目前的 clone
-  [ "$(cat "$1/.plugharbor-root" 2>/dev/null)" = "$(ph_native_path "$REPO_DIR/plugins/$3")" ] &&
-    diff -rq -x .plugharbor-root "$1" "$2" >/dev/null 2>&1
+copy_skill() {  # $1=plugin $2=skill
+  local d="$AG/skills/$2" root
+  if [ "$WARNED_COPY" -eq 0 ]; then
+    if [ "$LINK_MODE" = copy ]; then echo "NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式；plugharbor 更新後要重跑本腳本"
+    else echo "WARN: 無法建 symlink，改用複製；plugharbor 更新後要重跑本腳本"; fi
+    WARNED_COPY=1
+  fi
+  root="$(ph_native_path "$REPO_DIR/plugins/$1")"
+  rm -rf "$d"; cp -R "$REPO_DIR/plugins/$1/skills/$2" "$d"
+  pin_root "$d" "$root"
+  printf '%s\n' "$root" > "$d/.plugharbor-root"
+}
+same_copy() {  # $1=複本 $2=來源 $3=plugin；內容（換過 plugin 根之後）相同且 .plugharbor-root 指向目前的 clone
+  local root t rc
+  root="$(ph_native_path "$REPO_DIR/plugins/$3")"
+  [ "$(cat "$1/.plugharbor-root" 2>/dev/null)" = "$root" ] || return 1
+  t="$(mktemp -d)"; cp -R "${2%/}" "$t/s"; pin_root "$t/s" "$root"
+  diff -rq -x .plugharbor-root "$1" "$t/s" >/dev/null 2>&1; rc=$?
+  rm -rf "$t"; return "$rc"
 }
 EXCLUDES=""
 if [ -z "$PLUGINS" ]; then
