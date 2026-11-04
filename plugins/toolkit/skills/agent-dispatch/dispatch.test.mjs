@@ -121,6 +121,82 @@ test('meshAvailable：取 layer 2 pass；沒資料回 null', () => {
   assert.deepEqual([...meshAvailable(last)], ['claude'])
 })
 
+// ── ask.mjs：改派與長結果 ──
+import { spawnSync } from 'node:child_process'
+import { chmodSync, existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { summarize } from './scripts/ask.mjs'
+
+const ASK = fileURLToPath(new URL('./scripts/ask.mjs', import.meta.url))
+
+// 假 CLI：環境變數 SHIM_<名稱>=quota 時印額度錯誤；=long 時印 20000 字；否則印「answer from <名稱>」
+function shimDir() {
+  const d = mkdtempSync(join(tmpdir(), 'ad-bin-'))
+  for (const name of ['claude', 'codex']) {
+    const f = join(d, name)
+    writeFileSync(f, `#!${process.execPath}
+const mode = process.env['SHIM_${name.toUpperCase()}']
+if (mode === 'quota') { console.log('Error: usage limit reached, try again in 2 hours'); process.exit(1) }
+if (mode === 'long') { process.stdout.write('y'.repeat(20000)); process.exit(0) }
+console.log('answer from ${name} ' + process.argv.slice(2).join(' '))
+`)
+    chmodSync(f, 0o755)
+  }
+  return d
+}
+
+function ask(args, env = {}) {
+  const work = mkdtempSync(join(tmpdir(), 'ad-ask-'))
+  const prompt = join(work, 'p.md'); writeFileSync(prompt, 'question')
+  const state = join(work, 'state.json')
+  const r = spawnSync(process.execPath, [ASK, '--state', state, '--mesh', join(work, 'none.json'), ...args, prompt], {
+    encoding: 'utf8', env: { ...process.env, PATH: shimDir(), ...env } })
+  return { ...r, state: readState(state), work, prompt }
+}
+
+test('summarize：超過上限只留開頭並指向結果檔', () => {
+  const s = summarize('x'.repeat(20000), 16000, 4000, '/r.md')
+  assert.ok(s.length < 4200)
+  assert.ok(s.endsWith('全文 20000 字元，見 /r.md'))
+  assert.equal(summarize('x'.repeat(15000), 16000, 4000, '/r.md'), 'x'.repeat(15000))
+})
+
+test('ask：codex 額度用盡 → 封鎖並改派 claude', () => {
+  const r = ask(['--type', 'review-critical'], { SHIM_CODEX: 'quota' })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /^\[ask\] 交給 claude（opus／high），理由：review-critical/)
+  assert.match(r.stdout, /answer from claude/)
+  assert.match(r.stderr, /改派 claude/)
+  assert.ok(r.state.blocks.codex.until > Date.now() + 3_500_000)
+})
+
+test('ask：所有候選都不能用 → exit 75 並印最早解封時間', () => {
+  const r = ask(['--type', 'review-critical'], { SHIM_CODEX: 'quota', SHIM_CLAUDE: 'quota' })
+  assert.equal(r.status, 75)
+  assert.match(r.stderr, /最早.*解封/)
+})
+
+test('ask：--to 不查表，但額度錯誤照樣封鎖', () => {
+  const r = ask(['--to', 'codex'], { SHIM_CODEX: 'quota' })
+  assert.notEqual(r.status, 0)
+  assert.ok(r.state.blocks.codex)
+})
+
+test('ask：--model 與 --effort 覆寫查表結果並傳給 CLI', () => {
+  const r = ask(['--to', 'claude', '--model', 'sonnet', '--effort', 'low'])
+  assert.match(r.stdout, /--model sonnet --effort low/)
+})
+
+test('ask：長輸出寫進結果檔，stdout 只放摘要', () => {
+  const r = ask(['--to', 'claude'], { SHIM_CLAUDE: 'long' })
+  assert.equal(r.status, 0)
+  const out = `${r.prompt}.out.md`
+  assert.ok(existsSync(out))
+  assert.equal(readFileSync(out, 'utf8').length, 20000)
+  assert.ok(r.stdout.length < 4500)
+  assert.match(r.stdout, /全文 20000 字元/)
+})
+
 test('statePath 比照 mesh 的規則', () => {
   assert.equal(statePath({ XDG_STATE_HOME: '/s' }, 'linux'), join('/s', 'agent-dispatch', 'state.json'))
   assert.match(statePath({ LOCALAPPDATA: 'C:\\L' }, 'win32'), /agent-dispatch/)
