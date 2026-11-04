@@ -216,4 +216,58 @@ OUT="$(run --check "$P10" database-sqlserver desktop-avalonia)" || fail "正式�
 echo "$OUT" | grep -q '^RENAME: database-sqlserver → database（改用新名）' || fail "應換成 database：$OUT"
 echo "$OUT" | grep -q '^MISSING: claude desktop' || fail "應以新名 desktop 比對：$OUT"
 
-echo "PASS: install-project.sh（10 組）"
+# ---------- 11) 多個舊名併成同一新名（sa-flow、delivery-flow → lifecycle）：各卸一次，新名只裝一次 ----------
+P11="$(newproj p11)"; : > "$STUB_LOG"
+printf '[{"id": "sa-flow@plugharbor", "version": "0.9.0", "scope": "local", "projectPath": "%s"},\n {"id": "delivery-flow@plugharbor", "version": "0.9.0", "scope": "local", "projectPath": "%s"}]\n' \
+  "$(native "$P11")" "$(native "$P11")" > "$STUB_STATE/claude-list"
+OUT="$(run --check "$P11" sa-flow delivery-flow)" || fail "(11) --check exit 非 0：$OUT"
+echo "$OUT" | grep -q '^RENAME: claude sa-flow → lifecycle' || fail "(11) --check 應報 RENAME: claude sa-flow：$OUT"
+echo "$OUT" | grep -q '^RENAME: claude delivery-flow → lifecycle' || fail "(11) --check 應報 RENAME: claude delivery-flow：$OUT"
+[ "$(echo "$OUT" | grep -c '^MISSING: claude lifecycle')" = 1 ] || fail "(11) 新名只該比對一次：$OUT"
+if grep -q 'uninstall' "$STUB_LOG"; then fail "(11) --check 不該卸載"; fi
+: > "$STUB_LOG"
+OUT="$(run "$P11" sa-flow delivery-flow)" || fail "(11) 實跑 exit 非 0：$OUT"
+[ "$(grep -c '^claude plugin install lifecycle@plugharbor --scope local$' "$STUB_LOG")" = 1 ] || fail "(11) lifecycle 應只裝一次：$(cat "$STUB_LOG")"
+grep -qx 'claude plugin uninstall sa-flow@plugharbor --scope local' "$STUB_LOG" || fail "(11) 應卸 sa-flow"
+grep -qx 'claude plugin uninstall delivery-flow@plugharbor --scope local' "$STUB_LOG" || fail "(11) 應卸 delivery-flow"
+[ "$(grep -c '^claude plugin uninstall ' "$STUB_LOG")" = 2 ] || fail "(11) 應只卸兩次：$(cat "$STUB_LOG")"
+rm "$STUB_STATE/claude-list"
+
+# ---------- 12) 裝 lifecycle：在 settings.local.json 停用 Superpowers（含其他 marketplace 的），其他鍵保留 ----------
+SP="superpowers@claude-plugins-official"; SP2="superpowers@superpowers-marketplace"
+sp_val() {  # $1=settings 檔 $2=plugin id；印 enabledPlugins 的值（json 形式），沒有印 MISSING
+  python3 -c 'import json,sys;d=json.load(open(sys.argv[1],encoding="utf-8"));e=d.get("enabledPlugins",{});print(json.dumps(e[sys.argv[2]]) if sys.argv[2] in e else "MISSING")' "$1" "$2"
+}
+printf '[{"id": "%s", "version": "5.0.0", "scope": "user"}]\n' "${SP2}" > "$STUB_STATE/claude-list"
+P12="$(newproj p12)"; mkdir -p "$P12/.claude"
+echo '{"permissions": {"allow": ["Bash(ls)"]}, "enabledPlugins": {"mine@x": true}}' > "$P12/.claude/settings.local.json"
+cp "$P12/.claude/settings.local.json" "$TMP/sl-before"
+# (c) --check：不寫檔，印 DISABLE
+OUT="$(run --check "$P12" lifecycle)" || fail "(12c) --check exit 非 0：$OUT"
+echo "$OUT" | grep -qx "DISABLE: ${SP}" || fail "(12c) --check 應報 DISABLE: ${SP}：$OUT"
+echo "$OUT" | grep -qx "DISABLE: ${SP2}" || fail "(12c) --check 應報 DISABLE: ${SP2}：$OUT"
+cmp -s "$P12/.claude/settings.local.json" "$TMP/sl-before" || fail "(12c) --check 不該寫 settings.local.json"
+# (b) 實跑：兩個都設 false，其他鍵原樣
+OUT="$(run "$P12" lifecycle)" || fail "(12b) 實跑 exit 非 0：$OUT"
+SL="$P12/.claude/settings.local.json"
+[ "$(sp_val "$SL" "${SP}")" = false ] || fail "(12b) ${SP} 應為 false：$(cat "$SL")"
+[ "$(sp_val "$SL" "${SP2}")" = false ] || fail "(12b) ${SP2} 應為 false：$(cat "$SL")"
+[ "$(sp_val "$SL" mine@x)" = true ] || fail "(12b) enabledPlugins 其他項被動到：$(cat "$SL")"
+grep -q 'Bash(ls)' "$SL" || fail "(12b) 其他鍵被動到：$(cat "$SL")"
+grep -qx '.claude/settings.local.json' "$P12/.git/info/exclude" || fail "(12b) settings.local.json 應加進 .git/info/exclude"
+# 已是 false：--check 不再報
+OUT="$(run --check "$P12" lifecycle)" || fail "(12c) 第二次 --check exit 非 0"
+if echo "$OUT" | grep -q '^DISABLE:'; then fail "(12c) 已是 false 不該再報 DISABLE：$OUT"; fi
+# --shared 也寫 settings.local.json（不寫 settings.json）
+P12s="$(newproj p12s)"
+OUT="$(run --shared "$P12s" lifecycle)" || fail "(12b) --shared exit 非 0：$OUT"
+[ "$(sp_val "$P12s/.claude/settings.local.json" "${SP}")" = false ] || fail "(12b) --shared 也應寫 settings.local.json：$OUT"
+if [ -f "$P12s/.claude/settings.json" ] && grep -q superpowers "$P12s/.claude/settings.json"; then fail "(12b) --shared 不該寫進 settings.json"; fi
+# (d) 沒裝 lifecycle：不碰 settings.local.json
+P12d="$(newproj p12d)"
+OUT="$(run "$P12d" backend)" || fail "(12d) exit 非 0：$OUT"
+[ ! -e "$P12d/.claude/settings.local.json" ] || fail "(12d) 沒裝 lifecycle 不該建 settings.local.json"
+if echo "$OUT" | grep -q 'DISABLE\|superpowers'; then fail "(12d) 沒裝 lifecycle 不該提 superpowers：$OUT"; fi
+rm "$STUB_STATE/claude-list"
+
+echo "PASS: install-project.sh（12 組）"

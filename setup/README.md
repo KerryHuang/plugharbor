@@ -5,7 +5,7 @@
 ## plugin 分層
 
 - **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
-- **專案層**（其餘 8 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
+- **專案層**（其餘 7 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
 
   ```bash
   setup/install-project.sh [--shared] [--check] <專案根> <plugin…>
@@ -24,9 +24,17 @@
   建不了 symlink（Windows 沒開開發人員模式）時改複製 skill，同目錄寫 `.plugharbor-root` 記 plugin 根，印 WARN；plugharbor 更新後要重跑。
 
   pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
+
+  裝 `lifecycle` 時（Claude Code 有裝才做），lifecycle 取代 Superpowers，所以在 `<專案>/.claude/settings.local.json` 的 `enabledPlugins` 把
+  `superpowers@claude-plugins-official`，以及 `claude plugin list` 看到的其他 marketplace 的 `superpowers@…` 設成 `false`，其他鍵不動。
+  不論 `--shared` 與否都寫 `settings.local.json`（不進版控，並加進 `.git/info/exclude`）；`--check` 只印 `DISABLE: superpowers@…`（已是 false 不報）。
+  沒有專案層移除入口，想在該專案恢復 Superpowers，就手動刪掉 `enabledPlugins` 裡這幾個 `superpowers@…` 鍵。
 - 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項，Codex／agy 刪掉 `.agents/skills/` 下對應的 link 與 `.agents/plugharbor/<p>`。
-- **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES_DEFAULT` 加 `舊名:新名`（空白分隔）。目前開放：`backend-dotnet→backend`、`frontend-vue→frontend`、`database-sqlserver→database`、`desktop-avalonia→desktop`、`kid-ui→ui-ux`。
-  install.sh 把 user 層的舊名從四個 CLI 卸掉、新名照常安裝；install-project.sh 對本專案裝著的舊名先卸再裝新名，命令列給舊名會自動換新名。
+- **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES_DEFAULT` 加 `舊名:新名`（空白分隔）。目前開放：`backend-dotnet→backend`、`frontend-vue→frontend`、`database-sqlserver→database`、`desktop-avalonia→desktop`、`kid-ui→ui-ux`、
+  `sa-flow→lifecycle`、`delivery-flow→lifecycle`、`dev-flow→workspace`。
+  install.sh 把 user 層的舊名從四個 CLI 卸掉、新名照常安裝（已是最新就不重裝）；install-project.sh 對本專案裝著的舊名先卸再裝新名，命令列給舊名會自動換新名。
+  多個舊名對同一新名時各卸一次、新名只裝一次（例如專案同時裝著 sa-flow 與 delivery-flow，只裝一次 lifecycle）。
+  dev-flow 原本在 user 層，通用部分已併進 user 層的 workspace，由 install.sh 處理；sa-flow、delivery-flow 是專案層，要在各專案跑 install-project.sh。
   `--check` 以 `RENAME: <cli> <舊> → <新>` 列出待處理的舊名。
 
 ## Claude Code 的 marketplace 來源

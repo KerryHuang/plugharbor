@@ -346,8 +346,34 @@ printf '[{"id": "old-blog@plugharbor", "version": "0.9.0", "scope": "user"}]\n' 
 OUT="$(PLUGHARBOR_RENAMES="old-blog:blog" run "$TMP/h15" --check)" || fail "專案層改名 --check exit 非 0"
 echo "$OUT" | grep -q '^RENAME: claude old-blog → blog.*install-project.sh' || fail "專案層新名應指向 install-project.sh：$OUT"
 if echo "$OUT" | grep -q '^RENAME: claude old-blog.*照常安裝'; then fail "專案層新名不該說照常安裝：$OUT"; fi
+
+# ---------- 22) 正式對照 dev-flow → workspace：workspace 已是最新，四個 CLI 只卸 dev-flow、不重裝 workspace ----------
+case " $(bash -c '. "$1/setup/lib.sh"; echo $PH_USER_PLUGINS' _ "$REPO_DIR") " in *" dev-flow "*) fail "PH_USER_PLUGINS 不該含 dev-flow" ;; esac
+WS_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO_DIR/plugins/workspace/.claude-plugin/plugin.json" | head -1)"
+printf '[{"id": "dev-flow@plugharbor", "version": "0.9.0", "scope": "user"},\n {"id": "workspace@plugharbor", "version": "%s", "scope": "user"}]\n' "$WS_VER" > "$STUB_STATE/claude-list"
+{
+  echo 'Marketplace `plugharbor`'
+  echo "dev-flow@plugharbor  installed, enabled  0.9.0    $REPO_DIR/plugins/dev-flow"
+  echo "workspace@plugharbor  installed, enabled  $WS_VER    $REPO_DIR/plugins/workspace"
+} > "$STUB_STATE/codex-list"
+printf 'Installed plugins:\n- dev-flow (enabled, 0.9.0)\n- workspace (enabled, %s)\n' "$WS_VER" > "$STUB_STATE/agy-list"
+H="$TMP/h16"; mkdir -p "$H/.pi/agent"
+python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":[os.path.relpath(os.path.join(r,p),d).replace(os.sep,"/") for p in ("plugins/dev-flow","plugins/workspace")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
+OUT="$(PLUGINS="workspace" run "$H" --check)" || fail "(22) --check exit 非 0：$OUT"
+for x in claude codex agy pi; do
+  echo "$OUT" | grep -q "^RENAME: $x dev-flow → workspace" || fail "(22) --check 應報 RENAME: $x dev-flow → workspace：$OUT"
+done
+: > "$STUB_LOG"
+OUT="$(PLUGINS="workspace" run "$H")" || fail "(22) 實跑 exit 非 0：$OUT"
+grep -qx 'claude plugin uninstall dev-flow@plugharbor --scope user' "$STUB_LOG" || fail "(22) claude 應卸 dev-flow：$(cat "$STUB_LOG")"
+grep -qx 'codex plugin remove dev-flow@plugharbor' "$STUB_LOG" || fail "(22) codex 應卸 dev-flow"
+grep -qx 'agy plugin uninstall dev-flow' "$STUB_LOG" || fail "(22) agy 應卸 dev-flow"
+if grep -q '^claude plugin \(install\|update\) workspace\|^codex plugin add workspace\|^agy plugin install .*/workspace$' "$STUB_LOG"; then fail "(22) workspace 已是最新不該重裝：$(cat "$STUB_LOG")"; fi
+P="$H/.pi/agent/settings.json"
+if grep -q 'plugins/dev-flow' "$P"; then fail "(22) pi 應移除 dev-flow：$(cat "$P")"; fi
+[ "$(grep -c 'plugins/workspace' "$P")" = 1 ] || fail "(22) pi 的 workspace 應保留且不重複：$(cat "$P")"
 rm "$STUB/pi"
 export STUB_STATE="$TMP/state"
 
-echo "PASS: install.sh（21 組）"
+echo "PASS: install.sh（22 組）"
 
