@@ -11,6 +11,7 @@
 - feat: 沒有 herdr 時的長任務（`agent-dispatch/scripts/bg.mjs`）。
   - **Ghostty 分割**：macOS 用 Ghostty 1.4 的 AppleScript 開看得見的分割，可帶工作目錄與環境變數，收工時用 id 關掉。spike 結論見 `skills/agent-dispatch/references/background-worker.md`。
   - **背景 worker**：每個 worker 開獨立 git worktree（分支 `dispatch/<名>`），由 detached 監督程序執行，結束後依結果檔寫入 `done`／`failed`／`quota` 狀態並發 macOS 通知。並行上限 4，遇到額度或逾時就降。Windows 尚未實機驗證。
+- feat: 新增 Stop hook `dispatch-stop-guard.py`：被派出的 worker（環境變數 `AGENT_DISPATCH_RESULT` 有設）沒寫結果檔就想結束時擋下一次，要它先寫結果；一般 session 不受影響，壞輸入與 `stop_hook_active` 一律放行。
 
 ## [0.8.0] - 2026-11-03
 
