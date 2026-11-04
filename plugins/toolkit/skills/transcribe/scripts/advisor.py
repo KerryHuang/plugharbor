@@ -208,9 +208,13 @@ def build_claude_cmd(mode: dict, question: str, context: str) -> List[str]:
         "沒把握的事直接說會後確認，不要猜。逐字稿裡單獨出現的「小小」多半是口語（小小的問題），不是在叫你，不必提起。\n\n"
         f"最近的會議逐字稿：\n{context}\n\n問題：{question}"
     )
-    cmd = ["claude", "-p", prompt, "--model", mode["model"], "--allowedTools", ",".join(mode["allowed_tools"])]
+    # 只放場合檔列出的工具：--tools 限定可用的內建工具（Edit、Write 根本不存在）、
+    # 不讀專案／本機設定（那裡可能預先允許 Edit、Bash(git *)、開票工具）、沒列的一律拒絕、MCP 只用場合檔指定的設定
+    builtin = list(dict.fromkeys(t.split("(", 1)[0].strip() for t in mode["allowed_tools"] if not t.startswith("mcp__")))
+    cmd = ["claude", "-p", prompt, "--model", mode["model"], "--allowedTools", ",".join(mode["allowed_tools"]),
+           "--tools", ",".join(builtin), "--setting-sources", "user", "--permission-mode", "dontAsk", "--strict-mcp-config"]
     if mode.get("mcp_config"):
-        cmd += ["--mcp-config", mode["mcp_config"], "--strict-mcp-config"]
+        cmd += ["--mcp-config", mode["mcp_config"]]
     return cmd
 
 

@@ -60,7 +60,7 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
    - 會議軟體的**麥克風**改選「小小麥克風」，喇叭維持原本的輸出。
    - 系統設定下載中文聲音「Meijia」。
 2. **開會前**：`advisor.py doctor`。exit 1 時轉述 `NG` 項目；任何一項沒過就不啟動小小，會議照常只錄音。
-3. **場合檔**：決定小小能用哪些工具、用哪個模型、人設。範例 `advisor-mode.example.json`；白名單只能放唯讀工具（含 `Write`、`Edit`、不限指令的 `Bash` 會被拒絕）。可加 `"cwd"` 指定它查資料的目錄、`"mcp_config"` 指定 MCP 設定檔（會加 `--strict-mcp-config`，只用該檔）。**開始前先問使用者是內部會議還是客戶會議**，再選對應的場合檔。
+3. **場合檔**：決定小小能用哪些工具、用哪個模型、人設。範例 `advisor-mode.example.json`；白名單只能放唯讀工具（含 `Write`、`Edit`、不限指令的 `Bash` 會被拒絕）。可加 `"cwd"` 指定它查資料的目錄、`"mcp_config"` 指定 MCP 設定檔；沒給就不載入任何 MCP。專案與本機設定裡預先允許的工具不會生效，小小只拿得到場合檔列出的工具。**開始前先問使用者是內部會議還是客戶會議**，再選對應的場合檔。
 4. **啟動**：先照上一節開錄（`record start --source both`，可同時跑 `live start`），再
    `advisor.py start --out "<目錄>" --mode-file "<場合檔>" [--prompt-file "<術語檔>"] [--context-min 5]`。
    - exit 2：目錄沒在錄、錄音只有麥克風、場合檔不合格、術語檔含「小小」（會讓 Whisper 吐出整串「小小小」），或已有一個小小在跑。exit 3：沒啟動成功，附 `advisor.log` 尾段。

@@ -8,6 +8,7 @@
 - feat: transcribe 新增會議 AI 顧問「小小」（`skills/transcribe/scripts/advisor.py`，只支援 Mac）。
   - 線上會議錄音（`--source both`）中有人說「嘿，小小，……」時，以最近 5 分鐘逐字稿＋問題呼叫 `claude -p`，用 `say`（Meijia）經 BlackHole 2ch 與聚合裝置把兩三句口語回答送進會議。
   - 場合檔決定工具白名單、模型、人設與 MCP 設定；含寫入工具或不限指令的 `Bash` 拒絕啟動。範例 `advisor-mode.example.json`。
+  - 白名單在 CLI 層鎖死：`--tools` 只開白名單內的內建工具、`--setting-sources user` 不吃專案／本機設定預先允許的工具、`--permission-mode dontAsk`、`--strict-mcp-config`（場合檔沒給 MCP 設定＝不載入任何 MCP）。實測從含 `Edit(/**)` 允許規則的專案目錄執行，仍無法寫檔。
   - 能量式 VAD 切句後才送 Whisper（避免靜音幻覺），轉錄提示不得含「小小」；「嘿」被轉成「黑」也算，單說「小小」不算。
   - 小小自己的聲音會被系統錄音錄到：播放前後 1.5 秒內的句子不比對、不進上下文。思考或播放中又被叫記為略過；只說「嘿，小小」就併下一句當問題。
   - 4 秒沒答先說「我查一下。」，30 秒逾時說「這題我會後補在會議記錄。」並記待補。發言寫進 `advisor.md`，與 `transcript.md` 分開。

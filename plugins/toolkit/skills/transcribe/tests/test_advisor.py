@@ -195,7 +195,16 @@ def test_build_cmd_without_mcp():
     assert "2～3 句" in prompt
     assert cmd[cmd.index("--model") + 1] == "sonnet"
     assert cmd[cmd.index("--allowedTools") + 1] == "Read,Grep,WebSearch"
-    assert "--mcp-config" not in cmd and "--strict-mcp-config" not in cmd
+    # 沒給 MCP 設定＝完全不載入 MCP（不吃使用者或專案設定的 server）
+    assert "--mcp-config" not in cmd and "--strict-mcp-config" in cmd
+
+
+def test_build_cmd_locks_down_tools_and_settings():
+    """專案設定可能預先允許 Edit、Bash(git *)、開票工具：會中只能有場合檔列的工具。"""
+    cmd = a.build_claude_cmd({**MODE, "allowed_tools": ["Read", "Bash(python3 /x/q.py --slug a:*)", "mcp__s__read"]}, "q", "")
+    assert cmd[cmd.index("--tools") + 1] == "Read,Bash"
+    assert cmd[cmd.index("--setting-sources") + 1] == "user"
+    assert cmd[cmd.index("--permission-mode") + 1] == "dontAsk"
 
 
 def test_build_cmd_with_mcp_config():
