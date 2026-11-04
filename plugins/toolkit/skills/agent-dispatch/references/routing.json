@@ -1,0 +1,40 @@
+{
+  "types": {
+    "plan": "top",
+    "architecture": "top",
+    "review-critical": "top",
+    "implement": "standard",
+    "research": "standard",
+    "qa": "standard",
+    "debug": "standard",
+    "docs": "cheap",
+    "format": "cheap",
+    "mechanical": "cheap"
+  },
+  "tiers": {
+    "top": [
+      { "cli": "codex", "model": "gpt-5.5", "effort": "high" },
+      { "cli": "claude", "model": "opus", "effort": "high" },
+      { "cli": "agy", "model": "gemini-3-pro", "effort": "high" },
+      { "cli": "pi", "model": "anthropic/opus", "effort": "high" }
+    ],
+    "standard": [
+      { "cli": "claude", "model": "sonnet", "effort": "medium" },
+      { "cli": "codex", "model": "gpt-5.5", "effort": "medium" },
+      { "cli": "agy", "model": "gemini-3-pro", "effort": "medium" },
+      { "cli": "pi", "model": "anthropic/sonnet", "effort": "medium" }
+    ],
+    "cheap": [
+      { "cli": "agy", "model": "gemini-3-flash", "effort": "low" },
+      { "cli": "claude", "model": "haiku", "effort": "low" },
+      { "cli": "codex", "model": "gpt-5.5-mini", "effort": "low" },
+      { "cli": "pi", "model": "anthropic/haiku", "effort": "low" }
+    ]
+  },
+  "family": { "claude": "anthropic", "pi": "anthropic", "codex": "openai", "agy": "google" },
+  "crossReview": {
+    "pathPatterns": ["auth", "security", "secret", "migration", "schema", "\\.sql$", "(^|/)api/", "(^|/)public/", "openapi"],
+    "maxLines": 300
+  },
+  "maxParallel": 4
+}

@@ -6,6 +6,7 @@
 ## [0.9.0] - 2026-11-04
 
 - feat: agent-dispatch 派工可指定模型與思考等級（`clis.mjs` 的 `buildArgs` 加 `model`／`effort`，四個 CLI 各用自己的參數），並能從錯誤訊息辨認額度用盡與重置時間（`quotaInfo`，抓不到時間就預設封鎖 1 小時）。
+- feat: 派工路由（`agent-dispatch/references/routing.json`＋`scripts/route.mjs`）：任務類型 × 難度（top／standard／cheap）查表得出有序候選（CLI＋模型＋思考等級），濾掉 agent-mesh-check 最近一次沒通過的 CLI 與額度封鎖中的 CLI；改動碰到安全、資料、DB 結構、公開介面或超過 300 行時要跨家族審查，挑不同家族的審查者，湊不到才退回同家。`node route.mjs block <cli> <到期時間>` 手動標記某家先省著用。
 
 ## [0.8.0] - 2026-11-03
 

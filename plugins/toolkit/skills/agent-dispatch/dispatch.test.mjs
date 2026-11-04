@@ -1,6 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { buildArgs, quotaInfo } from '../agent-mesh-check/scripts/clis.mjs'
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { loadRouting, readState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
 
 const has = (args, ...seq) => {
   const i = args.indexOf(seq[0])
@@ -50,4 +54,74 @@ test('quotaInfo 解析相對時間', () => {
 
 test('quotaInfo 正常輸出回 null', () => {
   assert.equal(quotaInfo('all good'), null)
+})
+
+// ── 路由表 ──
+const routing = loadRouting()
+const firstOf = { 'plan': 'codex', 'architecture': 'codex', 'review-critical': 'codex',
+  'implement': 'claude', 'research': 'claude', 'qa': 'claude', 'debug': 'claude',
+  'docs': 'agy', 'format': 'agy', 'mechanical': 'agy' }
+const none = { blocks: {} }
+
+for (const [type, cli] of Object.entries(firstOf)) {
+  test(`candidates：${type} 第一名是 ${cli}`, () => {
+    const c = candidates({ type, routing, state: none, available: null, now: 0 })
+    assert.equal(c[0].cli, cli)
+    assert.equal(c.length, 4)
+    assert.equal(c.at(-1).cli, 'pi')
+    assert.ok(c.every(x => x.model && x.effort))
+  })
+}
+
+test('candidates：封鎖中的 CLI 排除，過期的照常出現', () => {
+  const state = { blocks: { codex: { until: 100 }, agy: { until: 10 } } }
+  const c = candidates({ tier: 'top', routing, state, available: null, now: 50 }).map(x => x.cli)
+  assert.ok(!c.includes('codex') && c.includes('agy'))
+})
+
+test('candidates：只剩可用的 CLI，exclude 也排除', () => {
+  assert.deepEqual(candidates({ tier: 'top', routing, state: none, available: new Set(['claude']), now: 0 }).map(x => x.cli), ['claude'])
+  assert.ok(!candidates({ tier: 'top', routing, state: none, available: null, now: 0, exclude: ['codex'] }).some(x => x.cli === 'codex'))
+})
+
+test('candidates：未知類型拋錯', () => {
+  assert.throws(() => candidates({ type: 'nope', routing, state: none, available: null, now: 0 }))
+})
+
+test('needsCrossReview 依路徑樣式與行數門檻', () => {
+  assert.equal(needsCrossReview({ paths: ['src/auth/login.ts'], lines: 10 }, routing), true)
+  assert.equal(needsCrossReview({ paths: ['README.md'], lines: 301 }, routing), true)
+  assert.equal(needsCrossReview({ paths: ['README.md'], lines: 20 }, routing), false)
+})
+
+test('reviewer 優先挑不同家族，湊不到退回同家', () => {
+  const r = reviewer({ author: 'claude', routing, state: none, available: null, now: 0 })
+  assert.equal(r.cli, 'codex'); assert.equal(r.crossFamily, true)
+  const s = reviewer({ author: 'claude', routing, state: none, available: new Set(['claude', 'pi']), now: 0 })
+  assert.equal(s.crossFamily, false)
+})
+
+test('readState：不存在或壞掉回空', () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-'))
+  assert.deepEqual(readState(join(d, 'none.json')), { blocks: {} })
+  writeFileSync(join(d, 'bad.json'), '{oops')
+  assert.deepEqual(readState(join(d, 'bad.json')), { blocks: {} })
+})
+
+test('blockCli 寫入後讀得回來', () => {
+  const f = join(mkdtempSync(join(tmpdir(), 'ad-')), 'sub', 'state.json')
+  blockCli(f, 'codex', 123, 'quota')
+  assert.deepEqual(readState(f).blocks.codex, { until: 123, reason: 'quota' })
+  JSON.parse(readFileSync(f, 'utf8'))
+})
+
+test('meshAvailable：取 layer 2 pass；沒資料回 null', () => {
+  assert.equal(meshAvailable(undefined), null)
+  const last = { results: [{ layer: 2, a: 'claude', status: 'pass' }, { layer: 2, a: 'agy', status: 'auth' }, { layer: 1, a: 'pi', status: 'pass' }] }
+  assert.deepEqual([...meshAvailable(last)], ['claude'])
+})
+
+test('statePath 比照 mesh 的規則', () => {
+  assert.equal(statePath({ XDG_STATE_HOME: '/s' }, 'linux'), join('/s', 'agent-dispatch', 'state.json'))
+  assert.match(statePath({ LOCALAPPDATA: 'C:\\L' }, 'win32'), /agent-dispatch/)
 })
