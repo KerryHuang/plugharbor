@@ -2,7 +2,6 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
-
 ## [0.10.0] - 2026-11-04
 
 - feat: transcribe 新增會議 AI 顧問「小小」（`skills/transcribe/scripts/advisor.py`，只支援 Mac）。
@@ -14,6 +13,10 @@
   - 4 秒沒答先說「我查一下。」，30 秒逾時說「這題我會後補在會議記錄。」並記待補。發言寫進 `advisor.md`，與 `transcript.md` 分開。
   - `doctor` 開會前檢查聲音、claude、BlackHole、聚合裝置（缺時印建立步驟）、迴路與麥克風音量。
   - 合成語音驗收（Mac）：喚醒 10/10、非喚醒句誤觸 0/10、回答含「小小」不自我觸發、10 分鐘靜音 0 次發言、句尾到開口 6.4～7.3 秒。真人聲音經會議軟體的辨識率未驗證。
+
+## [0.9.3] - 2026-11-04
+
+- fix: `context-size-reminder.py` 門檻從 200K 拉到 400K，只當安全網；換題要不要 /clear 改由 agent 在主題轉換時建議（只看長度的提醒不知道有沒有換題，實際上沒人照做）。
 
 ## [0.9.2] - 2026-11-04
 
