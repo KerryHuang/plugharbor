@@ -16,6 +16,7 @@
 |---|---|---|
 | 列出 | `glab mr list` | `gh pr list` |
 | 檢視 | `glab mr view <id>` | `gh pr view <id>` |
+| 看留言 | `glab mr view <id> --comments` | `gh pr view <id> --comments` |
 | Diff | `glab mr diff <id>` | `gh pr diff <id>` |
 | Checkout | `glab mr checkout <id>` | `gh pr checkout <id>` |
 | 留言 | `glab mr note <id> -m "…"` | `gh pr comment <id> -b "…"` |
@@ -25,7 +26,7 @@
 
 ## 流程
 
-1. **選 MR／PR**：有給 ID 直接用；沒給就列出開啟中的，用 AskUserQuestion 讓使用者選。選定後先 `view <id>`：已 closed／merged 就停下告知，不審。
+1. **選 MR／PR**：有給 ID 直接用；沒給就列出開啟中的，用 AskUserQuestion 讓使用者選。選定後先 `view <id>`：已 closed／merged 就停下告知，不審。再看留言：已有先前的審查（帶審查報告標題或 agent 署名；作者常是使用者本人帳號，不靠作者判斷）→ 用 AskUserQuestion 問要不要重審。
 2. **讀 description 與 diff**：`view`、`diff`，並 `checkout <id>` 切到該分支。
 3. **跑品質閘**：建置、型別檢查、lint、測試，用專案自帶的指令（見 `quality-check`）。
 4. **讀變更檔**，對照 description 逐項驗證。
@@ -37,6 +38,7 @@
 ## 留言規則
 
 - 每個問題只留一則，不在多處重複同一件事。
+- 使用者要求留言但沒有成立的發現時，也留一則摘要，寫明查了哪些面向與「未發現問題」，下次審查才查得到已審過。
 - 指到程式碼用帶完整 40 碼 head commit SHA 的連結，前後各多帶一行；不用分支名或短 SHA，避免之後的 push 讓行號跑掉。SHA 取法：`gh pr view <id> --json headRefOid`、`glab mr view <id> -F json` 的 `sha`。
   - GitHub：`https://github.com/<owner>/<repo>/blob/<SHA>/<路徑>#L10-L12`
   - GitLab：`https://<host>/<group>/<repo>/-/blob/<SHA>/<路徑>#L10-12`

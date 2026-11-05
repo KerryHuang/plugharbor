@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.0] - 2026-11-05
+
+- feat: `review` 新增「專案規範合規」審查面向：只比對路徑涵蓋變更檔的 `CLAUDE.md`／`AGENTS.md`，違規須引用規則原文（`skills/review/references/evidence.md` 第 7 節）。
+- feat: `review` 審遠端 PR／MR 前先看留言，已有先前審查就問要不要重審；使用者要求留言但無發現時也留摘要（`skills/review/references/review-remote.md`）。
+- 做法借鑒自 anthropics/claude-plugins-official 的 `plugins/code-review`（Apache-2.0），內容重新撰寫。
+
 ## [1.2.0] - 2026-11-04
 
 - feat: `review` 新增 `skills/review/references/evidence.md`——預設只報告、變更檔歸屬表、「查無」前先證明查得到、被削弱的測試／拉長的 timeout／新 suppression 要列出、新套件查 registry；只排除改動前就存在的 suppression。
