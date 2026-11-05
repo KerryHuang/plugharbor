@@ -83,6 +83,40 @@ class HarvestTest(unittest.TestCase):
     def test_parse_url_local_path(self):
         self.assertEqual(parse(str(self.up))["clone_url"], str(self.up.resolve()))
 
+    def test_parse_url_query_and_fragment(self):
+        for u in ("https://github.com/o/r?tab=readme-ov-file", "https://github.com/o/r#readme"):
+            j = parse(u)
+            self.assertEqual((j["clone_url"], j["key"]), ("https://github.com/o/r.git", "o/r"))
+
+    def test_parse_url_blob_file(self):
+        j = parse("https://github.com/o/r/blob/main/skills/x/SKILL.md")
+        self.assertEqual((j["clone_url"], j["ref"], j["subpath"], j["key"]),
+                         ("https://github.com/o/r.git", "main", "skills/x", "o/r/skills/x"))
+
+    def test_parse_url_www_host(self):
+        self.assertEqual(parse("https://www.github.com/o/r")["clone_url"], "https://github.com/o/r.git")
+
+    def set_ref(self, ref):
+        data = json.loads(self.lock.read_text(encoding="utf-8"))
+        data["entries"][0]["ref"] = ref
+        self.lock.write_text(json.dumps(data), encoding="utf-8")
+
+    def test_lock_check_annotated_tag_same(self):
+        git(self.up, "tag", "-a", "v1", "-m", "v1")
+        self.add()
+        self.set_ref("v1")
+        r = self.check()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith("SAME"))
+
+    def test_lock_check_pinned_sha(self):
+        self.add()
+        self.set_ref(head(self.up))
+        commit(self.up, "x.md")
+        r = self.check()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith("PINNED"))
+
     def test_parse_url_garbage_exit2(self):
         self.assertEqual(run("parse-url", "not a url").returncode, 2)
 

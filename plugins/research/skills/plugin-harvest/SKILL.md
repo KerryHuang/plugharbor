@@ -33,7 +33,7 @@ disable-model-invocation: true
 - 提案：`<OUT>/plugin-harvest/YYYY-MM-DD-<領域或 repo slug>-提案.md`（領域模式的排行表放在提案檔開頭）
 - 待辦：`<OUT>/adoption-backlog.md`
 
-repo 的 slug 用 `parse-url` 回傳的 `key`，`/` 換成 `-`；領域關鍵字的 slug 轉小寫、空白換成 `-`。這些檔會寫到自家設定的內部細節，不寫進公開 repo，除非專案自己宣告了 `ai-radar-output`。
+repo 的 slug 用 `parse-url` 回傳的 `key`，`/` 換成 `-`；領域關鍵字的 slug 轉小寫、空白換成 `-`。這些檔會寫到自家設定的內部細節，不寫進公開 repo，除非專案自己宣告了 `ai-radar-output`。`<OUT>` 落在基準 repo 內時，`<OUT>` 底下的產出不算「改基準 repo」。
 
 ## 流程
 
@@ -57,7 +57,8 @@ Claude Code plugin、marketplace、skill 集（也收其他 agent CLI 的同類�
 exit 2 表示網址無法解析，告訴使用者並跳過該候選。
 
 照 `plugin-eval.md`「深讀 subagent prompt」，每個候選一個 sonnet subagent，同一則訊息並行派出；`{baseline_root}` 填基準 repo 的絕對路徑。
-收回卡片後照「例外處理」彙整，**抽查**每張卡的借鑒項在上游實際檔案找得到（grep clone 目錄；只出現在 README 的刪掉），再把卡片落檔到 `<OUT>/plugin-eval/`。
+收回卡片後先跑 `git -C <基準 repo> status --porcelain`，跟派工前（先跑一次記下）比對有變化（`<OUT>` 以外）→ 停下來告訴使用者，不往下做（深讀處理的是不可信內容）。
+再照「例外處理」彙整，把各卡的「待清」路徑記在對話裡留給步驟 8，**抽查**每張卡的借鑒項在上游實際檔案找得到（grep clone 目錄；只出現在 README 的刪掉），再把卡片落檔到 `<OUT>/plugin-eval/`。
 clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔，由步驟 8 清。
 
 ### 4. 產提案（`--lean` 跳過）
@@ -85,7 +86,7 @@ clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔
 - 選項：核准套用（推薦與否依你的判斷，推薦項放第一並標「（推薦）」）／延後（記進 backlog 決策備註，日後 `/plugin-harvest <repo 網址>` 重評時再問）／駁回（請使用者在備註寫理由）。
 - 非 Claude 入口用該 CLI 的提問工具（pi 是 `ask_user`）；沒有就純文字一次一題。
 
-**未核准前不改基準 repo 的任何檔**——包括「順手」的格式整理。核准結果記回提案檔每條的 `- **裁決**：` 行。
+**未核准前不改基準 repo 的任何檔（`<OUT>` 底下的產出除外）、不跑任何安裝指令**——包括「順手」的格式整理。核准結果記回提案檔每條的 `- **裁決**：` 行。
 
 ### 6. 套用（只做核准的）
 
@@ -99,6 +100,7 @@ clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔
    ```
 
    同一上游借到兩個 skill 時會合併成一筆、targets 兩個都記。
+   不寫鎖定檔的情況：來源是本機路徑（追不了上游，且會把個人路徑寫進 repo）、直接裝用的提案（核准後才跑安裝指令，改的是 user 層而非基準 repo）——在提案檔該條註明。
 4. 跑基準 repo 的驗證（如有）。**不 commit、不 push**，留給使用者或基準 repo 自己的流程。
 
 ### 7. 對帳

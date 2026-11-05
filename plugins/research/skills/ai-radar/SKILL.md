@@ -77,9 +77,10 @@ repo）；專案要讓週報進版控，就由專案自己宣告 `ai-radar-outpu
   稽核 agent（`model: sonnet`）並給明確檢查清單。
 
 ### 區塊 4 — Marketplace / Plugin 排行與深讀評估（交棒 plugin-harvest）
-- 叫用 `research:plugin-harvest --lean --top 5`（領域預設＝軟體工程／vibe coding），把它回傳的「排行」放進週報 4a、「評估卡」放進 4b。
+- 讀 `${CLAUDE_PLUGIN_ROOT}/skills/plugin-harvest/SKILL.md`，照它的精簡模式（`--lean --top 5`，領域預設＝軟體工程／vibe coding）做，把產出的「排行」放進週報 4a、「評估卡」放進 4b。
+  （plugin-harvest 設了 `disable-model-invocation`，Skill 工具叫不動，所以用讀檔照做。）
 - 不自己派搜尋或深讀 agent；評估卡的落檔與待辦對帳由 plugin-harvest 做，ai-radar 不重複對帳。
-- plugin-harvest 不可用（skill 不存在或執行失敗）→ 週報 4a／4b 寫「plugin-harvest 不可用，略過」與原因。
+- 該檔不存在或執行失敗→ 週報 4a／4b 寫「plugin-harvest 不可用，略過」與原因。
 
 ### 區塊 5 — 知識庫時效稽核（條件式）
 - **只在當下專案有 `update-knowledge-base` skill 時才跑**（plugin 提供的帶命名空間版本如

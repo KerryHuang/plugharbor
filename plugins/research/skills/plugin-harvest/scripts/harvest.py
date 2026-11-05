@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -42,15 +43,18 @@ def parse_url(url: str) -> Source:
     if os.path.isdir(os.path.expanduser(url)) or re.match(r"^(/|~|[A-Za-z]:[\\/])", url):
         p = str(Path(os.path.expanduser(url)).resolve())
         return Source(p, "", "", p.replace("\\", "/").lower())
-    m = re.match(r"^https?://([^/\s]+)/(\S+)$", url)
-    if not m:
+    u = urllib.parse.urlsplit(url)
+    if u.scheme not in ("http", "https") or not u.netloc or re.search(r"\s", url):
         raise UrlError(f"無法解析的網址：{url}")
-    host, path = m.group(1), m.group(2).strip("/")
+    host = u.netloc.lower().removeprefix("www.")
+    path = u.path.strip("/")
     ref = subpath = ""
-    t = re.search(r"/(?:-/)?tree/", path)
+    t = re.search(r"/(?:-/)?(tree|blob)/", path)
     if t:
         path, rest = path[:t.start()], path[t.end():].strip("/")
         ref, _, subpath = rest.partition("/")
+        if t.group(1) == "blob":
+            subpath = subpath.rpartition("/")[0]
     if path.endswith(".git"):
         path = path[:-4]
     if len(path.split("/")) < 2:
@@ -60,8 +64,9 @@ def parse_url(url: str) -> Source:
 
 
 def git(*args: str, cwd: str | None = None) -> subprocess.CompletedProcess:
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True,
-                          encoding="utf-8", timeout=TIMEOUT)
+                          encoding="utf-8", errors="replace", timeout=TIMEOUT, env=env)
 
 
 def license_info(clone: str) -> tuple[str | None, str | None]:
@@ -110,15 +115,15 @@ def lock_add(a: argparse.Namespace) -> int:
 def remote_sha(e: dict) -> str | None:
     want = e["ref"] or "HEAD"
     try:
-        r = git("ls-remote", e["clone_url"], want)
+        r = git("ls-remote", e["clone_url"], want, want + "^{}")
     except subprocess.TimeoutExpired:
         return None
     if r.returncode != 0:
         return None
-    for line in r.stdout.splitlines():
-        sha, _, name = line.partition("\t")
-        if name in (want, f"refs/heads/{want}", f"refs/tags/{want}^{{}}", f"refs/tags/{want}"):
-            return sha
+    refs = dict(reversed(line.split("\t", 1)) for line in r.stdout.splitlines() if "\t" in line)
+    for name in (want, f"refs/heads/{want}", f"refs/tags/{want}^{{}}", f"refs/tags/{want}"):
+        if name in refs:
+            return refs[name]
     return None
 
 
@@ -143,6 +148,9 @@ def lock_check(a: argparse.Namespace) -> int:
         return 0
     changed = False
     for e in load(lock)["entries"]:
+        if re.fullmatch(r"[0-9a-f]{7,40}", e["ref"]) and e["commit"].startswith(e["ref"]):
+            print(f"PINNED {e['key']} {e['ref'][:7]}")
+            continue
         sha = remote_sha(e)
         if sha is None:
             print(f"UNREACHABLE {e['key']} {e['clone_url']}")
@@ -162,6 +170,8 @@ def lock_check(a: argparse.Namespace) -> int:
 
 
 def main(argv: list[str]) -> int:
+    for s in (sys.stdout, sys.stderr):
+        s.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(prog="harvest.py")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("parse-url").add_argument("url")

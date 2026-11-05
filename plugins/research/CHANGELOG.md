@@ -8,6 +8,7 @@
 - feat(plugin-harvest): `skills/plugin-harvest/scripts/harvest.py`（網址拆解、鎖定檔寫入與檢查，純標準庫＋git）。
 - refactor(ai-radar): 只留情報（大廠規範、工程實踐、設定最佳化、知識庫稽核）；區塊 4 改叫用 `plugin-harvest --lean`，`--plugin <網址>` 保留為轉交入口。
 - fix(plugin-harvest): 實測回饋——深讀必讀加 `commands/` 與非 plugin 形態的設定／主程式、prompt 帶基準 repo 路徑、README 宣稱不算證據且主執行緒抽查；monorepo 子目錄不計整個 repo 星數；排行表與領域 slug 有落點；清理改為獨立步驟。
+- fix(plugin-harvest): 審查修正——網址去 query／fragment、支援 `/blob/`、`www.` 正規化；annotated tag 取 peeled commit、釘 commit 的 ref 報 PINNED；stdout UTF-8、git 不等帳密；深讀後檢查基準 repo 未被改；本機路徑與直接裝用不寫鎖定檔；ai-radar 改讀檔照做精簡模式（Skill 工具叫不動 disable-model-invocation 的 skill）。
 - refactor: `plugin-eval.md`、`adoption-backlog.md` 搬到 plugin 根 `references/`，兩個 skill 共用；網址一律經 `harvest.py parse-url` 拆解。
 
 ## [0.2.1] - 2026-11-03
