@@ -58,7 +58,7 @@ Claude Code plugin、marketplace、skill 集（也收其他 agent CLI 的同類�
 exit 2 表示網址無法解析，告訴使用者並跳過該候選。
 
 照 `plugin-eval.md`「深讀 subagent prompt」，每個候選一個 sonnet subagent，同一則訊息並行派出；`{baseline_root}` 填基準 repo 的絕對路徑。
-收回卡片後先跑 `git -C <基準 repo> status --porcelain`，跟派工前（先跑一次記下）比對有變化（`<OUT>` 以外）→ 停下來告訴使用者，不往下做（深讀處理的是不可信內容）。
+收回卡片後先跑 `git -C <基準 repo> status --porcelain -- . ':(exclude).claude/worktrees'`，跟派工前（先跑一次記下）比對有變化（`<OUT>` 以外）→ 停下來告訴使用者，不往下做（深讀處理的是不可信內容）。排除 `.claude/worktrees/` 是因為並行 session 的 worktree 會出現在那裡，不是深讀造成的。
 再照「例外處理」彙整，把各卡的「待清」路徑記在對話裡留給步驟 8，**抽查**每張卡的借鑒項在上游實際檔案找得到（grep clone 目錄；只出現在 README 的刪掉），再把卡片落檔到 `<OUT>/plugin-eval/`。
 clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔，由步驟 8 清。
 
@@ -130,7 +130,7 @@ clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔
 1. 找鎖定檔：目前 repo 根的 `harvest-lock.json`，沒有就用基準 repo 的。都沒有 → 告訴使用者「尚無採納紀錄」。
 2. 跑 `<H> lock check <鎖定檔>`；exit 0 全 SAME，exit 3 有變動。
 3. 每個非 SAME 條目一行列給使用者：
-   - `UPDATED` → 上游有新 commit，建議 `/plugin-harvest <網址>` 重評（卡片寫 `重評：上游更新`）。
+   - `UPDATED` → 上游有新 commit，建議 `/plugin-harvest <網址>` 重評（卡片寫 `重評：上游更新`）。來源是 monorepo 子目錄時只看該子目錄：repo 有新 commit 但子目錄沒變，回 `SAME`（附註「子目錄沒變」）。
    - `LICENSE-CHANGED` → 授權檔有增刪或內容變了，**優先處理**：照抄過的內容可能要改寫或移除。
    - `UNREACHABLE` → 上游刪除、改私有或網路不通；已採納的內容照舊可用，但之後無法追蹤。
 4. 不改鎖定檔；重評並重新套用後才由步驟 6 的 `lock add` 更新。

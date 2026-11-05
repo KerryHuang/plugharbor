@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.4.2] - 2026-11-05
+
+- fix(plugin-harvest): `lock check` 對 monorepo 子目錄只看該子目錄——`lock add` 多記 `subtree`（子目錄的 tree id），repo 有新 commit 但子目錄沒變時回 `SAME`，不再誤報 `UPDATED`；授權檔先找子目錄自己的，沒有才用 repo 根目錄。舊鎖定檔沒有 `subtree` 時照舊比整個 repo。
+- fix(plugin-harvest): 查授權的暫存 clone 在 Windows 刪不掉唯讀的 `.git/objects` 而殘留在 %TEMP%，改成先 chmod 再刪（Windows 實機回報）。
+- fix(plugin-harvest): 深讀後比對基準 repo 的 `git status` 排除 `.claude/worktrees/`，並行 session 的 worktree 不再被誤判成深讀污染而中止（ai-radar 週報實跑回報）。
+- docs(plugin-eval): 「跳過已評過的」比對前先用 `gh api` 把 repo 轉成現名，改名的 repo 不會繞過去重。
+
 ## [0.4.1] - 2026-11-05
 
 - fix(plugin-harvest): 第④批延後小問題——`parse-url` 支援無 scheme 與 SSH 網址、非 GitHub 主機的 key 帶主機名、裸字不再被當成本機路徑；授權檔認 `LICENSE-MIT`／`LICENSE-APACHE`／`UNLICENSE` 等並支援雙授權；`lock check` 每筆一行、鎖定檔壞掉 exit 2 不丟 traceback、查授權改無 blob 淺 clone（`--filter=blob:none` + `ls-tree`）；測試清理相容 Windows 唯讀檔。

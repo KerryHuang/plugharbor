@@ -36,6 +36,7 @@ plugin-harvest 的三種模式（領域、單一 repo、`--lean`）共用這份�
 4. **跳過已評過的**：比對鍵＝`harvest.py parse-url` 回傳的 `key`：GitHub 是 `owner/repo[/子路徑]`，其他主機前面多帶主機名（如 `gitlab.com/g/r`）；已去掉 query、`#…`、`/tree|blob/<分支>`、`.git`、結尾斜線，不分大小寫，**整串完全相同**才算同一個（評過 `o/r/plugins/x` 不代表評過 `o/r`）。
    「評過」的認定標準是 `adoption-backlog.md` 某一列的來源欄比對鍵相同，而且決策備註有 `已深讀 YYYY-MM-DD v<版號>`（沒有版號的 repo 固定寫 `v-`）。
    符合的跳過，往下遞補。沒有這個標記的舊列不算評過。
+   GitHub repo 會改名（舊網址自動轉址），比對前兩邊都先轉成現名：`gh api repos/<owner>/<repo> --jq .full_name`，查不到就用原名；寫進待辦的來源也用現名。
 5. **重評**：有新的主版號（拿搜尋 agent 回報的最新版號跟標記裡的版號比；任一邊是 `-` 就只看日期），或距離標記日期超過 90 天 → 照樣深讀，卡上寫 `重評：<理由>`。
    重評結論跟 backlog 舊列不同時（例如駁回 → 借鑒），卡片第一行加 `⚠ 結論翻轉：<舊> → <新>，請裁決`，plugin-harvest 回報（與 ai-radar 週報 TL;DR）也列出來；backlog 狀態照舊不動，等使用者裁決。
 6. 能深讀的不足 `--top` 個 → 有幾個評幾個，並寫明原因。

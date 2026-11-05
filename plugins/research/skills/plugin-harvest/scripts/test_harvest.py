@@ -181,6 +181,67 @@ class HarvestTest(unittest.TestCase):
         self.assertEqual(r.returncode, 3)
         self.assertIn("UNREACHABLE", r.stdout)
 
+    def test_remote_snapshot_cleans_readonly_clone(self):
+        """模擬 Windows：唯讀檔 unlink 會 PermissionError，暫存 clone 仍要清掉。"""
+        sys.path.insert(0, str(Path(__file__).parent))
+        import harvest
+        real_unlink = os.unlink
+
+        def win_unlink(p, *, dir_fd=None):
+            if not os.stat(p, dir_fd=dir_fd, follow_symlinks=False).st_mode & stat.S_IWRITE:
+                raise PermissionError(13, "read-only", p)
+            return real_unlink(p, dir_fd=dir_fd)
+
+        tdir = self.tmp / "t"
+        tdir.mkdir()
+        old = tempfile.tempdir
+        tempfile.tempdir = str(tdir)
+        os.unlink = win_unlink
+        try:
+            info = harvest.remote_snapshot({"clone_url": str(self.up), "ref": "main"})
+        finally:
+            os.unlink = real_unlink
+            tempfile.tempdir = old
+        self.assertEqual(info[0], "LICENSE")
+        self.assertEqual(list(tdir.iterdir()), [])
+
+    def add_sub(self):
+        """上游是 monorepo：plug/ 子目錄有自己的授權檔。用 in-process 呼叫讓 parse_url 回子目錄。"""
+        sys.path.insert(0, str(Path(__file__).parent))
+        import argparse
+        import harvest
+        (self.up / "plug").mkdir()
+        commit(self.up, "plug/LICENSE")
+        src = harvest.Source(str(self.up), "main", "plug", "x/up/plug")
+        orig = harvest.parse_url
+        harvest.parse_url = lambda url: src
+        try:
+            ns = argparse.Namespace(lock=str(self.lock), url="x", clone=str(self.up), version="-",
+                                    license="MIT", target="research:ai-radar", date="2026-11-05")
+            self.assertEqual(harvest.lock_add(ns), 0)
+        finally:
+            harvest.parse_url = orig
+        return self.entries()[0]
+
+    def test_lock_add_subpath_records_subtree_and_sub_license(self):
+        e = self.add_sub()
+        self.assertEqual(e["license_file"], "plug/LICENSE")
+        self.assertRegex(e["subtree"], r"^[0-9a-f]{40}$")
+
+    def test_lock_check_subpath_unchanged_is_same(self):
+        self.add_sub()
+        commit(self.up, "OTHER.md")
+        r = self.check()
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("SAME x/up/plug", r.stdout)
+
+    def test_lock_check_subpath_changed_is_updated(self):
+        self.add_sub()
+        commit(self.up, "plug/skill.md")
+        r = self.check()
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertIn("UPDATED x/up/plug", r.stdout)
+
     def test_lock_add_dual_license(self):
         commit(self.up_nolicense, "LICENSE-MIT")
         commit(self.up_nolicense, "LICENSE-APACHE")

@@ -15,6 +15,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -76,9 +77,8 @@ def git(*args: str, cwd: str | None = None) -> subprocess.CompletedProcess:
                           encoding="utf-8", errors="replace", timeout=TIMEOUT, env=env)
 
 
-def license_info(clone: str) -> tuple[str | None, str | None]:
-    """HEAD 根目錄的授權檔（可能多個，如雙授權）：回傳 ("A, B", "blobA,blobB")，沒有就 (None, None)。"""
-    r = git("ls-tree", "HEAD", cwd=clone)
+def _licenses_in(clone: str, tree: str, prefix: str) -> list[tuple[str, str]]:
+    r = git("ls-tree", tree, cwd=clone)
     if r.returncode != 0:
         raise RuntimeError(f"git ls-tree 失敗：{r.stderr.strip()}")
     found = []
@@ -86,11 +86,29 @@ def license_info(clone: str) -> tuple[str | None, str | None]:
         meta, _, name = line.partition("\t")
         parts = meta.split()
         if len(parts) == 3 and parts[1] == "blob" and LICENSE_RE.fullmatch(name):
-            found.append((name, parts[2]))
+            found.append((prefix + name, parts[2]))
+    return sorted(found)
+
+
+def license_info(clone: str, subpath: str = "") -> tuple[str | None, str | None]:
+    """授權檔（可能多個，如雙授權）：回傳 ("A, B", "blobA,blobB")，沒有就 (None, None)。
+
+    有 subpath 時先找子目錄自己的授權檔（monorepo 各 plugin 授權可能不同），沒有才用 repo 根目錄。
+    """
+    found = _licenses_in(clone, f"HEAD:{subpath}", subpath + "/") if subtree(clone, subpath) else []
+    found = found or _licenses_in(clone, "HEAD", "")
     if not found:
         return None, None
-    found.sort()
     return ", ".join(n for n, _ in found), ",".join(b for _, b in found)
+
+
+def subtree(clone: str, subpath: str) -> str | None:
+    """subpath 在 HEAD 的 tree id；比對它就知道子目錄有沒有變，不受 repo 其他地方的 commit 影響。"""
+    if not subpath:
+        return None
+    r = git("ls-tree", "-d", "HEAD", "--", subpath.rstrip("/"), cwd=clone)
+    parts = r.stdout.split("\t", 1)[0].split()
+    return parts[2] if r.returncode == 0 and len(parts) == 3 and parts[1] == "tree" else None
 
 
 class LockError(ValueError):
@@ -121,11 +139,11 @@ def lock_add(a: argparse.Namespace) -> int:
     if r.returncode != 0:
         print(f"讀不到 {a.clone} 的 HEAD：{r.stderr.strip()}", file=sys.stderr)
         return 1
-    lf, lb = license_info(a.clone)
+    lf, lb = license_info(a.clone, src.subpath)
     lock = Path(a.lock)
     data = load(lock)
     fields = {**asdict(src), "version": a.version, "commit": r.stdout.strip(), "license": a.license,
-              "license_file": lf, "license_blob": lb,
+              "license_file": lf, "license_blob": lb, "subtree": subtree(a.clone, src.subpath),
               "adopted": a.date or datetime.date.today().isoformat()}
     old = next((e for e in data["entries"] if e["key"] == src.key), None)
     if old:
@@ -154,7 +172,19 @@ def remote_sha(e: dict) -> str | None:
     return None
 
 
-def remote_license(e: dict) -> tuple[str | None, str | None] | None:
+def rmtree(path: str) -> None:
+    """Windows 的 .git/objects 是唯讀檔，刪不掉時先 chmod 再刪。"""
+    def onerror(func, p, _):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except OSError:
+            pass
+    shutil.rmtree(path, onerror=onerror)
+
+
+def remote_snapshot(e: dict) -> tuple[str | None, str | None, str | None] | None:
+    """淺 clone 上游，回傳 (授權檔, 授權 blob, 子目錄 tree)；clone 失敗回 None。"""
     d = tempfile.mkdtemp(prefix="harvest-")
     try:
         args = ["clone", "-q", "--depth", "1", "--filter=blob:none", "--no-checkout"] + \
@@ -162,11 +192,13 @@ def remote_license(e: dict) -> tuple[str | None, str | None] | None:
         r = git(*args, e["clone_url"], os.path.join(d, "repo"))
         if r.returncode != 0:
             return None
-        return license_info(os.path.join(d, "repo"))
+        repo = os.path.join(d, "repo")
+        sub = e.get("subpath") or ""
+        return (*license_info(repo, sub), subtree(repo, sub))
     except (subprocess.TimeoutExpired, RuntimeError):
         return None
     finally:
-        shutil.rmtree(d, ignore_errors=True)
+        rmtree(d)
 
 
 def lock_check(a: argparse.Namespace) -> int:
@@ -187,14 +219,18 @@ def lock_check(a: argparse.Namespace) -> int:
         if sha == e["commit"]:
             print(f"SAME {e['key']}")
             continue
-        changed = True
         move = f"{e['commit'][:7]} -> {sha[:7]}"
-        lic = remote_license(e)
-        if lic is None:
+        snap = remote_snapshot(e)
+        if snap is None:
+            changed = True
             print(f"UPDATED {e['key']} {move}（授權檔無法取得：clone 失敗）")
-        elif lic != (e.get("license_file"), e.get("license_blob")):
-            print(f"LICENSE-CHANGED {e['key']} {e.get('license_file') or '無'} -> {lic[0] or '無'}（commit {move}）")
+        elif snap[:2] != (e.get("license_file"), e.get("license_blob")):
+            changed = True
+            print(f"LICENSE-CHANGED {e['key']} {e.get('license_file') or '無'} -> {snap[0] or '無'}（commit {move}）")
+        elif e.get("subtree") and snap[2] == e["subtree"]:
+            print(f"SAME {e['key']}（repo 有新 commit {move}，子目錄沒變）")
         else:
+            changed = True
             print(f"UPDATED {e['key']} {move}")
     return 3 if changed else 0
 

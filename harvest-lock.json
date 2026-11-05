@@ -8,8 +8,9 @@
       "version": "1.0.1",
       "commit": "fa4eb54397ee2faccb6940512a19c017cb1337f3",
       "license": "Apache-2.0",
-      "license_file": "LICENSE",
+      "license_file": "plugins/code-review/LICENSE",
       "license_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "subtree": "0a12e55fc6b4966832674e01354591e051b7a78d",
       "adopted": "2026-11-05",
       "targets": [
         "workspace:review"
