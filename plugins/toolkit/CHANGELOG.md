@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.13.0] - 2026-11-05
+
+- feat(agent-dispatch): `route.mjs pick <任務類型>` 只查不派，印出濾掉未登入與額度封鎖後的有序候選 JSON；給要派同家 subagent、只需要知道模型的呼叫端（如 lifecycle:implement）用。
+
 ## [0.12.0] - 2026-11-05
 
 - feat(retrospective): Step 3 歸屬表新增「重複出現的能力缺口」，列入轉交段並建議執行 `/research:plugin-harvest <領域關鍵字>`，不自動執行。

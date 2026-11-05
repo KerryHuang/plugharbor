@@ -22,6 +22,7 @@ argument-hint: "[對象] <任務>"
   | cheap | `docs`、`format`、`mechanical` |
 
 - 查表會濾掉 agent-mesh-check 最近一次沒通過的 CLI，以及額度封鎖中的 CLI。派出去一律帶明確的模型與思考等級，不繼承你自己的模型。
+- 只查不派（例如工作要交給同家 subagent，只需要知道該用哪一家、哪個模型）：`node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" pick <類型>`，印出有序候選 JSON。
 - 回報時照抄腳本第一行「交給 <cli>（<模型>／<等級>），理由：…」，讓使用者知道花了哪一家的額度。
 - 只想要另一家觀點、你本身是 pi、pi 也登入了那家：用 pi 自己的子代理換模型比較輕。需要 codex 或 agy 工具本身（沙箱、外掛、repo 設定）時才用本 skill。
 - 使用者偏好與各家實測速度見 `references/preferences.md`。

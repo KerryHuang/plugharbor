@@ -562,3 +562,20 @@ test('route.mjs block：未知的 CLI 名稱回 2、不寫狀態', () => {
   assert.equal(r.status, 2)
   assert.ok(!existsSync(join(d, 'agent-dispatch', 'state.json')))
 })
+
+test('route.mjs pick 印出該類型的候選，濾掉封鎖中的 CLI', () => {
+  const d = mkdtempSync(join(tmpdir(), 'pick-'))
+  const state = join(d, 'state.json')
+  writeFileSync(state, JSON.stringify({ blocks: { codex: { until: Date.now() + 3_600_000 } } }))
+  const r = spawnSync(process.execPath, [join(import.meta.dirname, 'scripts', 'route.mjs'), 'pick', 'review-critical',
+    '--state', state, '--mesh', join(d, 'none.json')], { encoding: 'utf8' })
+  assert.equal(r.status, 0, r.stderr)
+  const list = JSON.parse(r.stdout)
+  assert.equal(list[0].cli, 'claude')
+  assert.ok(!list.some(c => c.cli === 'codex'))
+})
+
+test('route.mjs pick 未知類型 exit 2', () => {
+  const r = spawnSync(process.execPath, [join(import.meta.dirname, 'scripts', 'route.mjs'), 'pick', 'nope'], { encoding: 'utf8' })
+  assert.equal(r.status, 2)
+})
