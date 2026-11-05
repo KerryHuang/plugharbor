@@ -14,7 +14,7 @@
 | G6 | 規格回填 | 規格狀態改為已實作、補變更紀錄；比對無缺 |
 | G7 | 提示解除 draft | 告知使用者，**不自動 merge** |
 
-模式 B 同 A，每關開跑前先問使用者。模式 D 只到 G1。
+模式 B 同 A，每關開跑前先問使用者。模式 D 只到 G1：規格狀態維持「已批准」，收尾回報寫明「G4–G6 未做、規格未回填，不算完成」，由使用者合併後再叫 implement 接續（從 ledger 的 G4 起）。
 
 沒有 PR 可走（模式 D，或專案沒有 remote）時，feature 不會經 PR 進 develop：G1 後提示使用者自己 `git checkout develop && git merge --no-ff feature/<name>`（`lifecycle:release` 的 R1 從 develop 起），不代為 merge。
 

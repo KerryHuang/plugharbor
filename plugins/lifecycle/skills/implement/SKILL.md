@@ -59,7 +59,7 @@ git branch --show-current && git status --short
 
 ## 3. 規劃：任務清單與 ledger 落檔
 
-1. 建 `.tmp/implement/<feature>/`，確認 `.tmp/` 在專案 `.gitignore`（沒有就提醒使用者加，不自行改 `.gitignore`）；使用者同意加的話，把 `.gitignore` 寫進 `tasks.md` 第一個 task 的「改」欄，免得審查把它當成範圍外變更。
+1. 建 `.tmp/implement/<feature>/`，確認 `.tmp/` 在專案 `.gitignore`（沒有就問使用者，推薦選項是「加」——不加的話 G1 的工作樹乾淨無法成立；不自行改 `.gitignore`）；使用者同意加的話，把 `.gitignore` 寫進 `tasks.md` 第一個 task 的「改」欄，免得審查把它當成範圍外變更。
 2. 派一個規劃 subagent（top 等級），輸入：規格路徑、ledger 的已定決策、`${CLAUDE_PLUGIN_ROOT}/skills/implement/references/planning.md`。它負責：
    - 找受影響的層級與模組、可重用的既有實作（照專案慣例，不引入新風格）。
    - 產 `tasks.md`：每個 task 有 ID、目標、對應的規格段落、要讀與要改的檔、驗收指令、依賴、可平行標記 `[P]`。
@@ -105,7 +105,7 @@ git branch --show-current && git status --short
 
 ## 7. 審查修正迴圈（最多 3 輪）
 
-- **審查範圍**：此時實作還沒 commit，範圍是「工作樹相對基底分支的變更（含未提交）」：`git diff <base>`（不是 `<base>..HEAD`，那會漏掉未 commit 的實作），未追蹤的新檔另用 `git status --short` 列出一併審。
+- **審查範圍**：此時實作還沒 commit，範圍是「工作樹相對基底分支的變更（含未提交）」：`git diff <base>`（不是 `<base>..HEAD`，那會漏掉未 commit 的實作），未追蹤的新檔另用 `git status --short` 列出一併審。審查 agent 沒有 Bash：主 session 把 diff 與未追蹤清單寫成 `.tmp/implement/<feature>/review/diff.patch`，把路徑寫進審查 prompt。
 - 有裝 workspace：用 `workspace:review`（可選）審上述範圍；它的證據規則（每個變更檔歸到檢查項、「查無」先證明指令抓得到、標出被削弱的測試與新 suppression）照做。
 - 沒裝 workspace 的退路：同一則訊息平行派 `lifecycle:reviewer`（程式碼）、`lifecycle:architect`（分層與依賴方向）、一個規格對照審查者（規格 vs 程式 vs 真實資料），報告各自落檔（reviewer 自己寫報告檔、只回結論行，見 dispatch.md）；至少做到「每個變更檔歸到某檢查項或寫排除理由」，並剔除既有問題、linter 會抓的、吹毛求疵三類。
 - 分級：重大必修／主要要修／次要列參考。重大與主要派 developer 修 → 重跑 build＋test → 再審一輪。

@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.2] - 2026-11-05
+
+- fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件才照路由），與 `skills/implement/references/dispatch.md` 不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。
+- fix(implement): reviewer 沒有 Bash，步驟 7 改由主 session 把 diff 與未追蹤清單寫成 `review/diff.patch` 交給審查 agent。
+- fix(implement): 模式 D 只到 G1 時，規格維持「已批准」並在回報寫明 G4–G6 未做、不算完成；`.tmp/` 不在 `.gitignore` 時以「加」為推薦選項。
+
 ## [1.1.1] - 2026-11-04
 
 - fix: qa-verify 驗收後要開 Bug 票時，改經 `ticket-create`（開票單一入口）；不再直接用 `ticket-ops create`。
