@@ -92,19 +92,23 @@ export function reviewer({ author, routing, state, available, now = Date.now() }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, cli, until, ...why] = process.argv.slice(2)
   const t = Date.parse(until ?? '')
-  if (cmd === 'pick') {
-    // 唯讀查表：node route.mjs pick <類型> [--state 檔] [--mesh 檔] → 印出有序候選 JSON，不派工
+  if (cmd === 'pick' || cmd === 'reviewer') {
+    // 唯讀查表，不派工：
+    //   pick <類型>       → 有序候選 JSON（全被濾掉時印 []）
+    //   reviewer <作者CLI> → top 候選裡第一個不同家族的審查者 JSON（crossFamily:false＝湊不到、退回同家）
     const opt = k => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined }
     const { statePath: meshStatePath } = await import('../../agent-mesh-check/scripts/mesh.mjs')
     try {
-      console.log(JSON.stringify(candidates({ type: cli, routing: loadRouting(), state: readState(opt('--state') ?? statePath()),
-        available: readMesh(opt('--mesh') ?? meshStatePath(process.env)) })))
+      const ctx = { routing: loadRouting(), state: readState(opt('--state') ?? statePath()),
+        available: readMesh(opt('--mesh') ?? meshStatePath(process.env)) }
+      if (cmd === 'reviewer' && !CLIS.includes(cli)) throw new Error(`未知的 CLI：${cli}（可用：${CLIS.join('、')}）`)
+      console.log(JSON.stringify(cmd === 'pick' ? candidates({ type: cli, ...ctx }) : reviewer({ author: cli, ...ctx })))
     } catch (e) {
       console.error(e.message)
       process.exitCode = 2
     }
   } else if (cmd !== 'block' || !cli || Number.isNaN(t)) {
-    console.error('用法：node route.mjs block <cli> <到期時間，ISO 格式> [理由]｜node route.mjs pick <任務類型>')
+    console.error('用法：node route.mjs block <cli> <到期時間，ISO 格式> [理由]｜pick <任務類型>｜reviewer <作者 CLI>')
     process.exitCode = 2
   } else if (!CLIS.includes(cli)) {
     console.error(`未知的 CLI：${cli}（可用：${CLIS.join('、')}）`)

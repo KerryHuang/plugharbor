@@ -4,7 +4,7 @@
 
 ## [1.1.2] - 2026-11-05
 
-- fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件才照路由），與 `skills/implement/references/dispatch.md` 不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。
+- fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件改用 `route.mjs reviewer` 挑不同家族），與 `skills/implement/references/dispatch.md` 不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。
 - fix(implement): reviewer 沒有 Bash，步驟 7 改由主 session 把 diff 與未追蹤清單寫成 `review/diff.patch` 交給審查 agent。
 - fix(implement): 模式 D 只到 G1 時，規格維持「已批准」並在回報寫明 G4–G6 未做、不算完成；`.tmp/` 不在 `.gitignore` 時以「加」為推薦選項。
 

@@ -175,8 +175,10 @@ def remote_sha(e: dict) -> str | None:
 def rmtree(path: str) -> None:
     """Windows 的 .git/objects 是唯讀檔，刪不掉時先 chmod 再刪。"""
     def onerror(func, p, _):
+        if func not in (os.unlink, os.remove, os.rmdir):
+            return  # 例如讀不到的目錄：刪不掉就留著，跟舊版 ignore_errors 一樣不中斷
         try:
-            os.chmod(p, stat.S_IWRITE)
+            os.chmod(p, os.stat(p).st_mode | stat.S_IWRITE)
             func(p)
         except OSError:
             pass
@@ -194,7 +196,9 @@ def remote_snapshot(e: dict) -> tuple[str | None, str | None, str | None] | None
             return None
         repo = os.path.join(d, "repo")
         sub = e.get("subpath") or ""
-        return (*license_info(repo, sub), subtree(repo, sub))
+        # 0.4.1 以前的條目沒有 subtree、授權記的是根目錄：照舊比根目錄，免得一律誤報 LICENSE-CHANGED
+        lic_sub = sub if "subtree" in e else ""
+        return (*license_info(repo, lic_sub), subtree(repo, sub))
     except (subprocess.TimeoutExpired, RuntimeError):
         return None
     finally:

@@ -4,8 +4,8 @@
 
 ## [0.4.2] - 2026-11-05
 
-- fix(plugin-harvest): `lock check` 對 monorepo 子目錄只看該子目錄——`lock add` 多記 `subtree`（子目錄的 tree id），repo 有新 commit 但子目錄沒變時回 `SAME`，不再誤報 `UPDATED`；授權檔先找子目錄自己的，沒有才用 repo 根目錄。舊鎖定檔沒有 `subtree` 時照舊比整個 repo。
-- fix(plugin-harvest): 查授權的暫存 clone 在 Windows 刪不掉唯讀的 `.git/objects` 而殘留在 %TEMP%，改成先 chmod 再刪（Windows 實機回報）。
+- fix(plugin-harvest): `lock check` 對 monorepo 子目錄只看該子目錄——`lock add` 多記 `subtree`（子目錄的 tree id），repo 有新 commit 但子目錄沒變時回 `SAME`，不再誤報 `UPDATED`；授權檔先找子目錄自己的，沒有才用 repo 根目錄。舊鎖定檔沒有 `subtree` 時照舊比整個 repo、授權照舊看根目錄（不會一律誤報 `LICENSE-CHANGED`）。
+- fix(plugin-harvest): 查授權的暫存 clone 在 Windows 刪不掉唯讀的 `.git/objects` 而殘留在 %TEMP%，改成補上寫入權限再刪（Windows 實機回報）；讀不到的目錄照舊略過，不讓 `lock check` 中斷。
 - fix(plugin-harvest): 深讀後比對基準 repo 的 `git status` 排除 `.claude/worktrees/`，並行 session 的 worktree 不再被誤判成深讀污染而中止（ai-radar 週報實跑回報）。
 - docs(plugin-eval): 「跳過已評過的」比對前先用 `gh api` 把 repo 轉成現名，改名的 repo 不會繞過去重。
 

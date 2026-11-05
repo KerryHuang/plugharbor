@@ -4,7 +4,7 @@
 
 ## [0.13.0] - 2026-11-05
 
-- feat(agent-dispatch): `route.mjs pick <任務類型>` 只查不派，印出濾掉未登入與額度封鎖後的有序候選 JSON；給要派同家 subagent、只需要知道模型的呼叫端（如 lifecycle:implement）用。
+- feat(agent-dispatch): `route.mjs pick <任務類型>` 只查不派，印出濾掉未登入與額度封鎖後的有序候選 JSON；`route.mjs reviewer <作者 CLI>` 照跨家族規則挑審查者。給要派同家 subagent、只需要知道模型的呼叫端（如 lifecycle:implement）用。
 
 ## [0.12.0] - 2026-11-05
 

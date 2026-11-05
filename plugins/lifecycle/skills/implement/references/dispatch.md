@@ -20,8 +20,8 @@
 
 ## 路由
 
-- **有裝 toolkit**：照 `toolkit:agent-dispatch` 的路由規則，用上表「agent-dispatch 類型」查表決定 CLI、模型與思考等級；只查不派用 agent-dispatch 的 `scripts/route.mjs pick <類型>`（印出有序候選）。查到的是主 session 自己這一家 → 用同家 subagent，帶查到的模型；查到別家 → 照 agent-dispatch 的長任務模式派（改檔的 task）或短問答（唯讀的審查、驗證）。回報照抄它的「交給 <cli>（<模型>／<等級>）」那行。
-- **小改動減量的例外**：審查只派一個同家 `lifecycle:reviewer`，不查表；但改動碰到 agent-dispatch 的跨家族審查條件（安全、資料、DB 結構、公開介面）時照上面的路由查 `review-critical`。
+- **有裝 toolkit**：照 `toolkit:agent-dispatch` 的路由規則，用上表「agent-dispatch 類型」查表決定 CLI、模型與思考等級；只查不派用 agent-dispatch 的 `scripts/route.mjs pick <類型>`（印出有序候選 JSON，回報那行由主 session 自己組）。查到的是主 session 自己這一家 → 用同家 subagent，帶查到的模型；查到別家 → 照 agent-dispatch 的長任務模式派（改檔的 task）或短問答（唯讀的審查、驗證）。回報照抄它的「交給 <cli>（<模型>／<等級>）」那行。
+- **小改動減量的例外**：審查只派一個同家 `lifecycle:reviewer`，不查表；但改動碰到 agent-dispatch 的跨家族審查條件（安全、資料、DB 結構、公開介面）時改用 `scripts/route.mjs reviewer <主 session 的 CLI>` 挑不同家族的審查者；回傳 `crossFamily:false`（湊不到別家）就用同家並在回報寫明。
 - **沒裝 toolkit 的退路**：一律同家 subagent，模型照上表「同家模型」欄，回報寫一行「未安裝 toolkit，已改用同家 subagent」。
 - agent 不存在（例如只裝了部分 plugin）→ 改派通用 subagent，把該 agent 的職責寫進 brief，模型等級不變。
 

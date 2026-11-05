@@ -242,6 +242,32 @@ class HarvestTest(unittest.TestCase):
         self.assertEqual(r.returncode, 3, r.stdout)
         self.assertIn("UPDATED x/up/plug", r.stdout)
 
+    def test_lock_check_old_format_subpath_not_license_changed(self):
+        """0.4.1 以前的條目沒有 subtree、授權記根目錄；子目錄有自己的授權檔時不可誤報 LICENSE-CHANGED。"""
+        e = self.add_sub()
+        del e["subtree"]
+        e["license_file"], e["license_blob"] = "LICENSE", None
+        root_blob = subprocess.run(["git", "-C", str(self.up), "rev-parse", "HEAD:LICENSE"],
+                                   capture_output=True, text=True, check=True).stdout.strip()
+        e["license_blob"] = root_blob
+        self.lock.write_text(json.dumps({"entries": [e]}), encoding="utf-8")
+        commit(self.up, "OTHER.md")
+        r = self.check()
+        self.assertNotIn("LICENSE-CHANGED", r.stdout)
+        self.assertIn("UPDATED x/up/plug", r.stdout)
+
+    def test_rmtree_unreadable_dir_does_not_raise(self):
+        sys.path.insert(0, str(Path(__file__).parent))
+        import harvest
+        d = self.tmp / "locked"
+        (d / "sub").mkdir(parents=True)
+        os.chmod(d / "sub", 0)
+        try:
+            harvest.rmtree(str(d))
+        finally:
+            if (d / "sub").exists():
+                os.chmod(d / "sub", stat.S_IRWXU)
+
     def test_lock_add_dual_license(self):
         commit(self.up_nolicense, "LICENSE-MIT")
         commit(self.up_nolicense, "LICENSE-APACHE")

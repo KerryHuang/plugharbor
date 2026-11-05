@@ -567,7 +567,7 @@ test('route.mjs pick 印出該類型的候選，濾掉封鎖中的 CLI', () => {
   const d = mkdtempSync(join(tmpdir(), 'pick-'))
   const state = join(d, 'state.json')
   writeFileSync(state, JSON.stringify({ blocks: { codex: { until: Date.now() + 3_600_000 } } }))
-  const r = spawnSync(process.execPath, [join(import.meta.dirname, 'scripts', 'route.mjs'), 'pick', 'review-critical',
+  const r = spawnSync(process.execPath, [ROUTE, 'pick', 'review-critical',
     '--state', state, '--mesh', join(d, 'none.json')], { encoding: 'utf8' })
   assert.equal(r.status, 0, r.stderr)
   const list = JSON.parse(r.stdout)
@@ -576,6 +576,17 @@ test('route.mjs pick 印出該類型的候選，濾掉封鎖中的 CLI', () => {
 })
 
 test('route.mjs pick 未知類型 exit 2', () => {
-  const r = spawnSync(process.execPath, [join(import.meta.dirname, 'scripts', 'route.mjs'), 'pick', 'nope'], { encoding: 'utf8' })
+  const r = spawnSync(process.execPath, [ROUTE, 'pick', 'nope'], { encoding: 'utf8' })
   assert.equal(r.status, 2)
+})
+
+test('route.mjs reviewer 挑跟作者不同家族的審查者', () => {
+  const d = mkdtempSync(join(tmpdir(), 'rev-'))
+  const state = join(d, 'state.json')
+  writeFileSync(state, JSON.stringify({ blocks: { codex: { until: Date.now() + 3_600_000 } } }))
+  const r = spawnSync(process.execPath, [ROUTE, 'reviewer', 'claude', '--state', state, '--mesh', join(d, 'none.json')], { encoding: 'utf8' })
+  assert.equal(r.status, 0, r.stderr)
+  const got = JSON.parse(r.stdout)
+  assert.equal(got.cli, 'agy')
+  assert.equal(got.crossFamily, true)
 })
