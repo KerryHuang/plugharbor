@@ -26,12 +26,14 @@
 | 1 | （區塊1/2 哪一條） | `~/.claude/...` 或專案 `.claude/...` | … | 要改什麼、怎麼改 |
 
 ## 4a. Marketplace / Plugin 排行
+> 由 plugin-harvest `--lean` 產出，原樣貼入。
+
 | 名稱 | 類型 | 連結 | 熱門度（星/最近 push/討論） | 一句話用途 |
 |------|------|------|------|------|
 | … | marketplace / plugin | … | … | …（清單類註明「清單，不評」） |
 
 ## 4b. 深讀評估
-> 最多 5 張卡，格式見 `${CLAUDE_PLUGIN_ROOT}/references/plugin-eval.md`「評估卡範本」；不足 5 張註明原因。
+> 由 plugin-harvest `--lean` 產出（最多 5 張卡，格式見 `${CLAUDE_PLUGIN_ROOT}/references/plugin-eval.md`「評估卡範本」；不足 5 張註明原因）。
 
 ### <名稱>（<repo 網址>，★…，最近 push …）
 - …
