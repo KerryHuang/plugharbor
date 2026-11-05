@@ -49,7 +49,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | [workspace](./plugins/workspace/README.md) | 1.3.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
 | [backend](./plugins/backend/README.md) | 1.0.2 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
-| [database](./plugins/database/README.md) | 1.0.0 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
+| [database](./plugins/database/README.md) | 1.0.1 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
 | [ui-ux](./plugins/ui-ux/README.md) | 1.0.1 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
 | [desktop](./plugins/desktop/README.md) | 1.0.0 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
 | [toolkit](./plugins/toolkit/README.md) | 0.13.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
