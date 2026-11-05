@@ -7,6 +7,7 @@
 - feat(plugin-harvest): 新 skill——領域搜尋熱門 plugin → 深讀對照基準 → 逐條核准的具體提案 → 只套用核准的；採納時寫 `harvest-lock.json`（來源、commit、授權檔 hash），`--check-lock` 檢查上游更新與授權變動；`--lean` 給 ai-radar 週報用。
 - feat(plugin-harvest): `skills/plugin-harvest/scripts/harvest.py`（網址拆解、鎖定檔寫入與檢查，純標準庫＋git）。
 - refactor(ai-radar): 只留情報（大廠規範、工程實踐、設定最佳化、知識庫稽核）；區塊 4 改叫用 `plugin-harvest --lean`，`--plugin <網址>` 保留為轉交入口。
+- fix(plugin-harvest): 實測回饋——深讀必讀加 `commands/` 與非 plugin 形態的設定／主程式、prompt 帶基準 repo 路徑、README 宣稱不算證據且主執行緒抽查；monorepo 子目錄不計整個 repo 星數；排行表與領域 slug 有落點；清理改為獨立步驟。
 - refactor: `plugin-eval.md`、`adoption-backlog.md` 搬到 plugin 根 `references/`，兩個 skill 共用；網址一律經 `harvest.py parse-url` 拆解。
 
 ## [0.2.1] - 2026-11-03

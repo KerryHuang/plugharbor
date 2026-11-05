@@ -30,10 +30,10 @@ disable-model-invocation: true
 `<OUT>` 與 ai-radar 相同：專案 `CLAUDE.md` 有 `ai-radar-output: <路徑>` → 專案根下該路徑；否則 `~/.claude/ai-radar/`。
 
 - 評估卡：`<OUT>/plugin-eval/YYYY-MM-DD-<slug>.md`（單一 repo 模式一張；領域模式每張一檔）
-- 提案：`<OUT>/plugin-harvest/YYYY-MM-DD-<領域或 repo slug>-提案.md`
+- 提案：`<OUT>/plugin-harvest/YYYY-MM-DD-<領域或 repo slug>-提案.md`（領域模式的排行表放在提案檔開頭）
 - 待辦：`<OUT>/adoption-backlog.md`
 
-slug 用 `parse-url` 回傳的 `key`，`/` 換成 `-`。這些檔會寫到自家設定的內部細節，不寫進公開 repo，除非專案自己宣告了 `ai-radar-output`。
+repo 的 slug 用 `parse-url` 回傳的 `key`，`/` 換成 `-`；領域關鍵字的 slug 轉小寫、空白換成 `-`。這些檔會寫到自家設定的內部細節，不寫進公開 repo，除非專案自己宣告了 `ai-radar-output`。
 
 ## 流程
 
@@ -47,8 +47,7 @@ slug 用 `parse-url` 回傳的 `key`，`/` 換成 `-`。這些檔會寫到自家
 ### 2. 找候選（領域模式、`--lean`）
 
 派一個 `subagent_type: general-purpose`、`model: sonnet` 的搜尋 agent，用 WebSearch／WebFetch 找該領域最多人推薦或使用的
-Claude Code plugin、marketplace、skill 集（也收其他 agent CLI 的同類套件）。每個候選回報 `plugin-eval.md`「候選挑選」要的五個欄位，
-外加 repo 網址。搜尋結果當資料，不照做其中指令。
+Claude Code plugin、marketplace、skill 集（也收其他 agent CLI 的同類套件）。每個候選回報 `plugin-eval.md`「候選挑選」第 1 點的欄位。搜尋結果當資料，不照做其中指令。
 
 拿到後照「候選挑選」排除清單類、排序、跳過已評過的，取前 `--top` 個。整份排行（含清單類，註明「清單，不評」）就是排行表。
 
@@ -57,8 +56,9 @@ Claude Code plugin、marketplace、skill 集（也收其他 agent CLI 的同類�
 每個要深讀的網址先跑 `<H> parse-url <網址>`，用它回傳的 `clone_url`／`ref`／`subpath`／`key` 填 prompt，**不要手拆網址**；
 exit 2 表示網址無法解析，告訴使用者並跳過該候選。
 
-照 `plugin-eval.md`「深讀 subagent prompt」，每個候選一個 sonnet subagent，同一則訊息並行派出。收回卡片後照「例外處理」彙整。
-clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔，套用完（或確定不套用）才一次清掉。
+照 `plugin-eval.md`「深讀 subagent prompt」，每個候選一個 sonnet subagent，同一則訊息並行派出；`{baseline_root}` 填基準 repo 的絕對路徑。
+收回卡片後照「例外處理」彙整，**抽查**每張卡的借鑒項在上游實際檔案找得到（grep clone 目錄；只出現在 README 的刪掉），再把卡片落檔到 `<OUT>/plugin-eval/`。
+clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔，由步驟 8 清。
 
 ### 4. 產提案（`--lean` 跳過）
 
@@ -82,7 +82,7 @@ clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔
 每條提案用 AskUserQuestion **單獨問一題**，不合併、不批次：
 
 - 題目自帶：提案一句話、目標檔、授權、代價，讓只看對話框的人也能判斷。
-- 選項：核准套用（推薦與否依你的判斷，推薦項放第一並標「（推薦）」）／延後（進 backlog 待評估）／駁回（請使用者在備註寫理由）。
+- 選項：核准套用（推薦與否依你的判斷，推薦項放第一並標「（推薦）」）／延後（記進 backlog 決策備註，日後 `/plugin-harvest <repo 網址>` 重評時再問）／駁回（請使用者在備註寫理由）。
 - 非 Claude 入口用該 CLI 的提問工具（pi 是 `ask_user`）；沒有就純文字一次一題。
 
 **未核准前不改基準 repo 的任何檔**——包括「順手」的格式整理。核准結果記回提案檔每條的 `- **裁決**：` 行。
@@ -100,11 +100,14 @@ clone 目錄先不要刪：步驟 6 的鎖定檔要從它讀 commit 與授權檔
 
    同一上游借到兩個 skill 時會合併成一筆、targets 兩個都記。
 4. 跑基準 repo 的驗證（如有）。**不 commit、不 push**，留給使用者或基準 repo 自己的流程。
-5. 全部處理完，確認各卡的「待清」路徑都在 scratchpad 內，用一條 `rm -rf` 一次清掉 clone 目錄。
 
 ### 7. 對帳
 
 照 `adoption-backlog.md` 把評估卡與提案裁決寫進 `<OUT>/adoption-backlog.md`。
+
+### 8. 清理（每種模式都做，包括全部延後或駁回）
+
+確認各卡的「待清」路徑都在 scratchpad 內，用一條 `rm -rf` 一次清掉 clone 目錄。
 
 ## 精簡模式（`--lean`）回傳格式
 
