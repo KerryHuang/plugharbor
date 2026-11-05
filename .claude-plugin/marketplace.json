@@ -74,7 +74,7 @@
       "name": "toolkit",
       "source": "./plugins/toolkit",
       "description": "通用 hooks 與分層 guard——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截",
-      "version": "0.11.4",
+      "version": "0.12.0",
       "author": {
         "name": "KerryHuang"
       }
@@ -83,7 +83,7 @@
       "name": "research",
       "source": "./plugins/research",
       "description": "探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達、plugin-harvest 吸收外部 plugin 做法（逐條核准、鎖定檔追蹤上游）",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "author": {
         "name": "KerryHuang"
       }

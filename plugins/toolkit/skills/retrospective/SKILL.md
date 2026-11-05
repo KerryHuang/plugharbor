@@ -127,6 +127,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/chain_cost.py <單位路徑> [--units-glob '
 | 被檢討的 plugin（skill、範本、reference、流程） | 照下段分類，`--apply` 可改 |
 | 專案層（該 repo 的 CLAUDE.md、`.claude/rules`）或使用者層（`~/.claude` 的通用規則） | 轉交：在專案根執行 `python3 ${CLAUDE_PLUGIN_ROOT}/skills/feedback-review/scripts/feedback_queue.py friction --tried … --found … --led-by …` 寫進 feedback-review 佇列，由它分層處理；腳本不在就只列報告「轉交」段 |
 | 一次性的事實或踩坑（記憶） | 轉交：列報告「轉交」段，建議整理記憶 |
+| 缺專門知識或工具，且同一缺口重複出現 | 轉交：列報告「轉交」段，寫明建議執行的 `/research:plugin-harvest <領域關鍵字>`，不自動執行 |
 
 plugin 歸屬的根因分五類：skill 內容（步驟遺漏、指引模糊、產出格式、判斷邏輯）、範本（章節、欄位、範例）、
 reference（知識補充或修正、新增）、流程（銜接斷裂、前置缺失、重複工作、順序不當）、新增需求（新 skill／reference／範本）。

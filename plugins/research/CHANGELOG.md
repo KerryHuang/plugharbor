@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.4.0] - 2026-11-05
+
+- feat(plugin-harvest): 候選來源加入 skills.sh 搜尋 API（查不到就略過），搜尋階段不執行 `npx skills`；排序的相關度也納入觸發這次搜尋的能力缺口。
+
 ## [0.3.0] - 2026-11-05
 
 - feat(plugin-harvest): 新 skill——領域搜尋熱門 plugin → 深讀對照基準 → 逐條核准的具體提案 → 只套用核准的；採納時寫 `harvest-lock.json`（來源、commit、授權檔 hash），`--check-lock` 檢查上游更新與授權變動；`--lean` 給 ai-radar 週報用。
