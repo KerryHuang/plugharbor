@@ -22,7 +22,7 @@ import urllib.parse
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-LICENSE_NAMES = ("license", "license.md", "license.txt", "copying")
+LICENSE_RE = re.compile(r"(license|licence|copying|unlicense)([-.].*)?", re.I)
 TIMEOUT = 60
 
 
@@ -40,9 +40,14 @@ class UrlError(ValueError):
 
 def parse_url(url: str) -> Source:
     url = url.strip()
-    if os.path.isdir(os.path.expanduser(url)) or re.match(r"^(/|~|[A-Za-z]:[\\/])", url):
+    if re.match(r"^(/|~|\.{1,2}[\\/]|[A-Za-z]:[\\/])", url):
         p = str(Path(os.path.expanduser(url)).resolve())
         return Source(p, "", "", p.replace("\\", "/").lower())
+    ssh = re.fullmatch(r"[\w.-]+@([\w.-]+):(.+)", url)
+    if ssh:
+        url = f"https://{ssh.group(1)}/{ssh.group(2)}"
+    elif "://" not in url and re.match(r"^[\w-]+(\.[\w-]+)+/", url):
+        url = "https://" + url
     u = urllib.parse.urlsplit(url)
     if u.scheme not in ("http", "https") or not u.netloc or re.search(r"\s", url):
         raise UrlError(f"無法解析的網址：{url}")
@@ -60,6 +65,8 @@ def parse_url(url: str) -> Source:
     if len(path.split("/")) < 2:
         raise UrlError(f"網址缺 owner/repo：{url}")
     key = "/".join(x for x in (path, subpath) if x).lower()
+    if host != "github.com":
+        key = f"{host}/{key}"
     return Source(f"https://{host}/{path}.git", ref, subpath, key)
 
 
@@ -70,17 +77,37 @@ def git(*args: str, cwd: str | None = None) -> subprocess.CompletedProcess:
 
 
 def license_info(clone: str) -> tuple[str | None, str | None]:
-    for f in sorted(os.listdir(clone)):
-        if f.lower() in LICENSE_NAMES and os.path.isfile(os.path.join(clone, f)):
-            r = git("hash-object", f, cwd=clone)
-            if r.returncode != 0:
-                raise RuntimeError(f"git hash-object 失敗：{r.stderr.strip()}")
-            return f, r.stdout.strip()
-    return None, None
+    """HEAD 根目錄的授權檔（可能多個，如雙授權）：回傳 ("A, B", "blobA,blobB")，沒有就 (None, None)。"""
+    r = git("ls-tree", "HEAD", cwd=clone)
+    if r.returncode != 0:
+        raise RuntimeError(f"git ls-tree 失敗：{r.stderr.strip()}")
+    found = []
+    for line in r.stdout.splitlines():
+        meta, _, name = line.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3 and parts[1] == "blob" and LICENSE_RE.fullmatch(name):
+            found.append((name, parts[2]))
+    if not found:
+        return None, None
+    found.sort()
+    return ", ".join(n for n, _ in found), ",".join(b for _, b in found)
+
+
+class LockError(ValueError):
+    pass
 
 
 def load(lock: Path) -> dict:
-    return json.loads(lock.read_text(encoding="utf-8")) if lock.exists() else {"entries": []}
+    if not lock.exists():
+        return {"entries": []}
+    try:
+        data = json.loads(lock.read_text(encoding="utf-8"))
+        for e in data["entries"]:
+            for k in ("key", "clone_url", "ref", "commit"):
+                e[k]
+    except (ValueError, KeyError, TypeError) as ex:
+        raise LockError(f"鎖定檔格式壞了：{lock}（{type(ex).__name__}: {ex}）") from ex
+    return data
 
 
 def save(lock: Path, data: dict) -> None:
@@ -130,12 +157,13 @@ def remote_sha(e: dict) -> str | None:
 def remote_license(e: dict) -> tuple[str | None, str | None] | None:
     d = tempfile.mkdtemp(prefix="harvest-")
     try:
-        args = ["clone", "-q", "--depth", "1"] + (["--branch", e["ref"]] if e["ref"] else [])
+        args = ["clone", "-q", "--depth", "1", "--filter=blob:none", "--no-checkout"] + \
+            (["--branch", e["ref"]] if e["ref"] else [])
         r = git(*args, e["clone_url"], os.path.join(d, "repo"))
         if r.returncode != 0:
             return None
         return license_info(os.path.join(d, "repo"))
-    except subprocess.TimeoutExpired:
+    except (subprocess.TimeoutExpired, RuntimeError):
         return None
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -160,12 +188,14 @@ def lock_check(a: argparse.Namespace) -> int:
             print(f"SAME {e['key']}")
             continue
         changed = True
-        print(f"UPDATED {e['key']} {e['commit'][:7]} -> {sha[:7]}")
+        move = f"{e['commit'][:7]} -> {sha[:7]}"
         lic = remote_license(e)
         if lic is None:
-            print(f"UNREACHABLE {e['key']} 授權檔無法取得（clone 失敗）")
+            print(f"UPDATED {e['key']} {move}（授權檔無法取得：clone 失敗）")
         elif lic != (e.get("license_file"), e.get("license_blob")):
-            print(f"LICENSE-CHANGED {e['key']} {e.get('license_file') or '無'} -> {lic[0] or '無'}")
+            print(f"LICENSE-CHANGED {e['key']} {e.get('license_file') or '無'} -> {lic[0] or '無'}（commit {move}）")
+        else:
+            print(f"UPDATED {e['key']} {move}")
     return 3 if changed else 0
 
 
@@ -188,9 +218,12 @@ def main(argv: list[str]) -> int:
             print(json.dumps(asdict(parse_url(a.url)), ensure_ascii=False))
             return 0
         return lock_add(a) if a.lcmd == "add" else lock_check(a)
-    except UrlError as ex:
+    except (UrlError, LockError) as ex:
         print(ex, file=sys.stderr)
         return 2
+    except RuntimeError as ex:
+        print(ex, file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

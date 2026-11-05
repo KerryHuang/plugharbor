@@ -2,6 +2,7 @@
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -34,6 +35,14 @@ def commit(repo, name):
     git(repo, "commit", "-q", "-m", name)
 
 
+def rmtree(path):
+    """Windows 的 .git/objects 是唯讀檔，先 chmod 再刪。"""
+    def onerror(func, p, _):
+        os.chmod(p, stat.S_IWRITE)
+        func(p)
+    shutil.rmtree(path, onerror=onerror)
+
+
 def head(repo):
     return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True,
                           text=True, check=True).stdout.strip()
@@ -52,7 +61,7 @@ class HarvestTest(unittest.TestCase):
         self.lock = self.tmp / "harvest-lock.json"
 
     def tearDown(self):
-        shutil.rmtree(self.tmp, ignore_errors=True)
+        rmtree(self.tmp)
 
     def add(self, target="research:ai-radar", up=None):
         up = up or self.up
@@ -76,9 +85,22 @@ class HarvestTest(unittest.TestCase):
         self.assertEqual(parse("https://github.com/o/r.git/")["key"], "o/r")
         self.assertEqual(parse("https://github.com/o/r")["ref"], "")
 
-    def test_parse_url_other_host(self):
+    def test_parse_url_other_host_keeps_host_in_key(self):
         j = parse("https://gitlab.com/g/sub/r")
-        self.assertEqual((j["clone_url"], j["key"]), ("https://gitlab.com/g/sub/r.git", "g/sub/r"))
+        self.assertEqual((j["clone_url"], j["key"]), ("https://gitlab.com/g/sub/r.git", "gitlab.com/g/sub/r"))
+
+    def test_parse_url_no_scheme(self):
+        self.assertEqual(parse("github.com/o/r")["clone_url"], "https://github.com/o/r.git")
+
+    def test_parse_url_ssh(self):
+        j = parse("git@github.com:o/r.git")
+        self.assertEqual((j["clone_url"], j["key"]), ("https://github.com/o/r.git", "o/r"))
+
+    def test_parse_url_bare_word_is_not_local_path(self):
+        os.makedirs(self.tmp / "plugins", exist_ok=True)
+        r = subprocess.run([sys.executable, str(SCRIPT), "parse-url", "plugins"], capture_output=True,
+                           text=True, encoding="utf-8", cwd=self.tmp)
+        self.assertEqual(r.returncode, 2)
 
     def test_parse_url_local_path(self):
         self.assertEqual(parse(str(self.up))["clone_url"], str(self.up.resolve()))
@@ -154,10 +176,29 @@ class HarvestTest(unittest.TestCase):
 
     def test_lock_check_unreachable(self):
         self.add()
-        shutil.rmtree(self.up)
+        rmtree(self.up)
         r = self.check()
         self.assertEqual(r.returncode, 3)
         self.assertIn("UNREACHABLE", r.stdout)
+
+    def test_lock_add_dual_license(self):
+        commit(self.up_nolicense, "LICENSE-MIT")
+        commit(self.up_nolicense, "LICENSE-APACHE")
+        e = self.add(up=self.up_nolicense)
+        self.assertEqual(e["license_file"], "LICENSE-APACHE, LICENSE-MIT")
+
+    def test_lock_check_one_line_per_entry(self):
+        self.add(up=self.up_nolicense)
+        commit(self.up_nolicense, "LICENSE")
+        r = self.check()
+        self.assertEqual(len(r.stdout.strip().splitlines()), 1, r.stdout)
+        self.assertIn("LICENSE-CHANGED", r.stdout)
+
+    def test_lock_check_corrupt_lock_exit2(self):
+        self.lock.write_text("{not json", encoding="utf-8")
+        r = self.check()
+        self.assertEqual(r.returncode, 2)
+        self.assertNotIn("Traceback", r.stderr)
 
     def test_lock_check_no_lock(self):
         r = run("lock", "check", str(self.tmp / "none.json"))

@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.4.1] - 2026-11-05
+
+- fix(plugin-harvest): 第④批延後小問題——`parse-url` 支援無 scheme 與 SSH 網址、非 GitHub 主機的 key 帶主機名、裸字不再被當成本機路徑；授權檔認 `LICENSE-MIT`／`LICENSE-APACHE`／`UNLICENSE` 等並支援雙授權；`lock check` 每筆一行、鎖定檔壞掉 exit 2 不丟 traceback、查授權改無 blob 淺 clone（`--filter=blob:none` + `ls-tree`）；測試清理相容 Windows 唯讀檔。
+- docs: plugin 搜尋來源從 ai-radar `sources.md` 搬到共用 `references/plugin-sources.md`，plugin-harvest 搜尋步驟引用；`plugin-eval.md` 比對鍵說明對齊程式，註明分支名含 `/` 的限制。
+- chore: `package.json` 版號補齊（0.4.0 漏改）。
+
 ## [0.4.0] - 2026-11-05
 
 - feat(plugin-harvest): 候選來源加入 skills.sh 搜尋 API（查不到就略過），搜尋階段不執行 `npx skills`；排序的相關度也納入觸發這次搜尋的能力缺口。

@@ -23,17 +23,6 @@
 | X / Twitter（透過搜尋摘要） | 即時動態、作者第一手分享 |
 | GitHub Trending / awesome-* 清單 | 熱門工具與範式 |
 
-## 區塊 4 — Marketplace / Plugin 排行
-
-| 來源 | 說明 |
-|------|------|
-| GitHub topic：`claude-code`、`claude-code-plugin`、`awesome-claude-code` | plugin / skill 集散與排行 |
-| Claude Code plugin marketplaces（官方與社群） | 可裝的 marketplace 列表 |
-| npm / VS Code Marketplace（AI、agent 類） | 下載量 / 安裝量排行 |
-| Reddit / HN「推薦 plugin」討論串 | 真實使用者推薦 |
-
-候選必回報：星數、最近 push 日期、最新版號（沒有填 `-`）、討論熱度、一句話用途（4b 挑選深讀對象用）。
-
 ## 篩選原則
 
 - 優先**近一週**、**高互動**（星數 / 讚 / 留言）、**有具體做法或規範**的內容。
