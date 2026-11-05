@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.3.0] - 2026-11-05
+
+- feat(plugin-harvest): 新 skill——領域搜尋熱門 plugin → 深讀對照基準 → 逐條核准的具體提案 → 只套用核准的；採納時寫 `harvest-lock.json`（來源、commit、授權檔 hash），`--check-lock` 檢查上游更新與授權變動；`--lean` 給 ai-radar 週報用。
+- feat(plugin-harvest): `skills/plugin-harvest/scripts/harvest.py`（網址拆解、鎖定檔寫入與檢查，純標準庫＋git）。
+- refactor: `plugin-eval.md`、`adoption-backlog.md` 搬到 plugin 根 `references/`，兩個 skill 共用；網址一律經 `harvest.py parse-url` 拆解。
+
 ## [0.2.1] - 2026-11-03
 
 - fix(ai-radar): 深讀 subagent 不再自己 rm -rf clone 目錄（會被使用者確認規則擋下而卡住），改回報「待清」路徑，由主執行緒一條指令刪完。

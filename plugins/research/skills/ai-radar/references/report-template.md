@@ -31,7 +31,7 @@
 | … | marketplace / plugin | … | … | …（清單類註明「清單，不評」） |
 
 ## 4b. 深讀評估
-> 最多 5 張卡，格式見 `references/plugin-eval.md`「評估卡範本」；不足 5 張註明原因。
+> 最多 5 張卡，格式見 `${CLAUDE_PLUGIN_ROOT}/references/plugin-eval.md`「評估卡範本」；不足 5 張註明原因。
 
 ### <名稱>（<repo 網址>，★…，最近 push …）
 - …

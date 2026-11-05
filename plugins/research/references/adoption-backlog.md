@@ -1,11 +1,11 @@
 # 採納待辦（adoption backlog）對帳規則
 
-ai-radar 各區塊的建議如何進 backlog、評分、去重、分流、記狀態。
-living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見 SKILL.md「輸出位置」）。
+ai-radar（區塊 1–5 的建議）與 plugin-harvest（評估卡、提案裁決）共用這份規則：如何進 backlog、評分、去重、分流、記狀態。
+living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見兩個 SKILL.md 的「輸出位置」，兩者相同）。
 
-## 對帳流程（ai-radar 跑完區塊 1–5 後執行一次）
+## 對帳流程（ai-radar 跑完區塊 1–5、plugin-harvest 跑完深讀與核准後，各執行一次）
 
-1. **收集**：把區塊 1–5 產出的每條「建議 / 行動草案 / 漂移項」列為候選。
+1. **收集**：ai-radar 收區塊 1–3、5 產出的每條「建議 / 行動草案 / 漂移項」；評估卡由 plugin-harvest 對帳（含 `--lean`），ai-radar 不重複收。
 2. **Triage 評分**：影響 × 可行性 × 契合度（各 高3 / 中2 / 低1，乘積 1–27）。
    - **影響**：對工作流品質 / 效率的幫助有多大。
    - **可行性**：接入 / 套用的難度（低成本＝高分）。
@@ -16,14 +16,18 @@ living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見 SKILL.md「輸出位置�
    - 已完成 → 不加。
    - ⚠ 這步是「不 evaporate 又不洗版」的關鍵，等同 kb-audit 的「dedup vs seen」教訓。
 4. **append 新項**：狀態 = `待評估`，填 來源 / 摘要 / 分數 / 建議交棒。
-5. **深讀評估卡**（區塊 4b 與 `--plugin`，規則見 `plugin-eval.md`）：
+5. **深讀評估卡**（plugin-harvest 各模式，規則見 `plugin-eval.md`）：
    - 結論「直接裝用／借鑒做法」→ append，狀態 = `待評估`，接入方式欄填卡片的接入方式或借鑒做法。
    - 結論「不理」→ 也 append，狀態 = `駁回`，決策備註填理由；triage 照打，契合度給 1。
      （新增項，不違反「不擅自改既有項狀態」；記下來是為了讓下週跳過它。）
    - 來源欄必有 repo 網址；決策備註加固定標記 `已深讀 YYYY-MM-DD v<版號>`。
    - 同一 repo 已有列（舊列或重評）→ **不新增**，更新該列的證據、標記與決策備註，**狀態不動**。
    - clone 失敗的半張卡不對帳。
-6. **浮出未結**：週報頂端列 open 且 **Triage ≥ 12** 的高分待辦，提醒使用者處理。
+6. **提案裁決**（plugin-harvest 領域／單一 repo 模式；`--lean` 沒有提案）：提案以所屬卡片那一列為準，不另開列。
+   - 核准且已套用 → 該列決策備註加 `已採納 P<n> → <plugin:skill>（harvest-lock key）`；狀態由使用者確認後才改 `已完成`。
+   - 延後 → 決策備註加 `延後 P<n>：<一句話>`，狀態不動。
+   - 駁回 → 決策備註加 `駁回 P<n>：<理由>`；整張卡的提案都駁回時，向使用者提議把該列改 `駁回`（不擅自改）。
+7. **浮出未結**：ai-radar 週報頂端列 open 且 **Triage ≥ 12** 的高分待辦，提醒使用者處理。
 
 ## 交棒路由（把建議變成行動的統一入口）
 
@@ -32,7 +36,7 @@ living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見 SKILL.md「輸出位置�
 | 改 skill / rule / hook（區塊3 類） | `superpowers:writing-skills` |
 | 知識庫內容 / 漂移（區塊5 類，專案有該 skill 時） | `update-knowledge-base` |
 | 新工具 / MCP / plugin 接入（區塊1/4 類） | 手動（backlog 記接入方式草案）→ 視情況 `update-config`（settings/MCP）|
-| 借鑒外部 plugin 做法（區塊4b 類） | `superpowers:writing-skills` |
+| 借鑒外部 plugin 做法（plugin-harvest 評估卡） | `plugin-harvest <repo 網址>` 產提案、逐條核准後套用 |
 | 最佳實踐流程（區塊2 類） | 視標的：skill → `superpowers:writing-skills`、慣例 → 手動改 rule |
 
 ## 新能力評估（facet ②：不要停在「知道有這個」）
@@ -44,11 +48,11 @@ living 檔：`<OUT>/adoption-backlog.md`（`<OUT>` 見 SKILL.md「輸出位置�
 ## 狀態機規則
 
 `待評估 → 採納 → 進行中 → 已完成`；旁支 `駁回`(必附理由)、`延後`(附再看時機)。
-狀態變更由使用者決定或確認；**ai-radar 只 append 新項與浮出未結，不擅自改既有項狀態**。
+狀態變更由使用者決定或確認；**ai-radar 與 plugin-harvest 只 append 新項、更新決策備註與浮出未結，不擅自改既有項狀態**。
 
 ## backlog 檔格式
 
-`<OUT>/adoption-backlog.md` 第一次建立時用下表，每項一列。新項一律 append；唯一例外是深讀評估卡（對帳流程第 5 步）：同一比對鍵已有列時就地更新該列的分數與決策備註（證據寫成卡片所在檔的連結），狀態不動：
+`<OUT>/adoption-backlog.md` 第一次建立時用下表，每項一列。新項一律 append；唯一例外是深讀評估卡與提案裁決（對帳流程第 5、6 步）：同一比對鍵已有列時就地更新該列的分數與決策備註（證據寫成卡片所在檔的連結），狀態不動：
 
 ```markdown
 | # | 來源（連結 + 日期） | 摘要 | 影響×可行性×契合度 | 狀態 | 建議交棒／接入方式 | 決策備註 |

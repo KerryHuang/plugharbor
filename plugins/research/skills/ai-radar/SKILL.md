@@ -20,7 +20,7 @@ agent system（及專案知識庫）的最佳化／時效機會。跑完後**對
 - **`--plugin <repo 網址>`**：單獨評估模式。只跑深讀評估（基準清單 → 一個深讀
   subagent → 評估卡），跳過區塊 1–5 與週報，也不套用「跳過已評過的」規則；卡片寫到
   `<OUT>/plugin-eval/YYYY-MM-DD-<repo 名稱 slug>.md`，再做採納待辦對帳。規則見
-  [references/plugin-eval.md](references/plugin-eval.md)。
+  [`${CLAUDE_PLUGIN_ROOT}/references/plugin-eval.md`](../../references/plugin-eval.md)。
 
 > 今天日期以使用者環境 / 對話中的當前日期為準，據此換算時間窗。
 
@@ -81,7 +81,7 @@ repo）；專案要讓週報進版控，就由專案自己宣告 `ai-radar-outpu
 - **4a 排行**：派 `general-purpose` agent（`model: sonnet`）以 `WebSearch` / `WebFetch` 查最多
   人推薦 / 使用的軟體工程 / vibe coding marketplace 與 plugin；列名稱、簡述、連結、
   為何熱門，每個候選必回報星數、最近 push、最新版號、討論熱度、一句話用途。
-- **4b 深讀評估**：依 [references/plugin-eval.md](references/plugin-eval.md)：
+- **4b 深讀評估**：依 [`${CLAUDE_PLUGIN_ROOT}/references/plugin-eval.md`](../../references/plugin-eval.md)：
   1. 主執行緒產一次「基準清單」（要對照的自家 plugin；決定順序見該檔「基準清單」）。
   2. 依「候選挑選」取前 5 個（跳過 backlog 已標 `已深讀` 的，往下遞補）。
   3. 依「深讀 subagent prompt」每個候選派一個 sonnet subagent，同一則訊息並行；只 clone 讀、不安裝不執行。
@@ -110,7 +110,7 @@ repo）；專案要讓週報進版控，就由專案自己宣告 `ai-radar-outpu
   open 且高分（≥12）的未結待辦提醒處理。
 - 新工具 / plugin 類候選，triage 時**多帶一句接入方式草案**（要加哪個 MCP、換哪個
   skill 派工 model…），別停在「知道有這個」。
-- 精確規則（評分、dedup、交棒路由、狀態機）→ [references/adoption-backlog.md](references/adoption-backlog.md)。
+- 精確規則（評分、dedup、交棒路由、狀態機）→ [`${CLAUDE_PLUGIN_ROOT}/references/adoption-backlog.md`](../../references/adoption-backlog.md)。
 - **不擅自改既有項狀態**；狀態變更由使用者決定或確認。
 
 ## 品質規則
