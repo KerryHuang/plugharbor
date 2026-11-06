@@ -34,6 +34,7 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `auto-session-title.py` | ✅ UserPromptSubmit | 無：Codex 用自己的 session 標題，可 `/rename`；不為產標題背景啟動 Claude，也不寫 Codex 內部 session DB | 無：未接 agy 的 hook（adapter 只註冊 Stop） | 無：沒有 hook；`setup/herdr/pi/session-title-prompt.md` 只是命名用提示詞，不是 hook |
 | `feedback-capture.py` | ✅ UserPromptSubmit | 無：回饋佇列只在 Claude 收集；未接 Codex 的 UserPromptSubmit | 無 | 無 |
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
+| `herdr-env-context.py` | ✅ SessionStart | 無：adapter 未移植；照 dispatch 規則自行查 `HERDR_ENV` | 無 | 無：pi 沒有 hook 機制 |
 | `retro-due-reminder.py` | ✅ SessionStart `startup` | 無：adapter 未移植；在 Codex 手動跑 retrospective | 無 | 無：pi 沒有 hook 機制 |
 | `loop-guard.py` | ✅ PostToolUseFailure、UserPromptSubmit（重置主 session） | ✅ PostToolUse：`loop-guard.mjs` 轉給同一支 `loop-guard.py`。Codex 沒有失敗事件、`tool_response` 只有輸出字串，成敗改查 `transcript_path` 裡同 `tool_use_id` 的 `item_completed`（`status: failed`／`exit_code`）；輪界用 `turn_id`；subagent 帶 `agent_id`。狀態在 `~/.codex/loop-guard/` | 無：adapter 只替 agy 註冊 Stop | 無：pi 沒有 hook 機制 |
 | `context-size-reminder.py` | ✅ Stop | 無：依賴 Claude transcript 格式與 context 級距；Codex 自己管理 context | 無 | 無 |

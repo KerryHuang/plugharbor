@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.14.0] - 2026-11-06
+
+- feat: 新增 SessionStart hook `herdr-env-context.py`。在 herdr 內時開場注入一行狀態，agent 不必為了確認能否開 pane 多跑一次檢查、再把它講給使用者聽；不在 herdr 內時不輸出。所有 source 都觸發（resume 可能換 pane，compact 會洗掉注入內容）。`rules/dispatch.md` 同步：有注明就直接開，沒注明才查，且檢查不單獨報告。
+
 ## [0.13.1] - 2026-11-06
 
 - fix: Windows 的 Codex 上 11 支 python hook 全部沒跑。Codex 經 `powershell -Command` 執行 hook，`sh -c '…"…"…'` 內層的雙引號被 PowerShell 吃掉，sh 報語法錯誤。改成 `sh "${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh" <腳本>`，python3／python 的退路與 fail-open 移進新的 `hooks/run-py.sh`；測試鎖定指令只能有一層引號。
