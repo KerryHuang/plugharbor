@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.15.1] - 2026-11-06
+
+- fix(retrospective): `--apply` 不再把當次情境寫進 skill。刪掉 P1 帶日期的標記、把 `apply-changes.md` 的事故段改寫成一句規則；`improvement-loop.md` 第 2 節新增「本文只寫通則，情境留在報告、帳本或 CHANGELOG」，`feedback-review` 一併適用。
+
 ## [0.15.0] - 2026-11-06
 
 - feat(agent-dispatch): herdr pane worker 沒寫結果檔就結束時，Stop hook 也會攔一次。pane 開啟時帶 `AGENT_DISPATCH_RESULT` 與 `AGENT_DISPATCH_INTERACTIVE=1`；互動模式的提示是「做完就寫檔回報，還沒做完就不要寫、直接再結束一次」，避免等人回答時寫出「待決」的結果檔被當成完成。Ghostty 分割維持不設。
