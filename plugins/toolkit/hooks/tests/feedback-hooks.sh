@@ -146,7 +146,7 @@ rm -f "$RF/queue.processing.jsonl"
 # --- hooks.json 的啟動殼：PATH 上的 python3 是壞掉的 stub 也要找到能跑的直譯器 ---
 CMD="$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf-8")); print([h["hooks"][0]["command"] for h in d["hooks"]["UserPromptSubmit"] if "feedback-capture" in h["hooks"][0]["command"]][0])' "$PLUGIN_DIR/hooks/hooks.json")"
 FB="$TMP/fakebin"; LH="$TMP/lhome"; mkdir -p "$FB" "$LH/plugin/hooks"
-cp "$CAPTURE" "$LH/plugin/hooks/"
+cp "$CAPTURE" "$PLUGIN_DIR/hooks/run-py.sh" "$LH/plugin/hooks/"
 export CLAUDE_PLUGIN_ROOT="$LH/plugin"
 printf '#!/bin/sh\nexit 9009\n' > "$FB/python3"; chmod +x "$FB/python3"
 REAL="$(command -v "$PY")"; printf '#!/bin/sh\nexec "%s" "$@"\n' "$REAL" > "$FB/python"; chmod +x "$FB/python"

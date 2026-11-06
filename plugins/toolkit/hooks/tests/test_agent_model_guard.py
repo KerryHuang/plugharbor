@@ -4,8 +4,11 @@ agent-model-guard：general-purpose 沒指定 model 時補 sonnet，其餘一律
 fail-open：hooks.json 裡每條 python hook 指令，腳本檔不存在時都要 exit 0（不能擋掉 Bash／Write／Edit）。
 """
 import json
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -51,13 +54,24 @@ class HooksFailOpen(unittest.TestCase):
     def test_every_python_hook_is_covered(self):
         self.assertEqual(len(python_hook_commands()), 11)
 
-    def test_missing_script_exits_zero(self):
-        # CLAUDE_PLUGIN_ROOT 指向不存在的目錄 → 腳本缺檔 → 必須 exit 0 且無輸出
+    def test_commands_survive_powershell_quoting(self):
+        # Windows 的 Codex 用 powershell -Command 跑 hook，內層雙引號會被吃掉；
+        # 指令只能是「sh "<包裝檔>" <腳本名>」，不得有 sh -c 或第二層引號
+        pattern = re.compile(r'^sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/run-py\.sh" [\w.-]+\.py$')
         for cmd in python_hook_commands():
             with self.subTest(cmd=cmd):
-                resolved = cmd.replace("${CLAUDE_PLUGIN_ROOT}", "/nonexistent/plugin-root")
-                p = subprocess.run(["sh", "-c", resolved], input="{}", capture_output=True, text=True)
-                self.assertEqual((p.returncode, p.stdout), (0, ""), p.stderr)
+                self.assertRegex(cmd, pattern)
+
+    def test_missing_script_exits_zero(self):
+        # CLAUDE_PLUGIN_ROOT 底下只有包裝檔、腳本缺檔 → 必須 exit 0 且無輸出
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / "hooks").mkdir()
+            shutil.copy(HOOKS_DIR / "run-py.sh", Path(root) / "hooks" / "run-py.sh")
+            for cmd in python_hook_commands():
+                with self.subTest(cmd=cmd):
+                    resolved = cmd.replace("${CLAUDE_PLUGIN_ROOT}", root)
+                    p = subprocess.run(["sh", "-c", resolved], input="{}", capture_output=True, text=True)
+                    self.assertEqual((p.returncode, p.stdout), (0, ""), p.stderr)
 
     def test_existing_script_still_runs(self):
         # 對照組：腳本存在時照常 exec（壞輸入由腳本自己 fail-open，仍是 0）
