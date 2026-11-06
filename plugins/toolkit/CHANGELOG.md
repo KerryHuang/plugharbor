@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.14.1] - 2026-11-06
+
+- fix: `herdr-env-context.py` 與 `rules/dispatch.md` 的措辭會被讀成鼓勵開 pane，與「能用 subagent 就不開 pane」牴觸。改成只回答能不能開，該不該開仍照派工判準。
+
 ## [0.14.0] - 2026-11-06
 
 - feat: 新增 SessionStart hook `herdr-env-context.py`。在 herdr 內時開場注入一行狀態，agent 不必為了確認能否開 pane 多跑一次檢查、再把它講給使用者聽；不在 herdr 內時不輸出。所有 source 都觸發（resume 可能換 pane，compact 會洗掉注入內容）。`rules/dispatch.md` 同步：有注明就直接開，沒注明才查，且檢查不單獨報告。
