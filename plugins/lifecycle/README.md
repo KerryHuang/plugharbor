@@ -29,11 +29,12 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 
 `browser-docs`（畫面勘察、PDF 轉檔）、`toolkit`（herdr pane 派工、retrospective）沒裝時照 `references/shared-preludes.md`「可選依賴」降級。
 
-## Skills（21）
+## Skills（22）
 
 | Skill | 用途 |
 |-------|------|
 | `consolidate-docs` | 把帶票號後綴的 CR 規格文件併回主規格（手動） |
+| `demo-video` | 把旁白加操作步驟的腳本錄成有配音、字幕的操作示範影片（MP4＋SRT）：寫稿 → 審稿 → 配音 → 依語音長度錄操作 → 字幕 → 合成 → 驗證，最後由使用者試聽；預設語音 Edge TTS 非正式授權，對外發布前要先確認 |
 | `dev-feedback` | 把規格類 skill 開的票面摩擦追回產生它的那行開票規格，提出刪減清單並寫成報告檔（只做減法，不改 plugin）（手動） |
 | `explore` | 新功能起手、寫規格前快速收斂需求：六維引導問答，產出探索摘要供 lifecycle:spec 使用 |
 | `implement` | 照規格把功能從開分支做到交付 |

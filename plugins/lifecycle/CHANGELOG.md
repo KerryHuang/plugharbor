@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.2.0] - 2026-11-06
+
+- feat(demo-video): 新增 skill——把旁白加操作步驟的腳本錄成有配音、字幕的操作示範影片（MP4＋SRT）。引擎在 skill 內的 `scripts/`：`playwright-core` 加系統 Chrome（或 `CHROME_PATH` 指定的執行檔）的 CDP screencast 錄影、`uvx edge-tts` 配音（可用 `tts` 替換）、字幕由旁白稿切句並以透明 PNG overlay 燒入、合成後分別驗證影像軌與音軌長度與各段音量。
+- feat(demo-video): SKILL.md 寫明 Edge TTS 非正式授權、對外發布前先確認；AI 聽不到聲音，驗證完成的狀態是等使用者試聽。
+- test(demo-video): 字幕切句與 SRT 單元測試；端到端回歸測試用本機靜態頁與假 TTS，最後一段畫面完全靜止仍須影像軌與音軌長度一致，並斷言操作前後與片尾的影格內容確實不同（畫面凍結也會失敗）；缺 ffmpeg、Chrome 或 playwright-core 時跳過，設 `DEMO_VIDEO_E2E_REQUIRED=1`（CI 專用步驟）則改為失敗。
+- docs(operation-manual): 加一行指向 `demo-video`。
+
 ## [1.1.2] - 2026-11-05
 
 - fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件改用 `route.mjs reviewer` 挑不同家族），與 `skills/implement/references/dispatch.md` 不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。

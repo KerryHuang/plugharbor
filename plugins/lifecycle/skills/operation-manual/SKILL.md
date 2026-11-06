@@ -14,6 +14,7 @@ disable-model-invocation: true
 
 > **分工**：`browser-docs:live-drive` 是通用實機操作（重現 bug、跑 e2e），本 skill 是手冊特化流程；
 > 手冊流程與 `qa-verify`（驗收報告）產物、落點都不同，**兩者互不取代**。
+> 要的是有配音字幕的操作示範**影片**時，改用 `lifecycle:demo-video`。
 
 ## 產出
 
