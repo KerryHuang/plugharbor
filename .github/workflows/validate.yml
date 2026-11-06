@@ -41,6 +41,14 @@ jobs:
       - name: Skill 腳本測試（node --test）
         run: node --test $(git ls-files 'plugins/**/*.test.mjs') 'setup/adapters/tests/*.test.mjs'
 
+      - name: demo-video 端到端測試（本機靜態頁＋假 TTS，需 ffmpeg、Chrome、playwright-core）
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          mkdir -p "$RUNNER_TEMP/dv" && cd "$RUNNER_TEMP/dv"
+          npm init -y >/dev/null && npm install --silent playwright-core
+          # 缺依賴時要失敗，不能跳過後仍顯示成功
+          DEMO_VIDEO_E2E_REQUIRED=1 node --test "$GITHUB_WORKSPACE/plugins/lifecycle/skills/demo-video/scripts/e2e.test.mjs"
+
       - name: Hook 測試（pytest 與 shell）
         run: |
           pip install pytest opencc-python-reimplemented
