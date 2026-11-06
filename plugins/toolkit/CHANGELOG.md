@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.15.0] - 2026-11-06
+
+- feat(agent-dispatch): herdr pane worker 沒寫結果檔就結束時，Stop hook 也會攔一次。pane 開啟時帶 `AGENT_DISPATCH_RESULT` 與 `AGENT_DISPATCH_INTERACTIVE=1`；互動模式的提示是「做完就寫檔回報，還沒做完就不要寫、直接再結束一次」，避免等人回答時寫出「待決」的結果檔被當成完成。Ghostty 分割維持不設。
+- fix: 修正 `dispatch-stop-guard.py` 註解誤寫 Ghostty 分割會設變數。
+
 ## [0.14.1] - 2026-11-06
 
 - fix: `herdr-env-context.py` 與 `rules/dispatch.md` 的措辭會被讀成鼓勵開 pane，與「能用 subagent 就不開 pane」牴觸。改成只回答能不能開，該不該開仍照派工判準。

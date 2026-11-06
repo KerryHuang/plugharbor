@@ -101,13 +101,14 @@ argument-hint: "[對象] <任務>"
 2. 在同一個 tab 切 pane、重排，再起對方的 CLI。`pane_id` 從回傳的 `result.pane.pane_id` 讀，不要自己推算：
 
    ```bash
-   herdr pane split --current --direction right --cwd "<cwd>" --no-focus
+   herdr pane split --current --direction right --cwd "<cwd>" --no-focus --env AGENT_DISPATCH_RESULT="<結果檔>" --env AGENT_DISPATCH_INTERACTIVE=1
    python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID" --label <短名>
    herdr agent start <唯一名稱> --kind <claude|codex|agy|pi> --pane <pane_id>
    ```
 
    - 每開一個 pane 就跑一次 `herdr_layout.py`（主 session 最大並掛「★」標籤，同 tab 最多 6 個 worker）；不手動 `--direction down`、不 `pane resize`。`--label` 第一次給即可。
-   - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`，取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
+   - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
+   - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`（`--env` 同上），取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
    - 起好後 `herdr pane rename <pane_id> <名稱>`。
    - 指定 agent 定義（claude／codex）：`agent start` 尾端加 `-- --agent <plugin>:<agent>`，套用其工具白名單與 model。
    - `agent start` 失敗：先 `herdr pane read <pane_id>` 留畫面，再關掉這個 pane，連同畫面摘要回報；`agent_not_ready` 多半是 cwd 問題。

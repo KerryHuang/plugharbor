@@ -19,10 +19,12 @@ class DispatchStopGuard(unittest.TestCase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def run_hook(self, stdin='{"hook_event_name": "Stop"}', result=True):
-        env = {k: v for k, v in os.environ.items() if k != "AGENT_DISPATCH_RESULT"}
+    def run_hook(self, stdin='{"hook_event_name": "Stop"}', result=True, interactive=False):
+        env = {k: v for k, v in os.environ.items() if k not in ("AGENT_DISPATCH_RESULT", "AGENT_DISPATCH_INTERACTIVE")}
         if result:
             env["AGENT_DISPATCH_RESULT"] = str(self.result)
+        if interactive:
+            env["AGENT_DISPATCH_INTERACTIVE"] = "1"
         p = subprocess.run([sys.executable, str(HOOK)], input=stdin.encode("utf-8"), capture_output=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr.decode("utf-8", "replace"))
         return p.stdout.decode("utf-8").strip()
@@ -34,6 +36,25 @@ class DispatchStopGuard(unittest.TestCase):
         out = json.loads(self.run_hook())
         self.assertEqual(out["decision"], "block")
         self.assertIn(str(self.result), out["reason"])
+
+    def test_background_reason_does_not_offer_skip(self):
+        self.assertNotIn("再結束一次", json.loads(self.run_hook())["reason"])
+
+    def test_interactive_missing_result_blocks_with_way_out(self):
+        out = json.loads(self.run_hook(interactive=True))
+        self.assertEqual(out["decision"], "block")
+        self.assertIn(str(self.result), out["reason"])
+        self.assertIn("不要寫結果檔", out["reason"])
+
+    def test_interactive_second_stop_passes(self):
+        self.assertEqual(self.run_hook('{"stop_hook_active": true}', interactive=True), "")
+
+    def test_interactive_result_written_passes(self):
+        self.result.write_text("完成", encoding="utf-8")
+        self.assertEqual(self.run_hook(interactive=True), "")
+
+    def test_interactive_without_result_var_passes(self):
+        self.assertEqual(self.run_hook(result=False, interactive=True), "")
 
     def test_result_written_passes(self):
         self.result.write_text("完成", encoding="utf-8")
