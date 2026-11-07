@@ -85,7 +85,7 @@ button.drill.mismatch{color:var(--bad);border-color:var(--bad)}
     list.textContent = '';
     d.items.forEach(function(it){
       var li = el('li'), id;
-      if (it.url) { id = el('a', it.id); id.href = it.url; id.target = '_blank'; id.rel = 'noopener'; } else { id = el('span', it.id); }
+      if (it.url && /^https?:\/\//i.test(it.url)) { id = el('a', it.id); id.href = it.url; id.target = '_blank'; id.rel = 'noopener'; } else { id = el('span', it.id); }
       li.appendChild(id); li.appendChild(el('span', it.title));
       li.appendChild(el('span', [it.assignee, it.meta].filter(Boolean).join('｜'))).className = 'meta';
       list.appendChild(li);

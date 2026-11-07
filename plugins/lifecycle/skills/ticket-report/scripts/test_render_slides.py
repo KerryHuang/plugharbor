@@ -87,6 +87,10 @@ class RenderSlidesTest(unittest.TestCase):
         self.assertNotIn("<!--", embedded)
         self.assertEqual(v.returncode, 0, v.stderr)
 
+    def test_drawer_only_links_http_urls(self):
+        _, html, _ = run()
+        self.assertIn(r"/^https?:\/\//i.test(it.url)", html)
+
     def test_label_form_for_non_numeric_button(self):
         r, html, v = run(DRAFT.replace("第一點，共 {{review}} 張", "案子 {{review|成品出庫}}"))
         self.assertEqual(r.returncode, 0, r.stderr)

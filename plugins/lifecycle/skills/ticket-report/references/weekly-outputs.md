@@ -57,10 +57,10 @@ report-writer 只寫草稿，HTML 由 `scripts/render_slides.py` 組出來：可
 
 以下行為由腳本和骨架負責，不用寫進草稿：
 
-版面骨架＝**議程的分鐘預算**：左側標尺標每節佔幾分鐘，加總 30。這個結構裝置編碼的是真實約束，不是裝飾。
+版面骨架＝**議程的分鐘預算**：每節標題標分鐘數，加總 30。這個結構裝置編碼的是真實約束，不是裝飾。
 
 **數字可點開**：每個統計數字是 `<button class="drill" data-k="...">`，點擊從底部滑出抽屜，列出 ID／標題／負責人／meta。
-負責人取 `assignee`、連結取 `url`；沒有 `url` 就顯示純文字，不自己拼。
+負責人取 `assignee`、連結取 `url`；沒有 `url` 或不是 http(s) 網址就顯示純文字，不自己拼。
 `priority`、`dueDate` 是選配欄：dataset 有才進 meta，沒有就不顯示該欄。
 資料以 `<script id="drill-data" type="application/json">` 內嵌，**不要外部請求**（會議室可能沒網路）；內嵌 JSON 中的 `</` 要寫成 `<\/`。
 抽屜內容一律用 `textContent` 寫入，票標題不當 HTML 解析。
