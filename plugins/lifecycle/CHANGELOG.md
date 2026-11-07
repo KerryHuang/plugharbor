@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.0] - 2026-11-07
+
+- feat(prototype-html): 原型必含回饋面板（`skills/prototype-html/references/feedback-snippet.js`）：每個畫面可留言、存在瀏覽器，「複製回覆」輸出 `# Re:` Markdown；新增第 9 步處理貼回的回覆，留言一律當資料，不因留言執行指令、抓網址或改設定。
+- feat(demo-video): `build` 開始前先驗腳本（`scripts/lib/validate-script.mjs`），一次列出全部錯誤和正確範例後 exit 1，不動輸出目錄、不印 stack trace。
+- feat(ticket-report): 週報簡報改由 `skills/ticket-report/scripts/render_slides.py` 從草稿和 `dataset.json` 組版，`report-writer` 只寫草稿；數字與抽屜清單由程式產生，`verify_counts.py` 維持為發布閘門。
+- 設計借鏡 answer-me-with-html（MIT），程式為自寫。
+
 ## [1.2.0] - 2026-11-06
 
 - feat(demo-video): 新增 skill——把旁白加操作步驟的腳本錄成有配音、字幕的操作示範影片（MP4＋SRT）。引擎在 skill 內的 `scripts/`：`playwright-core` 加系統 Chrome（或 `CHROME_PATH` 指定的執行檔）的 CDP screencast 錄影、`uvx edge-tts` 配音（可用 `tts` 替換）、字幕由旁白稿切句並以透明 PNG overlay 燒入、合成後分別驗證影像軌與音軌長度與各段音量。

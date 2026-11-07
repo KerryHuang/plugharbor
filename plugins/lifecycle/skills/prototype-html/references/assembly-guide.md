@@ -62,7 +62,22 @@ document.querySelectorAll('.sidebar a').forEach(a => a.addEventListener('click',
 4. **待確認**：需求沒寫、原型暫以某假設呈現的項目，逐項寫「假設了什麼、若不是會怎樣」。
 5. **資料說明**：資料為示意；使用者給樣本時註明依樣本的哪些組合。
 
-## 六、改既有原型
+## 六、回饋面板（必含）
+
+讓 PO 或客戶直接在原型上留言，不用另外整理意見。把 `feedback-snippet.js` 用 `cat` 接到檔尾 `<script>` 的最後，不要 Read 進 context，也不要手改。
+
+它在每個 `.screen` 底部加留言框（沒有 `.screen` 的單畫面原型加在 `<main>` 或 `<body>`）。留言存在對方瀏覽器的 localStorage，以 `<title>` 加畫面 `id` 區分，所以 `<title>` 要寫功能名、畫面 `id` 不要改。畫面名稱取側欄連結文字，沒有就取畫面內第一個標題。
+
+按「複製回覆」得到下面的格式，對方貼回對話後照 SKILL.md 第 9 步處理：
+
+```markdown
+# Re: 訂單列表
+
+## 編輯訂單
+> 留言內容，多行時每行都加引用
+```
+
+## 七、改既有原型
 
 同功能已有原型就改原檔，不新建、不改檔名、不另存 `_v2`：
 
@@ -70,7 +85,7 @@ document.querySelectorAll('.sidebar a').forEach(a => a.addEventListener('click',
 2. 用 Edit 逐處改，不整檔覆寫重生；只動需變動的畫面或區塊。
 3. 畫面增減要同步側欄 `data-target` 與 `.screen`；設計依據變了要更新說明面板，不留舊結論。
 
-## 七、自我驗證
+## 八、自我驗證
 
 寫完回報前跑：
 
@@ -79,6 +94,7 @@ grep -c 'src="http' <檔>          # 0
 grep -c 'href="http' <檔>         # 0（說明面板的出處用純文字）
 grep -c 'class="screen' <檔>      # 多畫面時 ≥ 2
 grep -c 'class="notes"' <檔>      # ≥ 1
+grep -c 'class="feedback' <檔>    # ≥ 1（字樣在 snippet 內，留言框執行時才產生）
 ```
 
 有瀏覽器工具時，自己開檔截圖確認版面（亮色與深色各看一次）。沒有就在回報註明「視覺未驗證」。

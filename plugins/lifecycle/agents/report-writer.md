@@ -111,6 +111,7 @@ color: purple
 
 ### HTML 類產出（範本要求 HTML 時）
 
+- 範本指定了組版腳本時，只寫草稿、跑腳本；有錯照輸出改草稿，不手寫 HTML、不手改輸出（數字與清單才不會由模型經手）
 - 單檔 self-contained，CSS 全 inline，**無外連資源**
 - 資料內嵌成 JS 物件，不從外部載入
 - 寫完自我驗證：`grep -c 'src="http' {out_path}` 應為 0

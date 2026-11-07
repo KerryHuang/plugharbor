@@ -20,6 +20,8 @@ export default {
 }
 ```
 
+`build` 開始前會先檢查 `name`、`base`、`viewport`、`tts`、`setup`、`segments`（`lib/validate-script.mjs`），一次列出全部錯誤和正確範例後 exit 1，不動輸出目錄。改這裡的欄位時要同步該檔。
+
 ## 操作員 `a`
 
 | 方法 | 做什麼 |

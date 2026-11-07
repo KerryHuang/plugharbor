@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url'
 import { loadPlaywright } from './lib/deps.mjs'
 import { createActor, installCursor, nudgeCursor } from './lib/actor.mjs'
 import { buildCues, toSrt } from './lib/subtitles.mjs'
+import { formatScriptErrors, validateScript } from './lib/validate-script.mjs'
 import { assertSafeName, buildFilterGraph, checkStreams, compose, contactSheet, probeDuration, segmentVolume, sh } from './lib/media.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -21,9 +22,10 @@ async function defaultTts(text, outFile, { voice }) {
 
 export async function build(scriptPath, { out = 'out', base } = {}) {
   const cfg = (await import(pathToFileURL(resolve(scriptPath)).href)).default
+  const errs = validateScript(cfg, { base })
+  if (errs.length) throw Object.assign(new Error(formatScriptErrors(errs)), { scriptInvalid: true })
   const name = assertSafeName(cfg.name ?? 'video')
   const url = base ?? cfg.base
-  if (!url) throw new Error('腳本沒有 base，也沒給 --base')
   const voice = cfg.voice ?? 'zh-TW-HsiaoChenNeural'
   const tts = cfg.tts ?? defaultTts
   const gapMs = cfg.gapMs ?? 450 // 語音檔尾端本來就帶約 1 秒靜音，段落間隔不要再加多
@@ -169,7 +171,13 @@ export function verify(outDir) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, target, ...rest] = process.argv.slice(2)
   const opt = (k) => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined }
-  if (cmd === 'build' && target) await build(target, { out: opt('--out'), base: opt('--base') })
+  if (cmd === 'build' && target) {
+    await build(target, { out: opt('--out'), base: opt('--base') }).catch((e) => {
+      if (!e.scriptInvalid) throw e
+      console.error(e.message)
+      process.exit(1)
+    })
+  }
   else if (cmd === 'verify' && target) verify(target)
   else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | verify <out-dir>'); process.exit(2) }
 }

@@ -15,6 +15,24 @@
       "targets": [
         "workspace:review"
       ]
+    },
+    {
+      "clone_url": "https://github.com/QingYunA/answer-me-with-html.git",
+      "ref": "",
+      "subpath": "",
+      "key": "qingyuna/answer-me-with-html",
+      "version": "0.5.11",
+      "commit": "053619b917c6bf2e17eae5496d05eb08e10fe889",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_blob": "17eca290eefa4fa9d5594edcad845be8df899eb0",
+      "subtree": null,
+      "adopted": "2026-11-07",
+      "targets": [
+        "lifecycle:demo-video",
+        "lifecycle:prototype-html",
+        "lifecycle:ticket-report"
+      ]
     }
   ]
 }

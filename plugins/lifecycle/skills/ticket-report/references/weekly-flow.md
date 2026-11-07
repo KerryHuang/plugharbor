@@ -5,7 +5,7 @@
 - 指標定義與禁用指標：`${CLAUDE_SKILL_DIR}/references/metrics.md`
 - 查詢與分頁：`${CLAUDE_SKILL_DIR}/references/weekly-query.md`
 - 三份產出的章節與範本：`${CLAUDE_SKILL_DIR}/references/weekly-outputs.md`
-- 簡報 HTML 骨架（可點數字抽屜）：`${CLAUDE_SKILL_DIR}/references/drawer-template.html`
+- 簡報組版腳本（草稿＋dataset → 可點數字抽屜的 HTML）：`${CLAUDE_SKILL_DIR}/scripts/render_slides.py`，骨架是 `references/drawer-template.html`
 - 落地：`${CLAUDE_SKILL_DIR}/references/publishing.md`
 - 行事曆：`${CLAUDE_PLUGIN_ROOT}/references/report-calendar.md`
 
@@ -72,7 +72,7 @@ prompt: |
     「本週押三件事」的優先序與待辦負責人留【人工填】——那是判斷不是資料
     首次執行無前次待辦 → 寫「首場週會，無前次待辦可對照」，不要編
     priority、dueDate 只在 dataset 有提供時才寫；沒有就寫「未提供」，不寫「無」
-    簡報 HTML 依 {絕對路徑}/references/drawer-template.html 的骨架（按鈕 class="drill"、data-k、內嵌 id="drill-data"）
+    簡報只寫草稿 .tmp/weekly-report/slides-{週會日}.draft.md（語法見 template），再跑 python3 {絕對路徑}/scripts/render_slides.py <草稿> <dataset> <out_path>；有錯就照輸出改草稿重跑，不手寫也不手改 HTML
   siblings: |
     {另外兩份的檔名與各自負責的內容}
     三份互相指路（「明細見 X」）但不互相複製內容
@@ -95,7 +95,7 @@ prompt: |
 python3 ${CLAUDE_SKILL_DIR}/scripts/verify_counts.py .tmp/weekly-report/slides-{週會日}.html .tmp/weekly-report/dataset.json
 ```
 
-比對每個可點數字的顯示值與其清單筆數，非零 exit code 即失敗。
+比對每個可點數字的顯示值與其清單筆數，非零 exit code 即失敗。簡報由腳本組版，這道閘門仍要跑：它是發布前的獨立檢查。
 
 **② agent 回報**：三個 agent 的回報各自含複驗結果，任一份「不建議發布」即失敗。腳本驗 HTML，agent 驗自己那份 Markdown，涵蓋範圍不同，兩者都要過。並依 SKILL.md 抽驗數字。
 
