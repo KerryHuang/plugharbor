@@ -30,7 +30,7 @@ PATTERN = re.compile(
 def main():
     data = json.load(sys.stdin)
     prompt = (data.get("prompt") or "").strip()
-    if not prompt or len(prompt) > MAX_PROMPT or prompt.startswith(("/", "<", 'Sub-agent "')):
+    if not prompt or len(prompt) > MAX_PROMPT or prompt.startswith(("/", "<", 'Sub-agent "', "唯讀任務")):
         return
     matched = list(dict.fromkeys(m.group(0).strip() for m in PATTERN.finditer(prompt)))
     if not matched:

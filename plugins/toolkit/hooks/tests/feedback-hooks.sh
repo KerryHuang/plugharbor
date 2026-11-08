@@ -75,6 +75,13 @@ payload "客戶應該要能自行設定流水號" | HOME="$H3" USERPROFILE="$H3"
 payload 'Sub-agent "smoke" completed. 結果不對，改用 B' | HOME="$H3" USERPROFILE="$H3" "$PY" "$CAPTURE" >/dev/null
 [ "$(wc -l < "$Q3" | tr -d ' ')" = 3 ] || fail "問句型糾正筆數不符"
 
+# 11) 派給 subagent 的「唯讀任務」prompt 不算糾正；不在開頭的才算（獨立 HOME）
+H4="$TMP/home4"; Q4="$H4/.claude/feedback-loop/queue.jsonl"; mkdir -p "$H4"
+payload "唯讀任務：不要修改任何檔案。檢查有沒有漏掉同類路徑" | HOME="$H4" USERPROFILE="$H4" "$PY" "$CAPTURE" >/dev/null
+[ ! -f "$Q4" ] || fail "唯讀任務 prompt 不該進佇列"
+payload "這是唯讀任務之外，你漏掉了一步" | HOME="$H4" USERPROFILE="$H4" "$PY" "$CAPTURE" >/dev/null
+[ "$(wc -l < "$Q4" | tr -d ' ')" = 1 ] || fail "不在開頭的糾正應仍記錄"
+
 # --- feedback-reminder ---
 R="$TMP/rhome"; RF="$R/.claude/feedback-loop"
 rrun() { HOME="$R" USERPROFILE="$R" "$PY" "$REMINDER"; }
