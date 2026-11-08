@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.1] - 2026-11-08
+
+- fix(feedback-capture): 略過開頭是「唯讀任務」的訊息。agent-dispatch 派給 subagent 的唯讀問答 prompt 內文常含「漏掉」「不要再」「錯了」，被當成使用者糾正記進回饋佇列；`feedback-hooks.sh` 補「開頭命中不記、不在開頭仍記」兩案例。
+
 ## [0.16.0] - 2026-11-08
 
 - feat(tidy-memory): 確認刪除的記憶檔不再直接刪，改搬到記憶目錄外的 `_gc_trash/<日期>/`，回報附搬回指令，使用者說「真刪」才清空；合併被併掉的檔也一樣。概念借自 affaan-m/ECC 的 config-gc（MIT）。
