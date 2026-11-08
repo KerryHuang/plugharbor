@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.4.0] - 2026-11-08
+
+- feat(implement): 實作經驗檔 `LEARNINGS.md` 多記「否決：方案——理由」，下次規劃時一併讀進 ledger，已否決的方案不再提出。
+
 ## [1.3.1] - 2026-11-07
 
 - fix(ticket-report): 簡報抽屜只把 http(s) 網址做成連結，`javascript:` 這類網址顯示為純文字。

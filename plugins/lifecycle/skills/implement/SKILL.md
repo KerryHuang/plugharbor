@@ -31,7 +31,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/spe
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # lean｜full，預設 lean
 ```
 
-- 讀 `<spec.dir>/LEARNINGS.md`（沒有就略過）。挑出跟本功能相關的條目，抄進 ledger 的「已定決策與注意」段，之後每份 brief 都帶上。
+- 讀 `<spec.dir>/LEARNINGS.md`（沒有就略過）。挑出跟本功能相關的條目，抄進 ledger 的「已定決策與注意」段，之後每份 brief 都帶上。「否決」條目一律照抄：規劃與 brief 不再提出已否決的方案，除非使用者自己重開。
 - `.tmp/implement/<feature>/ledger.md` 已存在 → 這是續做：讀 ledger，從第一個沒完成的步驟或 task 接續，不重跑已完成的。
 
 ## 1. 分支與工作區
@@ -122,9 +122,10 @@ git branch --show-current && git status --short
 ```markdown
 ## yyyy-mm-dd <功能名>
 - <下次規劃前該先知道的事：踩過的坑、規格常漏的地方、拆 task 的教訓、哪個指令會騙人>
+- 否決：<被否決的方案>——<使用者的理由>
 ```
 
-只寫下次用得上的通則，一段最多 5 條，不寫流水帳；跟既有條目重複就改寫舊條目而不是再加。
+只寫下次用得上的通則，一段最多 5 條，不寫流水帳；「否決」只記這次使用者明確拒絕的方案，沒有就不寫；跟既有條目重複就改寫舊條目而不是再加。
 
 ## 10. 收尾（關卡式）
 

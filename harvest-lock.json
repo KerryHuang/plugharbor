@@ -17,6 +17,22 @@
       ]
     },
     {
+      "clone_url": "https://github.com/KKKKhazix/agent-autoloop.git",
+      "ref": "",
+      "subpath": "",
+      "key": "kkkkhazix/agent-autoloop",
+      "version": "v1.6.4",
+      "commit": "f62efedd3548fc21aad4d43454b17efc758ff705",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_blob": "2d848c9f3fed5317d59e0b88cafa289b42a29d2d",
+      "subtree": null,
+      "adopted": "2026-11-08",
+      "targets": [
+        "lifecycle:implement"
+      ]
+    },
+    {
       "clone_url": "https://github.com/QingYunA/answer-me-with-html.git",
       "ref": "",
       "subpath": "",
