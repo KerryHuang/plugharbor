@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.0] - 2026-11-08
+
+- feat(tidy-memory): 確認刪除的記憶檔不再直接刪，改搬到記憶目錄外的 `_gc_trash/<日期>/`，回報附搬回指令，使用者說「真刪」才清空；合併被併掉的檔也一樣。概念借自 affaan-m/ECC 的 config-gc（MIT）。
+
 ## [0.15.1] - 2026-11-06
 
 - fix(retrospective): `--apply` 不再把當次情境寫進 skill。刪掉 P1 帶日期的標記、把 `apply-changes.md` 的事故段改寫成一句規則；`improvement-loop.md` 第 2 節新增「本文只寫通則，情境留在報告、帳本或 CHANGELOG」，`feedback-review` 一併適用。
