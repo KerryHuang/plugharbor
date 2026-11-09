@@ -47,7 +47,7 @@ claude plugin install workspace@plugharbor
 ### 輕量開發核心
 | Skill | 用途 |
 |-------|------|
-| `debugging` | TDD 系統性除錯 |
+| `debugging` | 專案指令除錯與規格轉測試案例（方法交給 superpowers） |
 | `review` | 程式碼審查（分層、測試、安全、效能），含發現驗證 |
 | `quality-check` | 建置、測試、覆蓋率、問題排序 |
 | `cross-platform` | 跨平台路徑、換行、大小寫、shell 差異 |

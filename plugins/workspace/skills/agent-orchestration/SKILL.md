@@ -1,6 +1,6 @@
 ---
 name: agent-orchestration
-description: 適用於多階段 agent chain（≥2 個 agent 接力）、需要用 output file 交棒、把多步工作流展示給使用者確認、偵測到「工作完成」需清理階段性產物、跨 agent 任務串接決策。涵蓋 chain 規範、output 路徑、清理流程、工作流呈現格式、subagent 作為 context 隔離工具的使用時機。觸發語：「召喚某 agent」「多階段流程」「派 subagent」「工作流規劃」「agent 交棒」「orchestration」。
+description: 適用於多階段 agent chain（≥2 個 agent 接力）、需要用 output file 交棒、把多步工作流展示給使用者確認、偵測到「工作完成」需清理階段性產物、跨 agent 任務串接決策。涵蓋 chain 規範、output 路徑、清理流程、工作流呈現格式、subagent 作為 context 隔離工具的使用時機。觸發語：「召喚某 agent」「多階段流程」「工作流規劃」「agent 交棒」。
 ---
 
 # Agent Orchestration
@@ -154,7 +154,7 @@ description: 適用於多階段 agent chain（≥2 個 agent 接力）、需要�
 
 ## 6. 與外部 plugin 的優先順序
 
-當專案自帶 skill/rule 與外部通用 plugin 功能重疊時，**專案資源優先**（更貼合專案慣例），外部 plugin 補足專案沒有的環節。
+裝了 superpowers 時，方法類（規劃、執行、審查、除錯、TDD）以它為準；`superpowers:dispatching-parallel-agents` 管「能不能平行」。本 skill 管 chain 接力、output file 交棒、清理；herdr pane 與跨 CLI 派工用 `toolkit:agent-dispatch`（可選）。沒裝 superpowers 就照本檔與 §0。
 
 ## 7. 長流程心跳 / sub-agent 健康偵測
 

@@ -65,6 +65,7 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
   `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以必要的共用素材各放一份。
   Claude Code、Codex、pi 都實測過（2026-11-02）：Codex 從安裝快取讀 skill，pi 從 repo 讀並照 `harness-terms.md` 把 `${CLAUDE_PLUGIN_ROOT}` 換成實際路徑。
 - **pi 走 claude-bridge 時會跑 Claude Code 的 hooks**：pi-claude-bridge 會在 bridge turn 內執行 `~/.claude/settings.json` 的 hooks（見它的 README「Hooks written for Claude Code」），連 Claude Code plugin 的 SessionStart 注入也包括在內。所以 Claude Code 裝了 superpowers，每個走 bridge 的 pi session 都會收到它的開場指示，但 pi 本身沒有 superpowers 的 skill 檔（實測 2026-11-09）。這是 bridge 的行為，plugharbor 不另外幫 pi 裝 superpowers。pi 被派工時拿到的是寫好的計畫或 prompt，用不到那些 skill。
+- **lifecycle 建議搭配 superpowers**：`implement` 交棒給 superpowers 的 writing-plans；沒裝走 `implement/references/fallback.md`。
 - **Codex hook 需信任**：Codex 以內容雜湊記錄信任，hook 指令一變就失效；install.sh 之後要在 Codex 執行 `/hooks` 重新信任，否則 `tool-policy.mjs` 不會跑。
 - **skillOverrides 對 plugin skill 的 key 寫法未驗證**：settings 範本想關掉 `handoff`、`ai-radar`，實測沒有任何 key 寫法能讓 plugin 的 skill 消失（可能是 `--plugin-dir` 的 inline plugin 不吃 override）。細節與測法見 `setup/README.md`「skillOverrides」。
 - **升級流程只用 stub 測過**：`install.sh` 更新 marketplace 再重裝的行為，真 CLI 的結果在切換步驟才實機驗證。

@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.4.0] - 2026-11-09
+
+- refactor: 方法類交給 superpowers，debugging 與 agent-orchestration 瘦身。debugging 開頭寫明裝了 superpowers 照 `systematic-debugging`／`test-driven-development`，本 skill 只留專案指令、症狀對照根因、改在正確的層、規格轉測試案例與輸出格式，一般方法敘述縮成幾行退路迴圈；`tdd-cycle.md` 的 Green／Refactor 說明精簡。agent-orchestration §6 由「專案資源優先」改成新分工（方法類 superpowers 優先，自家管 chain、output file 交棒、清理，herdr 與跨 CLI 用 `toolkit:agent-dispatch`），§0 保留。debugging、agent-orchestration、review 的 description 收掉與 superpowers 撞名的觸發詞（「systematic debugging」「TDD」「debug」「code review」「派 subagent」「orchestration」等），都比原本短。worktree、quality-check 檢查後不動。起因是近 14 天 workspace 的 debugging、agent-orchestration 叫用 0 次，方法類被 superpowers 接走，description 撞名讓兩邊搶觸發。
+
 ## [1.3.2] - 2026-11-09
 
 - fix: commit、quality-check、tmp-scratch 的 description 加上主控自己動手時的觸發（自己要下 git commit、合併或 commit 前要跑 gate、要寫一次性腳本或開 `.tmp`），並刪掉重複的中英觸發詞，三個都比原本短。起因是一個 session 叫了 122 次 Skill，這三個一次都沒觸發：主控自己下了 76 次 commit、重複手寫 gate 指令 21 次，因為原本只寫使用者會講的話。
