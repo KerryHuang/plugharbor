@@ -1,0 +1,22 @@
+# ai-radar 每日版的蒐集階段可以放進網路搜尋的工具名稱（白名單）。
+# 工作模式統計裡的名稱必須列在這裡（或是 plugharbor marketplace 上的 plugin）才會送出；
+# 沒列的一律不送，避免把私人或公司內部的工具名放進搜尋查詢。一行一個。
+claude-code
+claude
+codex
+pi
+agy
+git
+gh
+npm
+npx
+node
+python3
+pytest
+uv
+dotnet
+brew
+herdr
+superpowers
+chrome-devtools
+claude-in-chrome

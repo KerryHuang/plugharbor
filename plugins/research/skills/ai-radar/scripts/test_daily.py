@@ -135,6 +135,7 @@ FAKE_CLAUDE = textwrap.dedent("""\
      "forbidden": lambda: write("scripts/ci/" + "evil" + ".py"),
      "outside": lambda: write("notes.md"),
      "ignored": lambda: write(".leak-denylist", ""),
+     "leakname": lambda: write("plugins/p/secretco-notes.md"),
      "bad": lambda: write("plugins/p/BAD.md"),
      "noformat": lambda: write("plugins/p/README.md", "more\\n")}[mode]()
     done("改好了" if mode == "noformat" else "說明在前\\nRESULT: DRAFT\\n**改了什麼**：README")
@@ -235,13 +236,11 @@ class ClaudeArgsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "wp.md"
             p.write_text(PROFILE, encoding="utf-8")
-            import re
-            tools = daily.profile_tools(p, [re.compile("secretco", re.I)])
+            tools = daily.profile_tools(p, {"superpowers", "linear", "git"})
             self.assertEqual(tools["plugins"], ["superpowers"])
             self.assertEqual(tools["mcp"], ["linear"])
-            self.assertEqual(tools["cli"], ["git", "gh"])
-            no_list = daily.profile_tools(p, None)
-            self.assertEqual((no_list["plugins"], no_list["mcp"]), ([], []))
+            self.assertEqual(tools["cli"], ["git"])  # gh 不在公開清單，不給
+            self.assertEqual(daily.profile_tools(p, set())["plugins"], [])
 
     def test_plist(self):
         data = plistlib.loads(daily.make_plist("/usr/bin/python3", "/usr/bin:/bin", "/tmp/x.log",
@@ -338,7 +337,7 @@ class RunTest(Fixture):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         branch = f"radar/{TODAY}-3"
         self.assertEqual(self.branches(), [branch])
-        self.assertEqual(git(self.repo, "log", "-1", "--format=%s", branch), "radar: #3 高分 A")
+        self.assertEqual(git(self.repo, "log", "-1", "--format=%s", branch), "radar: #3")
         self.assertEqual(git(self.repo, "diff", "--name-only", f"main...{branch}"), "plugins/p/README.md")
         self.assertFalse(self.marker.exists(), "commit 不能跑 repo 的 hook")
         self.assertIn("新草稿", r.stdout)
@@ -359,7 +358,8 @@ class RunTest(Fixture):
         self.assertNotIn("高分", pa)
         self.assertNotIn("secretco", pa)
         self.assertNotIn(str(self.out), pa)
-        self.assertIn('"linear"', pa)
+        self.assertNotIn('"linear"', pa)  # 不在公開清單的 MCP 不送出
+        self.assertIn('"superpowers"', pa)
         # 同一天再跑不重做
         again = self.run_daily()
         self.assertIn("今天已跑完", again.stdout)
@@ -404,6 +404,20 @@ class RunTest(Fixture):
 
     def test_new_ignored_file_discarded(self):
         self.assert_failed_and_discarded(self.run_daily("ignored"), ".leak-denylist")
+
+    def test_leaking_filename_discarded(self):
+        self.assert_failed_and_discarded(self.run_daily("leakname"), "檔名命中外洩掃描")
+
+    def test_no_denylist_no_draft(self):
+        (self.repo / ".leak-denylist").unlink()
+        r = self.run_daily("draft")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("沒有 .leak-denylist", r.stdout + r.stderr + self.report())
+        self.assertEqual(git(self.repo, "branch", "--list", "radar/*"), "")
+
+    def test_leaks_catches_cgnat_ip(self):
+        self.assertTrue(daily.leaks("修 " + ".".join(["100", "64", "12", "34"]) + " 的連線", []))
+        self.assertFalse(daily.leaks("修 10.0.0.1 的連線", []))
 
     def test_validate_failure_is_failure(self):
         r = self.run_daily("bad")

@@ -5,9 +5,9 @@
 ## [0.5.0] - 2026-11-09
 
 - feat(ai-radar): 每日版——launchd 工作日 09:00 叫 `skills/ai-radar/scripts/daily.py run`，每天把採納待辦分數最高、能在 repo 內完成的 1 項做成專用 worktree 裡的本機 `radar/<日期>-<編號>` branch 草稿（不 push，待審滿 3 個就停），另蒐集工作模式內工具的官方 changelog 最多 3 條，報告寫 `<OUT>/<日期>-daily.md`；流程見 `skills/ai-radar/references/daily.md`。
-- feat(ai-radar): 執行邊界——模型沒有 Bash，分兩階段跑 `claude -p`：消化只有 worktree 內的 Read／Edit／Write／Glob／Grep、看得到挑中的那一項待辦；蒐集只有 WebSearch／WebFetch、看得到工具名稱與公開官方發布資料。兩階段都不載入任何 settings 檔、hook、plugin 與 MCP（`--setting-sources ""`、`--strict-mcp-config`、`--restricted`、`dontAsk`）。git、驗證、backlog 標記、報告、通知全由 runner 做：檢查改動路徑、以 `main` 已 commit 的 `validate.py` 驗證、固定訊息 commit 且不跑 hook，任一項失敗就丟棄改動並通知。
+- feat(ai-radar): 執行邊界——模型沒有 Bash，分兩階段跑 `claude -p`：消化只有 worktree 內的 Read／Edit／Write／Glob／Grep、看得到挑中的那一項待辦；蒐集只有 WebSearch／WebFetch、看得到工具名稱與公開官方發布資料。兩階段都不載入任何 settings 檔、hook、plugin 與 MCP（`--setting-sources ""`、`--strict-mcp-config`、`--restricted`、`dontAsk`）。git、驗證、backlog 標記、報告、通知全由 runner 做：檢查改動路徑、以 `main` 已 commit 的 `validate.py` 驗證、固定訊息 `radar: #<編號>` commit 且不跑 hook；檔名另外做外洩掃描，沒有 `.leak-denylist` 就不做草稿；任一項失敗就丟棄改動並通知。
 - feat(ai-radar): runner 驗證 worktree 身分（拒絕主 checkout、核對 common git dir 與註冊紀錄）、`fcntl.flock` 互斥鎖、週末不跑（含睡眠補跑）、全部成功才寫完成標記（失敗報告保留、同日可重跑）。
-- feat(ai-radar): `skills/ai-radar/scripts/work_profile.py` 統計近 30 天 transcript 用到的 skill、CLI、MCP server、副檔名，輸出 `work-profile.md`（純腳本、不呼叫模型，每日版每週重算；給蒐集階段的只有工具名稱，並濾掉本機黑名單命中的）。
+- feat(ai-radar): `skills/ai-radar/scripts/work_profile.py` 統計近 30 天 transcript 用到的 skill、CLI、MCP server、副檔名，輸出 `work-profile.md`（純腳本、不呼叫模型，每日版每週重算；給蒐集階段的只有列在 `references/public-tools.txt` 或 plugharbor marketplace 的工具名稱，用白名單、不靠黑名單）。
 - feat(ai-radar): `skills/ai-radar/scripts/install-daily.sh` 安裝／移除 launchd 排程；plist 先寫暫存檔、`plutil -lint` 通過才原子替換。只在新草稿、草稿滿、執行失敗時通知。
 
 ## [0.4.2] - 2026-11-05

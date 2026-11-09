@@ -10,12 +10,12 @@
 | 階段 | 工具 | 看得到的資料 | 輸出 |
 |---|---|---|---|
 | B 消化 | Read／Edit／Write／Glob／Grep，限定專用 worktree | 挑中的那一項 backlog 文字 | worktree 裡的改檔＋stdout 說明 |
-| A 蒐集 | WebSearch／WebFetch | 工具名稱、當天官方發布資料 | stdout 的更新表 |
+| A 蒐集 | WebSearch／WebFetch | 列在 `public-tools.txt` 或 plugharbor marketplace 的工具名稱、當天官方發布資料 | stdout 的更新表 |
 
 - 兩個階段都用 `claude -p --setting-sources "" --strict-mcp-config --restricted --permission-mode dontAsk`：不載入任何 settings 檔與 MCP，權限只有命令列的 `--tools`（可用工具的封閉清單）＋`--allowedTools`＋`--disallowedTools`。
 - 階段 B 的 deny：worktree 的 `scripts/hooks/**`、`scripts/ci/**`、`.claude/**`、`.git*`、`.github/**`、`setup/**`、`.leak-denylist`；`~/.claude`、`~/.ssh` 等家目錄敏感路徑；輸出目錄、主 checkout、blog repo。
 - runner 收尾再檢查一次：改動只能落在 `plugins/`、`docs/`、`.claude-plugin/`、根目錄 `README.md`／`AGENTS.md`／`CLAUDE.md`，副檔名限文字檔，也不能新增被 ignore 的檔。違反就丟棄改動、整次算失敗。
-- 驗證用 repo `scripts/ci/` 裡的 validate.py（取 `main` 已 commit 的原始碼），以 `python3 -I` 在 worktree 上執行（不跑 worktree 裡的任何檔）；通過才開 `radar/<日期>-<編號>` branch、用固定訊息 `radar: #<編號> <摘要>` commit，並以 `-c core.hooksPath=/dev/null` 關掉 hook。
+- 驗證用 repo `scripts/ci/` 裡的 validate.py（取 `main` 已 commit 的原始碼），以 `python3 -I` 在 worktree 上執行（不跑 worktree 裡的任何檔）；主 checkout 沒有 `.leak-denylist` 就不做草稿；檔名也要過外洩掃描（validate.py 只掃內容）。通過才開 `radar/<日期>-<編號>` branch、用固定訊息 `radar: #<編號>` commit（摘要來自私人 backlog，不進公開 commit），並以 `-c core.hooksPath=/dev/null` 關掉 hook。
 - 候選由 runner 依分數排序，一天最多讓階段 B 看 3 項；模型回 `SKIP` 時 runner 在該項決策備註補 `每日版略過 <日期>：<理由>`，做成草稿時補 `每日草稿 radar/…（<日期>）`，狀態欄不動。
 - 互斥鎖（`logs/daily.lock`）、週末不跑、待審 `radar/*` 滿 3 個不做草稿、全部成功才寫 `logs/<日期>-daily.done`；失敗的報告改名成 `<日期>-daily.failed-<時間>.md` 保留，同一天可重跑。
 

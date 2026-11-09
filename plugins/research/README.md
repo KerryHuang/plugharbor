@@ -32,7 +32,7 @@ claude plugin install research@plugharbor
 
 執行邊界：模型沒有 Bash，git、驗證、backlog 標記、報告、通知都由 `daily.py` 做。
 
-- 分兩階段跑 `claude -p --model sonnet`：**消化**只有 Read／Edit／Write／Glob／Grep，限定專用 worktree，看得到挑中的那一項待辦；**蒐集**只有 WebSearch／WebFetch，只看得到工具名稱和公開的官方發布資料。私人待辦與對外管道不會出現在同一階段。
+- 分兩階段跑 `claude -p --model sonnet`：**消化**只有 Read／Edit／Write／Glob／Grep，限定專用 worktree，看得到挑中的那一項待辦；**蒐集**只有 WebSearch／WebFetch，只看得到公開清單（`references/public-tools.txt`＋plugharbor marketplace）裡的工具名稱和公開的官方發布資料。私人待辦與對外管道不會出現在同一階段。
 - 兩階段都用 `--setting-sources ""`、`--strict-mcp-config`、`--restricted`、`--permission-mode dontAsk`，不載入任何 settings 檔、hook、plugin 與 MCP。
 - 消化階段 deny 改 hook、驗證器、`.claude/`、`.git*`、`.github/`、`setup/`，也 deny 讀家目錄的 `.claude`、`.ssh` 等敏感路徑。收尾時 `daily.py` 再檢查一次改動路徑，接著用 `main` 已 commit 的 `validate.py` 驗證（含外洩掃描），都通過才用固定訊息 commit（不跑 hook）。任一項失敗就丟棄改動、整次算失敗。
 - 細節見 [`skills/ai-radar/references/daily.md`](skills/ai-radar/references/daily.md)。

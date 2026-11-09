@@ -36,6 +36,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DAILY_MD = HERE.parent / "references" / "daily.md"
+PUBLIC_TOOLS = HERE.parent / "references" / "public-tools.txt"
 LABEL = "com.plugharbor.ai-radar-daily"
 MAX_PENDING = 3
 MAX_TRIES = 3  # 一天最多讓階段 B 看幾項候選
@@ -59,6 +60,7 @@ SENSITIVE_HOME = (".claude", ".ssh", ".aws", ".gnupg", ".config", ".codex", ".pi
 NAME = re.compile(r"^[A-Za-z][A-Za-z0-9._+-]*$")
 RESULT_LINE = re.compile(r"^RESULT: (?:DRAFT|SKIP).*$", re.M)
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+CGNAT_IP = re.compile(r"\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b")  # 同 validate.py
 
 
 class Fail(Exception):
@@ -168,7 +170,7 @@ def load_denylist(repo: Path):
 
 
 def leaks(text: str, deny):
-    return bool(EMAIL.search(text) or "/Users/" in text or "/home/" in text
+    return bool(EMAIL.search(text) or CGNAT_IP.search(text) or "/Users/" in text or "/home/" in text
                 or any(p.search(text) for p in deny or []))
 
 
@@ -341,8 +343,19 @@ def call_claude(cmd, prompt: str, cwd: Path, timeout: int, logfile: Path):
 
 # ---------- 蒐集階段的輸入 ----------
 
-def profile_tools(profile: Path, deny):
-    """從 work-profile 取工具名稱：plugin 名（skill 的冒號前）、CLI、MCP server；黑名單命中的不給。"""
+def load_public_tools(repo: Path):
+    """可以對外（放進 WebSearch）的工具名稱：public-tools.txt 加上 plugharbor 自己 main 上 marketplace 的 plugin 名。"""
+    names = {l.strip() for l in PUBLIC_TOOLS.read_text(encoding="utf-8").splitlines()
+             if l.strip() and not l.startswith("#")}
+    r = subprocess.run(["git", "-C", str(repo), "show", "main:.claude-plugin/marketplace.json"],
+                       capture_output=True, text=True, encoding="utf-8")
+    if r.returncode == 0:
+        names |= {p["name"] for p in json.loads(r.stdout).get("plugins", []) if p.get("name")}
+    return names
+
+
+def profile_tools(profile: Path, public):
+    """從 work-profile 取工具名稱：plugin 名（skill 的冒號前）、CLI、MCP server；只給公開清單裡有的（白名單，不靠黑名單）。"""
     sections, cur = {}, None
     for line in profile.read_text(encoding="utf-8").splitlines():
         if line.startswith("## "):
@@ -352,9 +365,7 @@ def profile_tools(profile: Path, deny):
             sections[cur].append(m.group(1))
     plugins = sorted({s.split(":")[0] for s in sections.get("Skill", []) if ":" in s})
     groups = {"plugins": plugins, "cli": sections.get("CLI", [])[:20], "mcp": sections.get("MCP server", [])}
-    if deny is None:  # 沒有黑名單就只給 CLI：plugin 與 MCP 名稱最可能帶公司或專案名
-        groups["plugins"], groups["mcp"] = [], []
-    clean = {k: [n for n in v if NAME.match(n) and not leaks(n, deny)] for k, v in groups.items()}
+    clean = {k: [n for n in v if NAME.match(n) and n in public] for k, v in groups.items()}
     clean["always"] = ["claude-code"]
     return clean
 
@@ -419,6 +430,8 @@ def digest(cfg: Config, wt: Path, cands, today: str, logs: Path, rep: dict, log)
     """階段 B：依序讓模型看候選（最多 MAX_TRIES 項），第一個做成草稿的就 commit。"""
     backlog = cfg.out / "adoption-backlog.md"
     deny = load_denylist(cfg.repo)
+    if deny is None:  # 外洩掃描缺一層就不產生要進公開 repo 的東西（fail closed）
+        raise Fail("主 checkout 沒有 .leak-denylist，不做草稿")
     _, baseline = status_entries(wt)
     for c in cands[:MAX_TRIES]:
         ctx = {"date": today, "item": asdict(c)}
@@ -437,6 +450,9 @@ def digest(cfg: Config, wt: Path, cands, today: str, logs: Path, rep: dict, log)
         if bad:
             discard(wt, new_ignored)
             raise Fail(f"階段 B（#{c.num}）改到不允許的路徑，改動已丟棄：{', '.join(bad)}")
+        if any(leaks(p, deny) for _, p in changed):  # validate.py 只掃內容，檔名在這裡掃
+            discard(wt, new_ignored)
+            raise Fail(f"階段 B（#{c.num}）的檔名命中外洩掃描，改動已丟棄")
         if first.startswith("RESULT: SKIP"):
             reason = one_line(first[len("RESULT: SKIP"):].lstrip(" ：:—-"), 80) or "（沒寫理由）"
             if changed:
@@ -454,8 +470,7 @@ def digest(cfg: Config, wt: Path, cands, today: str, logs: Path, rep: dict, log)
             discard(wt, new_ignored)
             raise Fail(f"#{c.num} 的草稿沒通過 validate.py，改動已丟棄、沒有 commit")
         branch = f"radar/{today}-{c.num}"
-        summary = one_line(c.summary, 60)
-        message = f"radar: #{c.num} {summary}" if not leaks(summary, deny) else f"radar: #{c.num}"
+        message = f"radar: #{c.num}"  # 摘要來自私人 backlog，不進公開 commit
         paths = [p for _, p in changed]
         commit_draft(cfg, wt, branch, paths, message)
         mark_backlog(backlog, c.num, f"每日草稿 {branch}（{today}）")
@@ -467,7 +482,7 @@ def digest(cfg: Config, wt: Path, cands, today: str, logs: Path, rep: dict, log)
 
 def collect(cfg: Config, profile: Path, snapshot, today: str, logs: Path, rep: dict):
     """階段 A：只上網、不碰本機檔；輸入只有工具名稱與公開的官方發布資料。"""
-    ctx = {"date": today, "since": last_daily(cfg.out, today), "tools": profile_tools(profile, load_denylist(cfg.repo)),
+    ctx = {"date": today, "since": last_daily(cfg.out, today), "tools": profile_tools(profile, load_public_tools(cfg.repo)),
            "tech_snapshot": snapshot_items(snapshot)}
     with tempfile.TemporaryDirectory(prefix="ai-radar-a-") as empty:
         res = call_claude(cmd_a(cfg), build_prompt("a", ctx), Path(empty), TIMEOUT_A, logs / f"{today}-A.json")
