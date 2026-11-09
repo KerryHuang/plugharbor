@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.18.0] - 2026-11-09
+
+- feat(hooks): `disabled-skills.py` 的 SessionStart 從完整清單改成一行名稱（`[toolkit] plugharbor 停用中：…`）；重開指令、SKILL.md 路徑、忽略指令改寫到 `~/.claude/disabled-skills/<專案雜湊>.md`，需要時才讀。用法也改了：agent 要先用 AskUserQuestion 問使用者（用它並重開／只這次用／不要），問過才用。新增 `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」就寫進 `~/.claude/disabled-skills/ignore.json`，以停用的單位為準（整個 plugin 或單一 skill），而且只在當下專案生效；項目重新啟用時，自動從清單移除。起因：0.17.0 分不出「少用被 /doctor 關掉」和「刻意不要」（agent 會繞過使用者的決定去用），而且只要沒重開，就在每個 session、每個專案永遠注入，無法消掉。設計見 `docs/superpowers/specs/2026-11-09-disabled-skill-recovery-design.md`。
+
 ## [0.17.0] - 2026-11-09
 
 - feat(hooks): 新增 SessionStart hook `disabled-skills.py`。它依 user → project → local 設定，列出被明確停用的 plugharbor plugin（`enabledPlugins: false`）與被 `skillOverrides` 關掉的 skill，附重開指令（`claude plugin enable <p>@plugharbor --scope <層>`）和 marketplace clone 裡的 SKILL.md 路徑，agent 需要時當輪讀檔照做，再問要不要重開。沒有停用就不輸出。從沒啟用的專案層 plugin 不列，因為那是刻意不裝（例如專案自帶同類 plugin），列出來會誘導重複；只能手動叫用（`disable-model-invocation`）的 skill 也不列。user 層 rule（setup 的 home 目錄下 `shared/engineering.md`）「能力缺口」段同步改成依序找：先找 plugharbor（停用或沒裝的），再用 WebFetch 查 skills.sh 列候選，要安裝走 plugin-harvest，總長 384 → 377 字元。起因：在別的專案跑 /doctor 會把少用的 plugin 寫成 `false`，常寫在 user 層，所有專案一起失效；之後使用者或 agent 要用時，清單裡已經沒有它，也不知道它存在。

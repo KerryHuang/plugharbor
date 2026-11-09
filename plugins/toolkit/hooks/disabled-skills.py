@@ -1,24 +1,50 @@
 #!/usr/bin/env python3
-"""SessionStart hook：列出被明確停用的 plugharbor plugin／skill，讓 agent 需要時還找得到。
+"""停用的 plugharbor plugin／skill 補救：讓 /doctor 關掉的能力在需要時還找得到。
 
 起因：在別的專案跑 /doctor 會把少用的 plugin 寫成 enabledPlugins: false（常寫在 user 層，所有專案一起失效），
 之後要用時清單裡已經沒有它，agent 也不知道它存在。
-只看明確的 false 與 skillOverrides "off"：從沒啟用的專案層 plugin 是刻意不裝（如公司 workspace 自帶 sdlc），不列。
-依 user → project → local 設定算實際狀態；沒有停用就不輸出（零常駐成本）。
+- SessionStart：只注入一行名稱，細節寫進 ~/.claude/disabled-skills/<專案雜湊>.md。
+- `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」時由 agent 呼叫，只在該專案忽略。
+只看明確的 false 與 skillOverrides "off"；從沒啟用的專案層 plugin 是刻意不裝，不列。任何錯誤都 fail-open。
 """
+import hashlib
 import json
+import re
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 MARKETPLACE = "plugharbor"
+MIN_PHRASE = 4
+
+
+@dataclass
+class Skill:
+    plugin: str
+    name: str
+    path: Path
+    manual_only: bool
+    phrases: list = field(default_factory=list)
+
+
+@dataclass
+class Item:
+    key: str
+    kind: str  # "plugin" | "skill"
+    fix: str
+    skills: list = field(default_factory=list)
 
 
 def load(path):
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {}  # 不存在或壞掉的設定檔，Claude Code 本身也整份忽略
+        return {}  # 不存在或壞掉的檔，Claude Code 本身也整份忽略
     return data if isinstance(data, dict) else {}
+
+
+def state_dir(home):
+    return home / ".claude/disabled-skills"
 
 
 def label(description):
@@ -28,66 +54,194 @@ def label(description):
     return description[:20]
 
 
-def manual_only(skill_md):
+def frontmatter(path):
+    """單行 key: value，description 另支援 `>-` 摺疊（後續縮排行）。"""
     try:
-        head = skill_md.read_text(encoding="utf-8").split("---", 2)[1]
-    except (OSError, IndexError):
-        return False
-    return any(line.replace(" ", "") == "disable-model-invocation:true" for line in head.splitlines())
+        lines = path.read_text(encoding="utf-8").split("\n")
+    except OSError:
+        return {}
+    if not lines or lines[0].strip() != "---":
+        return {}
+    fm, last = {}, None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        m = re.match(r"^([A-Za-z_-]+):\s*(.*)$", line)
+        if m:
+            last = m.group(1)
+            fm[last] = m.group(2).strip()
+        elif last and line.startswith((" ", "\t")):
+            fm[last] = (fm[last].lstrip(">-|").strip() + " " + line.strip()).strip()
+    return fm
 
 
-def find(home, cwd):
-    """回傳 (plugins 目錄, [停用 plugin 行], [關閉 skill 行])。"""
-    location = load(home / ".claude/plugins/known_marketplaces.json").get(MARKETPLACE, {}).get("installLocation")
-    if not location:
-        return None, [], []
-    plugins_dir = Path(location) / "plugins"
-    catalog = {e.get("name"): e.get("description", "")
-               for e in load(Path(location) / ".claude-plugin/marketplace.json").get("plugins", [])}
+def phrases_of(fm):
+    found = re.findall(r"「([^」]+)」", fm.get("description", ""))
+    try:
+        triggers = json.loads(fm.get("triggers") or "[]")
+    except ValueError:
+        triggers = []
+    if isinstance(triggers, list):
+        found += [t for t in triggers if isinstance(t, str)]
+    return list(dict.fromkeys(p.strip() for p in found if len(p.strip()) >= MIN_PHRASE))
 
+
+def load_catalog(marketplace):
+    """plugin 名 → skill 清單（只含 marketplace.json 列出的 plugin）。"""
+    catalog = {}
+    for entry in load(marketplace / ".claude-plugin/marketplace.json").get("plugins", []):
+        name = entry.get("name")
+        if not isinstance(name, str):
+            continue
+        skills = []
+        for md in sorted((marketplace / "plugins" / name / "skills").glob("*/SKILL.md")):
+            fm = frontmatter(md)
+            skills.append(Skill(name, md.parent.name, md, fm.get("disable-model-invocation") == "true", phrases_of(fm)))
+        catalog[name] = skills
+    return catalog
+
+
+def labels(marketplace):
+    return {e.get("name"): label(e.get("description", ""))
+            for e in load(marketplace / ".claude-plugin/marketplace.json").get("plugins", [])}
+
+
+def settings(home, cwd):
     enabled, overrides = {}, {}
     for scope, path in [("user", home / ".claude/settings.json"), ("project", cwd / ".claude/settings.json"),
                         ("local", cwd / ".claude/settings.local.json")]:
         data = load(path)
-        for key, value in (data.get("enabledPlugins") or {}).items():
+        plugins, skills = data.get("enabledPlugins"), data.get("skillOverrides")
+        for key, value in (plugins.items() if isinstance(plugins, dict) else ()):
             enabled[key] = (value, scope)
-        for key, value in (data.get("skillOverrides") or {}).items():
+        for key, value in (skills.items() if isinstance(skills, dict) else ()):
             overrides[key] = (value, path)
+    return enabled, overrides
 
-    plugins = []
-    for name, description in catalog.items():
+
+def project_key(cwd):
+    return str(Path(cwd).resolve())
+
+
+def read_ignores(home):
+    return {k: v for k, v in load(state_dir(home) / "ignore.json").items() if isinstance(v, list)}
+
+
+def write_ignores(home, data):
+    path = state_dir(home) / "ignore.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def add_ignore(home, cwd, key):
+    data = read_ignores(home)
+    keys = data.setdefault(project_key(cwd), [])
+    if key not in keys:
+        keys.append(key)
+    write_ignores(home, data)
+
+
+def marketplace_root(home):
+    location = load(home / ".claude/plugins/known_marketplaces.json").get(MARKETPLACE, {})
+    location = location.get("installLocation") if isinstance(location, dict) else None
+    return Path(location) if isinstance(location, str) and location else None
+
+
+def all_disabled(home, cwd, catalog):
+    enabled, overrides = settings(home, cwd)
+    items = []
+    for name, skills in catalog.items():
         value, scope = enabled.get(f"{name}@{MARKETPLACE}", (None, None))
         if value is False:
-            plugins.append(f"- {name}（{label(description)}）：`claude plugin enable {name}@{MARKETPLACE} --scope {scope}`")
-
-    skills = []
+            items.append(Item(name, "plugin", f"claude plugin enable {name}@{MARKETPLACE} --scope {scope}",
+                              [s for s in skills if not s.manual_only]))
     for key, (value, path) in sorted(overrides.items()):
-        plugin, _, skill = key.partition(":")
-        if value != "off" or not skill or enabled.get(f"{plugin}@{MARKETPLACE}", (None,))[0] is not True:
+        plugin, _, name = key.partition(":")
+        if value != "off" or not name or enabled.get(f"{plugin}@{MARKETPLACE}", (None,))[0] is not True:
             continue
-        if not manual_only(plugins_dir / plugin / "skills" / skill / "SKILL.md"):
-            skills.append(f"- {key}：刪掉 `{path}` 裡 skillOverrides 的這個 key")
-    return plugins_dir, plugins, skills
+        skill = next((s for s in catalog.get(plugin, []) if s.name == name), None)
+        if skill and not skill.manual_only:
+            items.append(Item(key, "skill", f"刪掉 `{path}` 裡 skillOverrides 的 `{key}`", [skill]))
+    return items
 
 
-def main():
-    try:
-        cwd = Path(json.load(sys.stdin).get("cwd") or ".")
-    except (ValueError, AttributeError):  # stdin 不是 JSON 物件：退回目前目錄
-        cwd = Path(".")
-    plugins_dir, plugins, skills = find(Path.home(), cwd)
-    if not plugins and not skills:
-        return 0
-    msg = ("[toolkit] 以下 plugharbor plugin／skill 被停用，清單裡看不到但檔案都在。需要時先讀 "
-           f"`{plugins_dir}/<plugin>/skills/<skill>/SKILL.md` 照做（`${{CLAUDE_PLUGIN_ROOT}}` 換成 "
-           f"`{plugins_dir}/<plugin>`），再用 AskUserQuestion 問要不要重開"
-           "（下個 session 或 /reload-plugins 生效；user 層會影響所有專案）。\n"
-           + "\n".join(plugins + skills))
-    out = json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": msg}},
-                     ensure_ascii=False)
+def disabled_items(home, cwd):
+    """回傳 (marketplace 的 plugins 目錄, 停用中且未被忽略的項目)；順手把已重新啟用的項目移出忽略清單。"""
+    mp = marketplace_root(home)
+    if mp is None:
+        return None, []
+    items = all_disabled(home, cwd, load_catalog(mp))
+    current = {i.key for i in items}
+    data, pk = read_ignores(home), project_key(cwd)
+    ignored = data.get(pk, [])
+    kept = [k for k in ignored if k in current]
+    if kept != ignored:
+        if kept:
+            data[pk] = kept
+        else:
+            data.pop(pk, None)
+        write_ignores(home, data)
+    return mp / "plugins", [i for i in items if i.key not in kept]
+
+
+def ignore_command(cwd, key):
+    return f'python3 "{Path(__file__).resolve()}" ignore {key} --cwd "{project_key(cwd)}"'
+
+
+def write_details(home, cwd, plugins_dir, items):
+    path = state_dir(home) / (hashlib.sha1(project_key(cwd).encode("utf-8")).hexdigest()[:12] + ".md")
+    names = labels(plugins_dir.parent)
+    out = [f"# 停用中的 plugharbor 項目（{project_key(cwd)}）", "",
+           "用之前先用 AskUserQuestion 問使用者：「用它並重開」（讀 SKILL.md 照做並跑重開指令）、"
+           "「只這次用」（讀 SKILL.md 照做，不改設定）、「不要」（跑忽略指令，不用）。"
+           "SKILL.md 裡的 `${CLAUDE_PLUGIN_ROOT}` 換成該 plugin 目錄。", ""]
+    for item in items:
+        plugin = item.key.split(":", 1)[0]
+        out += [f"## {item.key}（{names.get(plugin, '')}）", "",
+                f"- plugin 目錄：`{plugins_dir / plugin}`",
+                f"- 重開：`{item.fix}`",
+                f"- 忽略：`{ignore_command(cwd, item.key)}`"]
+        out += [f"- `{s.plugin}:{s.name}`：`{s.path}`" for s in item.skills]
+        out.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(out), encoding="utf-8")
+    return path
+
+
+def emit(event, text):
+    out = json.dumps({"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}, ensure_ascii=False)
     sys.stdout.buffer.write(out.encode("utf-8"))
+
+
+def on_session_start(home, cwd):
+    plugins_dir, items = disabled_items(home, cwd)
+    if not items:
+        return
+    details = write_details(home, cwd, plugins_dir, items)
+    emit("SessionStart", f"[toolkit] plugharbor 停用中：{'、'.join(i.key for i in items)}"
+                         f"（用到前先問使用者；細節見 `{details}`）")
+
+
+def main(argv):
+    home = Path.home()
+    if len(argv) > 2 and argv[1] == "ignore":
+        cwd = argv[argv.index("--cwd") + 1] if "--cwd" in argv[:-1] else "."
+        add_ignore(home, Path(cwd), argv[2])
+        return 0
+    try:
+        payload = json.load(sys.stdin)
+    except ValueError:
+        return 0
+    if not isinstance(payload, dict):
+        return 0
+    cwd = Path(payload.get("cwd") or ".")
+    if payload.get("hook_event_name") == "SessionStart":
+        on_session_start(home, cwd)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main(sys.argv))
+    except Exception:  # noqa: BLE001 — hook 一律 fail-open，不擋 session
+        sys.exit(0)

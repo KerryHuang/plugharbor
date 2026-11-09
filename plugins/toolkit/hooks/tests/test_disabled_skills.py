@@ -1,6 +1,7 @@
-"""disabled-skills 測試：依 user → project → local 設定算出不可用的 plugharbor plugin／skill，沒有就靜默。"""
+"""disabled-skills 測試：明確停用的 plugharbor plugin／skill → 開場一行＋細節檔；忽略清單只限當下專案。"""
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,7 @@ from pathlib import Path
 
 HOOK = Path(__file__).resolve().parents[1] / "disabled-skills.py"
 PLUGINS = {"toolkit": "通用 hooks——guard", "browser-docs": "瀏覽器實機操作——截圖", "lifecycle": "軟體交付生命週期——規格"}
+ALL_ON = {"toolkit@plugharbor": True, "browser-docs@plugharbor": True, "lifecycle@plugharbor": True}
 
 
 def write(path, data):
@@ -16,10 +18,11 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
 
-class DisabledSkills(unittest.TestCase):
+class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        root = Path(self.tmp.name)
+        root = Path(self.tmp.name).resolve()
+        self.root = root
         self.home, self.cwd, self.mp = root / "home", root / "proj", root / "home/.claude/plugins/marketplaces/plugharbor"
         self.cwd.mkdir(parents=True)
         write(self.mp / ".claude-plugin/marketplace.json",
@@ -27,8 +30,7 @@ class DisabledSkills(unittest.TestCase):
                                                  for n, d in PLUGINS.items()]})
         write(self.home / ".claude/plugins/known_marketplaces.json",
               {"plugharbor": {"installLocation": str(self.mp)}})
-        self.user({"enabledPlugins": {"toolkit@plugharbor": True, "browser-docs@plugharbor": True,
-                                      "lifecycle@plugharbor": True}})
+        self.user({"enabledPlugins": dict(ALL_ON)})
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -36,68 +38,120 @@ class DisabledSkills(unittest.TestCase):
     def user(self, data):
         write(self.home / ".claude/settings.json", data)
 
-    def run_hook(self):
+    def disable(self, plugin="browser-docs"):
+        self.user({"enabledPlugins": dict(ALL_ON, **{f"{plugin}@plugharbor": False})})
+
+    def skill(self, plugin, name, frontmatter):
+        path = self.mp / f"plugins/{plugin}/skills/{name}/SKILL.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"---\nname: {name}\n{frontmatter}\n---\n\n# body\n", encoding="utf-8")
+        return path
+
+    def run_raw(self, stdin=b"", args=()):
         env = dict(os.environ, HOME=str(self.home))
-        p = subprocess.run([sys.executable, str(HOOK)], input=json.dumps({"cwd": str(self.cwd)}).encode(),
-                           env=env, capture_output=True, timeout=10)
+        return subprocess.run([sys.executable, str(HOOK), *args], input=stdin, env=env, capture_output=True, timeout=10)
+
+    def hook(self, payload):
+        p = self.run_raw(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         self.assertEqual(p.returncode, 0, p.stderr)
         if not p.stdout:
             return ""
         out = json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]
-        self.assertEqual(out["hookEventName"], "SessionStart")
+        self.assertEqual(out["hookEventName"], payload["hook_event_name"])
         return out["additionalContext"]
 
-    def test_silent_when_everything_enabled(self):
-        self.assertEqual(self.run_hook(), "")
+    def session(self, cwd=None):
+        return self.hook({"hook_event_name": "SessionStart", "cwd": str(cwd or self.cwd)})
 
-    def test_lists_plugin_disabled_at_user_scope(self):
-        self.user({"enabledPlugins": {"toolkit@plugharbor": True, "browser-docs@plugharbor": False,
-                                      "lifecycle@plugharbor": True}})
-        ctx = self.run_hook()
-        self.assertIn("browser-docs（瀏覽器實機操作）", ctx)
-        self.assertIn("claude plugin enable browser-docs@plugharbor --scope user", ctx)
-        self.assertNotIn("lifecycle", ctx)
-        self.assertIn(str(self.mp / "plugins"), ctx)
+    def ignore(self, key, cwd=None):
+        p = self.run_raw(args=("ignore", key, "--cwd", str(cwd or self.cwd)))
+        self.assertEqual(p.returncode, 0, p.stderr)
+
+    def details(self, ctx):
+        return Path(re.search(r"細節見 `([^`]+)`", ctx).group(1)).read_text(encoding="utf-8")
+
+
+class SessionLine(Base):
+    def test_silent_when_everything_enabled(self):
+        self.assertEqual(self.session(), "")
+
+    def test_session_one_line_names_only(self):
+        self.disable()
+        ctx = self.session()
+        self.assertEqual(ctx.count("\n"), 0)
+        self.assertTrue(ctx.startswith("[toolkit] plugharbor 停用中：browser-docs"), ctx)
+        self.assertIn("用到前先問使用者", ctx)
+        self.assertIn("claude plugin enable browser-docs@plugharbor --scope user", self.details(ctx))
 
     def test_local_scope_overrides_user(self):
         write(self.cwd / ".claude/settings.local.json", {"enabledPlugins": {"browser-docs@plugharbor": False}})
-        ctx = self.run_hook()
-        self.assertIn("claude plugin enable browser-docs@plugharbor --scope local", ctx)
+        self.assertIn("--scope local", self.details(self.session()))
 
     def test_never_enabled_plugin_is_not_listed(self):
         # 專案層 plugin 刻意只裝在特定專案（如公司 workspace 用自家 sdlc），沒寫 false 就不算被 /doctor 關掉
         self.user({"enabledPlugins": {"toolkit@plugharbor": True, "browser-docs@plugharbor": True}})
-        self.assertEqual(self.run_hook(), "")
+        self.assertEqual(self.session(), "")
 
     def test_lists_skill_turned_off_by_override(self):
+        self.skill("browser-docs", "live-drive", "description: x")
         write(self.cwd / ".claude/settings.local.json", {"skillOverrides": {"browser-docs:live-drive": "off"}})
-        ctx = self.run_hook()
+        ctx = self.session()
         self.assertIn("browser-docs:live-drive", ctx)
-        self.assertIn(".claude/settings.local.json", ctx)
+        self.assertIn(".claude/settings.local.json", self.details(ctx))
 
     def test_manual_only_skill_override_is_not_listed(self):
-        skill = self.mp / "plugins/toolkit/skills/handoff/SKILL.md"
-        skill.parent.mkdir(parents=True)
-        skill.write_text("---\nname: handoff\ndisable-model-invocation: true\n---\n", encoding="utf-8")
-        self.user({"enabledPlugins": {"toolkit@plugharbor": True, "browser-docs@plugharbor": True,
-                                      "lifecycle@plugharbor": True}, "skillOverrides": {"toolkit:handoff": "off"}})
-        self.assertEqual(self.run_hook(), "")
+        self.skill("toolkit", "handoff", "description: x\ndisable-model-invocation: true")
+        self.user({"enabledPlugins": dict(ALL_ON), "skillOverrides": {"toolkit:handoff": "off"}})
+        self.assertEqual(self.session(), "")
 
     def test_silent_without_marketplace_clone(self):
         (self.home / ".claude/plugins/known_marketplaces.json").unlink()
-        self.user({"enabledPlugins": {"browser-docs@plugharbor": False}})
-        self.assertEqual(self.run_hook(), "")
-
-    def test_bad_stdin_fail_open(self):
-        for bad in (b"not json", b"[]"):
-            p = subprocess.run([sys.executable, str(HOOK)], input=bad, env=dict(os.environ, HOME=str(self.home)),
-                               capture_output=True, timeout=10)
-            self.assertEqual((p.returncode, p.stdout), (0, b""), p.stderr)
+        self.disable()
+        self.assertEqual(self.session(), "")
 
     def test_broken_settings_file_is_ignored(self):
         (self.cwd / ".claude").mkdir()
         (self.cwd / ".claude/settings.json").write_text("{not json", encoding="utf-8")
-        self.assertEqual(self.run_hook(), "")
+        self.assertEqual(self.session(), "")
+
+    def test_bad_stdin_fail_open(self):
+        for bad in (b"not json", b"[]", b"{}"):
+            p = self.run_raw(bad)
+            self.assertEqual((p.returncode, p.stdout), (0, b""), p.stderr)
+
+
+class IgnoreList(Base):
+    def test_ignore_cli(self):
+        self.ignore("browser-docs")
+        data = json.loads((self.home / ".claude/disabled-skills/ignore.json").read_text(encoding="utf-8"))
+        self.assertEqual(data, {str(self.cwd): ["browser-docs"]})
+
+    def test_ignore_whole_plugin(self):
+        self.disable()
+        self.ignore("browser-docs")
+        self.assertEqual(self.session(), "")
+
+    def test_ignore_only_this_project(self):
+        self.disable()
+        self.ignore("browser-docs")
+        other = self.root / "other"
+        other.mkdir()
+        self.assertIn("browser-docs", self.session(cwd=other))
+
+    def test_ignore_key_resolves_cwd(self):
+        self.disable()
+        self.ignore("browser-docs", cwd=str(self.cwd) + "/")
+        link = self.root / "link"
+        link.symlink_to(self.cwd)
+        self.assertEqual(self.session(cwd=link), "")
+
+    def test_ignore_pruned_when_reenabled(self):
+        self.disable()
+        self.ignore("browser-docs")
+        self.user({"enabledPlugins": dict(ALL_ON)})
+        self.session()
+        self.disable()
+        self.assertIn("browser-docs", self.session())
 
 
 if __name__ == "__main__":

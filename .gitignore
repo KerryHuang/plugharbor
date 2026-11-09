@@ -20,3 +20,6 @@ __pycache__/
 # 私有設計文件與 SDD 工作檔，不可提交
 .private/
 .superpowers/
+
+# 專案暫存（計畫、一次性產物），見 workspace:tmp-scratch
+.tmp/
