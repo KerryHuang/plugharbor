@@ -12,6 +12,17 @@
 - 要讓 pi 載入的 plugin 需有 `package.json`（`pi.skills`）。
 - 細則見 `.claude/rules/`（plugin-structure、skill-conventions、version-consistency）。
 
+## 改動原則
+
+會回來改這個 repo 的多半是 AI agent，動手前照這幾條：
+
+- **只寫通用內容**：只在單一專案或公司成立的東西，放回那個專案。
+- **要有起因**：改 skill、rule、hook 要有事故或使用統計佐證，CHANGELOG 寫明「起因」；沒有事故的預防性改動先延後。
+- **常駐 context 不變胖**：skill／agent description 與 user 層規則（setup 的 home 目錄）改了不得變長；要變長就寫明拿什麼換。
+- **先查重疊**：新增或改 skill 前，先查 superpowers 等已裝的外部 plugin 有沒有同樣功能；分工見 user 層規則的 `superpowers.md`。
+- **副本一起改**：同一段話在多處（如本檔與 `AGENTS.md`、user 層 rule 與 plugin 的 references），改一處就全改；能機械比對的加檢查。
+- **並行**：動手前看 `git worktree list` 與 `git branch -a --no-merged origin/main`，有別的 session 正在改同一塊就先協調。
+
 ## 版號同步
 
 改 `skills/`、`agents/`、`references/`、`templates/` 時，同一個 commit 內：
@@ -24,7 +35,8 @@
 
 ## 驗證
 
-commit 前執行 `python3 scripts/ci/validate.py`（版號一致、frontmatter、交互引用、README 清單、外洩樣式）。
+commit 前執行 `python3 scripts/ci/validate.py`（版號一致、frontmatter、交互引用、README 清單、外洩樣式、本檔與 `AGENTS.md` 一致）。
+Claude Code 從 GitHub 取 plugin：改完要 push＋bump 才生效，push 前用 `claude --plugin-dir plugins/<name>` 實測。
 CI（`.github/workflows/validate.yml`）另跑 plugin 腳本測試、`node --test`、toolkit hook 測試（pytest 與 shell）、`setup/tests/*.sh`。
 本機啟用 pre-commit：`git config core.hooksPath scripts/hooks`。
 

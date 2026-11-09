@@ -259,6 +259,13 @@ def check_leaks() -> None:
                     err(f, f"L{lineno} 命中本機黑名單：{m.group(0)}")
 
 
+def check_agents_md() -> None:
+    """AGENTS.md 是給 Codex／pi／agy 讀的 CLAUDE.md 副本，內容必須一字不差。"""
+    claude, agents = ROOT / "CLAUDE.md", ROOT / "AGENTS.md"
+    if claude.read_text(encoding="utf-8") != agents.read_text(encoding="utf-8"):
+        err(agents, "與 CLAUDE.md 內容不一致（改了一份就複製到另一份）")
+
+
 def main() -> int:
     market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -276,6 +283,7 @@ def main() -> int:
         check_refs(pdir, all_plugins)
     check_name_collisions([ROOT / e["source"] for e in market["plugins"]])
     check_leaks()
+    check_agents_md()
 
     if errors:
         uniq = list(dict.fromkeys(errors))
