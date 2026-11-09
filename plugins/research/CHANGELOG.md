@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.5.0] - 2026-11-09
+
+- feat(ai-radar): `--daily` 每日版——launchd 工作日 09:00 叫 `skills/ai-radar/scripts/daily.py run`，每天把採納待辦分數最高、能在 repo 內完成的 1 項做成專用 worktree 裡的本機 `radar/<日期>-<編號>` branch 草稿（不 push，待審滿 3 個就停），另蒐集工作模式內工具的官方 changelog 最多 3 條，報告寫 `<OUT>/<日期>-daily.md`；流程見 `skills/ai-radar/references/daily.md`。
+- feat(ai-radar): `skills/ai-radar/scripts/work_profile.py` 統計近 30 天 transcript 用到的 skill、CLI、MCP server、副檔名，輸出 `work-profile.md`（純腳本、不呼叫模型，每日版每週重算）。
+- feat(ai-radar): `skills/ai-radar/scripts/install-daily.sh` 安裝／移除 launchd 排程；`claude -p` 用 sonnet、`dontAsk` 與工具白名單，明確禁止 push；只在新草稿、草稿滿、執行失敗時通知。
+
 ## [0.4.2] - 2026-11-05
 
 - fix(plugin-harvest): `lock check` 對 monorepo 子目錄只看該子目錄——`lock add` 多記 `subtree`（子目錄的 tree id），repo 有新 commit 但子目錄沒變時回 `SAME`，不再誤報 `UPDATED`；授權檔先找子目錄自己的，沒有才用 repo 根目錄。舊鎖定檔沒有 `subtree` 時照舊比整個 repo、授權照舊看根目錄（不會一律誤報 `LICENSE-CHANGED`）。
