@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.4.1] - 2026-11-09
+
+- fix: agent-orchestration 的共用資源清單補上「同時跑會互搶 CPU 的測試」，與 user 層 `dispatch.md` 同步；`dispatch.md` 同時加上「長工作丟背景前先做或派不衝突的待辦，沒有才等、不輪詢」，並精簡其他措辭使總長不增。起因是一個專案的主控 session 把全套測試（約 10 分鐘）、部署（約 5 分鐘）、跨家族審查（20～40 分鐘）丟到背景後就停下來等，路線圖上可平行的工作沒做；兩支吃 CPU 的測試同時跑也曾讓測試逾時。
+
 ## [1.4.0] - 2026-11-09
 
 - refactor: 方法類交給 superpowers，debugging 與 agent-orchestration 瘦身。debugging 開頭寫明裝了 superpowers 照 `systematic-debugging`／`test-driven-development`，本 skill 只留專案指令、症狀對照根因、改在正確的層、規格轉測試案例與輸出格式，一般方法敘述縮成幾行退路迴圈；`tdd-cycle.md` 的 Green／Refactor 說明精簡。agent-orchestration §6 由「專案資源優先」改成新分工（方法類 superpowers 優先，自家管 chain、output file 交棒、清理，herdr 與跨 CLI 用 `toolkit:agent-dispatch`），§0 保留。debugging、agent-orchestration、review 的 description 收掉與 superpowers 撞名的觸發詞（「systematic debugging」「TDD」「debug」「code review」「派 subagent」「orchestration」等），都比原本短。worktree、quality-check 檢查後不動。起因是近 14 天 workspace 的 debugging、agent-orchestration 叫用 0 次，方法類被 superpowers 接走，description 撞名讓兩邊搶觸發。
