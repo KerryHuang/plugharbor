@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.5.1] - 2026-11-09
+
+- fix(ai-radar): `install-daily.sh` 安裝完成訊息的變數緊接全形括號，`set -u` 下報 unbound variable、腳本以失敗結束（安裝本身已完成）；變數改用 `${…}`。
+
 ## [0.5.0] - 2026-11-09
 
 - feat(ai-radar): 每日版——launchd 工作日 09:00 叫 `skills/ai-radar/scripts/daily.py run`，每天把採納待辦分數最高、能在 repo 內完成的 1 項做成專用 worktree 裡的本機 `radar/<日期>-<編號>` branch 草稿（不 push，待審滿 3 個就停），另蒐集工作模式內工具的官方 changelog 最多 3 條，報告寫 `<OUT>/<日期>-daily.md`；流程見 `skills/ai-radar/references/daily.md`。

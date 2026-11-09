@@ -1,7 +1,7 @@
 {
   "name": "research",
   "description": "探索與研究——graphify 知識圖譜、ai-radar AI 情報雷達（週版＋工作日消化採納待辦的每日版）、plugin-harvest 吸收外部 plugin 做法（逐條核准、鎖定檔追蹤上游）",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": {
     "name": "KerryHuang"
   },

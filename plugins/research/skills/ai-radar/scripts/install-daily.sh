@@ -39,7 +39,7 @@ case "${1:-}" in
     mv -f "$tmp" "$DEST"
     launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
     launchctl bootstrap "gui/$(id -u)" "$DEST"
-    echo "已安裝 $LABEL → $DEST（工作日 09:00；log：$OUT/logs/）" ;;
+    echo "已安裝 ${LABEL} → ${DEST}（工作日 09:00；log：${OUT}/logs/）" ;;
   *)
     echo "用法：$0 [--print|--uninstall]" >&2; exit 2 ;;
 esac
