@@ -1,6 +1,6 @@
 ---
 name: ai-radar
-description: 每週掃描近一週最新 AI 情報並產出週報，涵蓋大廠工具規範更新、AI 工程實踐、user 層與當下專案的 agent-system 設定最佳化建議、（專案有提供時的）知識庫時效稽核，並對帳採納待辦跨週追蹤；週報的 plugin 排行與深讀交給 plugin-harvest。`--daily` 是 launchd 工作日背景執行的每日版（消化待辦做成本機 branch 草稿）。手動觸發。觸發詞：「AI 週報」「查本週 AI 新聞」「AI 情報雷達」「ai-radar」。
+description: 每週掃描近一週最新 AI 情報並產出週報，涵蓋大廠工具規範更新、AI 工程實踐、user 層與當下專案的 agent-system 設定最佳化建議、（專案有提供時的）知識庫時效稽核，並對帳採納待辦跨週追蹤；週報的 plugin 排行與深讀交給 plugin-harvest。另有 launchd 工作日背景執行的每日版（消化待辦做成本機 branch 草稿，見 `--daily`）。手動觸發。觸發詞：「AI 週報」「查本週 AI 新聞」「AI 情報雷達」「ai-radar」。
 argument-hint: "[回溯天數，預設7] [--deep 5] [--plugin <repo 網址>] [--daily]"
 disable-model-invocation: true
 ---
@@ -19,8 +19,8 @@ agent system（及專案知識庫）的最佳化／時效機會。跑完後**對
   專案沒有該 skill 時同樣跳過）。
 - **`--plugin <repo 網址>`**：舊入口，轉交 `research:plugin-harvest <repo 網址>`（單一 repo 模式），
   跳過區塊 1–5 與週報；ai-radar 本身不評。
-- **`--daily`**：每日版，跳過區塊 1–5 與週報，改讀 [`references/daily.md`](references/daily.md) 照做。
-  平常由 `scripts/daily.py run`（launchd 工作日 09:00）帶執行背景叫起，不手動打；安裝與手動執行見 plugin README。
+- **`--daily`**：每日版不在對話裡跑。它由 `scripts/daily.py run`（launchd 工作日 09:00）直接呼叫 `claude -p`，
+  指示寫在 [`references/daily.md`](references/daily.md)；使用者在對話打 `--daily` 時，只說明安裝與手動執行方式（plugin README），不照 daily.md 做。
 
 > 今天日期以使用者環境 / 對話中的當前日期為準，據此換算時間窗。
 

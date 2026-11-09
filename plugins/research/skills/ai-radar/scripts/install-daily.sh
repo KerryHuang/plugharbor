@@ -31,8 +31,12 @@ case "${1:-}" in
   "")
     [[ "$(uname)" == "Darwin" ]] || { echo "只支援 macOS（launchd）" >&2; exit 1; }
     mkdir -p "$OUT/logs" "$(dirname "$DEST")"
-    render > "$DEST"
-    plutil -lint "$DEST"
+    # 先寫暫存檔、lint 通過才原子替換：失敗時保留原本的 plist
+    tmp="$(mktemp "$DEST.XXXXXX")"
+    trap 'rm -f "$tmp"' EXIT
+    render > "$tmp"
+    plutil -lint "$tmp" >/dev/null
+    mv -f "$tmp" "$DEST"
     launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
     launchctl bootstrap "gui/$(id -u)" "$DEST"
     echo "已安裝 $LABEL → $DEST（工作日 09:00；log：$OUT/logs/）" ;;

@@ -26,17 +26,23 @@ claude plugin install research@plugharbor
 
 工作日 09:00 由 launchd 在本機背景跑 `skills/ai-radar/scripts/daily.py run`，以消化採納待辦為主：
 
-- 從 `adoption-backlog.md` 挑分數最高、能在 repo 內改檔完成的 1 項，在專用 worktree（預設 `~/Work/projects/plugharbor-radar`）從本機 `main` 切 `radar/<日期>-<編號>` branch 做成草稿並 commit，**不 push**。待審的 `radar/*`（還沒 merge 進 main 的）已有 3 個就不做新草稿。
+- 從 `adoption-backlog.md` 挑分數最高的 1 項，在專用 worktree（預設 `~/Work/projects/plugharbor-radar`）改檔做成草稿；不適合的項目最多再看 2 項。驗證通過才從本機 `main` 開 `radar/<日期>-<編號>` branch 並 commit，**不 push**。待審的 `radar/*`（還沒 merge 進 main 的）已有 3 個就不做新草稿。
 - 少量蒐集：只看 `work-profile.md` 裡工具的官方 changelog，最多 3 條；有 blog repo 當天的 `data/tech-snapshots/<日期>.json` 就先讀它。`work-profile.md` 由 `skills/ai-radar/scripts/work_profile.py` 統計近 30 天 transcript 用到的 skill、CLI、MCP server、副檔名，每週重算。
-- 報告寫到 `<OUT>/<日期>-daily.md`，log 在 `<OUT>/logs/`。只在新草稿、草稿滿 3 個、執行失敗時跳 macOS 通知。
-- `claude -p --model sonnet --permission-mode dontAsk`，白名單只有讀檔、Web 搜尋與抓取、在 `<OUT>` 與專用 worktree 寫檔、worktree 內的 `git status`／`diff`／`log`／`switch -c radar/*`／`add`／`commit`；push 明確禁止，不用 `--dangerously-skip-permissions`。
+- 報告寫到 `<OUT>/<日期>-daily.md`，log 與每階段的原始輸出在 `<OUT>/logs/`。只在新草稿、草稿滿 3 個、執行失敗時跳 macOS 通知；週末不跑（含睡眠醒來的補跑）。
+
+執行邊界：模型沒有 Bash，git、驗證、backlog 標記、報告、通知都由 `daily.py` 做。
+
+- 分兩階段跑 `claude -p --model sonnet`：**消化**只有 Read／Edit／Write／Glob／Grep，限定專用 worktree，看得到挑中的那一項待辦；**蒐集**只有 WebSearch／WebFetch，只看得到工具名稱和公開的官方發布資料。私人待辦與對外管道不會出現在同一階段。
+- 兩階段都用 `--setting-sources ""`、`--strict-mcp-config`、`--restricted`、`--permission-mode dontAsk`，不載入任何 settings 檔、hook、plugin 與 MCP。
+- 消化階段 deny 改 hook、驗證器、`.claude/`、`.git*`、`.github/`、`setup/`，也 deny 讀家目錄的 `.claude`、`.ssh` 等敏感路徑。收尾時 `daily.py` 再檢查一次改動路徑，接著用 `main` 已 commit 的 `validate.py` 驗證（含外洩掃描），都通過才用固定訊息 commit（不跑 hook）。任一項失敗就丟棄改動、整次算失敗。
+- 細節見 [`skills/ai-radar/references/daily.md`](skills/ai-radar/references/daily.md)。
 
 ```bash
 # 從 plugharbor 主 checkout 安裝（排程跑的是這份 daily.py，跟著本機 main）
 plugins/research/skills/ai-radar/scripts/install-daily.sh --print      # 先看 plist
-plugins/research/skills/ai-radar/scripts/install-daily.sh              # 寫入 ~/Library/LaunchAgents 並載入
+plugins/research/skills/ai-radar/scripts/install-daily.sh              # 寫入 ~/Library/LaunchAgents 並載入（lint 通過才替換舊檔）
 plugins/research/skills/ai-radar/scripts/install-daily.sh --uninstall
-# 手動跑一次（同一天已有報告會跳過）
+# 手動跑一次（同一天跑完過會跳過；失敗的報告會保留並可重跑；週末要加 --weekend）
 python3 plugins/research/skills/ai-radar/scripts/daily.py run
 ```
 
