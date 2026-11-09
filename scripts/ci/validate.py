@@ -100,6 +100,20 @@ def check_versions(market: dict, readme: str) -> None:
 
 # ---------- 2. frontmatter ----------
 
+def triggers_error(raw: str) -> str | None:
+    """SKILL.md 的 `triggers`：單行 JSON 字串陣列、每項至少 4 字（toolkit disabled-skills.py 比對用）。"""
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return "triggers 須是單行 JSON 陣列，如 `triggers: [\"開始錄音\"]`"
+    if not isinstance(value, list) or not all(isinstance(t, str) for t in value):
+        return "triggers 須是字串陣列"
+    short = [t for t in value if len(t.strip()) < 4]
+    if short:
+        return f"triggers 每項至少 4 字（太短易誤觸）：{short}"
+    return None
+
+
 def check_frontmatter(pdir: Path) -> None:
     targets = [(f, "skill") for f in sorted(pdir.glob("skills/*/SKILL.md"))]
     targets += [(f, "agent") for f in sorted(pdir.glob("agents/*.md"))]
@@ -116,6 +130,8 @@ def check_frontmatter(pdir: Path) -> None:
                 err(f, f"frontmatter 缺 `{key}`")
         if fm.get("description", "").startswith("|"):
             err(f, "description 不得用 `|` 區塊（會保留換行、破壞清單呈現），改用 `>-` 或單行")
+        if kind == "skill" and fm.get("triggers") and (msg := triggers_error(fm["triggers"])):
+            err(f, msg)
         if kind == "skill" and len(f.read_text(encoding="utf-8").splitlines()) > 300:
             err(f, "SKILL.md 超過 300 行，實作邏輯移到 references/ 或 scripts/")
         expect = f.parent.name if kind == "skill" else f.stem
