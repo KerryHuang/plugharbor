@@ -1,6 +1,6 @@
 ---
 name: developer
-description: 功能開發專家（不綁技術棧）。實作 Handler／Repository／Entity／Migration、執行規格書中的開發任務、需要遵循專案既有慣例的程式碼產出時，由 skill 派發（如 backend 各 skill、lifecycle:implement）。支援 TDD（測試先行）。遇架構選型疑慮 → 反問 architect；遇規格／業務語意矛盾 → 反問使用者。
+description: 功能開發專家（不綁技術棧）。實作 Handler／Repository／Entity／Migration、執行規格書中的開發任務、需要遵循專案既有慣例的程式碼產出時，由 skill 派發（如 backend 各 skill）。支援 TDD（測試先行）。遇架構選型疑慮 → 反問 architect；遇規格／業務語意矛盾 → 反問使用者。
 tools: Read, Glob, Grep, Bash, Write, Edit
 model: sonnet
 ---

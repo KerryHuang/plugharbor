@@ -45,7 +45,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [lifecycle](./plugins/lifecycle/README.md) | 1.4.1 | 軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira） |
+| [lifecycle](./plugins/lifecycle/README.md) | 2.0.0 | 軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira） |
 | [workspace](./plugins/workspace/README.md) | 1.3.2 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
 | [backend](./plugins/backend/README.md) | 1.0.2 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
@@ -76,7 +76,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 ## 典型動線
 
 需求進來 → `lifecycle` 的 `explore` → `spec` → `spec-check` → `ticket-create`（經 `ticket-ops` 換成專案的票務工具）；
-進實作由 `lifecycle` 的 `implement` 起頭，技術層面再取用 `backend`、`frontend`、
+進實作由 `lifecycle` 的 `implement` 起頭（規劃與執行交給 superpowers，建議安裝），技術層面再取用 `backend`、`frontend`、
 `database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit`／`review` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收。規模預設 lean（一份規格、一張票），設 `scale: full` 走 FRD→SAD→BFS→FFS 與四角色票樹。
 
 ## 目錄結構

@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.0] - 2026-11-09
+
+- BREAKING(implement): 從「完整端到端實作流程」改成夾在 superpowers 頭尾的入口。SKILL.md 只留前段：讀設定與 `LEARNINGS.md`（否決條目照抄）、分支與工作區、規格品質閘門；過閘門後叫 `superpowers:writing-plans`，並要求計畫的最後一個 task 是後段（新檔 `skills/implement/references/after.md`：規格三層比對、端到端／整合測試、寫 LEARNINGS、規格回填）。執行交給 superpowers 的 subagent-driven-development 或 executing-plans，收尾交給 finishing-a-development-branch 的選單（draft PR 用它的 push＋PR 選項），不自動 merge。
+- BREAKING(implement): 移除任務清單與進度 ledger、基線、逐 task 派工、實作期審查迴圈、關卡式收尾 G1–G7，以及只服務這些步驟的四份 reference（`closing.md`、`dispatch.md`、`ledger.md`、`planning.md`）；`--tdd` 參數拿掉（兩條路徑都是測試先行）。`.tmp/implement/<feature>/ledger.md` 不再有人讀寫，舊的進行中功能請改用新流程重跑前段。
+- feat(implement): 沒裝 superpowers 時走極簡退路 `skills/implement/references/fallback.md`：任務清單寫進 `.tmp/implement/<feature>/tasks.md`、主控自己逐項 TDD 做完並勾選、全部完成後派一個全新 subagent 審整份 diff（沒有 subagent 工具就自審並標「自審」）、逐檔 commit 後問使用者要不要 push／開 PR。概念借自 superpowers executing-plans（MIT），文字自寫。`references/shared-preludes.md`「可選依賴」補上 superpowers 一列。
+- 起因：近 14 天統計，superpowers 的 writing-plans 叫用 63 次、brainstorming 44 次、executing-plans 36 次，lifecycle:implement 只有 1 次；同一段流程維護兩套沒有意義。實測證明用使用者偏好覆寫計畫位置、以及要求「計畫的最後一個 task 是後段」都可行，所以把 lifecycle 獨有的頭尾留下，中間交給 superpowers。
+
 ## [1.4.1] - 2026-11-09
 
 - docs: `references/dispatch-conventions.md` 與 `references/skill-design.md` 的平行判準表加一列：同一個 worktree 裡一邊改檔、一邊跑測試或 build，不可平行，要串接或讓測試方用另一個 worktree。起因是 gate 測試與修正的 subagent 在同一個 worktree 互相干擾。
@@ -31,7 +38,7 @@
 
 ## [1.1.2] - 2026-11-05
 
-- fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件改用 `route.mjs reviewer` 挑不同家族），與 `skills/implement/references/dispatch.md` 不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。
+- fix(implement): 只裝 lifecycle 的實測回饋——小改動減量的審查只派一個同家 reviewer、不查表（碰到跨家族審查條件改用 `route.mjs reviewer` 挑不同家族），與 implement 的 `dispatch.md`（2.0.0 已移除）不再矛盾；只查不派改用 toolkit 的 `route.mjs pick`。
 - fix(implement): reviewer 沒有 Bash，步驟 7 改由主 session 把 diff 與未追蹤清單寫成 `review/diff.patch` 交給審查 agent。
 - fix(implement): 模式 D 只到 G1 時，規格維持「已批准」並在回報寫明 G4–G6 未做、不算完成；`.tmp/` 不在 `.gitignore` 時以「加」為推薦選項。
 

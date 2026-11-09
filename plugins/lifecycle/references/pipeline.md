@@ -75,8 +75,8 @@ lite       ... → spec --stage frd ───────→ spec --stage bfs �
 │                IMPLEMENTATION (lifecycle)               │
 │                                                         │
 │  [ lifecycle:implement ]                                │
-│       開分支 → 任務清單與進度 ledger → 每 task 派 subagent │
-│       → 規格比對 → 審查修正迴圈 → 收尾（可選 TDD）        │
+│       讀經驗 → 分支 → 規格閘門 → 交給 superpowers       │
+│       計畫最後一步：規格比對、整合測試、LEARNINGS       │
 │              ↓                                          │
 │  [ lifecycle:release ]（需要發版時）                    │
 │       release branch、品質閘、merge、反合；hotfix        │

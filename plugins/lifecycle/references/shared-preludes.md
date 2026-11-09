@@ -65,7 +65,7 @@ full 規格一律落 `{docs-root}/{模組}/{功能}/`（lean 不分模組，不�
 一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄；沒裝見下節「可選依賴」。
 
 ## 可選依賴
-lifecycle 單獨安裝就能用；`browser-docs`、`toolkit` 都是可選。標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有，派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
+lifecycle 單獨安裝就能用；`superpowers`、`browser-docs`、`toolkit` 都是可選。標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有，派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
 
 | 用到 | 哪裡 | 沒裝時 |
 |---|---|---|
@@ -73,6 +73,7 @@ lifecycle 單獨安裝就能用；`browser-docs`、`toolkit` 都是可選。標�
 | `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
 | `toolkit:agent-dispatch` | spec-chain、顧問討論的 herdr pane 模式 | 同「不在 herdr」：spec-chain 改單 session 逐棒接手（handoff-protocol.md），顧問討論改 subagent 模式 |
 | `toolkit:retrospective` | dev-feedback、預算放行的轉交 | 列在本 skill 報告的建議裡，不轉交 |
+| `superpowers:writing-plans` | implement 的規劃到收尾 | 照 `skills/implement/references/fallback.md` 的極簡退路，並建議安裝 superpowers |
 
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

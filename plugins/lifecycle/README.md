@@ -27,7 +27,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 
 ## 可選依賴
 
-`browser-docs`（畫面勘察、PDF 轉檔）、`toolkit`（herdr pane 派工、retrospective）沒裝時照 `references/shared-preludes.md`「可選依賴」降級。
+建議搭配 superpowers（`implement` 把規劃、執行、審查、收尾交給它）。`superpowers`、`browser-docs`（畫面勘察、PDF 轉檔）、`toolkit`（herdr pane 派工、retrospective）沒裝時照 `references/shared-preludes.md`「可選依賴」降級。
 
 ## Skills（22）
 
@@ -37,7 +37,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 | `demo-video` | 把旁白加操作步驟的腳本錄成有配音、字幕的操作示範影片（MP4＋SRT）：寫稿 → 審稿 → 配音 → 依語音長度錄操作 → 字幕 → 合成 → 驗證，最後由使用者試聽；預設語音 Edge TTS 非正式授權，對外發布前要先確認 |
 | `dev-feedback` | 把規格類 skill 開的票面摩擦追回產生它的那行開票規格，提出刪減清單並寫成報告檔（只做減法，不改 plugin）（手動） |
 | `explore` | 新功能起手、寫規格前快速收斂需求：六維引導問答，產出探索摘要供 lifecycle:spec 使用 |
-| `implement` | 照規格把功能從開分支做到交付 |
+| `implement` | 照規格實作的入口：讀經驗、開分支、規格閘門，再交給 superpowers 規劃與執行（沒裝走極簡退路），計畫最後一步做規格比對與寫經驗 |
 | `interview-prep` | 正式訪談前後準備：把多場會議／訪談素材彙整成已知／未知盤點，或為指定受訪者產出需求訪談大綱；每條標已確認／待確認／推測並附出處（手動） |
 | `meeting-minutes` | 記錄會議：即時記錄、會後整理，或錄音（錄音檔／麥克風／線上會議，需 toolkit）轉逐字稿後整理成結構化會議記錄（摘要、結論、待辦），可選第二意見審閱 |
 | `operation-manual` | 產出交付客戶的操作手冊與教育訓練簡報：實機探索 → 標註截圖 → 撰寫 → 審查 → 出 PDF／PPTX，並把過程中發現的規格落差整理成待開票清單（手動） |
