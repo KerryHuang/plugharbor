@@ -72,3 +72,10 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
   3. `git worktree remove <ws>/wt`，刪除分支 `dispatch/<短名>`。
   4. 刪除工作目錄。
 - Windows（Git Bash）：用 node 的 detached spawn，不依賴 shell 背景工作。實機驗證見 CHANGELOG。
+
+## macOS 防睡眠（herdr pane 與背景 worker 都適用）
+
+- 長任務期間不要蓋上螢幕。蓋上會進 Clamshell Sleep，`caffeinate` 用什麼旗標都擋不住；它只擋閒置睡眠（`-i`），`-s` 也只在接電源時有效。
+- 一定要蓋螢幕，就接電源並接外接螢幕（closed-display mode）。
+- `sudo pmset disablesleep 1` 是系統設定，由使用者自己決定要不要開，agent 不代為執行。
+- 懷疑睡過頭：`pmset -g log | grep -iE "sleep|wake"` 看睡眠原因（Clamshell、Idle、Low Power）。

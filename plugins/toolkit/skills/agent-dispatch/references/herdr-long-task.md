@@ -15,6 +15,10 @@ SKILL.md 第 4 節的補充。通用操作以官方 `herdr --skill` 為準。
 - 輪詢拿不到 agent 狀態時，先看原始輸出是不是 `protocol_mismatch`，不要當成 worker 消失去重派。
 - 升級前後用 `herdr status server`／`herdr status client` 比 `private_protocol` 與 `private_protocol_compatible`。
 
+## 防睡眠
+
+長任務期間不要蓋上 Mac 螢幕，caffeinate 擋不住；細節見 `background-worker.md`「macOS 防睡眠」。
+
 ## cwd 信任檢查（對象是 claude）
 
 ```bash

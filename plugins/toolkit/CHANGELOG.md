@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.5] - 2026-11-09
+
+- docs(agent-dispatch): `skills/agent-dispatch/references/background-worker.md` 新增「macOS 防睡眠」：長任務期間不要蓋螢幕（Clamshell Sleep，caffeinate 擋不住）、要蓋就接電源加外接螢幕、`pmset disablesleep` 由使用者自己決定、怎麼查睡眠原因；`herdr-long-task.md` 加一行指路。起因是長任務跑到一半蓋螢幕又拔電源，Mac 睡了 2 小時、測試逾時。
+
 ## [0.16.4] - 2026-11-09
 
 - docs(agent-dispatch): 派工 prompt 的共用規則加「授權範圍」：寫明可以改的 repo 與路徑，其他 repo 一律不動，沒寫明可以 push、發版就不做；herdr 收工步驟改成讀完結果檔就關 pane，不留著待命。起因是 worker 交回結果後 pane 沒收，worker 跑去另一個 repo 發版。
