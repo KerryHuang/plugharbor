@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.1] - 2026-11-09
+
+- docs(agent-orchestration): 平行判準的共用資源補上「同一個 worktree」與「build／測試產物」。起因是同一個 worktree 裡跑 gate 測試與做修正的 subagent 同時在跑，互相干擾。
+
 ## [1.3.0] - 2026-11-05
 
 - feat: `review` 新增「專案規範合規」審查面向：只比對路徑涵蓋變更檔的 `CLAUDE.md`／`AGENTS.md`，違規須引用規則原文（`skills/review/references/evidence.md` 第 7 節）。

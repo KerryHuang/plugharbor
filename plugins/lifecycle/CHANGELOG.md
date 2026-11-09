@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.4.1] - 2026-11-09
+
+- docs: `references/dispatch-conventions.md` 與 `references/skill-design.md` 的平行判準表加一列：同一個 worktree 裡一邊改檔、一邊跑測試或 build，不可平行，要串接或讓測試方用另一個 worktree。起因是 gate 測試與修正的 subagent 在同一個 worktree 互相干擾。
+
 ## [1.4.0] - 2026-11-08
 
 - feat(implement): 實作經驗檔 `LEARNINGS.md` 多記「否決：方案——理由」，下次規劃時一併讀進 ledger，已否決的方案不再提出。
