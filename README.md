@@ -46,7 +46,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | 外掛 | 版本 | 內容 |
 |------|------|------|
 | [lifecycle](./plugins/lifecycle/README.md) | 2.0.0 | 軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira） |
-| [workspace](./plugins/workspace/README.md) | 1.4.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台 |
+| [workspace](./plugins/workspace/README.md) | 1.5.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
 | [backend](./plugins/backend/README.md) | 1.0.2 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
 | [database](./plugins/database/README.md) | 1.0.1 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
@@ -62,7 +62,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | 外掛 | skills | agents |
 |------|--------|--------|
 | lifecycle | `consolidate-docs` `demo-video` `dev-feedback` `explore` `implement` `interview-prep` `meeting-minutes` `operation-manual` `plugin-healthcheck` `prototype-html` `qa-verify` `release` `spec` `spec-chain` `spec-check` `survey-existing-system` `ticket-create` `ticket-ops` `ticket-reply` `ticket-report` `triage` `write-doc` | `architect` `debugger` `developer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `reviewer` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` `tester` |
-| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` | — |
+| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` | — |
 | backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
 | frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
 | database | `schema-conventions` `migration` `orm-sync` `schema-docs` | — |

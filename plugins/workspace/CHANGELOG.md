@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.5.0] - 2026-11-09
+
+- feat: 新增 `unattended`（無人值守模式）。使用者叫用或說要離開時，主控照路線連續推進工作單元，直到使用者回來（送出新訊息）為止：開場讀專案的 `.plugharbor/unattended.md`（範本 `skills/unattended/references/project-config.md`，沒有就趁使用者還在先問），裁決帳本分開記使用者與主控的決定，設計單元的使用者行為類決定標待確認，只在停下條件停，回來時交 `return-report.md`。跨家族審查有 `toolkit:agent-dispatch` 才用，沒有就退回同家新 context。起因是一個專案的專案層夜間 skill 實跑一次判斷點皆正確，通用流程與專案細節已分開，其他專案也需要；s2e 設計因方向在審查中翻盤多審 3 輪，促成「行為類先標待確認」。常駐 context 多一行 description，換掉該專案層 skill 的 description（隨後拆除）。
+
 ## [1.4.1] - 2026-11-09
 
 - fix: agent-orchestration 的共用資源清單補上「同時跑會互搶 CPU 的測試」，與 user 層 `dispatch.md` 同步；`dispatch.md` 同時加上「長工作丟背景前先做或派不衝突的待辦，沒有才等、不輪詢」，並精簡其他措辭使總長不增。起因是一個專案的主控 session 把全套測試（約 10 分鐘）、部署（約 5 分鐘）、跨家族審查（20～40 分鐘）丟到背景後就停下來等，路線圖上可平行的工作沒做；兩支吃 CPU 的測試同時跑也曾讓測試逾時。

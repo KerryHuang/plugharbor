@@ -25,7 +25,7 @@ claude plugin install workspace@plugharbor
 
 各 skill 驗證時一律跑專案自帶的 script（README、CI、`package.json`、`Makefile` 找得到的那支）。
 
-## Skills（13）
+## Skills（14）
 
 ### git 與工作區
 | Skill | 用途 |
@@ -43,6 +43,7 @@ claude plugin install workspace@plugharbor
 | `convention-first` | 慣例優先：先 grep 既有樣板，不擅自引入新模式 |
 | `agent-orchestration` | 派工判準與多階段 agent chain 交棒 |
 | `dual-tool-mirror` | Claude Code ↔ Codex 設定鏡像 |
+| `unattended` | 無人值守：使用者不在時連續推進工作單元，回來時交報告；專案細節放 `.plugharbor/unattended.md` |
 
 ### 輕量開發核心
 | Skill | 用途 |
