@@ -85,6 +85,7 @@ argument-hint: "[對象] <任務>"
 
 - prompt 必須寫明結果檔的絕對路徑，以及「寫完結果檔才算完成，寫完就停」；還要寫明已經定案的決定和已排除的方向。
 - 「不要刪暫存資料夾，把要清的路徑列在結果檔」。
+- 授權範圍：寫明可以改哪個 repo、哪些路徑，其他 repo 一律不動；prompt 沒寫明可以 push、發版的，就不 push、不發版。
 - 並行多個 worker 時，各自的結果檔與工作區分開，並寫明「另一個 worker 正在寫 X，不要碰」。並行上限預設 4（背景 worker 以同一個 `--ws` 上層目錄計），遇到額度錯誤或逾時就降。
 - **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（herdr `--wait`）或完工通知。背景 worker 在 macOS 等通知、用 `bg.mjs status` 看一次；其他平台用 `bg.mjs wait` 阻塞等結束。
 - **完成的唯一證據是結果檔存在**。
@@ -134,7 +135,7 @@ argument-hint: "[對象] <任務>"
    | `protocol_mismatch` | 不重派，worker 多半還活著；請使用者在 worker 都 idle 時重啟 server（reference「安裝與升級」） |
 
    claude worker 回到 idle、結果還沒到、context 已超過 250K：由你發動中途交接，步驟見 reference 與第 8 節。正在 working 或 blocked 時不插話。
-5. 收工：讀完結果檔，`herdr pane close <pane_id>`，再跑一次 `herdr_layout.py --main "$HERDR_PANE_ID"` 重排。只關自己在第 2 步開的 pane，不用「清單上沒別人」推論安全，也不要 `herdr workspace close`（會連使用者與你一起關）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
+5. 收工：讀完結果檔就 `herdr pane close <pane_id>`，不留著待命（留著的 worker 會自己找事做）；再跑一次 `herdr_layout.py --main "$HERDR_PANE_ID"` 重排。只關自己在第 2 步開的 pane，不用「清單上沒別人」推論安全，也不要 `herdr workspace close`（會連使用者與你一起關）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
 
 ## 7. 額度
 

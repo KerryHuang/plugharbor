@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.4] - 2026-11-09
+
+- docs(agent-dispatch): 派工 prompt 的共用規則加「授權範圍」：寫明可以改的 repo 與路徑，其他 repo 一律不動，沒寫明可以 push、發版就不做；herdr 收工步驟改成讀完結果檔就關 pane，不留著待命。起因是 worker 交回結果後 pane 沒收，worker 跑去另一個 repo 發版。
+
 ## [0.16.3] - 2026-11-09
 
 - fix(agent-dispatch): 額度錯誤抓不到重置時間時，「out of credits」「insufficient credits」「refill」「billing」這類要人儲值的訊息改成封鎖 24 小時，其他維持 1 小時。之前一律 1 小時，codex workspace 沒額度時一小時後又被挑中，跑到一半才失敗。`quotaInfo` 在 `skills/agent-mesh-check/scripts/clis.mjs`，`dispatch.test.mjs` 補兩案例；SKILL.md 的手動延長規則改成只在封鎖到期後仍失敗時使用。
