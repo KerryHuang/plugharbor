@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.2] - 2026-11-09
+
+- fix: commit、quality-check、tmp-scratch 的 description 加上主控自己動手時的觸發（自己要下 git commit、合併或 commit 前要跑 gate、要寫一次性腳本或開 `.tmp`），並刪掉重複的中英觸發詞，三個都比原本短。起因是一個 session 叫了 122 次 Skill，這三個一次都沒觸發：主控自己下了 76 次 commit、重複手寫 gate 指令 21 次，因為原本只寫使用者會講的話。
+
 ## [1.3.1] - 2026-11-09
 
 - docs(agent-orchestration): 平行判準的共用資源補上「同一個 worktree」與「build／測試產物」。起因是同一個 worktree 裡跑 gate 測試與做修正的 subagent 同時在跑，互相干擾。

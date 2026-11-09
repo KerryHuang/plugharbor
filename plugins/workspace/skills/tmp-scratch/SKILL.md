@@ -1,6 +1,6 @@
 ---
 name: tmp-scratch
-description: 暫存檔放哪、怎麼命名、何時清——session scratchpad 與專案 `.tmp/YYYYMMDD-slug/` 兩層分工、`.tmp` 下禁裸檔、只用 ASCII、任務結束當輪清、被派出的 worker 不自刪。Use when 要寫一次性腳本／中間產物／給人看的暫存、要開 `.tmp` 資料夾、收工清暫存、「暫存檔放哪」「清 .tmp」「.tmp 好亂」。
+description: 暫存檔放哪、怎麼命名、何時清——session scratchpad 與專案 `.tmp/YYYYMMDD-slug/` 分工、禁裸檔、只用 ASCII、當輪清、worker 不自刪。Use when 你要寫一次性腳本或中間產物、開 `.tmp` 資料夾、收工清暫存。
 ---
 
 # 暫存分層

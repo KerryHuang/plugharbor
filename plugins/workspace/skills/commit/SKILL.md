@@ -1,6 +1,6 @@
 ---
 name: commit
-description: 建立符合 Conventional Commits 規範的語義化提交訊息，支援 Git Flow + Semantic Release 工作流程。Use when creating git commits, "commit 這些變更", "幫我提交", "建立 commit", "semantic commit".
+description: 建立符合 Conventional Commits 規範的提交訊息，支援 Git Flow＋Semantic Release。Use when 你自己要下 git commit（含自動流程中）、使用者說「commit」「幫我提交」。
 ---
 
 # 建立語義化提交

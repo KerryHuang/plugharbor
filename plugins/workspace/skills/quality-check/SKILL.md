@@ -1,6 +1,6 @@
 ---
 name: quality-check
-description: 全面程式碼品質檢查——建置驗證、測試執行、覆蓋率分析、問題優先排序。Use when validating code quality before commit or deployment, "品質檢查", "quality check", "跑測試看覆蓋率", "提交前檢查", "建置測試驗證".
+description: 程式碼品質檢查——建置、測試、覆蓋率、問題排序。Use when 合併或 commit 前要跑 gate（建置／測試／型別）、部署前驗證、使用者說「品質檢查」「quality check」。
 ---
 
 # 品質檢查
