@@ -409,5 +409,35 @@ echo "$OUT" | grep -q '^SKIP: codex（未安裝）' || fail "(25) 沒有 codex �
 echo "$OUT" | grep -q '^SKIP: agy（未安裝）' || fail "(25) 沒有 agy 應印 SKIP: agy：$OUT"
 if grep -qE '^(codex|agy) ' "$STUB_LOG"; then fail "(25) 沒裝的 CLI 不該被呼叫：$(cat "$STUB_LOG")"; fi
 
-echo "PASS: install.sh（25 組）"
+# ---------- 26) --check-projects：依 claude plugin list 的專案層紀錄逐一比對，只報不改 ----------
+H="$TMP/h26"; mkdir -p "$H"; echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
+P26="$TMP/p26"; mkdir -p "$P26"; git -C "$P26" init -q; P26="$(cd "$P26" && pwd -P)"
+OK26="$TMP/ok26"; mkdir -p "$OK26"; git -C "$OK26" init -q; OK26="$(cd "$OK26" && pwd -P)"
+HOME="$H" PATH="$BASE_PATH" bash "$REPO_DIR/setup/install-project.sh" "$OK26" ui-ux >/dev/null || fail "(26) 前置安裝失敗"
+UIV="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO_DIR/plugins/ui-ux/.claude-plugin/plugin.json" | head -1)"
+printf '[{"id": "lifecycle@plugharbor", "version": "0.0.1", "scope": "local", "projectPath": "%s"},
+ {"id": "ui-ux@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"},
+ {"id": "blog@plugharbor", "version": "0.1.0", "scope": "local", "projectPath": "%s/gone"},
+ {"id": "toolkit@plugharbor", "version": "0.0.1", "scope": "user"},
+ {"id": "other@elsewhere", "version": "1", "scope": "local", "projectPath": "%s"}]\n' \
+  "$P26" "$UIV" "$OK26" "$TMP" "$P26" > "$STUB_STATE/claude-list"
+hashes "$P26" > "$TMP/before26"; : > "$STUB_LOG"
+rc=0; OUT="$(run "$H" --check-projects)" || rc=$?
+[ "$rc" -eq 3 ] || fail "(26) 有落後應 exit 3，實際 ${rc}：$OUT"
+echo "$OUT" | grep -q "^PROJECT: ${P26}（local：lifecycle）" || fail "(26) 應列出落後的專案：$OUT"
+echo "$OUT" | grep -q "^  OUTDATED: claude lifecycle 0.0.1 → " || fail "(26) 應帶出 install-project 的差異：$OUT"
+echo "$OUT" | grep -q "^STALE: $TMP/gone" || fail "(26) 不存在的專案目錄應報 STALE：$OUT"
+echo "$OUT" | grep -q "^UP-TO-DATE: ${OK26}（" || fail "(26) 一致的專案應報 UP-TO-DATE：$OUT"
+if echo "$OUT" | grep -q 'toolkit\|other'; then fail "(26) user 層與其他 marketplace 不該列入：$OUT"; fi
+if grep -qE 'plugin (install|update|uninstall)' "$STUB_LOG"; then fail "(26) 只報不改，不該安裝：$(cat "$STUB_LOG")"; fi
+hashes "$P26" > "$TMP/after26"
+diff "$TMP/before26" "$TMP/after26" >/dev/null || fail "(26) --check-projects 改了專案檔案"
+# 只剩一致的專案 → exit 0；沒有 claude → SKIP、exit 0
+printf '[{"id": "ui-ux@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"}]\n' "$UIV" "$OK26" > "$STUB_STATE/claude-list"
+run "$H" --check-projects >/dev/null || fail "(26) 全部一致應 exit 0"
+OUT="$(RUN_PATH="$TOOLS:/usr/bin:/bin" run "$H" --check-projects)" || fail "(26) 沒有 claude 應 exit 0：$OUT"
+echo "$OUT" | grep -q '^SKIP: claude' || fail "(26) 沒有 claude 應印 SKIP：$OUT"
+rm "$STUB_STATE/claude-list"
+
+echo "PASS: install.sh（26 組）"
 

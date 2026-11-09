@@ -1,20 +1,59 @@
 #!/usr/bin/env bash
-# plugharbor → 本機：user 層檔案、settings 合併、舊 claude-home hook 清理、四個 CLI 的 plugin 註冊、adapter 副本。
+# plugharbor → 本機（--check-projects 改為比對各專案的專案層 plugin）：user 層檔案、settings 合併、舊 claude-home hook 清理、四個 CLI 的 plugin 註冊、adapter 副本。
 # claude-home 還裝著時也能跑：同名檔內容不同就 SKIP、重複的 skill／agent 只報 DUP，不動使用者的東西。
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$REPO_DIR/setup/lib.sh"
 TARGET="$HOME/.claude"
 
-FORCE=0; CHECK=0; YES=0
+FORCE=0; CHECK=0; YES=0; PROJECTS=0
 for a in "$@"; do
   case "$a" in
     --force) FORCE=1 ;;
     --check) CHECK=1 ;;
     --yes) YES=1 ;;
-    *) echo "用法：install.sh [--check] [--force] [--yes]"; exit 2 ;;
+    --check-projects) PROJECTS=1 ;;
+    *) echo "用法：install.sh [--check] [--force] [--yes] | --check-projects"; exit 2 ;;
   esac
 done
+
+# --check-projects：清單不另存，從這台機器的 claude plugin list 推算裝過專案層 plugin 的專案，逐一 install-project.sh --check
+if [ "$PROJECTS" -eq 1 ]; then
+  command -v claude >/dev/null 2>&1 && [ -n "$PY" ] || { echo "SKIP: claude 或 python 未安裝，查不到專案層紀錄"; exit 0; }
+  PROJ_LIST="$(claude plugin list --json 2>/dev/null | tr -d '\r' | "$PY" -c '
+import json, sys
+try:
+    items = json.load(sys.stdin)
+except Exception:
+    items = []
+groups = {}
+for x in items if isinstance(items, list) else []:
+    pid, scope, path = x.get("id", ""), x.get("scope"), x.get("projectPath")
+    if pid.endswith("@plugharbor") and scope in ("local", "project") and path:
+        names = groups.setdefault((path, scope), [])
+        if pid[:-11] not in names: names.append(pid[:-11])
+for (path, scope), names in sorted(groups.items()):
+    print("\t".join([scope, path, " ".join(names)]))
+')" || PROJ_LIST=""
+  [ -n "$PROJ_LIST" ] || { echo "沒有專案層 plugharbor plugin 的紀錄"; exit 0; }
+  BEHIND=0; STALE=0; PFAILS=0
+  while IFS="$(printf '\t')" read -r scope path names; do
+    if [ ! -d "$path" ]; then echo "STALE: ${path}（專案目錄不存在；在別處用 claude plugin uninstall 清掉紀錄）"; STALE=$((STALE + 1)); continue; fi
+    shared=""; [ "$scope" = local ] || shared="--shared"
+    rc=0; out="$(bash "$REPO_DIR/setup/install-project.sh" $shared --check "$path" $names 2>&1)" || rc=$?
+    case "$rc" in
+      0) echo "UP-TO-DATE: ${path}（${scope}：${names}）" ;;
+      3) echo "PROJECT: ${path}（${scope}：${names}）"; printf '%s\n' "$out" | grep -E '^(OUTDATED|MISSING|DIFF|RENAME|BROKEN|DISABLE):' | sed 's/^/  /'
+         echo "  修正：setup/install-project.sh ${shared:+$shared }\"$path\" $names"; BEHIND=$((BEHIND + 1)) ;;
+      *) echo "FAIL: ${path}（install-project.sh exit ${rc}）"; printf '%s\n' "$out" | sed 's/^/  /'; PFAILS=$((PFAILS + 1)) ;;
+    esac
+  done <<< "$PROJ_LIST"
+  echo "落後 ${BEHIND} 個專案、目錄不存在 ${STALE} 個、失敗 ${PFAILS} 個"
+  [ "$BEHIND" -eq 0 ] || echo "更新後，開著的舊 session 用 /reload-plugins（pi 用 /reload）才會載入新版"
+  [ "$PFAILS" -eq 0 ] || exit 1
+  [ "$BEHIND" -eq 0 ] && [ "$STALE" -eq 0 ] || exit 3
+  exit 0
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$TARGET/backups/plugharbor-$STAMP"
 DIFFS=0; FAILS=0

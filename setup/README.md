@@ -4,6 +4,8 @@
 
 `--check`（install.sh 與 install-project.sh 都有）只報不改，exit code：0 一致、3 有差異、1 有步驟失敗、2 用法錯誤。
 
+`install.sh --check-projects` 找出這台機器上落後的專案：從 `claude plugin list --json` 裡帶 `projectPath` 的 plugharbor 項目推算裝過專案層 plugin 的專案，逐一跑 `install-project.sh --check`，落後的印出修正指令，目錄已不存在的報 `STALE:`。清單不另存，每台機器讀自己的狀態；exit code 同 `--check`。更新後，開著的舊 session 要 `/reload-plugins`（pi 用 `/reload`）才會載入新版。
+
 ## plugin 分層
 
 - **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
