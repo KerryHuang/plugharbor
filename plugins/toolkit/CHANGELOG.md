@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.17.0] - 2026-11-09
+
+- feat(hooks): 新增 SessionStart hook `disabled-skills.py`。它依 user → project → local 設定，列出被明確停用的 plugharbor plugin（`enabledPlugins: false`）與被 `skillOverrides` 關掉的 skill，附重開指令（`claude plugin enable <p>@plugharbor --scope <層>`）和 marketplace clone 裡的 SKILL.md 路徑，agent 需要時當輪讀檔照做，再問要不要重開。沒有停用就不輸出。從沒啟用的專案層 plugin 不列，因為那是刻意不裝（例如專案自帶同類 plugin），列出來會誘導重複；只能手動叫用（`disable-model-invocation`）的 skill 也不列。user 層 rule（setup 的 home 目錄下 `shared/engineering.md`）「能力缺口」段同步改成依序找：先找 plugharbor（停用或沒裝的），再用 WebFetch 查 skills.sh 列候選，要安裝走 plugin-harvest，總長 384 → 377 字元。起因：在別的專案跑 /doctor 會把少用的 plugin 寫成 `false`，常寫在 user 層，所有專案一起失效；之後使用者或 agent 要用時，清單裡已經沒有它，也不知道它存在。
+
 ## [0.16.6] - 2026-11-09
 
 - docs(agent-dispatch): §1 加「依風險升一級」：改動碰 `crossReview` 路徑樣式或超過 `maxLines` 行可用高一級，偏離查表結果時回報寫「升級理由：…」。§6 的 `herdr agent start` 範例固定帶 `-- <模型參數>`，並列出各家寫法。user 層 rule（setup 的 home 目錄下 `rules/dispatch.md`）同步加「派工帶模型」一行（派 Agent tool 時依等級表設 `model` 與 `effort`），新增 `setup/tests/dispatch-rule-sync.sh` 檢查它跟 `routing.json` 一致。起因是同家 subagent 從沒照等級表選模型、升級不記理由，還有 2 個 pane 啟動時沒帶模型參數。

@@ -25,6 +25,7 @@ claude plugin install toolkit@plugharbor
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart | `herdr-env-context.py` | 在 herdr 內時注入一行狀態，agent 不必再檢查能否開 pane |
+| SessionStart | `disabled-skills.py` | 列出被明確停用的 plugharbor plugin／skill（如 /doctor 關掉的）與重開指令，需要時讀 SKILL.md 照做；沒有停用就不輸出 |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
 | SessionStart `startup` | `retro-due-reminder.py` | retrospective 待驗指標到期時提議回顧（讀 `.plugharbor/toolkit.yml`，驗過且無新證據不重提） |
 

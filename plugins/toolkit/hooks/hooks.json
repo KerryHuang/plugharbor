@@ -129,6 +129,11 @@
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" herdr-env-context.py",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" disabled-skills.py",
+            "timeout": 5
           }
         ]
       },

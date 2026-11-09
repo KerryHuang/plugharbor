@@ -20,9 +20,9 @@
 
 # 能力缺口
 
-符合下列任一條件時，用提問工具提議執行 `/research:plugin-harvest <領域關鍵字>`，題目寫明卡在哪裡、用什麼關鍵字、要花深讀的 token。這個 skill 不能用 Skill 工具呼叫：使用者同意後，讀已安裝 research plugin 的 `skills/plugin-harvest/SKILL.md` 照做（Claude Code 的安裝路徑查 `~/.claude/plugins/installed_plugins.json`）。條件如下：
+同一件事換過做法仍失敗兩次、已裝 skill 幫不上（缺專門知識或工具，非程式 bug），或使用者要找現成 skill／plugin／工具時，依序找：
 
-- 同一件事換過做法仍失敗兩次，已裝的 skill 也幫不上，缺的是專門知識或工具，不是程式 bug。
-- 使用者要找現成的 skill、plugin 或工具。
+1. plugharbor：開場列為停用、或 `~/.claude/plugins/marketplaces/plugharbor/plugins/` 裡沒裝的，讀 SKILL.md 照做再問要不要啟用。
+2. 外部：WebFetch `skills.sh/api/search?q=<關鍵字>` 列候選；要裝就提問提議 `/research:plugin-harvest <關鍵字>`，同意後讀上述目錄的 `research/skills/plugin-harvest/SKILL.md` 照做（不能用 Skill 工具）。
 
-外部的 skill、plugin 和工具都經它評估與核准才安裝。使用者不同意時，就用現有能力繼續做。
+外部的都經它核准才裝；使用者不同意就用現有能力繼續。
