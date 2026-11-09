@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.2] - 2026-11-09
+
+- docs(agent-dispatch): 審查流程補三條規則：每次派審查前先跑 `route.mjs reviewer`，`crossFamily` 為 false 就直接走同家審查，不先送別家再等失敗；同家審查一律用新的 context；同一家同一天第二次遇到 workspace 沒額度時，手動延長封鎖到隔天（腳本預設只封鎖 1 小時）。新增 `skills/agent-dispatch/references/review-prompt.md` 審查 prompt 範本（第一輪整份審查、第三輪起定點核對）。起因是一夜的審查都寫死 `--to codex`，額度用盡後跑到一半才失敗。
+
 ## [0.16.1] - 2026-11-08
 
 - fix(feedback-capture): 略過開頭是「唯讀任務」的訊息。agent-dispatch 派給 subagent 的唯讀問答 prompt 內文常含「漏掉」「不要再」「錯了」，被當成使用者糾正記進回饋佇列；`feedback-hooks.sh` 補「開頭命中不記、不在開頭仍記」兩案例。

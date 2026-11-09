@@ -57,8 +57,10 @@ argument-hint: "[對象] <任務>"
 - 下列情況要**跨家族審查**（同家換型號不算獨立）：改動碰到安全、資料、DB 結構、公開介面（路徑樣式在 `routing.json` 的 `crossReview`），或變更超過 300 行。
 - 其他小改只做同家審查。
 - 挑審查者：用 `route.mjs` 的 `reviewer()` 規則——top 等級候選裡第一個跟作者不同家族的。家族：claude 與 pi 是 anthropic、codex 是 openai、agy 是 google。
-- 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。
-- 審查用短問答（`--to <審查者> --model … --effort high`），把 diff 寫進 prompt 檔。
+- 每次派審查前都先跑 `node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" reviewer <作者 CLI>`，不沿用上一次的審查者。回傳的 `crossFamily` 是 `false` 就直接走同家審查，不要先送別家再等失敗。
+- 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
+- 審查用短問答（`--to <查到的審查者> --model … --effort high`），把 diff 寫進 prompt 檔。prompt 從 `references/review-prompt.md` 的範本開始寫。
+- 同一家在同一天第二次遇到「workspace 沒額度」（不是速率限制）：腳本預設只封鎖 1 小時，額度卻不會自己恢復。改用 `route.mjs block <cli> <隔天同一時間>` 手動延長封鎖，並在回報裡寫明。
 
 ## 5. 長任務：依環境選一層
 
@@ -152,5 +154,6 @@ argument-hint: "[對象] <任務>"
 
 ## 參考
 
+- 審查 prompt 範本（第一輪整份審查、第三輪起定點核對）：`references/review-prompt.md`
 - 各 CLI 的無互動參數、模型與思考等級參數、已知坑：`../agent-mesh-check/references/cli-notes.md`
 - 要先確認對方叫得動：用 agent-mesh-check skill；它的最近一次結果也是查表的可用性依據。
