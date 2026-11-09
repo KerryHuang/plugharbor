@@ -60,7 +60,7 @@ argument-hint: "[對象] <任務>"
 - 每次派審查前都先跑 `node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" reviewer <作者 CLI>`，不沿用上一次的審查者。回傳的 `crossFamily` 是 `false` 就直接走同家審查，不要先送別家再等失敗。
 - 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
 - 審查用短問答（`--to <查到的審查者> --model … --effort high`），把 diff 寫進 prompt 檔。prompt 從 `references/review-prompt.md` 的範本開始寫。
-- 同一家在同一天第二次遇到「workspace 沒額度」（不是速率限制）：腳本預設只封鎖 1 小時，額度卻不會自己恢復。改用 `route.mjs block <cli> <隔天同一時間>` 手動延長封鎖，並在回報裡寫明。
+- 封鎖到期後同一家又因沒額度失敗：用 `route.mjs block <cli> <到期時間>` 手動延長封鎖，並在回報裡寫明。
 
 ## 5. 長任務：依環境選一層
 
@@ -138,7 +138,7 @@ argument-hint: "[對象] <任務>"
 
 ## 7. 額度
 
-- 自動：`ask.mjs` 與背景 worker 遇到額度錯誤會封鎖那一家到重置時間（抓不到時間就 1 小時），期間查表自動跳過它。
+- 自動：`ask.mjs` 與背景 worker 遇到額度錯誤會封鎖那一家到重置時間（抓不到時間就 1 小時；「沒額度、要儲值」類的訊息封鎖 24 小時），期間查表自動跳過它。
 - 手動：使用者說「X 這週省著用」之類的話，換算成到期時間後執行：
 
   ```bash

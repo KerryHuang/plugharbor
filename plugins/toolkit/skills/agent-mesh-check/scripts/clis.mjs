@@ -68,7 +68,8 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile } = {}
 // 關鍵字還要和錯誤字樣同一行（「Credits used: 12」這類統計不算）。
 // 重置時間：相對時間（in N minutes/hours）優先，其次帶時區的 ISO 時間；不在未來 7 天內就用預設 1 小時，避免永不改派或封到遠期。
 const QUOTA = /\b(usage limit|quota|rate.?limit|credits?|429)\b/i
-const ERRORISH = /error|exceeded|reached|exhausted|usage limit|rate.?limit|too many requests/i
+const NEEDS_TOPUP = /out of credits|insufficient (credits|balance|funds)|refill|billing/i
+const ERRORISH =/error|exceeded|reached|exhausted|usage limit|rate.?limit|too many requests/i
 export function quotaInfo(out, now = Date.now()) {
   const tail = out.slice(-2000).split(/\r?\n/).slice(-20).join('\n')
   if (!tail.split('\n').some(l => QUOTA.test(l) && ERRORISH.test(l))) return null
@@ -79,6 +80,8 @@ export function quotaInfo(out, now = Date.now()) {
     const t = Date.parse(m[0])
     if (ok(t)) return { resetAt: t }
   }
+  // 沒額度要等人儲值，不會在 1 小時後自己恢復；封鎖 1 小時只會被重新挑中、再白跑一輪。
+  if (NEEDS_TOPUP.test(tail)) return { resetAt: now + 24 * 3_600_000 }
   return { resetAt: now + 3_600_000 }
 }
 

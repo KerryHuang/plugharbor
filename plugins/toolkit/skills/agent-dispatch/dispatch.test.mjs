@@ -85,6 +85,15 @@ test('quotaInfo：重置時間不在未來 7 天內就用預設 1 小時', () =>
   assert.deepEqual(quotaInfo('usage limit reached, resets 2026-11-01T00:00Z', now), { resetAt: now + 3_600_000 })
 })
 
+test('quotaInfo：workspace 沒額度（要人儲值）沒有重置時間時封鎖 24 小時', () => {
+  const out = 'ERROR: Your workspace is out of credits. Ask your workspace owner to refill in order to continue.'
+  assert.deepEqual(quotaInfo(out, 1000), { resetAt: 1000 + 24 * 3_600_000 })
+})
+
+test('quotaInfo：沒額度但有給重置時間時照重置時間', () => {
+  assert.deepEqual(quotaInfo('Error: insufficient credits, try again in 30 minutes', 0), { resetAt: 30 * 60_000 })
+})
+
 test('quotaInfo 正常輸出回 null', () => {
   assert.equal(quotaInfo('all good'), null)
 })

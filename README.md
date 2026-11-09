@@ -52,7 +52,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | [database](./plugins/database/README.md) | 1.0.1 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
 | [ui-ux](./plugins/ui-ux/README.md) | 1.0.1 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
 | [desktop](./plugins/desktop/README.md) | 1.0.0 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
-| [toolkit](./plugins/toolkit/README.md) | 0.16.2 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
+| [toolkit](./plugins/toolkit/README.md) | 0.16.3 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.4.2 | 探索與研究——graphify 知識圖譜、ai-radar 每週 AI 情報雷達、plugin-harvest 吸收外部 plugin 做法 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.3 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
