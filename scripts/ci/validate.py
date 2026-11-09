@@ -116,6 +116,8 @@ def check_frontmatter(pdir: Path) -> None:
                 err(f, f"frontmatter 缺 `{key}`")
         if fm.get("description", "").startswith("|"):
             err(f, "description 不得用 `|` 區塊（會保留換行、破壞清單呈現），改用 `>-` 或單行")
+        if kind == "skill" and len(f.read_text(encoding="utf-8").splitlines()) > 300:
+            err(f, "SKILL.md 超過 300 行，實作邏輯移到 references/ 或 scripts/")
         expect = f.parent.name if kind == "skill" else f.stem
         if fm.get("name") and fm["name"] != expect:
             err(f, f"name `{fm['name']}` 與檔名／目錄名 `{expect}` 不一致")
