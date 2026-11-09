@@ -4,6 +4,8 @@
 起因：在別的專案跑 /doctor 會把少用的 plugin 寫成 enabledPlugins: false（常寫在 user 層，所有專案一起失效），
 之後要用時清單裡已經沒有它，agent 也不知道它存在。
 - SessionStart：只注入一行名稱，細節寫進 ~/.claude/disabled-skills/<專案雜湊>.md。
+- UserPromptSubmit：使用者訊息命中停用 skill 的觸發詞（frontmatter `triggers` ∪ description「」片語）才注入，
+  同 session 同一項只提示一次。
 - `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」時由 agent 呼叫，只在該專案忽略。
 只看明確的 false 與 skillOverrides "off"；從沒啟用的專案層 plugin 是刻意不裝，不列。任何錯誤都 fail-open。
 """
@@ -11,6 +13,7 @@ import hashlib
 import json
 import re
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -222,6 +225,53 @@ def on_session_start(home, cwd):
                          f"（用到前先問使用者；細節見 `{details}`）")
 
 
+def match(items, prompt):
+    """每個 Item 取第一個命中的 skill，依 items 順序，最多 3 個；ASCII 不分大小寫。"""
+    text, hits = prompt.lower(), []
+    for item in items:
+        skill = next((s for s in item.skills if any(p.lower() in text for p in s.phrases)), None)
+        if skill:
+            hits.append((item, skill))
+        if len(hits) == 3:
+            break
+    return hits
+
+
+def asked(home, session_id):
+    """同 session 已提示過的項目；session_id 缺就不去重。順手清掉 7 天前的紀錄。"""
+    if not isinstance(session_id, str) or not re.fullmatch(r"[\w-]+", session_id):
+        return None, set()
+    folder = state_dir(home) / "sessions"
+    folder.mkdir(parents=True, exist_ok=True)
+    cutoff = time.time() - 7 * 86400
+    for old in folder.glob("*.json"):
+        if old.stat().st_mtime < cutoff:
+            old.unlink()
+    path = folder / f"{session_id}.json"
+    try:
+        seen = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        seen = []
+    return path, set(seen if isinstance(seen, list) else [])
+
+
+def on_prompt(home, cwd, prompt, session_id):
+    if not isinstance(prompt, str) or not prompt.strip():
+        return
+    plugins_dir, items = disabled_items(home, cwd)
+    record, seen = asked(home, session_id)
+    hits = match([i for i in items if i.key not in seen], prompt)
+    if not hits:
+        return
+    if record:
+        record.write_text(json.dumps(sorted(seen | {i.key for i, _ in hits}), ensure_ascii=False), encoding="utf-8")
+    lines = [f"- {s.plugin}:{s.name}：`{s.path}`；重開 `{i.fix}`；忽略 `{ignore_command(cwd, i.key)}`" for i, s in hits]
+    emit("UserPromptSubmit",
+         "[toolkit] 這則訊息可能用得上被停用的 plugharbor skill。用之前先用 AskUserQuestion 問使用者："
+         "「用它並重開」（讀 SKILL.md 照做並跑重開指令）、「只這次用」（讀 SKILL.md 照做，不改設定）、"
+         "「不要」（跑忽略指令，不用）。SKILL.md 裡的 `${CLAUDE_PLUGIN_ROOT}` 換成該 plugin 目錄。\n" + "\n".join(lines))
+
+
 def main(argv):
     home = Path.home()
     if len(argv) > 2 and argv[1] == "ignore":
@@ -235,8 +285,11 @@ def main(argv):
     if not isinstance(payload, dict):
         return 0
     cwd = Path(payload.get("cwd") or ".")
-    if payload.get("hook_event_name") == "SessionStart":
+    event = payload.get("hook_event_name")
+    if event == "SessionStart":
         on_session_start(home, cwd)
+    elif event == "UserPromptSubmit":
+        on_prompt(home, cwd, payload.get("prompt"), payload.get("session_id"))
     return 0
 
 

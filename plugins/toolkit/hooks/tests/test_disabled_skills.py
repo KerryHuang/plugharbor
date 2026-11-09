@@ -154,5 +154,76 @@ class IgnoreList(Base):
         self.assertIn("browser-docs", self.session())
 
 
+class PromptMatch(Base):
+    def setUp(self):
+        super().setUp()
+        self.skill("browser-docs", "live-drive",
+                   'description: Use when 使用者說「重現這個 bug」。\ntriggers: ["跑一次 e2e", "錄音"]')
+
+    def prompt(self, text, session="s1"):
+        payload = {"hook_event_name": "UserPromptSubmit", "cwd": str(self.cwd), "prompt": text}
+        if session is not None:
+            payload["session_id"] = session
+        return self.hook(payload)
+
+    def test_prompt_matches_trigger_of_disabled_plugin(self):
+        self.disable()
+        ctx = self.prompt("幫我跑一次 E2E")
+        self.assertIn("browser-docs:live-drive", ctx)
+        self.assertIn("AskUserQuestion", ctx)
+        for opt in ("用它並重開", "只這次用", "不要"):
+            self.assertIn(opt, ctx)
+        self.assertIn("ignore browser-docs", ctx)
+
+    def test_prompt_matches_quoted_phrase(self):
+        self.disable()
+        self.assertIn("browser-docs:live-drive", self.prompt("可以幫我重現這個 bug 嗎"))
+
+    def test_enabled_skill_not_matched(self):
+        self.assertEqual(self.prompt("幫我跑一次 e2e"), "")
+
+    def test_no_match_silent(self):
+        self.disable()
+        self.assertEqual(self.prompt("今天天氣如何"), "")
+
+    def test_same_session_asks_once(self):
+        self.disable()
+        self.assertNotEqual(self.prompt("跑一次 e2e", session="s1"), "")
+        self.assertEqual(self.prompt("再跑一次 e2e", session="s1"), "")
+        self.assertNotEqual(self.prompt("跑一次 e2e", session="s2"), "")
+
+    def test_ignored_not_matched(self):
+        self.disable()
+        self.ignore("browser-docs")
+        self.assertEqual(self.prompt("跑一次 e2e"), "")
+
+    def test_skill_override_matched(self):
+        write(self.cwd / ".claude/settings.local.json", {"skillOverrides": {"browser-docs:live-drive": "off"}})
+        self.assertIn("browser-docs:live-drive", self.prompt("跑一次 e2e"))
+
+    def test_match_cap_three(self):
+        names = ["p1", "p2", "p3", "p4"]
+        write(self.mp / ".claude-plugin/marketplace.json",
+              {"plugins": [{"name": n, "description": n} for n in names]})
+        for n in names:
+            self.skill(n, "s", 'description: x\ntriggers: ["共同片語"]')
+        self.user({"enabledPlugins": {f"{n}@plugharbor": False for n in names}})
+        ctx = self.prompt("這裡有共同片語")
+        self.assertEqual(len(re.findall(r"^- p\d:s：", ctx, re.M)), 3)
+
+    def test_prompt_edge_inputs(self):
+        self.disable()
+        for payload in ({"hook_event_name": "UserPromptSubmit", "cwd": str(self.cwd)},
+                        {"hook_event_name": "UserPromptSubmit", "cwd": str(self.cwd), "prompt": 123}):
+            p = self.run_raw(json.dumps(payload).encode("utf-8"))
+            self.assertEqual((p.returncode, p.stdout), (0, b""), p.stderr)
+        self.assertIn("browser-docs:live-drive", self.prompt("跑一次 e2e", session=None))
+        self.assertIn("browser-docs:live-drive", self.prompt("跑一次 e2e", session=None))
+
+    def test_short_phrase_ignored(self):
+        self.disable()
+        self.assertEqual(self.prompt("幫我錄音"), "")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -5,6 +5,7 @@
 ## [0.18.0] - 2026-11-09
 
 - feat(hooks): `disabled-skills.py` 的 SessionStart 從完整清單改成一行名稱（`[toolkit] plugharbor 停用中：…`）；重開指令、SKILL.md 路徑、忽略指令改寫到 `~/.claude/disabled-skills/<專案雜湊>.md`，需要時才讀。用法也改了：agent 要先用 AskUserQuestion 問使用者（用它並重開／只這次用／不要），問過才用。新增 `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」就寫進 `~/.claude/disabled-skills/ignore.json`，以停用的單位為準（整個 plugin 或單一 skill），而且只在當下專案生效；項目重新啟用時，自動從清單移除。起因：0.17.0 分不出「少用被 /doctor 關掉」和「刻意不要」（agent 會繞過使用者的決定去用），而且只要沒重開，就在每個 session、每個專案永遠注入，無法消掉。設計見 `docs/superpowers/specs/2026-11-09-disabled-skill-recovery-design.md`。
+- feat(hooks): `disabled-skills.py` 加掛 UserPromptSubmit。使用者訊息命中停用 skill 的觸發詞才注入提示：觸發詞來自 SKILL.md 新的 frontmatter 欄位 `triggers`（單行 JSON 陣列，實測不會進 skill 清單），加上 description 裡「」括起的片語，長度不到 4 字的不算；英文字母不分大小寫，一則訊息最多 3 項。同一個 session 裡，同一項只提示一次；session 紀錄放在 `~/.claude/disabled-skills/sessions/`，7 天後清除。
 
 ## [0.17.0] - 2026-11-09
 

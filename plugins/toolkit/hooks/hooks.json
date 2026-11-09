@@ -119,6 +119,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" disabled-skills.py",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [
