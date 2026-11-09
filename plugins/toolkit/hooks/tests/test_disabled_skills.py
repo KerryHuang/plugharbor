@@ -47,8 +47,9 @@ class Base(unittest.TestCase):
         path.write_text(f"---\nname: {name}\n{frontmatter}\n---\n\n# body\n", encoding="utf-8")
         return path
 
-    def run_raw(self, stdin=b"", args=()):
-        env = dict(os.environ, HOME=str(self.home))
+    def run_raw(self, stdin=b"", args=(), extra_env=None):
+        env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+        env.update(HOME=str(self.home), **(extra_env or {}))
         return subprocess.run([sys.executable, str(HOOK), *args], input=stdin, env=env, capture_output=True, timeout=10)
 
     def hook(self, payload):
@@ -223,6 +224,76 @@ class PromptMatch(Base):
     def test_short_phrase_ignored(self):
         self.disable()
         self.assertEqual(self.prompt("幫我錄音"), "")
+
+    # ---- 最終審查修正 ----
+
+    def test_ignore_command_shell_safe(self):
+        evil = self.root / 'proj$(touch PWNED)"q'
+        evil.mkdir()
+        write(evil / ".claude/settings.local.json", {"enabledPlugins": {"browser-docs@plugharbor": False}})
+        payload = {"hook_event_name": "UserPromptSubmit", "cwd": str(evil), "prompt": "跑一次 e2e", "session_id": "x"}
+        ctx = self.hook(payload)
+        cmd = re.search(r"忽略 `(.+)`$", ctx, re.M).group(1)
+        p = subprocess.run(["sh", "-c", cmd], cwd=self.root, env=dict(os.environ, HOME=str(self.home)),
+                           capture_output=True, timeout=10)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertFalse((self.root / "PWNED").exists())
+        data = json.loads((self.home / ".claude/disabled-skills/ignore.json").read_text(encoding="utf-8"))
+        self.assertEqual(data, {str(evil): ["browser-docs"]})
+
+    def test_ascii_phrase_needs_word_boundary(self):
+        self.skill("browser-docs", "annotate-screenshot", 'description: x\ntriggers: ["hangfire"]')
+        self.disable()
+        self.assertEqual(self.prompt("hangfires everywhere", session="a"), "")
+        self.assertIn("browser-docs:annotate-screenshot", self.prompt("set up a hangfire job", session="b"))
+
+    def test_single_ascii_word_from_description_not_used(self):
+        self.skill("browser-docs", "pdf-converter", "description: Use when 使用者說「commit」「提交這次改動」。")
+        self.disable()
+        self.assertEqual(self.prompt("please commit this", session="a"), "")
+        self.assertIn("browser-docs:pdf-converter", self.prompt("幫我提交這次改動", session="b"))
+
+    def test_two_skills_of_same_plugin_both_prompted(self):
+        self.skill("browser-docs", "annotate-screenshot", 'description: x\ntriggers: ["截圖加紅框"]')
+        self.disable()
+        ctx = self.prompt("跑一次 e2e 再截圖加紅框")
+        self.assertIn("browser-docs:live-drive", ctx)
+        self.assertIn("browser-docs:annotate-screenshot", ctx)
+
+    def test_dedupe_is_per_skill(self):
+        self.skill("browser-docs", "annotate-screenshot", 'description: x\ntriggers: ["截圖加紅框"]')
+        self.disable()
+        self.assertIn("browser-docs:live-drive", self.prompt("跑一次 e2e"))
+        self.assertIn("browser-docs:annotate-screenshot", self.prompt("截圖加紅框"))
+
+    def test_project_dir_env_wins_over_payload_cwd(self):
+        write(self.cwd / ".claude/settings.local.json", {"enabledPlugins": {"browser-docs@plugharbor": False}})
+        sub = self.cwd / "src"
+        sub.mkdir()
+        payload = {"hook_event_name": "UserPromptSubmit", "cwd": str(sub), "prompt": "跑一次 e2e", "session_id": "x"}
+        p = self.run_raw(json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                         extra_env={"CLAUDE_PROJECT_DIR": str(self.cwd)})
+        self.assertIn("browser-docs:live-drive", p.stdout.decode("utf-8"))
+
+
+class PruneSafety(Base):
+    def test_prune_skipped_when_marketplace_unreadable(self):
+        self.disable()
+        self.ignore("browser-docs")
+        mj = self.mp / ".claude-plugin/marketplace.json"
+        backup = mj.read_text(encoding="utf-8")
+        mj.unlink()
+        self.session()
+        mj.write_text(backup, encoding="utf-8")
+        self.assertEqual(self.session(), "")
+
+    def test_prune_skipped_when_settings_broken(self):
+        self.disable()
+        self.ignore("browser-docs")
+        (self.home / ".claude/settings.json").write_text("{broken", encoding="utf-8")
+        self.session()
+        self.disable()
+        self.assertEqual(self.session(), "")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,12 @@
 
 - feat(hooks): `disabled-skills.py` 的 SessionStart 從完整清單改成一行名稱（`[toolkit] plugharbor 停用中：…`）；重開指令、SKILL.md 路徑、忽略指令改寫到 `~/.claude/disabled-skills/<專案雜湊>.md`，需要時才讀。用法也改了：agent 要先用 AskUserQuestion 問使用者（用它並重開／只這次用／不要），問過才用。新增 `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」就寫進 `~/.claude/disabled-skills/ignore.json`，以停用的單位為準（整個 plugin 或單一 skill），而且只在當下專案生效；項目重新啟用時，自動從清單移除。起因：0.17.0 分不出「少用被 /doctor 關掉」和「刻意不要」（agent 會繞過使用者的決定去用），而且只要沒重開，就在每個 session、每個專案永遠注入，無法消掉。設計見 `docs/superpowers/specs/2026-11-09-disabled-skill-recovery-design.md`。
 - feat(hooks): `disabled-skills.py` 加掛 UserPromptSubmit。使用者訊息命中停用 skill 的觸發詞才注入提示：觸發詞來自 SKILL.md 新的 frontmatter 欄位 `triggers`（單行 JSON 陣列，實測不會進 skill 清單），加上 description 裡「」括起的片語，長度不到 4 字的不算；英文字母不分大小寫，一則訊息最多 3 項。同一個 session 裡，同一項只提示一次；session 紀錄放在 `~/.claude/disabled-skills/sessions/`，7 天後清除。
+- fix(hooks): 最終審查修正 5 項。
+  - 忽略指令改用 `shlex.quote`：專案路徑含 `$(...)` 或 `"` 時，不會被 shell 執行，也不會把指令弄壞。
+  - 設定檔存在但壞掉、或讀不到 marketplace 清單時，不清理忽略清單。之前遇到這種暫時性讀檔失敗，會清掉使用者回過的「不要」。
+  - 英文片語兩端要求字邊界（`hangfire` 不會命中 `hangfires`）；description 裡不含空白的純英文單字（如 `commit`、`build`）不再當觸發詞。
+  - 同 session 去重改以 `plugin:skill` 為單位，同一個停用 plugin 底下的多個 skill 都能被提示。
+  - 專案根目錄優先用 `CLAUDE_PROJECT_DIR`，避免 session 內 `cd` 到子目錄後讀錯設定、對不上忽略清單。
 
 ## [0.17.0] - 2026-11-09
 

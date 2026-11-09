@@ -11,7 +11,9 @@
 """
 import hashlib
 import json
+import os
 import re
+import shlex
 import sys
 import time
 from dataclasses import dataclass, field
@@ -39,11 +41,18 @@ class Item:
 
 
 def load(path):
+    return load_checked(path)[0]
+
+
+def load_checked(path):
+    """回傳 (dict, 讀得完整)。不存在算完整（就是沒設定）；存在卻讀不到或壞掉算不完整。"""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}, True
     except (OSError, ValueError):
-        return {}  # 不存在或壞掉的檔，Claude Code 本身也整份忽略
-    return data if isinstance(data, dict) else {}
+        return {}, False  # 壞掉的檔，Claude Code 本身也整份忽略
+    return (data, True) if isinstance(data, dict) else ({}, False)
 
 
 def state_dir(home):
@@ -79,7 +88,9 @@ def frontmatter(path):
 
 
 def phrases_of(fm):
-    found = re.findall(r"「([^」]+)」", fm.get("description", ""))
+    # description 的「」片語若是不含空白的純英文單字（如 commit、build），太泛、易誤觸，只接受 triggers 明寫的
+    found = [p for p in re.findall(r"「([^」]+)」", fm.get("description", ""))
+             if not re.fullmatch(r"[\x21-\x7e]+", p.strip())]
     try:
         triggers = json.loads(fm.get("triggers") or "[]")
     except ValueError:
@@ -110,16 +121,18 @@ def labels(marketplace):
 
 
 def settings(home, cwd):
-    enabled, overrides = {}, {}
+    """回傳 (enabled, overrides, 三層都讀得完整)。"""
+    enabled, overrides, complete = {}, {}, True
     for scope, path in [("user", home / ".claude/settings.json"), ("project", cwd / ".claude/settings.json"),
                         ("local", cwd / ".claude/settings.local.json")]:
-        data = load(path)
+        data, ok = load_checked(path)
+        complete = complete and ok
         plugins, skills = data.get("enabledPlugins"), data.get("skillOverrides")
         for key, value in (plugins.items() if isinstance(plugins, dict) else ()):
             enabled[key] = (value, scope)
         for key, value in (skills.items() if isinstance(skills, dict) else ()):
             overrides[key] = (value, path)
-    return enabled, overrides
+    return enabled, overrides, complete
 
 
 def project_key(cwd):
@@ -151,7 +164,8 @@ def marketplace_root(home):
 
 
 def all_disabled(home, cwd, catalog):
-    enabled, overrides = settings(home, cwd)
+    """回傳 (停用項目, 資料是否完整可據以 prune)。"""
+    enabled, overrides, complete = settings(home, cwd)
     items = []
     for name, skills in catalog.items():
         value, scope = enabled.get(f"{name}@{MARKETPLACE}", (None, None))
@@ -165,7 +179,7 @@ def all_disabled(home, cwd, catalog):
         skill = next((s for s in catalog.get(plugin, []) if s.name == name), None)
         if skill and not skill.manual_only:
             items.append(Item(key, "skill", f"刪掉 `{path}` 裡 skillOverrides 的 `{key}`", [skill]))
-    return items
+    return items, complete and bool(catalog)
 
 
 def disabled_items(home, cwd):
@@ -173,22 +187,24 @@ def disabled_items(home, cwd):
     mp = marketplace_root(home)
     if mp is None:
         return None, []
-    items = all_disabled(home, cwd, load_catalog(mp))
+    items, complete = all_disabled(home, cwd, load_catalog(mp))
     current = {i.key for i in items}
     data, pk = read_ignores(home), project_key(cwd)
     ignored = data.get(pk, [])
     kept = [k for k in ignored if k in current]
-    if kept != ignored:
+    # 只有讀到完整資料才 prune：marketplace 更新中、設定檔暫時壞掉時，集合會變空，不能據此清掉使用者的「不要」
+    if complete and kept != ignored:
         if kept:
             data[pk] = kept
         else:
             data.pop(pk, None)
         write_ignores(home, data)
-    return mp / "plugins", [i for i in items if i.key not in kept]
+    return mp / "plugins", [i for i in items if i.key not in ignored]
 
 
 def ignore_command(cwd, key):
-    return f'python3 "{Path(__file__).resolve()}" ignore {key} --cwd "{project_key(cwd)}"'
+    args = ["python3", str(Path(__file__).resolve()), "ignore", key, "--cwd", project_key(cwd)]
+    return " ".join(shlex.quote(a) for a in args)
 
 
 def write_details(home, cwd, plugins_dir, items):
@@ -225,15 +241,23 @@ def on_session_start(home, cwd):
                          f"（用到前先問使用者；細節見 `{details}`）")
 
 
-def match(items, prompt):
-    """每個 Item 取第一個命中的 skill，依 items 順序，最多 3 個；ASCII 不分大小寫。"""
+def hit(phrase, text):
+    """ASCII 不分大小寫；片語兩端是英數字時要求字邊界（hangfire 不命中 hangfires）。"""
+    p = phrase.lower()
+    left = r"(?<![a-z0-9])" if re.match(r"[a-z0-9]", p) else ""
+    right = r"(?![a-z0-9])" if re.search(r"[a-z0-9]$", p) else ""
+    return re.search(left + re.escape(p) + right, text) is not None
+
+
+def match(items, prompt, seen=frozenset()):
+    """命中的 (Item, Skill)，依 items 與 skill 順序，略過已提示過的 `plugin:skill`，最多 3 個。"""
     text, hits = prompt.lower(), []
     for item in items:
-        skill = next((s for s in item.skills if any(p.lower() in text for p in s.phrases)), None)
-        if skill:
-            hits.append((item, skill))
-        if len(hits) == 3:
-            break
+        for skill in item.skills:
+            if f"{skill.plugin}:{skill.name}" not in seen and any(hit(p, text) for p in skill.phrases):
+                hits.append((item, skill))
+                if len(hits) == 3:
+                    return hits
     return hits
 
 
@@ -260,11 +284,12 @@ def on_prompt(home, cwd, prompt, session_id):
         return
     plugins_dir, items = disabled_items(home, cwd)
     record, seen = asked(home, session_id)
-    hits = match([i for i in items if i.key not in seen], prompt)
+    hits = match(items, prompt, seen)
     if not hits:
         return
     if record:
-        record.write_text(json.dumps(sorted(seen | {i.key for i, _ in hits}), ensure_ascii=False), encoding="utf-8")
+        shown = {f"{s.plugin}:{s.name}" for _, s in hits}
+        record.write_text(json.dumps(sorted(seen | shown), ensure_ascii=False), encoding="utf-8")
     lines = [f"- {s.plugin}:{s.name}：`{s.path}`；重開 `{i.fix}`；忽略 `{ignore_command(cwd, i.key)}`" for i, s in hits]
     emit("UserPromptSubmit",
          "[toolkit] 這則訊息可能用得上被停用的 plugharbor skill。用之前先用 AskUserQuestion 問使用者："
@@ -284,7 +309,8 @@ def main(argv):
         return 0
     if not isinstance(payload, dict):
         return 0
-    cwd = Path(payload.get("cwd") or ".")
+    # 專案根目錄優先用 CLAUDE_PROJECT_DIR：payload 的 cwd 會跟著 session 內的 cd 走到子目錄
+    cwd = Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or ".")
     event = payload.get("hook_event_name")
     if event == "SessionStart":
         on_session_start(home, cwd)

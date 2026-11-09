@@ -69,7 +69,8 @@ toolkit 0.17.0 已上線第一版：SessionStart 列出所有明確停用的項�
 
 ### 5. 同一 session 只問一次
 
-- 同一個 session 裡，同一項（plugin 或 skill，單位同上）提示過就不再注入，不論使用者選了什麼。用 hook 輸入的 `session_id` 記狀態。
+- 同一個 session 裡，同一個 skill（`plugin:skill`）提示過就不再注入，不論使用者選了什麼。用 hook 輸入的 `session_id` 記狀態。
+  （最終審查後改：原寫「單位同忽略單位」，會讓同一個停用 plugin 的其他 skill 在整個 session 都不再被提示。）
 - 起因：選「只這次用」或「用它並重開」（重開要下個 session 才生效）後，項目仍是停用，不去重的話每則命中訊息都會再問一次。
 
 ## 我的判斷（未經使用者確認，可推翻）
@@ -77,6 +78,8 @@ toolkit 0.17.0 已上線第一版：SessionStart 列出所有明確停用的項�
 - 同一 session 只問一次（見第 5 節），由 builder check 提出後自行決定。
 - 狀態檔與忽略清單放 `~/.claude/disabled-skills/`（toolkit 的狀態一律放 `~/.claude/` 下，不寫進 plugin 目錄）。
 - 比對時 ASCII 不分大小寫、全形半形不正規化；最多注入 3 個 skill。
+- （最終審查後加）片語兩端是英數字時要求字邊界；description 的「」片語若是不含空白的純英文單字（如 `commit`、`build`）不採用，只接受 `triggers` 明寫的。
+- （最終審查後加）專案根目錄優先用環境變數 `CLAUDE_PROJECT_DIR`，沒有才用 hook 輸入的 `cwd`；設定檔讀不完整（存在但壞掉）或 marketplace 清單讀不到時不 prune 忽略清單。
 - 兩個事件用同一支腳本、以子命令區分（`session`／`prompt`／`ignore`）。
 - `validate.py` 新增檢查：`triggers` 若存在必須是字串陣列、每項至少 4 個字元。
 - 版號：toolkit minor（0.18.0）；改到其他 plugin 的 SKILL.md（補 `triggers`）各自 patch bump。
