@@ -1,6 +1,7 @@
 ---
 name: review
 description: Clean Architecture 程式碼審查——委派審查型 subagent 檢查分層依賴、測試、安全性、效能，產出結構化審查報告。Use when reviewing code changes, PRs, or conducting architecture review, "審查程式碼", "review PR", "架構審查", "審查變更".
+triggers: ["審查程式碼", "review PR", "架構審查", "code review"]
 ---
 
 # 程式碼審查

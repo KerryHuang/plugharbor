@@ -1,6 +1,7 @@
 ---
 name: domain-model
 description: 領域實體（Entity）定義：欄位與資料表映射、legacy 欄位名映射、驗證規則、型別對照、主表不可動時的擴充表策略。附 .NET（EF Core）附錄。Use when 建立新資料庫 Entity、定義 Domain Model、映射舊資料庫欄位、擴充表、entity mapping、data annotation、ef core entity。
+triggers: ["建立 Entity", "映射舊資料庫欄位", "domain model", "擴充表策略"]
 ---
 
 # 領域實體（Entity）

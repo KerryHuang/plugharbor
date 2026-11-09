@@ -1,6 +1,7 @@
 ---
 name: migration
 description: 資料庫 migration 全流程——建立、審查產生的 SQL、套用、回滾、失敗修復、切換目標資料庫，以及特殊情境診斷（snapshot 衝突、歷史紀錄遺失、緊急回滾）；方言走 dialects 附錄，工具走 ORM 附錄（附 EF Core）。Use when 建 migration, 套用 migration, 回滾 migration, migration 失敗, dotnet ef, snapshot 衝突, "migration 對不上", "緊急回滾", "migration 診斷", "create migration", "apply migration", "rollback".
+triggers: ["建 migration", "套用 migration", "回滾 migration", "dotnet ef"]
 ---
 
 # Migration 流程與疑難排解

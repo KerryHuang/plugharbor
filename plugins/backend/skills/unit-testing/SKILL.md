@@ -1,6 +1,7 @@
 ---
 name: unit-testing
 description: 後端單元測試：分析被測類別、設計分支案例、Mock 資料來源決策、AAA 結構、測試價值複審剪枝、個資脫敏。附 .NET（xUnit／Moq）附錄與範本。Use when 新功能測試覆蓋、補測試缺口、TDD 紅燈階段的測試骨架、unit test、單元測試、寫測試、補測試。
+triggers: ["寫單元測試", "補單元測試", "unit test", "補測試缺口"]
 ---
 
 # 後端單元測試

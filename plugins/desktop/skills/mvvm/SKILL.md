@@ -1,6 +1,7 @@
 ---
 name: mvvm
 description: 桌面應用的 MVVM 分層原則——View／ViewModel 分工、可觀察屬性、命令、繫結、導覽與對話框、設計時支援；附 Avalonia + CommunityToolkit.Mvvm 附錄。Use when 撰寫或修改桌面 View／ViewModel、寫 XAML／AXAML 繫結、處理命令或對話框回傳、導覽切換畫面、"mvvm"、"viewmodel"、"relaycommand"、"observableproperty"、"data binding"。
+triggers: ["viewmodel", "MVVM", "data binding", "AXAML 繫結"]
 ---
 
 # MVVM 分層原則

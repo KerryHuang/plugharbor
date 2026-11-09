@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.5.1] - 2026-11-10
+
+- docs: 4 個 skill 的 frontmatter 加 `triggers` 欄位（單行 JSON 陣列，不進 skill 清單、description 不變）。這個 plugin 被明確停用時，toolkit 的 `disabled-skills.py` 會拿它比對使用者訊息，提示這個 skill 存在。起因同 toolkit 0.18.0：別的專案跑 /doctor 關掉少用的 plugin 後，之後要用時找不到。
+
 ## [1.5.0] - 2026-11-09
 
 - feat: 新增 `unattended`（無人值守模式）。使用者叫用或說要離開時，主控照路線連續推進工作單元，直到使用者回來（送出新訊息）為止：開場讀專案的 `.plugharbor/unattended.md`（範本 `skills/unattended/references/project-config.md`，沒有就趁使用者還在先問），裁決帳本分開記使用者與主控的決定，設計單元的使用者行為類決定標待確認，只在停下條件停，回來時交 `return-report.md`。跨家族審查有 `toolkit:agent-dispatch` 才用，沒有就退回同家新 context。起因是一個專案的專案層夜間 skill 實跑一次判斷點皆正確，通用流程與專案細節已分開，其他專案也需要；s2e 設計因方向在審查中翻盤多審 3 輪，促成「行為類先標待確認」。常駐 context 多一行 description，換掉該專案層 skill 的 description（隨後拆除）。

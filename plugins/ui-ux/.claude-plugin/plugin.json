@@ -1,7 +1,7 @@
 {
   "name": "ui-ux",
   "description": "UI/UX 設計知識庫與畫面規範 — 風格系統、版面、互動慣例，加上設計新畫面與唯讀審查；受眾（如兒童）規範以附錄載入。",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "KerryHuang"
   },

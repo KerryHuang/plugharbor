@@ -1,6 +1,7 @@
 ---
 name: spec
 description: "寫功能規格：預設精簡模式產一份 <spec.dir>/<feature>.md；scale: full 依範本分棒產 FRD→SAD→BFS→FFS（--change 為 CR 變體），也負責按章節讀寫既有規格。Use when 寫規格、寫規格書、spec new、更新規格、寫 FRD、需求文件、系統分析、寫 SAD、後端規格、寫 BFS、前端規格、寫 FFS、讀規格某一章。"
+triggers: ["寫規格書", "寫功能規格", "需求文件", "更新規格"]
 argument-hint: "[--stage frd|sad|bfs|ffs|index] [--change {ticket}] {功能描述或功能目錄}"
 ---
 

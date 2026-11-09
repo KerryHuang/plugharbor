@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.0.2] - 2026-11-10
+
+- docs: 4 個 skill 的 frontmatter 加 `triggers` 欄位（單行 JSON 陣列，不進 skill 清單、description 不變）。這個 plugin 被明確停用時，toolkit 的 `disabled-skills.py` 會拿它比對使用者訊息，提示這個 skill 存在。起因同 toolkit 0.18.0：別的專案跑 /doctor 關掉少用的 plugin 後，之後要用時找不到。
+
 ## [1.0.1] - 2026-11-05
 
 - fix: `schema-docs` description 從 438 字壓到約 140 字（拿掉重複的英文觸發詞與方言清單），避免 skill 清單超出預算時被丟成只剩名稱。

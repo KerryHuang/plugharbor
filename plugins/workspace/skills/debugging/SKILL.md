@@ -1,6 +1,7 @@
 ---
 name: debugging
 description: 照專案自帶指令除錯，並把規格書轉成測試案例（補 superpowers 的除錯與 TDD）。Use when 任務標記 [TDD]、--tdd、要由規格轉測試案例、沒裝 superpowers 要精簡除錯退路.
+triggers: ["規格轉測試案例", "由規格書寫測試"]
 ---
 
 # 除錯與測試先行（環境細節）

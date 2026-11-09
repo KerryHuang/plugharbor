@@ -1,6 +1,7 @@
 ---
 name: ui-ux-pro-max
 description: "UI/UX 設計知識庫與智能建議。涵蓋 67 種 styles、96 組 color palettes、56 組 font pairings、98 條 UX guidelines、25 種 charts，橫跨 13 種技術棧（React、Next.js、Vue、Svelte、SwiftUI、React Native、Flutter、Tailwind、shadcn/ui）。觸發詞：UI 設計、UI/UX、版面、配置、配色、色彩、typography、字體搭配、排版、可及性、accessibility、動畫、互動、hover、陰影、漸層、風格選擇、design system；plan／build／create／design／implement／review／fix／improve／optimize／refactor UI code。適用專案：website、landing page、dashboard、admin panel、e-commerce、SaaS、portfolio、blog、mobile app、.html／.tsx／.vue／.svelte。元件：button、modal、navbar、sidebar、card、table、form、chart。風格：glassmorphism、claymorphism、minimalism、brutalism、neumorphism、bento grid、dark mode、responsive、skeuomorphism、flat design。整合 shadcn/ui MCP 進行元件搜尋與範例查詢。"
+triggers: ["配色建議", "字體搭配", "UI/UX", "accessibility"]
 ---
 # UI/UX Pro Max — 設計知識庫
 

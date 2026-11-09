@@ -1,6 +1,7 @@
 ---
 name: data-access
 description: 資料存取層：Repository 介面與實作、查詢物件、ORM 與 micro-ORM（如 Dapper）的取捨、參數化查詢、排序白名單、分頁。附 .NET（EF Core＋Dapper）附錄。Use when 建立新 Repository、實作資料存取層、新增自訂查詢方法、複雜 SQL 查詢、分頁、repository pattern、data access layer、dapper query、raw sql。
+triggers: ["新增 Repository", "資料存取層", "dapper 查詢", "分頁查詢"]
 ---
 
 # 資料存取（Repository 與查詢）

@@ -1,6 +1,7 @@
 ---
 name: spec-check
 description: "實作前檢查規格，三個模式：verify（預設）驗已寫內容的正確性、DB 實查與跨文件一致性；--readiness 對抗式獵邊界缺口並裁決回寫；--sample 對照實際程式碼驗規格覆蓋度。lean 單份規格走精簡檢查。Use when 驗證規格、規格檢查、spec-check、就緒度、dev readiness、驗證規格 vs 程式行為、規格覆蓋度。"
+triggers: ["驗證規格", "規格檢查", "spec-check", "dev readiness"]
 argument-hint: "[--readiness|--sample] [文件路徑或功能目錄] [--cross] [--recheck] [--quick|--full]"
 ---
 

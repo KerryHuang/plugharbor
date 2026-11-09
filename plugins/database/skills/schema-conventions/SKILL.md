@@ -1,6 +1,7 @@
 ---
 name: schema-conventions
 description: 撰寫或審查資料表（CREATE TABLE）與檢視表（CREATE VIEW）腳本的慣例——檔案結構、命名、主鍵、稽核欄、軟刪除、約束、view 撰寫原則；方言差異走附錄（附 SQL Server、PostgreSQL、MySQL、SQLite）。Use when writing or reviewing table／view DDL, "資料表慣例", "table 命名規則", "怎麼建表", "view 慣例", "檢視表怎麼寫", "schema convention", "table convention", "view convention".
+triggers: ["怎麼建表", "資料表慣例", "table 命名", "CREATE TABLE"]
 ---
 
 # Schema 撰寫慣例（table／view）

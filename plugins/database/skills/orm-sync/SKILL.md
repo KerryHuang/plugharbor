@@ -1,6 +1,7 @@
 ---
 name: orm-sync
 description: 讓 ORM entity 與資料庫 schema 保持同步（DB-first）——加新表／view、從資料庫重新產生 entity、修正 precision／nullable／長度與實際 schema 的偏差；附 EF Core Power Tools（efcpt）流程。Use when 加表, 同步 Entity, scaffold, efcpt, 更新實體, re-scaffold, 重新產生 Entity, "DB schema 同步到 ORM", "entity 欄位型別跟資料庫不一致", or when a file with an "auto generated" header must be changed (手改會被覆蓋).
+triggers: ["同步 Entity", "re-scaffold", "efcpt", "重新產生 Entity"]
 ---
 
 # DB schema ↔ ORM entity 同步

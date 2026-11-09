@@ -1,6 +1,7 @@
 ---
 name: api-endpoint
 description: 對外 API 端點開發：標準 CRUD 端點、版本控制、回應模型與狀態碼、分頁契約、Request 驗證。附 .NET（ASP.NET Core Controller）附錄。Use when 建立新 API Controller、新增 REST 端點、實作 API versioning、api endpoint、webapi controller、crud controller、REST API。
+triggers: ["新增 API 端點", "建立 API Controller", "REST API", "API versioning"]
 ---
 
 # API 端點

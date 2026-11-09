@@ -1,6 +1,7 @@
 ---
 name: layered-architecture
 description: 分層架構（Domain / Application / Infrastructure / 進入層）開發：依賴規則、新功能開發順序、各層該放什麼、DI 註冊位置。附 .NET 附錄。Use when 新增功能、建立實體、定義介面、實作服務／Repository、遵循分層架構規範、clean architecture、layered architecture、分層開發、依賴方向檢查。
+triggers: ["分層架構", "clean architecture", "依賴方向檢查", "新功能開發順序"]
 ---
 
 # 分層架構開發

@@ -1,6 +1,7 @@
 ---
 name: tmp-scratch
 description: 暫存檔放哪、怎麼命名、何時清——session scratchpad 與專案 `.tmp/YYYYMMDD-slug/` 分工、禁裸檔、只用 ASCII、當輪清、worker 不自刪。Use when 你要寫一次性腳本或中間產物、開 `.tmp` 資料夾、收工清暫存。
+triggers: ["暫存檔放哪", "開 .tmp 資料夾", "清暫存檔", "一次性腳本"]
 ---
 
 # 暫存分層

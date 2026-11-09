@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.1] - 2026-11-10
+
+- docs: 2 個 skill 的 frontmatter 加 `triggers` 欄位（單行 JSON 陣列，不進 skill 清單、description 不變）。這個 plugin 被明確停用時，toolkit 的 `disabled-skills.py` 會拿它比對使用者訊息，提示這個 skill 存在。起因同 toolkit 0.18.0：別的專案跑 /doctor 關掉少用的 plugin 後，之後要用時找不到。
+
 ## [2.0.0] - 2026-11-09
 
 - BREAKING(implement): 從「完整端到端實作流程」改成夾在 superpowers 頭尾的入口。SKILL.md 只留前段：讀設定與 `LEARNINGS.md`（否決條目照抄）、分支與工作區、規格品質閘門；過閘門後叫 `superpowers:writing-plans`，並要求計畫的最後一個 task 是後段（新檔 `skills/implement/references/after.md`：規格三層比對、端到端／整合測試、寫 LEARNINGS、規格回填）。執行交給 superpowers 的 subagent-driven-development 或 executing-plans，收尾交給 finishing-a-development-branch 的選單（draft PR 用它的 push＋PR 選項），不自動 merge。

@@ -1,6 +1,7 @@
 ---
 name: background-job
 description: 背景作業與排程開發：Job 類別設計、DI 註冊、排程類型（固定 Cron、延遲、自動重排）、冪等與失敗處理。附 .NET（Hangfire）附錄。Use when 建立新背景作業、設定排程、需要 Job 開發範本、background job、recurring job、hangfire job、cron、排程作業。
+triggers: ["背景作業", "排程作業", "hangfire", "recurring job"]
 ---
 
 # 背景作業與排程

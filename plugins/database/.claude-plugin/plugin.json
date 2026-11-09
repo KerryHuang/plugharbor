@@ -1,7 +1,7 @@
 {
   "name": "database",
   "description": "資料庫能力——schema 撰寫慣例（table／view）、migration 流程與疑難排解、DB schema 與 ORM entity 同步、資料表說明文件；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄。",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "KerryHuang"
   },

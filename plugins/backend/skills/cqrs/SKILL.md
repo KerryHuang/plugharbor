@@ -1,6 +1,7 @@
 ---
 name: cqrs
 description: CQRS 用例拆分：Command／Query Handler、Notification 事件、交易管線、分頁查詢與回傳規則。附 .NET（MediatR）附錄。Use when 新增 Handler、實作 CRUD 操作、cqrs、command handler、query handler、mediator、notification、交易管線、transaction behavior。
+triggers: ["command handler", "query handler", "新增 Handler", "CQRS"]
 ---
 
 # CQRS 用例（Command／Query）

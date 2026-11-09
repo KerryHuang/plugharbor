@@ -1,6 +1,7 @@
 ---
 name: schema-docs
 description: 由 SQL view 檔解析欄位映射、關聯與計算邏輯，產生資料表結構說明文件（Markdown）；方言關鍵字走附錄。Use when 產生資料表描述, 文件化檢視表, 更新 TableDescription, 由 view 產欄位對照.
+triggers: ["資料表描述", "TableDescription", "文件化檢視表", "view 欄位對照"]
 ---
 
 # 產生資料表結構說明文件

@@ -1,6 +1,7 @@
 ---
 name: cross-platform
 description: 跨平台（Windows／macOS／Linux）撰寫程式與腳本的通用做法——路徑與分隔符、換行（LF／CRLF）、檔名大小寫、shell 語法差異、null 裝置、環境變數與編碼；附 .NET 寫法。Use when 寫檔案路徑、判斷作業系統、寫 shell 腳本或 CI workflow、避免 Windows 專用指令、處理換行或大小寫問題、"cross platform"、"跨平台"、"path.combine"、"在 Mac／Linux 上壞掉"。
+triggers: ["cross platform", "Mac 上壞掉", "Windows 路徑", "CRLF 換行"]
 ---
 
 # 跨平台慣例
