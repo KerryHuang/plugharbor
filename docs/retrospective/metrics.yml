@@ -1,0 +1,49 @@
+# 待驗指標帳本（格式見 toolkit 的 retrospective/references/metrics-ledger.md）
+# 來源：2026-11-09 superpowers 對齊重構（fb5f2fb、68c6b88、f5a71de、609fd19）
+
+metrics:
+  - id: M-20261109-01
+    source: commit 68c6b88
+    layer: lifecycle
+    metric: 實作計畫的落點
+    criterion: 期間內 superpowers:writing-plans 產的計畫 100% 落在 .tmp/plans/，docs/superpowers/plans/ 出現 0 次
+    due: {date: "2026-11-23"}
+    if_not: 檢查 user 層 superpowers.md 有沒有被讀到，或改由 implement 交棒時明寫路徑
+    status: open
+    checks: []
+  - id: M-20261109-02
+    source: commit 68c6b88
+    layer: lifecycle
+    metric: 照規格實作時有沒有叫到 implement
+    criterion: 使用者要求照規格實作的 session 中，lifecycle:implement 被叫到的比例 ≥ 80%
+    due: {date: "2026-11-23"}
+    if_not: 回頭看 implement 的 description 觸發句，或在 superpowers.md 的銜接那條寫得更直接
+    status: open
+    checks: []
+  - id: M-20261109-03
+    source: commit f5a71de
+    layer: workspace
+    metric: debugging／agent-orchestration／review 的觸發次數
+    criterion: 三個 skill 的 Skill 叫用次數，對照改前 14 天基線沒有歸零，且未與 superpowers 同名 skill 在同一 session 重複叫用
+    due: {date: "2026-11-23"}
+    if_not: 歸零的 skill 評估移除或併入 superpowers 分工；重複叫用的再縮觸發詞
+    status: open
+    checks: []
+  - id: M-20261109-04
+    source: commit 609fd19
+    layer: toolkit
+    metric: 派工帶模型
+    criterion: 期間內 Agent tool 派工有明確設 model 的比例 ≥ 95%
+    due: {date: "2026-11-23"}
+    if_not: 查 agent-model-guard 是否放行了未帶模型的派工，或 dispatch.md 那行沒被讀到
+    status: open
+    checks: []
+  - id: M-20261109-05
+    source: commit 68c6b88
+    layer: lifecycle
+    metric: Bug 票走 implement 的摩擦
+    criterion: 期間內 Bug 票經 ticket-create 進 implement 後，被規格閘門擋下或使用者改走 systematic-debugging 的次數；≥ 1 次就判 fail
+    due: {date: "2026-11-23"}
+    if_not: 把 ticket-create 的 Bug 動線改接 superpowers:systematic-debugging（lifecycle patch）
+    status: open
+    checks: []
