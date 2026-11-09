@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.16.6] - 2026-11-09
+
+- docs(agent-dispatch): §1 加「依風險升一級」：改動碰 `crossReview` 路徑樣式或超過 `maxLines` 行可用高一級，偏離查表結果時回報寫「升級理由：…」。§6 的 `herdr agent start` 範例固定帶 `-- <模型參數>`，並列出各家寫法。user 層 rule（setup 的 home 目錄下 `rules/dispatch.md`）同步加「派工帶模型」一行（派 Agent tool 時依等級表設 `model` 與 `effort`），新增 `setup/tests/dispatch-rule-sync.sh` 檢查它跟 `routing.json` 一致。起因是同家 subagent 從沒照等級表選模型、升級不記理由，還有 2 個 pane 啟動時沒帶模型參數。
+
 ## [0.16.5] - 2026-11-09
 
 - docs(agent-dispatch): `skills/agent-dispatch/references/background-worker.md` 新增「macOS 防睡眠」：長任務期間不要蓋螢幕（Clamshell Sleep，caffeinate 擋不住）、要蓋就接電源加外接螢幕、`pmset disablesleep` 由使用者自己決定、怎麼查睡眠原因；`herdr-long-task.md` 加一行指路。起因是長任務跑到一半蓋螢幕又拔電源，Mac 睡了 2 小時、測試逾時。

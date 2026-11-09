@@ -22,6 +22,7 @@ argument-hint: "[對象] <任務>"
   | cheap | `docs`、`format`、`mechanical` |
 
 - 查表會濾掉 agent-mesh-check 最近一次沒通過的 CLI，以及額度封鎖中的 CLI。派出去一律帶明確的模型與思考等級，不繼承你自己的模型。
+- 依風險升一級：改動碰到 `crossReview` 的路徑樣式或超過 `maxLines` 行，可以用高一級；偏離查表結果（升或降）時，回報那行加「升級理由：…」。
 - 只查不派（例如工作要交給同家 subagent，只需要知道該用哪一家、哪個模型）：`node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" pick <類型>` 印出有序候選 JSON（全被濾掉時是 `[]`）；挑審查者用 `reviewer <作者 CLI>`，套下面的跨家族規則。回報那行由呼叫端自己組。
 - 回報時照抄腳本第一行「交給 <cli>（<模型>／<等級>），理由：…」，讓使用者知道花了哪一家的額度。
 - 只想要另一家觀點、你本身是 pi、pi 也登入了那家：用 pi 自己的子代理換模型比較輕。需要 codex 或 agy 工具本身（沙箱、外掛、repo 設定）時才用本 skill。
@@ -106,14 +107,16 @@ argument-hint: "[對象] <任務>"
    ```bash
    herdr pane split --current --direction right --cwd "<cwd>" --no-focus --env AGENT_DISPATCH_RESULT="<結果檔>" --env AGENT_DISPATCH_INTERACTIVE=1
    python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID" --label <短名>
-   herdr agent start <唯一名稱> --kind <claude|codex|agy|pi> --pane <pane_id>
+   herdr agent start <唯一名稱> --kind <claude|codex|agy|pi> --pane <pane_id> -- <模型參數>
    ```
+
+   - `<模型參數>` 一定要帶（查表或使用者指定的模型與等級），寫法見 `../agent-mesh-check/references/cli-notes.md`：claude `--model <m> --effort <e>`、codex `-m <m> -c model_reasoning_effort=<e>`、agy `--model <id>`、pi `--model <provider>/<id>:<thinking>`。
 
    - 每開一個 pane 就跑一次 `herdr_layout.py`（主 session 最大並掛「★」標籤，同 tab 最多 6 個 worker）；不手動 `--direction down`、不 `pane resize`。`--label` 第一次給即可。
    - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
    - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`（`--env` 同上），取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
    - 起好後 `herdr pane rename <pane_id> <名稱>`。
-   - 指定 agent 定義（claude／codex）：`agent start` 尾端加 `-- --agent <plugin>:<agent>`，套用其工具白名單與 model。
+   - 指定 agent 定義（claude／codex）：`agent start` 尾端的 `--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。
    - `agent start` 失敗：先 `herdr pane read <pane_id>` 留畫面，再關掉這個 pane，連同畫面摘要回報；`agent_not_ready` 多半是 cwd 問題。
 3. 送出 prompt，放在背景等待：
 
