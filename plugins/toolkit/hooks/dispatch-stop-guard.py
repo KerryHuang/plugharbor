@@ -26,7 +26,8 @@ def main() -> None:
                   "任務還沒做完（在等人回答，或照指示先停）：不要寫結果檔，直接再結束一次。")
     else:
         reason = f"你是被派出的 worker，結果檔 {result} 還沒寫。寫完結果檔（完成／失敗／待決、做了什麼、要清的路徑）再結束。"
-    print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
+    # Windows 的 stdout 預設 cp950，Claude Code 以 UTF-8 讀，中文 reason 會變亂碼
+    sys.stdout.buffer.write(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False).encode("utf-8"))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.18.1] - 2026-11-10
+
+- fix(hooks): `dispatch-stop-guard.py` 的 block 輸出改用 `sys.stdout.buffer.write(... .encode("utf-8"))`，跟同目錄其他 hook 一致。起因：Windows 的 stdout 預設 cp950，Claude Code 以 UTF-8 讀，herdr worker 沒寫結果檔時看到的 Stop hook reason 整段亂碼，worker 讀不懂該做什麼；既有測試在 Windows 也因此 3 個 UnicodeDecodeError。
+
 ## [0.18.0] - 2026-11-09
 
 - feat(hooks): `disabled-skills.py` 的 SessionStart 從完整清單改成一行名稱（`[toolkit] plugharbor 停用中：…`）；重開指令、SKILL.md 路徑、忽略指令改寫到 `~/.claude/disabled-skills/<專案雜湊>.md`，需要時才讀。用法也改了：agent 要先用 AskUserQuestion 問使用者（用它並重開／只這次用／不要），問過才用。新增 `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」就寫進 `~/.claude/disabled-skills/ignore.json`，以停用的單位為準（整個 plugin 或單一 skill），而且只在當下專案生效；項目重新啟用時，自動從清單移除。起因：0.17.0 分不出「少用被 /doctor 關掉」和「刻意不要」（agent 會繞過使用者的決定去用），而且只要沒重開，就在每個 session、每個專案永遠注入，無法消掉。設計見 `docs/superpowers/specs/2026-11-09-disabled-skill-recovery-design.md`。
