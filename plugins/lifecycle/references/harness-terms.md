@@ -27,6 +27,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 |---|---|
 | `argument-hint:` | 只是提示，參數照 `$ARGUMENTS` 列取得。 |
 | `model:` | Pi 用當前 session 的模型跑 skill，不切換。 |
+| `triggers:` | 觸發片語清單（單行 JSON 陣列）。本 plugin 在 Claude Code 被明確停用時，toolkit 的 `disabled-skills.py` 拿它比對使用者訊息；Pi 上不使用，忽略即可。 |
 | `context:`（值 `context: fork`） | Claude 會在無對話歷史的子 context 跑本 skill。Pi 上要保留這份隔離時，派一個子 session 跑：互動 session 用 `subagent`（`skills` 帶本 skill 名，`task` 帶參數與 plugin 根絕對路徑）；自動退出的 session 用下方「同步派工」的 `pi -p`。 |
 
 ## 工具

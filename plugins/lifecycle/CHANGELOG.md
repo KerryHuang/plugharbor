@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.2] - 2026-11-10
+
+- fix(references): `references/harness-terms.md` 的「Skill frontmatter」表補 `triggers:` 一列（Pi 上不使用）。lifecycle 與 browser-docs 兩份副本同步。起因：lifecycle 2.0.1 給 skill 加了 `triggers`，`scripts/test_harness_neutral.py` 要求非標準 frontmatter 欄位都要有說明，CI 因此失敗。
+
 ## [2.0.1] - 2026-11-10
 
 - docs: 2 個 skill 的 frontmatter 加 `triggers` 欄位（單行 JSON 陣列，不進 skill 清單、description 不變）。這個 plugin 被明確停用時，toolkit 的 `disabled-skills.py` 會拿它比對使用者訊息，提示這個 skill 存在。起因同 toolkit 0.18.0：別的專案跑 /doctor 關掉少用的 plugin 後，之後要用時找不到。

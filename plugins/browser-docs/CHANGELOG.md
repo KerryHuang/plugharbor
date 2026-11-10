@@ -3,6 +3,10 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.3.4] - 2026-11-10
+
+- fix(references): `references/harness-terms.md` 的「Skill frontmatter」表補 `triggers:` 一列（Pi 上不使用）。lifecycle 與 browser-docs 兩份副本同步。起因：lifecycle 2.0.1 給 skill 加了 `triggers`，lifecycle 的 test_harness_neutral 測試要求非標準 frontmatter 欄位都要有說明，CI 因此失敗。
+
 ## [0.3.3] - 2026-11-03
 
 - docs: harness-terms 的 `${CLAUDE_PLUGIN_ROOT}` 補 Codex／agy 專案層 symlink 載入時的 plugin 根判定（realpath 往上兩層；複製模式讀 `.plugharbor-root`）。
