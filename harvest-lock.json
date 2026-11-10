@@ -49,6 +49,22 @@
       ]
     },
     {
+      "clone_url": "https://github.com/mem0ai/mem0.git",
+      "ref": "",
+      "subpath": "",
+      "key": "mem0ai/mem0",
+      "version": "v2.2.1",
+      "commit": "f1791daa86d469249c9b002f62644d58a1eb96a0",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE",
+      "license_blob": "d20d5102c3cf97ecbee54afd65893de4a11d26fe",
+      "subtree": null,
+      "adopted": "2026-11-10",
+      "targets": [
+        "toolkit:tidy-memory"
+      ]
+    },
+    {
       "clone_url": "https://github.com/QingYunA/answer-me-with-html.git",
       "ref": "",
       "subpath": "",

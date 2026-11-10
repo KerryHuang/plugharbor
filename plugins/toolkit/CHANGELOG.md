@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.18.2] - 2026-11-10
+
+- tidy-memory Task 5 加「判定結果」：每組重複候選只判成合併／刪除其一／保留兩則，並註明換說法不算重複；Task 6 依此出題。
+  起因：Windows 端 plugin-harvest（關鍵字 claude code memory management）評估後採納；判準概念借自 mem0 的記憶更新 prompt（Apache-2.0，只借概念，已記 `harvest-lock.json`）。
+- tidy-memory「附帶事實」更正 claude-mem 描述：自動寫入 `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` 是 12.7.2 起的舊版行為，現行版（15.14.0）預設不動設定；「不要裝」的理由改為雙重注入 context 與改變 Read 行為。
+  起因：同一次評估讀 claude-mem 原始碼，發現原描述過時。
+
 ## [0.18.1] - 2026-11-10
 
 - fix(hooks): `dispatch-stop-guard.py` 的 block 輸出改用 `sys.stdout.buffer.write(... .encode("utf-8"))`，跟同目錄其他 hook 一致。起因：Windows 的 stdout 預設 cp950，Claude Code 以 UTF-8 讀，herdr worker 沒寫結果檔時看到的 Stop hook reason 整段亂碼，worker 讀不懂該做什麼；既有測試在 Windows 也因此 3 個 UnicodeDecodeError。
