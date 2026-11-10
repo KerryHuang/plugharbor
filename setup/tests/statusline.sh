@@ -16,4 +16,13 @@ echo "$OUT" | grep -q '███' || fail "statusline 應有進度條（210K／4
 OUT="$(cd "$TMP" && echo '{"model":{"display_name":"Opus"}}' | HOME="$H" bash "$SL")"
 echo "$OUT" | grep -q '0K' || fail "缺 context_window 應顯示 0K：$OUT"
 
-echo "PASS: statusline（3 項）"
+# subagent 列：模型簡稱／effort、截斷、模型未定顯示 ?
+SSL="$REPO_DIR/setup/config/subagent-statusline.sh"
+OUT="$(echo '{"columns":60,"tasks":[{"id":"a1","agentType":"general-purpose","model":"claude-sonnet-5-5","effort":"medium","label":"Scanning a very long description that must be truncated","tokenCount":42318},{"id":"a2","agentType":"Explore","label":"x","tokenCount":0}]}' | bash "$SSL")"
+echo "$OUT" | grep -q '"id": "a1"' || fail "subagent 列應回傳 id：$OUT"
+echo "$OUT" | grep -q 'sonnet/medium' || fail "subagent 列應顯示 sonnet/medium：$OUT"
+echo "$OUT" | grep -q '42K' || fail "subagent 列應顯示 42K：$OUT"
+echo "$OUT" | grep -q '…' || fail "過長的 label 應截斷：$OUT"
+echo "$OUT" | grep -q '"id": "a2".*?' || fail "模型未定應顯示 ?：$OUT"
+
+echo "PASS: statusline（4 項）"

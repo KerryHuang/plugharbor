@@ -6,6 +6,7 @@ PH_ENTRIES='setup/home/CLAUDE.md|CLAUDE.md|file
 setup/home/shared|shared|dir
 setup/home/rules|rules|dir
 setup/config/statusline.sh|statusline.sh|file
+setup/config/subagent-statusline.sh|subagent-statusline.sh|file
 setup/herdr/hooks/herdr-parent-tag.py|hooks/herdr-parent-tag.py|file'
 
 SIDEBAR_DIR="$REPO_DIR/setup/herdr/plugins/sidebar"

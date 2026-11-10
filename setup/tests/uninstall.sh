@@ -51,6 +51,7 @@ grep -qx "cygpath -m $REPO_DIR/plugins/toolkit" "$STUB_LOG" || fail "pi package 
 [ ! -e "$C/CLAUDE.md" ]               || fail "未移除與 repo 一致的 CLAUDE.md"
 [ ! -e "$C/rules/git-safety.md" ]     || fail "未移除與 repo 一致的 rule"
 [ ! -e "$C/statusline.sh" ]           || fail "未移除 statusline.sh"
+[ ! -e "$C/subagent-statusline.sh" ]  || fail "未移除 subagent-statusline.sh"
 [ ! -e "$C/hooks/herdr-parent-tag.py" ] || fail "未移除 herdr-parent-tag.py"
 grep -q "使用者自改" "$C/rules/dotnet.md" || fail "使用者改過的檔案不該被移除"
 grep -q '"foo": "bar"' "$C/settings.json" || fail "settings.json 其他內容被動過"

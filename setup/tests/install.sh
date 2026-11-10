@@ -56,6 +56,7 @@ C="$H/.claude"
 [ -f "$C/shared/engineering.md" ]        || fail "shared/ 未安裝"
 [ -f "$C/rules/git-safety.md" ]          || fail "rules/ 未安裝"
 [ -f "$C/statusline.sh" ]                || fail "statusline.sh 未安裝"
+[ -f "$C/subagent-statusline.sh" ]       || fail "subagent-statusline.sh 未安裝"
 [ -f "$C/hooks/herdr-parent-tag.py" ]    || fail "herdr-parent-tag.py 未安裝"
 # 舊 hook 移除、備份存在、本機自加的保留、herdr-parent-tag 補上
 for old in 'exec python3' agent-model-guard.py notification.sh feedback-reminder.py; do
@@ -68,6 +69,7 @@ grep -q '/opt/my/stop'     "$C/settings.json" || fail "本機自加的 Stop hook
 grep -q '"my-model"'       "$C/settings.json" || fail "settings 合併弄丟既有值"
 grep -q 'Custom(x)'        "$C/settings.json" || fail "settings 合併弄丟既有清單項"
 grep -q 'bash ~/.claude/statusline.sh' "$C/settings.json" || fail "statusLine 未補上"
+grep -q 'bash ~/.claude/subagent-statusline.sh' "$C/settings.json" || fail "subagentStatusLine 未補上"
 [ "$(grep -o 'herdr-parent-tag.py' "$C/settings.json" | wc -l | tr -d ' ')" = 2 ] || fail "herdr-parent-tag 應有 Pre／Post 各一筆"
 if grep -q '"Notification"' "$C/settings.json"; then fail "清空的 Notification 事件應移除"; fi
 BK="$(ls -d "$C"/backups/plugharbor-* 2>/dev/null | head -1)"

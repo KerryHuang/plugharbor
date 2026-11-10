@@ -51,8 +51,9 @@ Claude Code 的 `plugharbor` marketplace 指向 GitHub（`PLUGHARBOR_REPO`，預
 | `home/` | `CLAUDE.md`、`shared/`、`rules/`（user 層工作原則與語言規則） | `~/.claude/` |
 | `config/claude-settings.template.json` | settings 範本，深度合併進 `~/.claude/settings.json` | `~/.claude/settings.json` |
 | `config/statusline.sh` | 狀態列 | `~/.claude/statusline.sh` |
+| `config/subagent-statusline.sh` | agent 面板每列（類型、模型／effort、進度、token） | `~/.claude/subagent-statusline.sh` |
 | `herdr/` | herdr 設定、側欄 plugin、pi 擴充 | herdr／pi 各自的設定目錄 |
-| `tests/` | `statusline.sh`，CI 會跑 | |
+| `tests/` | `statusline.sh`（含 subagent 列），CI 會跑 | |
 
 ## install.sh 的升級與舊 hook
 

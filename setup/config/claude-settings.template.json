@@ -38,6 +38,10 @@
     "command": "bash ~/.claude/statusline.sh",
     "padding": 0
   },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/subagent-statusline.sh"
+  },
   "hooks": {
     "PreToolUse": [
       {
