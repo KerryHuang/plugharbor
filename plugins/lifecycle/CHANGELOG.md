@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.3.1] - 2026-11-11
+
+- fix(references): `references/feature-checklist.md` 補三條。一、`docs/` 是文件站、submodule 或有落檔白名單時，功能清單與 todo 改放 repo 根目錄的 `FEATURES.md`、`TODO.md`。二、排進某版範圍的 bug，在 todo 脈絡註明版本。三、屬於某份交付物（分析、規格、票）的待辦留在那份文件裡，`docs/todo.md` 只收不屬於任何東西的雜事。
+- 起因：2.3.0 交給 3 個 session 試用，三處回報不順。某公司 workspace 的兩個 session 回報：`docs/` 是 MkDocs 站，根目錄採封閉白名單，`docs/todo.md` 放不進去；客戶差異分析文件裡本來就有待辦清單，跟 todo.md 重疊。另一個 repo 把 7 個 bug 搬進 todo 後，其中一個是 v0.3.0 的主軸之一，搬走後就看不出它屬於哪一版。路徑問題只加退路，不加設定鍵：目前只有一個 workspace 需要，而且它沒裝 lifecycle。
+
 ## [2.3.0] - 2026-11-11
 
 - feat(references): `references/feature-checklist.md` 新增「與 todo 的分界」一節。判準：做完後產品多一項使用者看得到的能力，就進功能清單；其餘動作（bug、重構、調查、雜事）都進 todo，做完就丟。todo 依壽命分三處：單一 session 用 CLI 內建的待辦工具，功能的實作步驟寫在計畫檔，跨 session 又不屬於任何功能的雜事放新的 `docs/todo.md`（一行一項、做完就刪，發現是功能就移到功能清單）。另外列出 bug、重構、調查、🚧 步驟這幾種灰色地帶的歸屬。

@@ -1,6 +1,6 @@
 # 功能清單（feature-checklist.md）
 
-讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature-checklist.md`（不是規格，不放 `<spec.dir>`）；roadmap 或 README 開頭連到它。
+讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature-checklist.md`（不是規格，不放 `<spec.dir>`）；roadmap 或 README 開頭連到它。`docs/` 是文件站、submodule 或有落檔白名單時，本清單與 `docs/todo.md` 改放 repo 根目錄（`FEATURES.md`、`TODO.md`），腳本帶路徑參數。
 
 ## 格式
 
@@ -44,8 +44,9 @@
 | 一個功能的實作步驟 | 實作計畫檔 |
 | 跨 session、不屬於任何功能 | `docs/todo.md` |
 
-- bug 進 todo；修完會多一項能力的（其實是缺功能）才進本清單。
+- bug 進 todo；修完會多一項能力的（其實是缺功能）才進本清單。排進某版範圍的 bug，冒號後註明版本（如「（v0.3.0）」）。
 - 重構、技術債進 todo；為了解鎖某功能時註明是哪一項。
+- 屬於某份交付物（分析、規格、票）的待辦留在那份文件裡，`docs/todo.md` 只收不屬於任何東西的雜事。
 - 調查的結論冒出新功能，才進本清單標 💡 或 📋。
 - 🚧 項目拆出的步驟放 todo，本清單只記狀態與缺什麼。
 
