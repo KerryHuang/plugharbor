@@ -1,6 +1,6 @@
 ---
 name: dual-tool-mirror
-description: 讓 Claude Code 與 Codex 共用同一份專案設定——`.claude/` 是單一來源，用腳本鏡像 skills／agents／rules 到 Codex 讀得到的位置並在 SessionStart 注入 rules；副本不手改，CLAUDE.md／AGENTS.md 平行維護。Use when 專案要同時給 Claude Code 與 Codex 用、「Codex 看不到 skill／rule」「同步 .agents/skills」「AGENTS.md 要不要跟 CLAUDE.md 對齊」「設定鏡像」。
+description: 讓 Claude Code 與 Codex 共用同一份專案設定——`.claude/` 是單一來源，用腳本鏡像 skills／agents／rules 到 Codex 讀得到的位置並在 SessionStart 注入 rules；副本不手改，指示內容只寫 AGENTS.md。Use when 專案要同時給 Claude Code 與 Codex 用、「Codex 看不到 skill／rule」「同步 .agents/skills」「AGENTS.md 要不要跟 CLAUDE.md 對齊」「設定鏡像」。
 ---
 
 # 多工具設定鏡像（Claude Code ↔ Codex）
@@ -49,10 +49,20 @@ description: 讓 Claude Code 與 Codex 共用同一份專案設定——`.claude
 - 認得 CRLF frontmatter（Windows `autocrlf` checkout）。
 - 不用 `process.exit()`：pipe stdout 在 macOS／Windows 是非同步的，硬退會截斷 hook 輸出。
 
-## 兩份平行檔：CLAUDE.md 與 AGENTS.md
+## 專案指示：內容只寫在 AGENTS.md
 
-內容相同，只差工具名稱那幾行（Claude Code ↔ Codex CLI）。這兩份**刻意人工維護**，沒有腳本對齊——改其中一份務必同步改另一份。
-不要用腳本機械替換工具名來產生 AGENTS.md：替換會波及路徑與指令，產出不存在的路徑。
+專案指示只寫一份 `AGENTS.md`，兩個工具不同的地方並列寫（「Claude Code 用 X；Codex 用 Y」）。`CLAUDE.md` 只放一行 `@AGENTS.md`，不放副本。
+
+Claude Code 自動載入 `AGENTS.md` 有前提：從專案根往上的整條路徑上，都沒有任何 `CLAUDE.md` 或 `CLAUDE.local.md`。只要出現其中一個，`AGENTS.md` 就不會載入，而且不會提示（2.1.322 實測，上層目錄的 `CLAUDE.local.md` 也一樣會擋）。所以不要直接刪掉 `CLAUDE.md`：留一行 import，有 `CLAUDE.local.md` 或 Claude Code 版本較舊也讀得到，內容只會載入一次。
+
+既有專案有兩份平行檔時，照這個順序切換：
+
+1. **先查讀取端**：在 plugin、腳本、hook 裡 grep，看有沒有寫死去讀專案 `CLAUDE.md` 的內文，例如 grep 設定鍵。腳本不會展開 `@AGENTS.md`，有這種讀取端時，先讓它也讀 `AGENTS.md` 並發版，或者那些鍵先留在 `CLAUDE.md`。
+2. 把兩份的差異併進 `AGENTS.md`，`CLAUDE.md` 改成只有一行 `@AGENTS.md`。
+3. 寫著「兩份人工同步」的 rule、README 要一起改寫。
+4. 驗收要在真實專案跑：有 `CLAUDE.local.md` 的專案就保留它。用 `claude -p` 搭配 `--disallowedTools Read Bash Grep Glob`，問一句只寫在 `AGENTS.md` 的內容，答得出來才算通過。
+
+不要用腳本機械替換工具名來產生另一份：替換會波及路徑與指令，產出不存在的路徑。
 
 ## 其餘兩邊各自維護、容易漏的
 

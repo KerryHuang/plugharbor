@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.6.0] - 2026-11-11
+
+- feat(dual-tool-mirror): 原本的「兩份平行檔：CLAUDE.md 與 AGENTS.md」改寫成「專案指示：內容只寫在 AGENTS.md」。新做法：內容只放 `AGENTS.md`，兩個工具不同的地方並列寫；`CLAUDE.md` 只留一行 `@AGENTS.md`，不放副本。另外補上切換步驟：先 grep 讀取端，看有沒有寫死去讀 `CLAUDE.md` 內文的地方；合併兩份；一起改寫寫著「兩份同步」的 rule 與 README；最後在真實專案驗收。description 同步改寫，比原本短。
+- 起因：plugharbor 本身改成只用 `AGENTS.md` 時實測（Claude Code 2.1.322）發現，Claude Code 只在整條路徑上都沒有 `CLAUDE.md`、`CLAUDE.local.md` 時才自動載入 `AGENTS.md`。兩份並存時它只讀 `CLAUDE.md`，有 `CLAUDE.local.md` 時 `AGENTS.md` 會靜默不載入；`@AGENTS.md` import 則兩種情況都讀得到。改版先給線上 session 唯讀試用，回報了三件事：某 workspace 有 `CLAUDE.local.md`；某公司 plugin 約 34 個檔用 grep 讀專案 `CLAUDE.md` 的設定鍵，腳本不會展開 import；寫著「人工同步兩份」的 rule 與 README 要連帶改寫。本地 e2e 用含 local 檔與寫死讀取端的測試 repo 驗過。
+
 ## [1.5.1] - 2026-11-10
 
 - docs: 4 個 skill 的 frontmatter 加 `triggers` 欄位（單行 JSON 陣列，不進 skill 清單、description 不變）。這個 plugin 被明確停用時，toolkit 的 `disabled-skills.py` 會拿它比對使用者訊息，提示這個 skill 存在。起因同 toolkit 0.18.0：別的專案跑 /doctor 關掉少用的 plugin 後，之後要用時找不到。
