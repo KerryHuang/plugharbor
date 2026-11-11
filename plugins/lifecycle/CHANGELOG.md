@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.3.0] - 2026-11-11
+
+- feat(references): `references/feature-checklist.md` 新增「與 todo 的分界」一節。判準：做完後產品多一項使用者看得到的能力，就進功能清單；其餘動作（bug、重構、調查、雜事）都進 todo，做完就丟。todo 依壽命分三處：單一 session 用 CLI 內建的待辦工具，功能的實作步驟寫在計畫檔，跨 session 又不屬於任何功能的雜事放新的 `docs/todo.md`（一行一項、做完就刪，發現是功能就移到功能清單）。另外列出 bug、重構、調查、🚧 步驟這幾種灰色地帶的歸屬。
+- 起因：使用者要求先分清楚哪些工作進 checklist、哪些進 todo，再決定做法。討論時發現跨 session 又不屬於任何功能的雜事（例如清 branch、token 續期）沒有地方放：TodoWrite 只在單一 session 有效，計畫檔一份只對應一個功能，這類事只能靠記憶，或硬塞進功能清單。user 層 rule `superpowers.md` 的指向改成「（排線、todo 分界）」，同時刪掉幾個字，長度不變。
+
 ## [2.2.0] - 2026-11-11
 
 - feat(references): `references/feature-checklist.md` 新增「排線」一節。先把清單裡未完成的項目分成主線、獨立線、小件、先拍板四類，再列共用資源；並行數由瓶頸決定。一段工作只有部分被卡住時，把那部分拆出去，其餘先開工；計畫中別段已完成的步驟直接沿用；先拍板的項目逐題問，不擋其他線。
