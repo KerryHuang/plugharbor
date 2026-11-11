@@ -11,7 +11,7 @@
       "name": "lifecycle",
       "source": "./plugins/lifecycle",
       "description": "軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira）",
-      "version": "2.0.2",
+      "version": "2.1.0",
       "author": {
         "name": "KerryHuang"
       }

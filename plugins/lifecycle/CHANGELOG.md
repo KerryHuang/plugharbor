@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.1.0] - 2026-11-11
+
+- feat(references): 新增 `references/feature-checklist.md`，定義專案功能清單 `docs/feature-checklist.md` 的格式與更新時機。狀態有五種：`[x]` 已完成、`[ ] 🚧` 進行中、`[ ] 📋` 已規劃、`[ ] 💡` 構想、`[-]` 決定不做；判斷不了標「（待確認）」。新腳本 `scripts/feature_checklist.py` 負責報表、`--write` 改寫總計與各節小計、`--check` 在數字過期時 exit 1，附測試 `scripts/test_feature_checklist.py`。
+- feat(implement): 後段（`skills/implement/references/after.md`）步驟 4 增加一步：有功能清單就打勾並更新數字，跟 LEARNINGS 一起 commit。
+- 起因：使用者指示「未來的專案討論及規劃都要列出 feature-checklist.md」，要能追蹤哪些做完、沒做、已規劃。格式以 Formwright 專案現有的清單（168 項）為底，把原本只有一種的 `[ ]` 細分成三種。小計原本手算，曾算錯總數，所以改由腳本產生。user 層 rule `superpowers.md` 同時加一行觸發規則。
+
 ## [2.0.2] - 2026-11-10
 
 - fix(references): `references/harness-terms.md` 的「Skill frontmatter」表補 `triggers:` 一列（Pi 上不使用）。lifecycle 與 browser-docs 兩份副本同步。起因：lifecycle 2.0.1 給 skill 加了 `triggers`，`scripts/test_harness_neutral.py` 要求非標準 frontmatter 欄位都要有說明，CI 因此失敗。
