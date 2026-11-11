@@ -53,9 +53,29 @@
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑]           # 報表：各節／總計、待確認、未分類
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --write   # 改寫總計行與各節小計
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --check   # 數字過期 exit 1，可放 pre-commit
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --open    # 只列未完成項目（依節），排線用
 ```
 
 路徑預設 `docs/feature-checklist.md`。總計行可以有前綴（如「依據 <commit>。」），腳本只改寫「總計：」之後。
+
+## 排線：找出能並行的，能做的先做
+
+規劃下一段、或使用者問「哪些可以分開做」時，以 `--open` 列出的未完成項目為輸入：
+
+1. **分四類**，每項附一句理由（依賴什麼、會跟誰衝突）：
+
+   | 類別 | 判準 |
+   |---|---|
+   | 主線 | 線內有先後依賴，前一段的產出是下一段的輸入 |
+   | 獨立線 | 不依賴主線產出，也不改主線的檔案 |
+   | 小件 | 半天內做完、不碰主線檔案 |
+   | 先拍板 | 缺使用者裁決或設計，現在動手是猜 |
+
+2. **列共用資源**：同一批檔案、單一序列的版本號或 migration、gate／CI 排隊、部署、瀏覽器或測試環境。共用同一資源的兩條線不同時進那個資源，要錯開或輪流合併。
+3. **並行數看瓶頸，不看能拆幾條**：先找出唯一不能並行的環節（通常是 gate、CI 或部署），開的線數以不在那裡長時間排隊為準；小件塞進等 gate 的空檔。
+4. **能做的先做**：一段只有一小部分被卡住，就把那部分拆成獨立項目，其餘先開工；計畫裡的步驟已被別段完成就沿用、不重做，並在計畫記一筆。
+5. **先拍板類**照提問規則一題一題問，不擋其他線。
+6. **回報**一張表：每條線做什麼、狀態、卡在什麼；派工方式照 user 層派工判準（subagent 或 worker）。
 
 ## 首次採用
 

@@ -75,6 +75,17 @@ class TestFeatureChecklist(unittest.TestCase):
         self.assertEqual(out.count("總計："), 1)
         self.assertIn("## 決定不做\n\n共 1 項。", out)
 
+    def test_open_lists_unfinished_by_section(self):
+        out = subprocess.run([sys.executable, str(SCRIPT), "-", "--open"], input=SAMPLE,
+                             capture_output=True, text=True, check=True).stdout
+        self.assertIn("## 模組 A\n- [ ] 🚧 匯入", out)
+        self.assertIn("- [ ] 📋 匯出", out)
+        self.assertIn("## 模組 B\n- [ ] 💡 通知", out)
+        self.assertIn("- [ ] 沒標狀態的項目", out)
+        self.assertNotIn("新增", out)
+        self.assertNotIn("列印", out)
+        self.assertNotIn("完成 ", out)  # 只列項目，不印報表
+
     def test_check_mode_exit_codes(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "feature-checklist.md"

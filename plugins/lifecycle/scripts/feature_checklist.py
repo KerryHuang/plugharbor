@@ -5,6 +5,7 @@
   python3 feature_checklist.py [路徑]           # 印報表（預設 docs/feature-checklist.md）
   python3 feature_checklist.py [路徑] --write   # 改寫檔頭「總計：」行與各節「完成 X／共 Y。」小計
   python3 feature_checklist.py [路徑] --check   # 數字行過期就 exit 1（可放 pre-commit）
+  python3 feature_checklist.py [路徑] --open    # 只列未完成項目（依節），排線用；路徑給 - 讀 stdin
 
 格式見 ../references/feature-checklist.md。
 """
@@ -117,15 +118,35 @@ def report(r):
                 print(f"  {x}")
 
 
+def open_items(text):
+    """未完成項目（🚧／📋／💡／未分類）依節列出，供排線分類用。"""
+    out, header = [], None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            header = line
+            continue
+        m = ITEM.match(line)
+        if m and m.group(1) == " ":
+            if header:
+                out += ["", header] if out else [header]
+                header = None
+            out.append(line.strip())
+    return "\n".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("path", nargs="?", default="docs/feature-checklist.md")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--write", action="store_true")
     g.add_argument("--check", action="store_true")
+    g.add_argument("--open", action="store_true", help="只列未完成項目（排線用）")
     a = ap.parse_args()
     p = Path(a.path)
-    text = p.read_text(encoding="utf-8")
+    text = sys.stdin.read() if a.path == "-" else p.read_text(encoding="utf-8")
+    if a.open:
+        print(open_items(text))
+        return 0
     report(analyze(text))
     if a.write:
         p.write_text(rewrite(text, datetime.date.today().isoformat()), encoding="utf-8")

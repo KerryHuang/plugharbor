@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.2.0] - 2026-11-11
+
+- feat(references): `references/feature-checklist.md` 新增「排線」一節。先把清單裡未完成的項目分成主線、獨立線、小件、先拍板四類，再列共用資源；並行數由瓶頸決定。一段工作只有部分被卡住時，把那部分拆出去，其餘先開工；計畫中別段已完成的步驟直接沿用；先拍板的項目逐題問，不擋其他線。
+- feat(scripts): `feature_checklist.py` 加 `--open`，依節列出未完成項目供排線分類，路徑給 `-` 時讀 stdin；附測試。
+- 起因：Formwright 專案照這個做法把 77 項未完成工作分線。它把一段工作裡會衝突的部分拆出去，其餘先開工，省了約一小時；另外沿用了別的分支已做好的步驟。使用者指示「能做的先做，不要等」，要求加進 plugharbor。user 層派工判準已經有「看共用資源」，本節只補以清單為輸入的分類與排線；user 層 rule `superpowers.md` 原有的指向補上「（含排線）」。
+
 ## [2.1.0] - 2026-11-11
 
 - feat(references): 新增 `references/feature-checklist.md`，定義專案功能清單 `docs/feature-checklist.md` 的格式與更新時機。狀態有五種：`[x]` 已完成、`[ ] 🚧` 進行中、`[ ] 📋` 已規劃、`[ ] 💡` 構想、`[-]` 決定不做；判斷不了標「（待確認）」。新腳本 `scripts/feature_checklist.py` 負責報表、`--write` 改寫總計與各節小計、`--check` 在數字過期時 exit 1，附測試 `scripts/test_feature_checklist.py`。
