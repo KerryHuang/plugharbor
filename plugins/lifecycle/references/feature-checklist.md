@@ -1,6 +1,6 @@
 # 功能清單（feature-checklist.md）
 
-讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature-checklist.md`（不是規格，不放 `<spec.dir>`）；roadmap 或 README 開頭連到它。`docs/` 是文件站、submodule 或有落檔白名單時，本清單與 `docs/todo.md` 改放 repo 根目錄（`FEATURES.md`、`TODO.md`），腳本帶路徑參數。
+讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature-checklist.md`（不是規格，不放 `<spec.dir>`）；README 開頭連到它。`docs/` 是文件站、submodule 或有落檔白名單時，本清單與 `docs/todo.md`、`docs/roadmap.md` 改放 repo 根目錄（`FEATURES.md`、`TODO.md`、`ROADMAP.md`），腳本帶路徑參數。
 
 ## 格式
 
@@ -15,7 +15,7 @@
 
 - [x] 新增模組 — 一句話說明，可附驗收或設計文件
 - [ ] 🚧 記錄匯入 — 部分完成：已有 CSV 新增，缺更新既有記錄
-- [ ] 📋 兩條權限軸 — 設計見 docs/specs/permission-axes.md
+- [ ] 📋 兩條權限軸（段 a7） — 設計見 docs/specs/permission-axes.md ⛔ 等：a6
 - [ ] 💡 行動版 — 討論中提到，還沒設計（待確認）
 - [-] 多租戶 — 不做：<理由>
 ```
@@ -33,6 +33,17 @@
 - 判斷不了的項目在行尾標「（待確認）」，不猜；回報時列給使用者裁決。
 - 「決定不做」可留在原領域節，也可集中成一節；集中時那一節不寫小計。
 - 「總計：」行與各節「完成 X／共 Y。」由腳本產生，不手算（「共」不含決定不做）。
+
+## 優先順序與阻擋
+
+優先順序只存在 roadmap，清單不另存優先度（兩邊各存一份遲早不同步）。
+
+- **roadmap 位置**：`docs/roadmap.md`，與本清單同目錄，腳本預設讀它。只放開發順序與段表，每段連到它的設計 spec；設計理由留在 spec，spec 不維護段狀態（排程是活文件，帶日期的 spec 是快照）。放別處時清單檔頭寫 `Roadmap：[名稱](相對於清單的路徑)`。沒有 roadmap 的專案，可開工區照清單順序。
+- **roadmap 段表**：markdown 表格，表頭要有「工作段」與「狀態」兩欄（其他欄隨意），一列一段；一格可寫多個段號，用「、」分隔。**表格列序就是開發順序**，跨表依出現先後。狀態以「已上線」「已完成」「完成」開頭的算做完。
+- **段號**：清單項目在功能名後寫 `（段 <段號>）`，只對應一段；跨段的功能拆項或標主要那段。段號在段表內唯一。還沒切段的後期工作（如「HRM」「階段 5」）在 roadmap 加佔位列、狀態「未開始」，項目照樣標段號，才排得進順序；想穿插的小件也要先加一列。
+- **阻擋**：說明末尾寫 `⛔ 等：<目標>`，多個用「、」分隔。目標三種：清單項的功能名、roadmap 段號、`裁決 <代號>`（等使用者裁決）。功能名或段號做完時腳本提示可刪；裁決不會自動解除，裁決後手動刪。
+- **⛔ 只寫硬依賴**：「排在 X 之後」若只是排序偏好，靠段表列序表達，不寫 ⛔；技術上非等不可才寫。
+- 一項只有一部分等前置時拆成兩項；只等某段的一部分時，roadmap 把那段拆成子段（如 p1a、p1c），⛔ 指子段。前置還沒段號就指清單項名。
 
 ## 與 todo 的分界
 
@@ -64,10 +75,10 @@
 
 | 時機 | 動作 |
 |---|---|
-| 設計或規格定案（brainstorming、`lifecycle:spec`） | 設計列的功能逐項加入，標 📋 |
+| 設計或規格定案（brainstorming、`lifecycle:spec`） | 設計列的功能逐項加入，標 📋，有段號就標段號、有前置就標 ⛔ |
 | 討論冒出新點子、使用者沒說不做 | 加入，標 💡 |
 | 開分支或派 worker 開工 | 改 🚧 |
-| 合併且驗收過（`lifecycle:implement` 後段） | 與合併內容同一個 commit 打勾 |
+| 合併且驗收過（`lifecycle:implement` 後段） | 與合併內容同一個 commit 打勾；roadmap 段做完一起改段狀態 |
 | 使用者裁決不做 | 改 `[-]`，附理由 |
 | 回報規劃結果、使用者問進度 | 附清單路徑與腳本印出的各狀態數量 |
 
@@ -76,17 +87,19 @@
 ## 腳本
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑]           # 報表：各節／總計、待確認、未分類
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑]           # 報表：各節／總計、待確認、未分類、阻擋與同步問題
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --write   # 改寫總計行與各節小計
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --check   # 數字過期 exit 1，可放 pre-commit
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --open    # 只列未完成項目（依節），排線用
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --check   # 數字過期、阻擋目標找不到、段號重複、清單與 roadmap 不同步就 exit 1
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「依序等待」「被擋」「未排段」四區
 ```
+
+`--open` 的可開工＝roadmap 第一個未完成段（含之前未勾的）的項目，依序等待＝更後面的段，被擋＝⛔ 目標未完成，未排段＝沒段號或段號不在 roadmap 的項目與所有 💡。沒有 roadmap 時，沒被擋的非 💡 項目都算可開工。roadmap 有並行線時，第二條線靠 ⛔ 表達前置、不會自動進可開工，排線時從依序等待挑。`--roadmap <檔>` 可覆寫預設路徑與檔頭連結。不同步指兩種：清單已勾但段狀態沒做完、段做完但清單未勾。
 
 路徑預設 `docs/feature-checklist.md`。總計行可以有前綴（如「依據 <commit>。」），腳本只改寫「總計：」之後。
 
 ## 排線：找出能並行的，能做的先做
 
-規劃下一段、或使用者問「哪些可以分開做」時，以 `--open` 列出的未完成項目為輸入：
+規劃下一段、或使用者問「哪些可以分開做」「還有什麼可以先做」時，以 `--open` 的輸出為輸入；可開工區是當前段與獨立項，被擋區直接歸「先拍板」或等前置：
 
 1. **分四類**，每項附一句理由（依賴什麼、會跟誰衝突）：
 

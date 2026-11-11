@@ -32,6 +32,39 @@ SAMPLE = """# 示範專案功能清單
 - [x] 登入
 """
 
+ROADMAP = """# Roadmap
+
+### 工作段
+
+| 工作段 | 內容 | 狀態 |
+|---|---|---|
+| t1a | 任務 | 已上線（含補強） |
+| p1 | 公開 repo | 進行中 |
+
+### 簽核
+
+| 工作段 | 內容 | 狀態 |
+|---|---|---|
+| a2c、a2d | 重新比對 | 未開始 |
+| p2 | Demo | 未開始 |
+| p2 | 重複 | 未開始 |
+"""
+
+DEPS = """# 清單
+
+Roadmap：[roadmap](specs/roadmap.md#工作段)
+
+## A
+
+- [x] 甲（段 a2c） — 已勾但 roadmap 未開始
+- [ ] 📋 丙（段 a2c） — 第二順位
+- [ ] 📋 乙（段 p1） — 第一順位
+- [ ] 📋 戊（段 t1a） — roadmap 已上線
+- [ ] 📋 丁 — 說明 ⛔ 等：p2、裁決 C1
+- [ ] 💡 己 — ⛔ 等：不存在
+- [ ] 📋 庚 — ⛔ 等：甲
+"""
+
 
 def load():
     spec = importlib.util.spec_from_file_location("fc", SCRIPT)
@@ -75,16 +108,68 @@ class TestFeatureChecklist(unittest.TestCase):
         self.assertEqual(out.count("總計："), 1)
         self.assertIn("## 決定不做\n\n共 1 項。", out)
 
-    def test_open_lists_unfinished_by_section(self):
+    def test_open_lists_ready_items_with_section(self):
         out = subprocess.run([sys.executable, str(SCRIPT), "-", "--open"], input=SAMPLE,
                              capture_output=True, text=True, check=True).stdout
-        self.assertIn("## 模組 A\n- [ ] 🚧 匯入", out)
-        self.assertIn("- [ ] 📋 匯出", out)
-        self.assertIn("## 模組 B\n- [ ] 💡 通知", out)
-        self.assertIn("- [ ] 沒標狀態的項目", out)
+        ready, unplanned = out.split("## 未排段")  # 沒 roadmap：非 💡 都可開工，💡 歸未排段
+        self.assertTrue(ready.startswith("## 可開工\n\n- [ ] 🚧 匯入"))
+        self.assertIn("- [ ] 📋 匯出 — 見 docs/specs/export.md［模組 A］", ready)
+        self.assertIn("- [ ] 沒標狀態的項目［模組 B］", ready)
+        self.assertIn("- [ ] 💡 通知", unplanned)
         self.assertNotIn("新增", out)
         self.assertNotIn("列印", out)
+        self.assertNotIn("被擋", out)
         self.assertNotIn("完成 ", out)  # 只列項目，不印報表
+
+    def test_roadmap_order_blockers_and_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "specs").mkdir()
+            (d / "specs" / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
+            p = d / "feature-checklist.md"
+            p.write_text(DEPS, encoding="utf-8")
+            run = lambda *a: subprocess.run([sys.executable, str(SCRIPT), str(p), *a], capture_output=True, text=True)
+            out = run("--open").stdout
+            ready, rest = out.split("## 依序等待")
+            queued, rest = rest.split("## 被擋")
+            blocked, unplanned = rest.split("## 未排段")
+            # 第一個未完成段是 p1：t1a（已上線但未勾）與 p1 可開工，a2c 排後面
+            self.assertLess(ready.index("戊"), ready.index("乙"))
+            self.assertIn("丙", queued)
+            self.assertNotIn("丙", ready)
+            self.assertIn("庚", unplanned)  # 等的已完成，但沒段號＝未排段
+            self.assertIn("丁", blocked)
+            self.assertIn("← 等：p2、裁決 C1", blocked)
+            self.assertIn("己", blocked)  # 💡 被擋仍列被擋
+            rep = run()
+            self.assertIn("庚：等「甲」已完成，可刪 ⛔", rep.stdout)
+            self.assertIn("找不到「不存在」", rep.stdout)
+            self.assertIn("甲：清單已勾，roadmap 段 a2c 是「未開始」", rep.stdout)
+            self.assertIn("戊：roadmap 段 t1a 是「已上線（含補強）」，清單未勾", rep.stdout)
+            self.assertNotIn("丙：", rep.stdout)  # a2c 未開始、清單未勾＝一致
+            self.assertIn("roadmap 段號重複：p2", rep.stdout)
+            subprocess.run([sys.executable, str(SCRIPT), str(p), "--write"], check=True, capture_output=True)
+            self.assertEqual(run("--check").returncode, 1)  # 數字對了，但不同步仍失敗
+
+    def test_default_sibling_roadmap(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
+            p = d / "feature-checklist.md"
+            p.write_text("# 清單\n\n## A\n\n- [ ] 📋 乙（段 a2d）\n- [ ] 📋 甲（段 p1）\n", encoding="utf-8")
+            out = subprocess.run([sys.executable, str(SCRIPT), str(p), "--open"],
+                                 capture_output=True, text=True, check=True).stdout
+            # 沒寫連結也讀到同目錄 roadmap.md；a2d 與 a2c 同列，排在 p1 之後
+            self.assertLess(out.index("甲"), out.index("依序等待"))
+            self.assertLess(out.index("依序等待"), out.index("乙"))
+
+    def test_missing_roadmap_link_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "feature-checklist.md"
+            p.write_text("# 清單\n\nRoadmap：[roadmap](nope.md)\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(SCRIPT), str(p)], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("找不到 roadmap", r.stderr)
 
     def test_check_mode_exit_codes(self):
         with tempfile.TemporaryDirectory() as d:
