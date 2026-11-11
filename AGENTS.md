@@ -10,7 +10,7 @@
 - plugin 結構：`plugins/<name>/.claude-plugin/plugin.json`、`skills/<skill>/SKILL.md`、`agents/<agent>.md`（kebab-case）；共用素材放 `references/`、`templates/`，以 `${CLAUDE_PLUGIN_ROOT}/` 引用。plugin 不支援 `rules/`。
 - SKILL.md 300 行以內，實作邏輯放 `references/` 或 `scripts/`。
 - 要讓 pi 載入的 plugin 需有 `package.json`（`pi.skills`）。
-- 專案指示只有本檔（Claude Code、Codex、pi、agy 都會自動載入），不另建 `CLAUDE.md`。
+- 專案指示只寫本檔；`CLAUDE.md` 只放一行 `@AGENTS.md`（有 `CLAUDE.*` 檔時 Claude Code 不自動讀本檔），不放副本。
 - 細則見 `.claude/rules/`（plugin-structure、skill-conventions、version-consistency）。
 
 ## 改動原則
