@@ -8,7 +8,7 @@ import os
 import sys
 
 MSG = ("[toolkit] 本 session 在 herdr 內（HERDR_ENV=1），不必再檢查能否開 pane，也不必向使用者提這件事。"
-       "這只代表「能開」；該不該開仍照派工判準，能用 subagent 就不開 pane。")
+       "這只代表「能開」；該不該開仍照派工判準，長任務照判準表開 pane。")
 
 
 def main():

@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.19.0] - 2026-11-12
+
+- feat(hooks): 新增 `compact-context.py`（SessionStart `compact`）：context 壓縮後注入一次「回覆語言、回合結尾格式、提問方式照使用者 CLAUDE.md 與 rules；摘要與續接提示的語言不代表要換語言」。起因：壓縮後接續無人值守，回報與 AskUserQuestion 連續多輪改用英文，直到使用者說「說中文」才發現；CLAUDE.md 早有「壓縮後也一樣」的文字，已證明擋不住，所以升級成 hook（feedback-review 回饋佇列 agent friction）。
+- fix(hooks): `herdr-env-context.py` 注入句從「能用 subagent 就不開 pane」改為「長任務照判準表開 pane」，與 user 層 `dispatch.md` 同步。起因：這句被拿來推翻判準表的長任務列，一件數小時的實作被派成 subagent，跑 2h10m、context 31 萬，使用者無法 attach。注入字數比原本短。
+
 ## [0.18.2] - 2026-11-10
 
 - tidy-memory Task 5 加「判定結果」：每組重複候選只判成合併／刪除其一／保留兩則，並註明換說法不算重複；Task 6 依此出題。

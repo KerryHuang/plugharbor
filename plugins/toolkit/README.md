@@ -26,6 +26,7 @@ claude plugin install toolkit@plugharbor
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart | `herdr-env-context.py` | 在 herdr 內時注入一行狀態，agent 不必再檢查能否開 pane |
 | SessionStart、UserPromptSubmit | `disabled-skills.py` | 被明確停用的 plugharbor plugin／skill（如 /doctor 關掉的）：開場一行列名稱；使用者訊息命中其觸發詞（`triggers` 欄位或 description 的「」片語）時提示，先問再用；回「不要」只在該專案忽略 |
+| SessionStart `compact` | `compact-context.py` | context 壓縮後提醒沿用使用者指示的語言與格式 |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
 | SessionStart `startup` | `retro-due-reminder.py` | retrospective 待驗指標到期時提議回顧（讀 `.plugharbor/toolkit.yml`，驗過且無新證據不重提） |
 
