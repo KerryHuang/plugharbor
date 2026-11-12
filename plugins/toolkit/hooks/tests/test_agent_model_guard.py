@@ -52,7 +52,7 @@ class AgentModelGuard(unittest.TestCase):
 
 class HooksFailOpen(unittest.TestCase):
     def test_every_python_hook_is_covered(self):
-        self.assertEqual(len(python_hook_commands()), 15)
+        self.assertEqual(len(python_hook_commands()), 16)
 
     def test_commands_survive_powershell_quoting(self):
         # Windows 的 Codex 用 powershell -Command 跑 hook，內層雙引號會被吃掉；

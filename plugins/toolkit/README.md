@@ -21,6 +21,7 @@ claude plugin install toolkit@plugharbor
 | PostToolUseFailure、UserPromptSubmit | `loop-guard.py` | 同一輪同一失敗第 3 次注入「停下重估」提示，之後再犯只提醒使用者；subagent 各自計數，換一則 user 訊息歸零 |
 | Notification、Stop | `notification.sh` | 等你回應／完工時的桌面通知與音效（macOS、Linux、Windows Git Bash） |
 | Stop | `context-size-reminder.py` | context 越過級距時提醒 |
+| Stop | `reply-language-guard.py` | 使用者用中日韓文提問、這回合卻有整段英文回覆時擋下一次，要求用使用者的語言重述 |
 | Stop | `dispatch-stop-guard.py` | 被派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次；herdr pane 另設 `AGENT_DISPATCH_INTERACTIVE=1`，還沒做完可直接再結束一次 |
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |

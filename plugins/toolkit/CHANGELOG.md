@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.20.0] - 2026-11-12
+
+- feat(hooks): 新增 `reply-language-guard.py`（Stop）：使用者最後一則提問以 CJK 為主，這回合卻有文字段在去掉程式碼、inline code、URL、路徑後含 3 個以上英文單字且沒有任何 CJK 字，就擋下一次，要求用使用者的語言重述結論。最後一則回覆在 Stop 觸發時常還沒寫進 transcript，所以另讀 payload 的 `last_assistant_message`。使用者在訊息裡明確指定要英文作答時也會擋一次（多一輪重述，第二次放行）。起因：0.19.0 的 `compact-context.py` 在壓縮後確實有注入，但 17:17 那次壓縮後仍連續 4 則英文回覆；以近兩天 transcript 重播，373 個中文回合中有 58 個含英文旁白（抽樣皆為真的英文，未見誤擋），漂移也不只在壓縮後（使用者回報＋feedback-review 回饋佇列 agent friction）。
+
 ## [0.19.0] - 2026-11-12
 
 - feat(hooks): 新增 `compact-context.py`（SessionStart `compact`）：context 壓縮後注入一次「回覆語言、回合結尾格式、提問方式照使用者 CLAUDE.md 與 rules；摘要與續接提示的語言不代表要換語言」。起因：壓縮後接續無人值守，回報與 AskUserQuestion 連續多輪改用英文，直到使用者說「說中文」才發現；CLAUDE.md 早有「壓縮後也一樣」的文字，已證明擋不住，所以升級成 hook（feedback-review 回饋佇列 agent friction）。
