@@ -1,6 +1,6 @@
 ---
 name: context-hygiene
-description: Use when 對話很長 / context 變長 / context 快滿 / 感覺 Claude 變笨 / 連續修同一錯誤失敗 / 即將切換到無關任務 / 要讀大量檔案探索 / agent 交接（handoff）/ 使用者說「對話太長」「感覺變笨」「context 滿了」「要不要清一下」「clean context」時。
+description: Use when 對話很長 / context 快滿 / 連續修同一錯誤失敗 / 即將切換到無關任務 / 要讀大量檔案探索 / agent 交接（handoff）/ 對話要搬到別的專案目錄 / 使用者說「對話太長」「感覺變笨」「context 滿了」「要不要清一下」「clean context」時。
 ---
 
 # Context 衛生（Context Hygiene）
@@ -121,6 +121,10 @@ flowchart TD
 ### 5. `/btw` — 側邊問題不入 context
 
 官方機制：打 `/btw {問題}` — 答案顯示於可關閉 overlay，**不進入對話歷史**。適合「順便問一下」類問題，避免污染主流程 context。
+
+### 6. 把對話搬到另一個專案目錄
+
+對話開錯目錄、想歸到另一個專案並從那裡 `/resume`：照 [references/move-session.md](references/move-session.md)（`/exit` 後原樣複製對話檔，不改內容；記憶逐條判斷）。
 
 ## 多階段 agent chain 的交接衛生（handoff hygiene）
 

@@ -1,7 +1,7 @@
 {
   "name": "workspace",
   "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、submodule、暫存檔、context 治理、慣例優先、除錯、審查、品質檢查；任何專案都用得到。",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "author": {
     "name": "KerryHuang"
   },

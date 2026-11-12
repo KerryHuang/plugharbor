@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.8.0] - 2026-11-12
+
+- feat(context-hygiene): 操作手冊新增第 6 節「把對話搬到另一個專案目錄」，細節在新檔 `skills/context-hygiene/references/move-session.md`。先分兩種需求：只想從新目錄接著談，`claude --resume <sid>` 就夠了；要出現在新目錄的 `/resume` 清單，就 `/exit` 後原樣複製 `<sid>.jsonl` 和附屬資料夾到新目錄的專案資料夾，不改檔案內容。記憶逐條判斷：只屬於新專案的搬過去，通用的兩邊各留一份。另外列出已知限制：開場設定留在歷史裡，搬家前派出的 worker 可能找不到這段對話。description 加觸發詞「對話要搬到別的專案目錄」，同時刪掉與既有詞重複的「context 變長」「感覺 Claude 變笨」，長度從 177 字元減為 163。
+- 起因：某 session 開在 workspace 目錄，做的卻一直是另一個專案，使用者想把整段對話歸過去。當時的手動腳本保守地改寫了每行的 `cwd`（約 7,000 行）。實測（Claude Code 2.1.322）三點：`--resume <sid>` 在任何目錄都接得回；原樣複製的互動對話會出現在新目錄的 `/resume` 清單，`cwd` 仍指向舊目錄也沒關係；改寫對話紀錄會被 auto mode 當成竄改擋下。只發生過一次，所以先寫成既有 skill 的一節，不另開 skill。本地 e2e 第一輪：description 沒有觸發詞時，agent 讀了 skill 卻沒找到這一節，又提議改 `cwd`，因此補上觸發詞。
+
 ## [1.7.0] - 2026-11-12
 
 - feat(unattended): 新增「自動駕駛」模式，細節在新檔 `skills/unattended/references/autopilot.md`。路線改成每段開工前重讀專案的 `docs/roadmap.md`，取第一個未完成段。使用者在不在場都照跑，只有說「暫停」「停止自動駕駛」才停，一般訊息當插手、處理完就繼續。開場必須有合併授權（`.plugharbor/unattended.md` 的「合併」一節），否則不開。遇到只有佔位的段或被 ⛔ 擋住的段，就記進待決並推播，往後找有設計、又不依賴它的段。每段做完，用同一個 commit 改 roadmap 段狀態和清單勾選。回來報告改成每段累積更新。暫停時做完手上的工作單元才停，說「繼續自動駕駛」照帳本接回。單元流程、帳本、停下條件都沿用無人值守。
