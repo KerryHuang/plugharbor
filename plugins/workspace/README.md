@@ -43,7 +43,7 @@ claude plugin install workspace@plugharbor
 | `convention-first` | 慣例優先：先 grep 既有樣板，不擅自引入新模式 |
 | `agent-orchestration` | 派工判準與多階段 agent chain 交棒 |
 | `dual-tool-mirror` | Claude Code ↔ Codex 設定鏡像 |
-| `unattended` | 無人值守：使用者不在時連續推進工作單元，回來時交報告；專案細節放 `.plugharbor/unattended.md` |
+| `unattended` | 無人值守：使用者不在時連續推進工作單元，回來時交報告；「自動駕駛」照 `docs/roadmap.md` 段序推進到喊暫停；專案細節放 `.plugharbor/unattended.md` |
 
 ### 輕量開發核心
 | Skill | 用途 |

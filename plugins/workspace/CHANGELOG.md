@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.7.0] - 2026-11-12
+
+- feat(unattended): 新增「自動駕駛」模式，細節在新檔 `skills/unattended/references/autopilot.md`。路線改成每段開工前重讀專案的 `docs/roadmap.md`，取第一個未完成段。使用者在不在場都照跑，只有說「暫停」「停止自動駕駛」才停，一般訊息當插手、處理完就繼續。開場必須有合併授權（`.plugharbor/unattended.md` 的「合併」一節），否則不開。遇到只有佔位的段或被 ⛔ 擋住的段，就記進待決並推播，往後找有設計、又不依賴它的段。每段做完，用同一個 commit 改 roadmap 段狀態和清單勾選。回來報告改成每段累積更新。暫停時做完手上的工作單元才停，說「繼續自動駕駛」照帳本接回。單元流程、帳本、停下條件都沿用無人值守。
+- description 加「自動駕駛」「照 roadmap 跑」兩個觸發詞，刪掉「夜間模式」「依你的建議做」「不限晚上」「多個」，長度從 113 字元減為 112。
+- 起因：使用者要求自動駕駛照 roadmap 走。lifecycle 2.4.0 讓 roadmap 段表成為可以機械讀取的開發順序，「下一步做什麼」不必再由人講。設計見 `docs/superpowers/specs/2026-11-12-autopilot-design.md`。
+
 ## [1.6.0] - 2026-11-11
 
 - feat(dual-tool-mirror): 原本的「兩份平行檔：CLAUDE.md 與 AGENTS.md」改寫成「專案指示：內容只寫在 AGENTS.md」。新做法：內容只放 `AGENTS.md`，兩個工具不同的地方並列寫；`CLAUDE.md` 只留一行 `@AGENTS.md`，不放副本。另外補上切換步驟：先 grep 讀取端，看有沒有寫死去讀 `CLAUDE.md` 內文的地方；合併兩份；一起改寫寫著「兩份同步」的 rule 與 README；最後在真實專案驗收。description 同步改寫，比原本短。
