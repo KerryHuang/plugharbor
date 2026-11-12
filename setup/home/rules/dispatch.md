@@ -12,7 +12,7 @@
 - 平行與否看**共用資源**（同一個 worktree、同一批檔案、build／測試產物、瀏覽器、DB 寫入、吃 CPU 的測試）。長工作丟背景前先做或派不衝突的待辦，沒有才等、不輪詢。
 - **該不該拆**：能力、工具、context、驗證迴圈都相同就不拆；「實作＋它的測試」是一件事，失敗後的診斷才另派。
 - **派工 prompt 要自足**：自帶目標、背景、前置產出、交付物、驗收標準，以及已拍板的決定（不要重問）與試過排除的方向（不要重走）；worker 得讀完整對話才做得下去＝沒切乾淨。
-- **herdr worker 最貴**：完整 session，開場 context 每輪重讀；能用 subagent 就不開 pane。
-- 開 pane 前確認在 herdr 內（開場 context 有注明就不查，否則查 `HERDR_ENV`，不報告）；不在就同 session 接著做並說明。
+- **herdr worker 最貴**：完整 session，開場 context 每輪重讀；判準表落在自己做或 subagent 時才省 pane，不拿這句推翻長任務列——預估 15 分鐘以上仍派 subagent，回報要寫偏離理由。
+- 不在 herdr 內就同 session 接著做並說明。
 - **跨 session 訊息照則計費**：每則讓收方整段 context 重送。只在完成或卡住時發，不報進度、不回「收到」。
 - worker 卡住時不替它回答，請使用者 attach 進去。
