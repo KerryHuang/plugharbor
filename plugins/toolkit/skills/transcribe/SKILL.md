@@ -1,6 +1,6 @@
 ---
 name: transcribe
-description: 在本機背景錄音（麥克風，或線上會議時連同系統播放的對方聲音）並可邊錄邊逐段轉錄，或把錄音檔轉成帶時間戳的逐字稿 Markdown：Mac（Apple Silicon）用 mlx-whisper，Windows／其他平台用 faster-whisper，中文輸出經 OpenCC 轉台灣繁體。不上雲端、不分講者。線上會議中還可加入會議 AI 顧問「小小」：有人說「嘿，小小，……」時用語音回答（Mac）。Use when 使用者說「轉逐字稿」「語音轉文字」「錄音轉文字」「開始錄音」「錄線上會議」「transcribe」「開小小」「會議顧問」，或給一個音檔／影片檔要文字內容。
+description: 本機錄音（麥克風，或線上會議含對方聲音）並可邊錄邊轉錄，或把音檔轉成帶時間戳的逐字稿 Markdown（whisper 本機跑、不上雲端）；線上會議可開語音顧問「小小」。Use when 使用者說「轉逐字稿」「錄音轉文字」「開始錄音」「錄線上會議」「開小小」，或給音檔／影片要文字。
 argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 ---
 

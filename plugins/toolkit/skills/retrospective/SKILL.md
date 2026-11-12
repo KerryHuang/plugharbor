@@ -1,6 +1,6 @@
 ---
 name: retrospective
-description: "檢討 agent 工作流程或 plugin 本身的改進機會（流程太慢、上次改的有沒有效、某 skill 要不要調整、評估流程改版或回測某個方向、session 例行回顧），先驗上一輪的待驗指標，再歸併根因、提改動、記進指標帳本；可 --apply 直接套用。Use when 使用者說「回顧流程」「retrospective」「上次改的有沒有效」「流程為什麼這麼慢」。"
+description: "檢討 agent 工作流程或 plugin 的改進機會：先驗上一輪待驗指標，再歸併根因、提改動、記指標帳本；--apply 直接套用。Use when 使用者說「回顧流程」「retrospective」「上次改的有沒有效」「流程為什麼這麼慢」。"
 argument-hint: "[--apply] [skill 名稱]"
 ---
 

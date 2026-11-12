@@ -1,6 +1,6 @@
 ---
 name: agent-dispatch
-description: 把工作交給另一個 agent CLI（claude、codex、agy、pi）：依任務類型與難度查表挑 CLI＋模型＋思考等級，額度用盡自動改派；短問答以唯讀模式一次問完，長任務在 herdr pane、Ghostty 分割或背景 worktree 讓對方做完交回結果檔；需要時挑不同家族的模型審查。Use when 使用者說「丟給 codex 問」「問問 claude／agy 的看法」「要第二意見」「交給 agy／pi 做」「X 這週省著用」，或輸入 /agent-dispatch。
+description: 把工作交給另一個 agent CLI（claude、codex、agy、pi）：查表挑 CLI＋模型＋思考等級，額度用盡自動改派；短問答唯讀一次問完，長任務開 pane 或背景 worktree。Use when「丟給 codex 問」「要第二意見」「交給 agy／pi 做」，或輸入 /agent-dispatch。
 argument-hint: "[對象] <任務>"
 ---
 

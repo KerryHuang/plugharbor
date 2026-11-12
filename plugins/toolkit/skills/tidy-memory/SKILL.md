@@ -1,6 +1,6 @@
 ---
 name: tidy-memory
-description: 整理 auto-memory 目錄——修復結構問題（孤兒檔、斷連結、索引不符）、控制索引體積（200 行／25,000 字元硬上限）、查證並淘汰過時記憶、合併重複記憶；亦可用 --sessions／--session 依建立 session 查詢或限縮範圍。結構與體積問題自動修，過時與重複逐項列證據後由使用者定奪。Use when 使用者說「整理記憶」「記憶太亂」「記憶重複了」「memory 過時」「索引太長」「那次 session 記了什麼」，或輸入 /tidy-memory。
+description: 整理 auto-memory 目錄：修結構問題（孤兒檔、斷連結）、壓索引體積、查證過時與重複記憶（列證據由使用者定奪）。Use when「整理記憶」「記憶太亂」「索引太長」「那次 session 記了什麼」，或輸入 /tidy-memory。
 ---
 
 # 整理 memory 目錄

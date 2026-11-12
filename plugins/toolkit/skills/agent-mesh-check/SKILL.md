@@ -1,6 +1,6 @@
 ---
 name: agent-mesh-check
-description: 驗證本機 agent CLI（claude、codex、agy、pi）都裝好、登入有效、能互相呼叫：先查哪些有裝，有裝才驗自己回話與「入口 ↔ 其他」互叫，--full 驗全部兩兩組合。Use when 使用者說「驗證 agent CLI」「四個 CLI 都能用嗎」「CLI 互相呼叫測試」「裝新機器／升級 CLI 後檢查」，或輸入 /agent-mesh-check。
+description: 驗證本機 agent CLI（claude、codex、agy、pi）都裝好、登入有效、能互相呼叫；--full 驗全部兩兩組合。Use when 使用者說「驗證 agent CLI」「CLI 互相呼叫測試」「裝新機器／升級 CLI 後檢查」，或輸入 /agent-mesh-check。
 argument-hint: "[--full]"
 ---
 

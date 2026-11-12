@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.21.2] - 2026-11-13
+
+- transcribe、agent-dispatch、tidy-memory、retrospective、agent-mesh-check：description 壓到 160 字內（原 211～353 字），只留做什麼、何時用、觸發詞；細節在 SKILL.md 本文。起因：context-diet 量測五支合計每 session 約 1,070 tokens。
+- user 層 rule `dispatch.md`（setup 範本）：模型等級枚舉縮成一句並指向 agent-dispatch 的 `routing.json`（權威本來就在那裡）。
+
 ## [0.21.1] - 2026-11-13
 
 - fix(agent-dispatch): herdr 長任務的 cwd 信任檢查改為沿上層目錄找 `hasTrustDialogAccepted: true`，與 Claude Code 的信任繼承一致；原本只比對 cwd 本身是否出現在 `~/.claude.json`，沒開過的子目錄被誤判 missing，key 存在但未信任的反而判 ok。起因：開 worker 前誤判 yunguang-home 未信任（實際由上層 `/` 繼承），叫使用者先手動開一次 Claude Code，使用者已信任卻被多問一輪。
