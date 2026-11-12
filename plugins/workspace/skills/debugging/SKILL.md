@@ -1,7 +1,7 @@
 ---
 name: debugging
-description: 照專案自帶指令除錯，並把規格書轉成測試案例（補 superpowers 的除錯與 TDD）。Use when 任務標記 [TDD]、--tdd、要由規格轉測試案例、沒裝 superpowers 要精簡除錯退路.
-triggers: ["規格轉測試案例", "由規格書寫測試"]
+description: 照專案自帶指令除錯、規格轉測試、重構沒測試的舊碼（補 superpowers）。Use when 任務標記 [TDD]、--tdd、規格轉測試案例、重構沒測試的舊碼、沒裝 superpowers 要除錯退路.
+triggers: ["規格轉測試案例", "由規格書寫測試", "重構沒有測試的程式碼", "特徵測試"]
 ---
 
 # 除錯與測試先行（環境細節）
@@ -12,6 +12,7 @@ triggers: ["規格轉測試案例", "由規格書寫測試"]
 
 - 測試與建置指令一律用**專案自帶**的（README、CI、`package.json`、`Makefile` 找得到的那支）；迭代期帶篩選條件只跑相關測試，全 suite 留到最後回歸。有裝 `backend` 且是 .NET 專案時，指令與範本見其 `unit-testing` 的 .NET 附錄（可選）。
 - 規格轉測試案例、`[TDD]`／`--tdd` 標記的任務、輸出格式：見 [references/tdd-cycle.md](references/tdd-cycle.md)。
+- 要重構但動到的範圍沒有測試（舊程式碼）：先用特徵測試或黃金樣本鎖住行為再動，見 [references/legacy-refactor.md](references/legacy-refactor.md)。
 
 ## 退路迴圈（沒裝 superpowers）
 

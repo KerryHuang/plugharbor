@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.9.0] - 2026-11-12
+
+- feat(debugging): 新增 `skills/debugging/references/legacy-refactor.md`，處理「要重構但沒有測試」的舊程式碼：先用特徵測試或黃金樣本鎖住現有行為（疑似 bug 照錄、另案修，故意改壞驗證測試會抓），大型改動用 Mikado 排前置順序、整模組替換走絞殺榕，小步執行時改名與移動優先用 IDE／LSP 自動重構，刪「沒有呼叫端」的程式碼前查反射、DI、序列化與公開 API，複雜度與 linter 警告數只用來找下手處、不當目標。SKILL.md 與 `tdd-cycle.md` 的 Refactor 階段各加一行指過去。description 加「重構沒測試的舊碼」，同時把「並把規格書轉成測試案例」縮成「規格轉測試」、拿掉「的除錯與 TDD」「要精簡」，長度從 105 字元減為 104；`triggers` 加兩個詞。
+- 起因：沒有事故。使用者看了一份流傳的「用 AI 重構程式碼 100 招」速查圖後，比對發現既有的 Red-Green-Refactor 都假設已有測試，沒有涵蓋無測試舊碼；使用者裁決不等事故、先補上。速查圖裡丟給 AI 會出事的指令（一次修全部 linter 警告、依複雜度數字硬拆、靜態搜尋找不到呼叫端就刪），反過來寫成本檔的禁止事項。
+
 ## [1.8.0] - 2026-11-12
 
 - feat(context-hygiene): 操作手冊新增第 6 節「把對話搬到另一個專案目錄」，細節在新檔 `skills/context-hygiene/references/move-session.md`。先分兩種需求：只想從新目錄接著談，`claude --resume <sid>` 就夠了；要出現在新目錄的 `/resume` 清單，就 `/exit` 後原樣複製 `<sid>.jsonl` 和附屬資料夾到新目錄的專案資料夾，不改檔案內容。記憶逐條判斷：只屬於新專案的搬過去，通用的兩邊各留一份。另外列出已知限制：開場設定留在歷史裡，搬家前派出的 worker 可能找不到這段對話。description 加觸發詞「對話要搬到別的專案目錄」，同時刪掉與既有詞重複的「context 變長」「感覺 Claude 變笨」，長度從 177 字元減為 163。

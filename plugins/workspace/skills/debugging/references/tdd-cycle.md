@@ -41,6 +41,7 @@ Red (寫失敗測試) → Green (最小實作) → Refactor (重構) → 重複
 ## Phase 3：Refactor — 重構
 
 不改變外部行為地整理程式碼，執行驗證確認仍是綠燈。
+要重構的範圍不在本輪測試覆蓋內時，先照 [legacy-refactor.md](legacy-refactor.md) 鎖住行為。
 
 ```
 [REFACTOR] 重構完成：{重構描述}
