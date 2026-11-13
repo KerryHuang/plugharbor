@@ -56,6 +56,12 @@ def _already_copied(src, dest):
         return False
 
 
+def _inside(root, path):
+    """path 解開 symlink 後是否仍在 root（解開後）之內。"""
+    r, p = os.path.realpath(root), os.path.realpath(path)
+    return p == r or p.startswith(r.rstrip(os.sep) + os.sep)
+
+
 def mirror(project_root):
     root = Path(project_root)
     skills = root / ".claude" / "skills"
@@ -68,6 +74,9 @@ def mirror(project_root):
         name = src.name
         dest = root / ".agents" / "skills" / name
         target = os.path.join("..", "..", ".claude", "skills", name)
+        if not _inside(root, dest.parent):  # .agents／.agents/skills 是指向專案外的 symlink
+            out["skipped"].append(name)
+            continue
         if dest.is_symlink():
             if os.readlink(dest) != target:
                 out["skipped"].append(name)
@@ -92,36 +101,41 @@ def mirror(project_root):
 
 
 def _exclude_file(root):
+    """回傳 (info/exclude 路徑, root 相對 repo 頂層的前綴如 "sub/"；頂層本身為 "")。"""
     git = root / ".git"
     if git.is_dir():
-        return git / "info" / "exclude"
-    if git.is_file():
-        try:
-            r = subprocess.run(["git", "rev-parse", "--git-path", "info/exclude"],
-                               cwd=root, capture_output=True, text=True, encoding="utf-8")
-        except OSError as e:
-            raise NotGitRepo(f"無法執行 git：{e}")
-        if r.returncode == 0 and r.stdout.strip():
-            return root / r.stdout.strip()
+        return git / "info" / "exclude", ""
+    try:
+        r = subprocess.run(["git", "rev-parse", "--git-path", "info/exclude", "--show-prefix"],
+                           cwd=root, capture_output=True, text=True, encoding="utf-8")
+    except OSError as e:
+        raise NotGitRepo(f"無法執行 git：{e}")
+    lines = r.stdout.split("\n")
+    if r.returncode == 0 and lines[0].strip():
+        return root / lines[0].strip(), (lines[1].strip() if len(lines) > 1 else "")
     raise NotGitRepo(f"{root} 不是 git repo（沒有可用的 .git）")
 
 
-def _anchor(p):
+def _norm(p):
+    """去掉 ./ 開頭、/ 開頭與結尾的 /（symlink 對 git 是檔案，`/x/` 比對不到；`/x` 檔案目錄皆可）。"""
     p = p.strip().replace("\\", "/")
-    return p if p.startswith("/") else "/" + p
+    while p.startswith("./"):
+        p = p[2:]
+    return p.strip("/")
 
 
 def exclude(project_root, paths):
-    """把路徑（錨定在專案根）加進 info/exclude，冪等；回傳這次新增的行。"""
-    f = _exclude_file(Path(project_root))
+    """把路徑（相對專案根）以錨定 repo 頂層的形式加進 info/exclude，冪等；回傳這次新增的行。"""
+    f, prefix = _exclude_file(Path(project_root))
     text = f.read_text(encoding="utf-8") if f.is_file() else ""
-    # 既有的無錨定行（如 .pi/settings.json）已涵蓋專案根的同一路徑，視為已存在
-    have = {_anchor(s) for s in (line.strip() for line in text.splitlines())
+    # 既有行（含無錨定、結尾 /）與頂層路徑等價視為已存在
+    have = {"/" + _norm(s) for s in (line.strip() for line in text.splitlines())
             if s and not s.startswith(("#", "!"))}
     added = []
     for p in paths:
-        line = _anchor(p)
-        if line != "/" and line not in have:
+        core = _norm(p)
+        line = "/" + prefix + core
+        if core and line not in have:
             have.add(line)
             added.append(line)
     if added:
@@ -133,6 +147,8 @@ def exclude(project_root, paths):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
     ap.add_argument("--exclude", nargs="*", default=None, metavar="PATH")

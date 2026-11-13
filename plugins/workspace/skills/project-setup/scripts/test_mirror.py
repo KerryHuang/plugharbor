@@ -194,5 +194,89 @@ class TestExclude(MirrorBase):
         self.assertIn("/a\n", (gitdir / "info" / "exclude").read_text(encoding="utf-8"))
 
 
+class TestExcludeSubdir(MirrorBase):
+    def setUp(self):
+        super().setUp()
+        git("init", "-q", str(self.root))
+        self.sub = self.root / "sub"
+        self.sub.mkdir()
+
+    def test_subdir_lines_anchored_to_toplevel(self):
+        added = mirror.exclude(self.sub, [".agents/skills/x", "AGENTS.md"])
+        self.assertEqual(added, ["/sub/.agents/skills/x", "/sub/AGENTS.md"])
+        text = (self.root / ".git" / "info" / "exclude").read_text(encoding="utf-8")
+        self.assertIn("/sub/AGENTS.md\n", text)
+        self.assertEqual(mirror.exclude(self.sub, ["AGENTS.md"]), [])
+
+    def test_subdir_really_ignored(self):
+        (self.sub / "AGENTS.md").write_text("x", encoding="utf-8")
+        mirror.exclude(self.sub, ["AGENTS.md"])
+        out = subprocess.run(["git", "status", "--short"], cwd=self.root, env=GIT_ENV,
+                             capture_output=True, text=True).stdout
+        self.assertEqual(out.strip(), "")
+
+    def test_subdir_not_confused_by_toplevel_line(self):
+        f = self.root / ".git" / "info" / "exclude"
+        f.write_text("/AGENTS.md\n", encoding="utf-8")
+        self.assertEqual(mirror.exclude(self.sub, ["AGENTS.md"]), ["/sub/AGENTS.md"])
+
+
+class TestAnchorNormalize(MirrorBase):
+    def setUp(self):
+        super().setUp()
+        git("init", "-q", str(self.root))
+        self.file = self.root / ".git" / "info" / "exclude"
+
+    def test_leading_dot_slash_and_trailing_slash(self):
+        self.assertEqual(mirror.exclude(self.root, ["./x", "y/"]), ["/x", "/y"])
+
+    def test_existing_trailing_slash_line_counts_as_present(self):
+        self.file.write_text(".agents/plugharbor/\n", encoding="utf-8")
+        self.assertEqual(mirror.exclude(self.root, [".agents/plugharbor"]), [])
+        self.assertEqual(mirror.exclude(self.root, ["./.agents/plugharbor/"]), [])
+
+    def test_dot_slash_equals_plain_in_one_call(self):
+        self.assertEqual(mirror.exclude(self.root, ["./a", "a", "a/"]), ["/a"])
+
+    def test_symlink_with_trailing_slash_really_ignored(self):
+        self.skill("s")
+        mirror.mirror(self.root)
+        mirror.exclude(self.root, [".agents/skills/s/", ".claude/skills/s/"])
+        out = subprocess.run(["git", "status", "--short"], cwd=self.root, env=GIT_ENV,
+                             capture_output=True, text=True).stdout
+        self.assertEqual(out.strip(), "")
+
+
+class TestOutsideProject(MirrorBase):
+    def test_symlinked_agents_dir_outside_is_skipped(self):
+        self.skill("a")
+        outside = self.root.parent / "outside"
+        outside.mkdir()
+        os.symlink(str(outside), str(self.root / ".agents"))
+        r = mirror.mirror(self.root)
+        self.assertEqual(r, {"linked": [], "copied": [], "skipped": ["a"]})
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_symlinked_agents_skills_outside_is_skipped(self):
+        self.skill("a")
+        outside = self.root.parent / "outside"
+        outside.mkdir()
+        (self.root / ".agents").mkdir()
+        os.symlink(str(outside), str(self.root / ".agents" / "skills"))
+        self.assertEqual(mirror.mirror(self.root)["skipped"], ["a"])
+        self.assertEqual(list(outside.iterdir()), [])
+
+
+class TestCliEncoding(MirrorBase):
+    def test_cli_utf8_stdout_even_if_locale_ascii(self):
+        self.skill("技能")
+        env = dict(os.environ, LC_ALL="C", LANG="C", PYTHONUTF8="0", PYTHONCOERCECLOCALE="0")
+        env.pop("PYTHONIOENCODING", None)
+        p = subprocess.run([sys.executable, str(Path(__file__).parent / "mirror.py"), str(self.root)],
+                           capture_output=True, env=env)
+        self.assertEqual(p.returncode, 0, p.stderr.decode("utf-8", "replace"))
+        self.assertIn("技能", p.stdout.decode("utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
