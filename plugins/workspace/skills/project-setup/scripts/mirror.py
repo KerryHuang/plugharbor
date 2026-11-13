@@ -115,7 +115,9 @@ def exclude(project_root, paths):
     """把路徑（錨定在專案根）加進 info/exclude，冪等；回傳這次新增的行。"""
     f = _exclude_file(Path(project_root))
     text = f.read_text(encoding="utf-8") if f.is_file() else ""
-    have = {line.strip() for line in text.splitlines()}
+    # 既有的無錨定行（如 .pi/settings.json）已涵蓋專案根的同一路徑，視為已存在
+    have = {_anchor(s) for s in (line.strip() for line in text.splitlines())
+            if s and not s.startswith(("#", "!"))}
     added = []
     for p in paths:
         line = _anchor(p)

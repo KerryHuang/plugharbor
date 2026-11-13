@@ -163,6 +163,11 @@ class TestExclude(MirrorBase):
         lines = self.file.read_text(encoding="utf-8").splitlines()
         self.assertEqual(lines.count("/.agents/skills/a"), 1)
 
+    def test_unanchored_existing_line_counts_as_present(self):
+        self.file.write_text(".pi/settings.json\n", encoding="utf-8")
+        self.assertEqual(mirror.exclude(self.root, [".pi/settings.json"]), [])
+        self.assertEqual(self.file.read_text(encoding="utf-8"), ".pi/settings.json\n")
+
     def test_preserves_existing_without_trailing_newline(self):
         self.file.write_text("# keep\n*.log", encoding="utf-8")
         mirror.exclude(self.root, ["x"])
