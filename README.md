@@ -62,7 +62,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | 外掛 | skills | agents |
 |------|--------|--------|
 | lifecycle | `consolidate-docs` `demo-video` `dev-feedback` `explore` `implement` `interview-prep` `meeting-minutes` `operation-manual` `plugin-healthcheck` `prototype-html` `qa-verify` `release` `spec` `spec-chain` `spec-check` `survey-existing-system` `ticket-create` `ticket-ops` `ticket-reply` `ticket-report` `triage` `write-doc` | `architect` `debugger` `developer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `reviewer` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` `tester` |
-| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` | — |
+| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` `project-setup` | — |
 | backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
 | frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
 | database | `schema-conventions` `migration` `orm-sync` `schema-docs` | — |
