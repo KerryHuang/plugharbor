@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.6.0] - 2026-11-13
+
+- feat(plugin-harvest): 搜尋來源加入本機 blog repo 每日技術情報（`data/tech-snapshots/` 近 7 天的 `skills.picks` 新進榜／竄升與 `discussed.items` HN 熱門貼文），ai-radar 週報 `--lean` 也間接用到；檔案或欄位不存在就跳過。起因：blog 的雲端 routine 每天產這些資料，plugharbor 只讀 `official`，skill 排行與 HN 討論都沒用到（使用者經 blog session 派工）。不接進每日版（已停用）。
+
 ## [0.5.1] - 2026-11-09
 
 - fix(ai-radar): `install-daily.sh` 安裝完成訊息的變數緊接全形括號，`set -u` 下報 unbound variable、腳本以失敗結束（安裝本身已完成）；變數改用 `${…}`。
