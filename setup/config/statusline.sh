@@ -17,6 +17,8 @@ get_section_number() {
 }
 
 MODEL=$(get_json_string "display_name")
+EFFORT=$(echo "$input" | grep -o '"effort"[[:space:]]*:[[:space:]]*{[^}]*}' | head -1 \
+  | grep -o '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/')
 CONTEXT=$(get_json_number "used_percentage")
 CTX_INT=${CONTEXT%.*}
 [ -z "$CTX_INT" ] && CTX_INT=0
@@ -110,7 +112,9 @@ if [ -n "$REPO_NAME" ] || [ -n "$GIT_BRANCH" ]; then
   [ -n "$GIT_BRANCH" ] && printf '%b/%b%b🌿 %s%b' "$C_DIM" "$C_RESET" "$C_BRANCH_USE" "$GIT_BRANCH" "$C_RESET"
   printf '%b · %b' "$C_DIM" "$C_RESET"
 fi
-printf '%b🤖 %s%b\n' "$C_MODEL" "$MODEL" "$C_RESET"
+printf '%b🤖 %s%b' "$C_MODEL" "$MODEL" "$C_RESET"
+[ -n "$EFFORT" ] && printf ' %b%s%b' "$C_YELLOW" "$EFFORT" "$C_RESET"
+printf '\n'
 
 # === 第 2 行：context · session · week ===
 if [ "$CTX_K" -ge 250 ]; then C_CTX="$C_RED"
