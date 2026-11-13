@@ -23,11 +23,6 @@
       "Bash(shutdown *)"
     ],
     "ask": [
-      "Bash(rm -rf *)",
-      "Bash(rm -fr *)",
-      "Bash(rm -r *)",
-      "Bash(rm -f -r *)",
-      "Bash(rm -r -f *)",
       "Bash(dotnet ef database drop *)",
       "Bash(dotnet ef migrations remove *)"
     ],

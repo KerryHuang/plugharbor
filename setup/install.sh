@@ -238,6 +238,13 @@ def merge(template, current):
             current[k] = current[k] + [x for x in val if x not in current[k]]
     return current
 
+# 範本拿掉的權限規則：聯集合併不會刪，這裡明列退役（2026-11-13：rm 的 ask 讓 auto mode 無人值守卡在確認，改交給 auto mode 判斷）
+RETIRED = {"ask": {"Bash(rm -rf *)", "Bash(rm -fr *)", "Bash(rm -r *)", "Bash(rm -f -r *)", "Bash(rm -r -f *)"}}
+for k, gone in RETIRED.items():
+    lst = cur.get("permissions", {}).get(k)
+    if isinstance(lst, list):
+        cur["permissions"][k] = [x for x in lst if x not in gone]
+
 if "statusLine" in tpl and ("statusLine" not in cur or force):
     cur["statusLine"] = tpl["statusLine"]
 for event, groups in tpl.get(TEMPLATE_HOOKS, {}).items():

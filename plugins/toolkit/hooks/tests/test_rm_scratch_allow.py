@@ -110,6 +110,25 @@ class RmScratchAllow(unittest.TestCase):
             with self.subTest(cmd=cmd):
                 self.assertIsNone(self.run_hook(cmd))
 
+    def test_literal_variable_allows(self):
+        s = self.scratch
+        for cmd in (f"S={s}; rm -rf $S/e2e", f'S="{s}" && rm -rf "${{S}}/e2e" && ls $S',
+                    f"T={self.repo}/.tmp\nrm -rf $T/20261113-x"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.run_hook(cmd), "allow")
+
+    def test_variable_not_literal_or_unsafe(self):
+        s = self.scratch
+        for cmd in (f"rm -rf $S/e2e; S={s}",              # 用在賦值之前＝環境變數
+                    f"S={s}; S=/etc; rm -rf $S",           # 重複賦值
+                    f"S=$HOME/x; rm -rf $S",               # 值不是字面
+                    f"S={s}; rm -rf $S/e2e $HOME",         # 其他變數
+                    f"S={s} rm -rf $S/e2e",                # 前置環境變數，不是賦值
+                    f"S={s}; rm -rf $SX/e2e",              # 名稱只是前綴
+                    "S=/etc; rm -rf $S"):
+            with self.subTest(cmd=cmd):
+                self.assertIsNone(self.run_hook(cmd))
+
     def test_no_target(self):
         self.assertIsNone(self.run_hook("rm -rf"))
 

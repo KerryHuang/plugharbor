@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """PermissionRequest hook（Bash）：rm 的目標全在暫存區就自動核准，免得無人值守卡在確認畫面。
 
-起因：user 層 settings 的 ask 規則（rm -rf * 等）在 auto mode 也一定跳確認，PreToolUse 回 allow 蓋不過
-ask 規則；PermissionRequest 在確認框將出現時觸發，回 allow 可放行（2026-11-13 以 claude -p 實測）。
+起因：rm 的確認框（ask 規則或非 auto mode）讓無人值守卡住；PreToolUse 回 allow 蓋不過 ask 規則，
+PermissionRequest 在確認框將出現時觸發，回 allow 可放行（2026-11-13 以 claude -p 實測）。
 暫存區：Claude 的 session scratchpad（<tmp>/claude-<數字>/<專案>/<session>/ 以下）、路徑中名為 .tmp 或
 .superpowers 的目錄（含本身）以下。
 只在整條指令都是 rm 與唯讀指令（echo、cd、ls、grep、head、tail、cat、wc、不帶 -i 的 sed、
 git status／log／diff／rev-parse／show／branch --show-current），且沒有 $、反引號、轉向、萬用字元時判斷；
+同一條指令裡先以純字面值賦值的變數（S=/路徑; rm -rf $S/x）先代回再判斷，重複賦值不放行；
 目標先解開 .. 與上層 symlink，帶尾斜線的 symlink 不放行。其餘不輸出＝照常跳確認。fail-open。
 """
 import glob
@@ -21,6 +22,8 @@ HARMLESS = {"echo", "cd", "ls", "pwd", "true", "grep", "head", "tail", "cat", "w
 GIT_READONLY = {"status", "log", "diff", "rev-parse", "show"}
 TEMP_DIRS = {".tmp", ".superpowers"}
 UNSAFE = re.compile(r"[$`<>*?\[\]{}~\\]")
+ASSIGN = re.compile(r"""(?:^|(?<=[;&|\n]))[ \t]*([A-Za-z_]\w*)=(?:"([^"$`\\\s]*)"|'([^'\s]*)'|([^\s;&|$`"'<>*?\[\]{}~\\]+))(?=[ \t]*(?:[;&|\n]|$))""")
+VAR_ASSIGN = re.compile(r"[A-Za-z_]\w*=.*")
 
 
 def scratch_roots():
@@ -61,25 +64,40 @@ def segments(command):
                 yield seg
             seg = []
         elif "\n" in tok:
-            for piece in tok.split("\n"):
+            for i, piece in enumerate(tok.split("\n")):
+                if i and seg:
+                    yield seg
+                    seg = []
                 if piece:
                     seg.append(piece)
-                if seg:
-                    yield seg
-                seg = []
         else:
             seg.append(tok)
     if seg:
         yield seg
 
 
+def expand_literals(command):
+    """把先賦值、值為純字面的變數代回其後的 $X／${X}；同名重複賦值回 None。"""
+    found = [(m.group(1), next(g for g in m.groups()[1:] if g is not None), m.end()) for m in ASSIGN.finditer(command)]
+    names = [n for n, _, _ in found]
+    if len(names) != len(set(names)):
+        return None
+    for name, value, end in reversed(found):
+        pat = re.compile(r"\$\{" + name + r"\}|\$" + name + r"(?!\w)")
+        command = command[:end] + pat.sub(lambda _: value, command[end:])
+    return command
+
+
 def decide(command, cwd):
-    if UNSAFE.search(command):
+    command = expand_literals(command)
+    if command is None or UNSAFE.search(command):
         return False
     roots = scratch_roots()
     saw_rm = False
     for seg in segments(command):
         name, args = seg[0], seg[1:]
+        if not args and VAR_ASSIGN.fullmatch(name):
+            continue
         if name == "cd":
             if len(args) != 1:
                 return False

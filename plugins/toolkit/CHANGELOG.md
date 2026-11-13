@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.21.3] - 2026-11-13
+
+- fix(hooks): `rm-scratch-allow.py` 先把同一條指令裡以純字面值賦值的變數代回（`S=/路徑; rm -rf $S/x`），重複賦值、在賦值前使用、前置環境變數寫法照舊不放行；多行指令換行後的 rm 原本被切成沒有目標的片段（只會多跳確認），一併修正。起因：使用者回報無人值守仍卡在 rm 確認（「A variable in this command can't be checked」）；重播 1270 條歷史 rm 指令，這兩項只多放行 2 條，其餘多是帶轉向、`$(…)`、迴圈變數的長指令，所以同時在 setup 範本拿掉 rm 的 ask 規則、交給 auto mode 判斷（deny 規則保留）。
+
 ## [0.21.2] - 2026-11-13
 
 - transcribe、agent-dispatch、tidy-memory、retrospective、agent-mesh-check：description 壓到 160 字內（原 211～353 字），只留做什麼、何時用、觸發詞；細節在 SKILL.md 本文。起因：context-diet 量測五支合計每 session 約 1,070 tokens。

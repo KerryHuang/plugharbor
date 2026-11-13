@@ -23,7 +23,7 @@ echo "舊版" > "$H/.claude/agents/skill-reviewer.md"
 mkdir -p "$H/.claude/skills/my-own"; echo x > "$H/.claude/skills/my-own/SKILL.md"
 old_settings() {  # $1=settings.json 路徑：含舊 claude-home hook，也含名字相近但不該動的
   cat > "$1" <<'JSON'
-{"model":"my-model","permissions":{"deny":["Custom(x)"]},
+{"model":"my-model","permissions":{"deny":["Custom(x)"],"ask":["Bash(rm -rf *)","Bash(rm -r -f *)","Bash(my-ask *)"]},
  "hooks":{"PreToolUse":[
    {"matcher":"Bash","hooks":[{"type":"command","command":"sh -c 'exec python3 \"$HOME/.claude/hooks/guard.py\"'"}]},
    {"matcher":"Agent","hooks":[{"type":"command","command":"python3 $HOME/.claude/hooks/agent-model-guard.py"},{"type":"command","command":"my-agent-hook.sh"}]},
@@ -68,6 +68,8 @@ grep -q 'my-agent-hook.sh' "$C/settings.json" || fail "同組裡本機自加的 
 grep -q '/opt/my/stop'     "$C/settings.json" || fail "本機自加的 Stop hook 被移除"
 grep -q '"my-model"'       "$C/settings.json" || fail "settings 合併弄丟既有值"
 grep -q 'Custom(x)'        "$C/settings.json" || fail "settings 合併弄丟既有清單項"
+if grep -qF 'Bash(rm -rf *)' "$C/settings.json" || grep -qF 'Bash(rm -r -f *)' "$C/settings.json"; then fail "已退役的 rm ask 規則未移除"; fi
+grep -qF 'Bash(my-ask *)'  "$C/settings.json" || fail "本機自加的 ask 規則被移除"
 grep -q 'bash ~/.claude/statusline.sh' "$C/settings.json" || fail "statusLine 未補上"
 grep -q 'bash ~/.claude/subagent-statusline.sh' "$C/settings.json" || fail "subagentStatusLine 未補上"
 [ "$(grep -o 'herdr-parent-tag.py' "$C/settings.json" | wc -l | tr -d ' ')" = 2 ] || fail "herdr-parent-tag 應有 Pre／Post 各一筆"
