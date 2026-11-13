@@ -11,7 +11,7 @@ line = next(l for l in rule.splitlines() if "派工帶模型" in l)
 pos = -1
 for tier in ("top", "standard", "cheap"):
     c = next(x for x in routing["tiers"][tier] if x["cli"] == "claude")
-    want = f"`{c['model']}`／`{c['effort']}`"
+    want = f"{c['model']}-{c['effort']}"
     i = line.find(want)
     assert i > pos, f"dispatch.md 缺少或順序不對：{tier} 應為 {want}"
     pos = i
