@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -223,6 +224,65 @@ class VendorTest(unittest.TestCase):
         self.assertEqual(r, {"status": "skipped", "reason": "exists"})
         self.assertEqual((dest / "keep.txt").read_text(encoding="utf-8"), "old")
         self.assertFalse((dest / "SKILL.md").exists())
+
+    def test_not_a_skill_dir_pending(self):
+        empty = Path(self.tmp.name) / "empty"
+        empty.mkdir()
+        (empty / "SKILL.md").mkdir()  # 目錄不算 SKILL.md 檔
+        nested = self.repo / "skills"  # 沒有 SKILL.md 的上層目錄
+        for d in (empty, nested, Path("."), Path(".."), self.skill / "references" / ".."):
+            with self.subTest(str(d)):
+                r = vendor.vendor(d, self.proj, SRC)
+                self.assertEqual(r, {"status": "pending", "reasons": ["not a skill dir"]})
+        self.assertFalse((self.proj / ".claude").exists())
+
+    def test_symlinked_claude_dir_outside_pending(self):
+        outside = Path(self.tmp.name) / "outside"
+        outside.mkdir()
+        os.symlink(outside, self.proj / ".claude")
+        r = self.run_vendor()
+        self.assertEqual(r, {"status": "pending", "reasons": ["destination outside project"]})
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_symlinked_claude_skills_outside_pending(self):
+        outside = Path(self.tmp.name) / "outside"
+        outside.mkdir()
+        (self.proj / ".claude").mkdir()
+        os.symlink(outside, self.proj / ".claude" / "skills")
+        self.assertEqual(self.run_vendor()["reasons"], ["destination outside project"])
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_more_script_and_binary_extensions_pending(self):
+        for ext in (".exe", ".dll", ".so", ".dylib", ".cjs", ".jar", ".php", ".go", ".rs", ".class", ".wasm"):
+            with self.subTest(ext):
+                p = self.skill / "references" / f"f{ext}"
+                w(p, "x")
+                r = self.run_vendor()
+                self.assertEqual(r["status"], "pending")
+                self.assertTrue(any("executable" in s for s in r["reasons"]))
+                p.unlink()
+
+    def test_binary_by_nul_pending_but_media_ok(self):
+        p = self.skill / "references" / "blob.dat"
+        p.write_bytes(b"ab\0cd")
+        r = self.run_vendor()
+        self.assertEqual(r["status"], "pending")
+        self.assertTrue(any("binary" in s for s in r["reasons"]))
+        p.unlink()
+        for ext in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".pdf", ".woff", ".woff2", ".ico"):
+            (self.skill / "references" / f"m{ext}").write_bytes(b"\x89\0\0data")
+        shutil.rmtree(self.proj / ".claude", ignore_errors=True)
+        self.assertEqual(self.run_vendor()["status"], "installed")
+
+    def test_cli_utf8_stdout_even_if_locale_ascii(self):
+        cjk = self.repo / "skills" / "技能"
+        shutil.copytree(self.skill, cjk)
+        env = dict(os.environ, LC_ALL="C", LANG="C", PYTHONUTF8="0", PYTHONCOERCECLOCALE="0")
+        env.pop("PYTHONIOENCODING", None)
+        p = subprocess.run([sys.executable, str(Path(__file__).parent / "vendor.py"), str(cjk), str(self.proj),
+                            "--repo", "r", "--commit", "c", "--path", "p"], capture_output=True, env=env)
+        self.assertEqual(p.returncode, 0, p.stderr.decode("utf-8", "replace"))
+        self.assertIn("技能", p.stdout.decode("utf-8"))
 
 
 if __name__ == "__main__":

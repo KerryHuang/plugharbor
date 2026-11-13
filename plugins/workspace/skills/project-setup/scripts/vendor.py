@@ -27,7 +27,10 @@ REJECT = (
     "gnu general public license", "gnu lesser", "affero", "commons clause",
     "advertising materials",
 )
-SCRIPT_EXTS = {".sh", ".bash", ".zsh", ".py", ".js", ".mjs", ".ts", ".rb", ".pl", ".ps1", ".bat", ".cmd"}
+SCRIPT_EXTS = {".sh", ".bash", ".zsh", ".py", ".js", ".mjs", ".ts", ".rb", ".pl", ".ps1", ".bat", ".cmd",
+               ".exe", ".dll", ".so", ".dylib", ".cjs", ".jar", ".php", ".go", ".rs", ".class", ".wasm"}
+# 含 NUL 的二進位檔一律待確認，常見媒體與字型除外
+MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".pdf", ".woff", ".woff2", ".ico"}
 SCRIPT_DIRS = {"scripts", "bin"}
 MAX_UP = 6
 # 禁止非商用條款；僅放行 Unlicense 的 "commercial or non-commercial" 用語
@@ -95,6 +98,8 @@ def pending_reasons(skill_dir, license_msg):
                 reasons.append(f"hooks/mcp: {rel}")
             if p.is_file() and _is_executable(p):
                 reasons.append(f"executable: {rel}")
+            elif p.is_file() and _is_binary(p):
+                reasons.append(f"binary: {rel}")
     if license_msg:
         reasons.append(license_msg)
     return sorted(reasons)
@@ -112,9 +117,30 @@ def _is_executable(p):
         return False
 
 
+def _is_binary(p):
+    """前 8KB 含 NUL 且不是常見媒體副檔名。"""
+    if p.suffix.lower() in MEDIA_EXTS:
+        return False
+    try:
+        with p.open("rb") as f:
+            return b"\0" in f.read(8192)
+    except OSError:
+        return False
+
+
+def _inside(root, path):
+    """path 解開 symlink 後是否仍在 root（解開後）之內。"""
+    r, q = os.path.realpath(root), os.path.realpath(path)
+    return q == r or q.startswith(r.rstrip(os.sep) + os.sep)
+
+
 def vendor(skill_dir, project_root, source):
     skill_dir, project_root = Path(skill_dir), Path(project_root)
+    if skill_dir.name in ("", ".", "..") or not (skill_dir / "SKILL.md").is_file():
+        return {"status": "pending", "reasons": ["not a skill dir"]}
     dest = project_root / ".claude" / "skills" / skill_dir.name
+    if not _inside(project_root, dest.parent):
+        return {"status": "pending", "reasons": ["destination outside project"]}
     if skill_dir.is_symlink():
         return {"status": "pending", "reasons": ["symlink: skill 目錄本身是 symlink"]}
     if dest.exists():
@@ -136,6 +162,8 @@ def vendor(skill_dir, project_root, source):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser()
     ap.add_argument("skill_dir")
     ap.add_argument("project_root")

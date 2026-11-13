@@ -7,7 +7,7 @@
 1. 每個未涵蓋需求取 1–2 個英文關鍵字。
 2. WebFetch `https://skills.sh/api/search?q=<關鍵字>&limit=10`，列出候選（名稱、repo）。
 3. 單一 repo 評估：依 `research:plugin-harvest` 的單一 repo 評估規則（沒裝就只看下列三點）：內容是否切合需求、維護是否仍在、授權是否寬鬆。取不到、不符的直接放棄，不硬找。
-4. 把 repo clone 到暫存目錄（用 session scratchpad，不放專案內），記下 commit：`git -C <dir> rev-parse HEAD`。**只取 skill 目錄**（含 `SKILL.md` 的那層），不要整個 repo。
+4. 把 repo clone 到暫存目錄（用 session scratchpad，不放專案內），記下 commit：`git -C <dir> rev-parse HEAD`。**保留整個 clone**，只把 skill 子目錄（含 `SKILL.md` 的那層）的路徑傳給 `vendor.py`；不要把 skill 目錄複製出 clone（授權檔在 repo 根，往上找不到會變 pending）。
 
 ## 安裝
 

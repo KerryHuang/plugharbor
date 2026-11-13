@@ -6,9 +6,10 @@
 
 - feat(project-setup): 新增 `skills/project-setup`，只從 Claude Code 叫用，在新目錄或接手的 repo 一次補裝專案層設定：盤點現況（`detect.py`）→ 依需求裝 plugharbor 專案層 plugin → 網路純 skill（`vendor.py`，帶 hook／MCP／腳本或授權不寬鬆的只列「待你決定」）→ 自寫 `AGENTS.md`、`CLAUDE.md`（單行 `@AGENTS.md`）與缺口 skill → 鏡像到 `.agents/skills/` 並處理 `.git/info/exclude`（`mirror.py`）→ 交清單。只補缺、不覆寫既有檔案。腳本：`detect.py`、`vendor.py`、`mirror.py` 與各自的 `test_*.py`；references：`flow.md`、`external-search.md`、`report.md`。
 - `setup/install-project.sh` 新增 `--no-claude`（略過 Claude Code，只裝 pi／Codex／agy，不可與 `--shared` 併用），供 shared 模式補裝另外三個 CLI。
-- 常駐 context：新增 skill 的 description 77 字元；扣掉先前佔位的約 14 字元，淨增約 63 字元（每個 session 都載入）。
+- 常駐 context：新增 skill 的 description 77 字元；本版相對上一個發行版淨增 77 字元，新 skill 無替換項（先前的佔位只存在於本分支內）。
 - pi 查證結論（2026-11-13 實測）：pi 讀專案根的 `.agents/skills/` 與 `.pi/skills/`，也跟隨 symlink，專案要信任（非互動加 `--approve`）才載入；因此 `mirror.py` 不另建 `.pi/skills`，`flow.md`、`report.md` 改寫實際結論，`docs/agent-parity.md` 加 pi／agy 結論與 project-setup 一列。agy 無列 skill 的方式且實測遇額度用盡，標未驗證。
 - `mirror.py` 的 `exclude` 把既有的無錨定同路徑行（如 `install-project.sh` 寫的 `.pi/settings.json`）視為已存在，不再重複寫錨定版；`flow.md` 的 `--check` 說明補「shared、init 要各跑 `--shared`、`--no-claude` 一次」。
+- 腳本涵蓋：既有 repo 子目錄不 `git init` 且 exclude 錨定頂層、symlink 目的地不得指到專案外、二進位與更多執行檔副檔名列待確認。
 - 起因：使用者提出的需求。在新目錄或接手的 repo 開工時沒有任何專案層設定，事後要手動補裝；希望叫用一次就依需求與目錄現況裝好，並交一份可核對的清單。
 
 ## [1.9.1] - 2026-11-13
