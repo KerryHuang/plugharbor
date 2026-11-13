@@ -280,4 +280,24 @@ OUT="$(run "$P12e" lifecycle)" || fail "(12e) exit 非 0：$OUT"
 cmp -s "$P12e/.claude/settings.json" "$TMP/ss-before" || fail "(12e) 不該改 settings.json"
 rm "$STUB_STATE/claude-list"
 
-echo "PASS: install-project.sh（12 組）"
+# ---------- 13) --no-claude：整段 Claude 略過（含 marketplace、停用 Superpowers），pi／Codex／agy 照 local 裝；與 --shared 互斥 ----------
+P13="$(newproj p13)"; : > "$STUB_LOG"
+OUT="$(run --no-claude "$P13" lifecycle)" || fail "(13) --no-claude exit 非 0：$OUT"
+[ "$(echo "$OUT" | grep -c '^SKIP: claude（--no-claude）$')" = 1 ] || fail "(13) 應印一次 SKIP: claude（--no-claude）：$OUT"
+if grep -q '^claude ' "$STUB_LOG"; then fail "(13) --no-claude 不該呼叫 claude：$(cat "$STUB_LOG")"; fi
+[ ! -e "$P13/.claude" ] || fail "(13) --no-claude 不該建 .claude（含 settings.local.json）"
+grep -q "$(native "$REPO_DIR/plugins/lifecycle")" "$P13/.pi/settings.json" || fail "(13) pi 應照常寫入"
+linked "$P13/.agents/skills/explore" || fail "(13) codex／agy 應照常建 link：$OUT"
+rc=0; run --shared --no-claude "$P13" lifecycle >/dev/null 2>&1 || rc=$?
+[ "$rc" -eq 2 ] || fail "(13) --shared --no-claude 應 exit 2，實際 ${rc}"
+rc=0; run --no-claude --shared "$P13" lifecycle >/dev/null 2>&1 || rc=$?
+[ "$rc" -eq 2 ] || fail "(13) --no-claude --shared 應 exit 2，實際 ${rc}"
+# --check：不報任何 claude／Superpowers 差異，pi／link 仍報
+P13c="$(newproj p13c)"; : > "$STUB_LOG"
+rc=0; OUT="$(run --no-claude --check "$P13c" lifecycle)" || rc=$?
+[ "$rc" -eq 3 ] || fail "(13) --no-claude --check 有 pi／link 差異應 exit 3，實際 ${rc}：$OUT"
+if echo "$OUT" | grep -q -E 'claude (lifecycle|marketplace)|DISABLE|RENAME: claude|OUTDATED: claude'; then fail "(13) --no-claude --check 不該報 claude 差異：$OUT"; fi
+echo "$OUT" | grep -q '^MISSING: pi lifecycle' || fail "(13) --no-claude --check 仍應報 pi：$OUT"
+if grep -q '^claude ' "$STUB_LOG"; then fail "(13) --no-claude --check 不該呼叫 claude"; fi
+
+echo "PASS: install-project.sh（13 組）"

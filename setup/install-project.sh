@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 # 專案層 plugin → 指定專案：Claude Code 裝到 local（預設，不進 git）或 project（--shared，進 git 與團隊共用）scope；
 # pi 寫專案的 .pi/settings.json；Codex、agy 在專案 .agents/skills 建 symlink（兩者都只限 local）。user 層 plugin 由 install.sh 負責。
+# --no-claude：略過整段 Claude Code，只裝 pi／Codex／agy（local 規則）；不可與 --shared 併用。
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$REPO_DIR/setup/lib.sh"
 
-usage() { echo "用法：install-project.sh [--shared] [--check] <專案根> <plugin…>"; exit 2; }
-SHARED=0; CHECK=0; ROOT=""; WANT=""
+usage() { echo "用法：install-project.sh [--shared] [--no-claude] [--check] <專案根> <plugin…>"; exit 2; }
+SHARED=0; NOCLAUDE=0; CHECK=0; ROOT=""; WANT=""
 for a in "$@"; do
   case "$a" in
     --shared) SHARED=1 ;;
+    --no-claude) NOCLAUDE=1 ;;
     --check) CHECK=1 ;;
     -*) usage ;;
     *) if [ -z "$ROOT" ]; then ROOT="$a"; else WANT="$WANT $a"; fi ;;
   esac
 done
 [ -n "$ROOT" ] && [ -n "$WANT" ] || usage
+[ "$SHARED" -eq 0 ] || [ "$NOCLAUDE" -eq 0 ] || usage  # --shared 與 --no-claude 互斥
 [ -d "$ROOT" ] || { echo "FAIL: 專案根不存在：${ROOT}"; exit 2; }
 ROOT="$(cd "$ROOT" && pwd -P)"
 SCOPE=local; [ "$SHARED" -eq 0 ] || SCOPE=project
@@ -78,6 +81,8 @@ sys.exit(0 if "plugharbor" in (d.get("extraKnownMarketplaces") or {}) else 1)
 # ---------- Claude Code：在專案根執行，scope 才會落在這個專案 ----------
 if [ -z "$PLUGINS" ]; then
   :
+elif [ "$NOCLAUDE" -eq 1 ]; then
+  echo "SKIP: claude（--no-claude）"
 elif command -v claude >/dev/null 2>&1; then
   cd "$ROOT"
   if [ "$SHARED" -eq 1 ]; then

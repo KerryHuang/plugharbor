@@ -12,8 +12,10 @@
 - **專案層**（其餘 7 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
 
   ```bash
-  setup/install-project.sh [--shared] [--check] <專案根> <plugin…>
+  setup/install-project.sh [--shared] [--no-claude] [--check] <專案根> <plugin…>
   ```
+
+  `--no-claude` 略過整段 Claude Code（含 marketplace、停用 Superpowers，`--check` 也不報），只裝 pi、Codex、agy（照預設 local 規則）；不可與 `--shared` 併用（exit 2）。通常先 `--shared` 裝 Claude，再 `--no-claude` 補另外三個 CLI。
 
   | CLI | 預設（只自己用） | `--shared`（進 git，團隊共用） |
   |---|---|---|
