@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.21.0] - 2026-11-13
+
+- feat(hooks): 新增 `rm-scratch-allow.py`（PermissionRequest `Bash`）：`rm` 的每個目標解開 `..` 與上層 symlink 後都在暫存區（`<tmp>/claude-<數字>/<專案>/<session>/` 以下、路徑中的 `.tmp`／`.superpowers` 目錄以下），且整條指令只串 echo、cd、ls、grep、head、tail、cat、wc、不帶 `-i` 的 sed、`git status|log|diff|rev-parse|show|branch --show-current`，沒有 `$`、反引號、轉向、萬用字元時自動核准；其他不表態，照常跳確認。起因：自動駕駛與無人值守卡在 user 層 ask 規則（`rm -rf *` 等）的確認畫面，auto mode 也照跳；PreToolUse 回 allow 蓋不過 ask 規則（官方文件），PermissionRequest 回 allow 可放行（`claude -p` 對照實測）。以近一週實際 rm 指令重播，42 條中 17 條改為自動核准，其餘多是串了 heredoc、`git add`、`$(…)`（使用者回報）。
+
 ## [0.20.0] - 2026-11-12
 
 - feat(hooks): 新增 `reply-language-guard.py`（Stop）：使用者最後一則提問以 CJK 為主，這回合卻有文字段在去掉程式碼、inline code、URL、路徑後含 3 個以上英文單字且沒有任何 CJK 字，就擋下一次，要求用使用者的語言重述結論。最後一則回覆在 Stop 觸發時常還沒寫進 transcript，所以另讀 payload 的 `last_assistant_message`。使用者在訊息裡明確指定要英文作答時也會擋一次（多一輪重述，第二次放行）。起因：0.19.0 的 `compact-context.py` 在壓縮後確實有注入，但 17:17 那次壓縮後仍連續 4 則英文回覆；以近兩天 transcript 重播，373 個中文回合中有 58 個含英文旁白（抽樣皆為真的英文，未見誤擋），漂移也不只在壓縮後（使用者回報＋feedback-review 回饋佇列 agent friction）。

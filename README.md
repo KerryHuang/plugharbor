@@ -46,13 +46,13 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | 外掛 | 版本 | 內容 |
 |------|------|------|
 | [lifecycle](./plugins/lifecycle/README.md) | 2.4.0 | 軟體交付生命週期——需求探索、規格、票務、實作、發版、QA 實機驗收、操作手冊與會議記錄；規模可調（lean／full），票務工具可換（Linear／GitHub／Jira） |
-| [workspace](./plugins/workspace/README.md) | 1.9.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
+| [workspace](./plugins/workspace/README.md) | 1.9.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
 | [backend](./plugins/backend/README.md) | 1.0.3 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
 | [database](./plugins/database/README.md) | 1.0.2 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
 | [ui-ux](./plugins/ui-ux/README.md) | 1.0.2 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
 | [desktop](./plugins/desktop/README.md) | 1.0.1 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
-| [toolkit](./plugins/toolkit/README.md) | 0.20.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
+| [toolkit](./plugins/toolkit/README.md) | 0.21.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.5.1 | 探索與研究——graphify 知識圖譜、ai-radar AI 情報雷達（週版＋工作日消化採納待辦的每日版）、plugin-harvest 吸收外部 plugin 做法 |
 | [blog](./plugins/blog/README.md) | 0.1.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.4 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |

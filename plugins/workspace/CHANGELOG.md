@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.9.1] - 2026-11-13
+
+- fix(tmp-scratch): 清理段加「刪除用單獨一條 `rm -rf <絕對路徑>`，最多接唯讀指令」。起因：自動駕駛與無人值守卡在 rm 確認；toolkit 0.21.0 的 `rm-scratch-allow.py` 只核准這種寫法，近一週沒被核准的 rm 多半串了 heredoc、`git add`、`$(…)`（使用者回報）。
+
 ## [1.9.0] - 2026-11-12
 
 - feat(debugging): 新增 `skills/debugging/references/legacy-refactor.md`，處理「要重構但沒有測試」的舊程式碼：先用特徵測試或黃金樣本鎖住現有行為（疑似 bug 照錄、另案修，故意改壞驗證測試會抓），大型改動用 Mikado 排前置順序、整模組替換走絞殺榕，小步執行時改名與移動優先用 IDE／LSP 自動重構，刪「沒有呼叫端」的程式碼前查反射、DI、序列化與公開 API，複雜度與 linter 警告數只用來找下手處、不當目標。SKILL.md 與 `tdd-cycle.md` 的 Refactor 階段各加一行指過去。description 加「重構沒測試的舊碼」，同時把「並把規格書轉成測試案例」縮成「規格轉測試」、拿掉「的除錯與 TDD」「要精簡」，長度從 105 字元減為 104；`triggers` 加兩個詞。

@@ -36,6 +36,7 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
 | `herdr-env-context.py` | ✅ SessionStart | 無：adapter 未移植；照 dispatch 規則自行查 `HERDR_ENV` | 無 | 無：pi 沒有 hook 機制 |
 | `compact-context.py` | ✅ SessionStart `compact` | 無：adapter 未移植 | 無 | 無：pi 沒有 hook 機制 |
+| `rm-scratch-allow.py` | ✅ PermissionRequest `Bash` | 無：adapter 未移植 | 無：adapter 未移植 | 無：pi 沒有 hook 機制 |
 | `reply-language-guard.py` | ✅ Stop | 無：adapter 未移植 | 無：adapter 未移植 | 無：pi 沒有 hook 機制 |
 | `disabled-skills.py` | ✅ SessionStart、UserPromptSubmit | 無：只讀 Claude Code 的 `enabledPlugins`／`skillOverrides` | 無 | 無 |
 | `retro-due-reminder.py` | ✅ SessionStart `startup` | 無：adapter 未移植；在 Codex 手動跑 retrospective | 無 | 無：pi 沒有 hook 機制 |
