@@ -24,7 +24,7 @@ def _read(p):
 
 REJECT = (
     "gnu general public license", "gnu lesser", "affero", "commons clause",
-    "non-commercial", "noncommercial", "advertising materials",
+    "non-commercial use only", "noncommercial use only", "advertising materials",
 )
 SCRIPT_EXTS = {".sh", ".bash", ".zsh", ".py", ".js", ".mjs", ".ts", ".rb", ".pl", ".ps1", ".bat", ".cmd"}
 SCRIPT_DIRS = {"scripts", "bin"}
@@ -45,7 +45,7 @@ def _identify(text):
         return "ISC" if "provided that the above copyright notice" in low else "0BSD"
     if "this is free and unencumbered software released into the public domain" in low:
         return "Unlicense"
-    if "creative commons" in low and "cc0 1.0" in low:
+    if "creative commons" in low and "cc0 1.0" in low and "waiver" in low:
         return "CC0-1.0"
     if ("redistributions of source code must retain" in low
             and "redistributions in binary form must reproduce" in low
@@ -112,6 +112,8 @@ def _is_executable(p):
 def vendor(skill_dir, project_root, source):
     skill_dir, project_root = Path(skill_dir), Path(project_root)
     dest = project_root / ".claude" / "skills" / skill_dir.name
+    if skill_dir.is_symlink():
+        return {"status": "pending", "reasons": ["symlink: skill 目錄本身是 symlink"]}
     if dest.exists():
         return {"status": "skipped", "reason": "exists"}
     license_id, license_msg = find_license(skill_dir)

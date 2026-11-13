@@ -29,6 +29,43 @@ BSD2 = ("Redistribution and use in source and binary forms, with or without modi
         'THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS".')
 BSD3 = BSD2.replace("THIS SOFTWARE", "Neither the name of the author may be used. THIS SOFTWARE")
 BSD4 = BSD3 + " All advertising materials mentioning features must display acknowledgement."
+UNLICENSE = """This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+For more information, please refer to <https://unlicense.org>
+"""
+CC0 = """Creative Commons Legal Code
+
+CC0 1.0 Universal
+
+Statement of Purpose
+
+The laws of most jurisdictions throughout the world automatically confer
+exclusive Copyright and Related Rights upon the creator of a Work.
+
+1. Copyright and Related Rights. A Work made available under CC0 may be
+protected by copyright and related or neighboring rights.
+
+2. Waiver. To the greatest extent permitted by, but not in contravention
+of, applicable law, Affirmer hereby overtly, fully, permanently,
+irrevocably and unconditionally waives, abandons, and surrenders all of
+Affirmer's Copyright and Related Rights.
+
+3. Public License Fallback. Should any part of the Waiver for any reason
+be judged legally invalid or ineffective under applicable law, then the
+Waiver shall be preserved to the maximum extent permitted.
+(Abridged: the full CC0 legal code is longer; distinctive sections kept.)
+"""
 GPL = "GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n"
 SRC = {"repo": "https://example.com/o/r", "commit": "abc123", "path": "skills/x"}
 
@@ -117,8 +154,7 @@ class VendorTest(unittest.TestCase):
 
     def test_licenses_positive(self):
         for text, name in [(ISC, "ISC"), (ZERO, "0BSD"), (BSD2, "BSD-2-Clause"), (BSD3, "BSD-3-Clause"),
-                           ("This is free and unencumbered software released into the public domain.", "Unlicense"),
-                           ("Creative Commons Legal Code\nCC0 1.0 Universal", "CC0-1.0")]:
+                           (UNLICENSE, "Unlicense"), (CC0, "CC0-1.0")]:
             with self.subTest(name):
                 shutil.rmtree(self.proj / ".claude", ignore_errors=True)
                 self.assertEqual(self.lic(text).get("license"), name)
@@ -155,6 +191,13 @@ class VendorTest(unittest.TestCase):
                 self.assertTrue(any("symlink" in s for s in r["reasons"]))
                 self.assertFalse((self.proj / ".claude").exists())
                 link.unlink()
+
+    def test_skill_dir_symlink_pending(self):
+        link = Path(self.tmp.name) / "linked"
+        os.symlink(self.skill, link)
+        r = vendor.vendor(link, self.proj, SRC)
+        self.assertEqual(r["status"], "pending")
+        self.assertTrue(any("symlink" in s for s in r["reasons"]))
 
     def test_script_file_and_case_dirs_pending(self):
         w(self.skill / "references" / "foo.sh", "echo")
