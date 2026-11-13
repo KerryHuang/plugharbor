@@ -44,7 +44,7 @@ claude plugin install workspace@plugharbor
 | `agent-orchestration` | 派工判準與多階段 agent chain 交棒 |
 | `dual-tool-mirror` | Claude Code ↔ Codex 設定鏡像 |
 | `unattended` | 無人值守：使用者不在時連續推進工作單元，回來時交報告；「自動駕駛」照 `docs/roadmap.md` 段序推進到喊暫停；專案細節放 `.plugharbor/unattended.md` |
-| `project-setup` | 專案初始化與盤點（實作中） |
+| `project-setup` | 專案補裝（只限 Claude Code）：依需求與目錄現況裝 plugharbor 專案層 plugin、外部純 skill、自寫 AGENTS.md 與缺口 skill，四個 CLI 共用 |
 
 ### 輕量開發核心
 | Skill | 用途 |

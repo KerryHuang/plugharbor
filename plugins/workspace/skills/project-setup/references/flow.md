@@ -1,0 +1,92 @@
+# 流程細節
+
+腳本都在 `${CLAUDE_PLUGIN_ROOT}/skills/project-setup/scripts/`，輸出 JSON（用 `python3`）。`<root>` 是專案根絕對路徑。
+`install-project.sh` 在 plugharbor clone 的 `setup/`（一般是 `~/plugharbor/setup/install-project.sh`）；找不到就請使用者給 clone 位置，不自己猜。
+
+## 1. 確認 Claude Code
+
+不在 Claude Code 內，回固定訊息「請改到 Claude Code 叫用 project-setup」後停止。
+
+## 2. 盤點
+
+`python3 detect.py <root>`。欄位：
+
+| 欄位 | 用途 |
+|---|---|
+| `is_empty`、`has_git` | 新目錄判斷 |
+| `git_mode` | `init`（空目錄或沒 `.git`）、`shared`（git 已追蹤 `AGENTS.md`／`CLAUDE.md`／`.claude`／`.agents`）、`local`（其餘既有 repo） |
+| `signals`、`suggested_plugins` | 技術線索（dotnet、vue、react、sql、avalonia、python、node）與機械建議的 plugin |
+| `existing` | `agents_md`（present／none）、`claude_md`（none／at-agents／custom）、`claude_skills`、`agents_skills`、`pi_settings` |
+
+使用者說要共用或不要共用時，以使用者說的為準，覆寫 `git_mode`。
+
+## 3. 需求清單與 plugin 對照
+
+需求 = 使用者那句話 + `signals`。拿需求比對下表；`suggested_plugins` 只是起點，不等於全裝。對不上需求的不裝。
+
+| plugin | 對應需求 |
+|---|---|
+| lifecycle | 要走需求、規格、票務、實作、發版、QA 全流程 |
+| backend | 後端：分層、CQRS、資料存取、API、背景作業、單元測試（有 .NET 附錄） |
+| frontend | 前端：架構分層、元件、i18n、除錯（有 Vue 3 附錄） |
+| database | schema、migration、ORM 同步、資料表文件 |
+| desktop | 桌面 App：MVVM、建置發佈（有 Avalonia 附錄） |
+| ui-ux | 設計新畫面、風格系統、版面與互動規範 |
+| blog | 部落格寫作流程 |
+
+要確認清單與現況是否一致，讀 `plugins/*/.claude-plugin/plugin.json` 的 description。user 層的 plugin（toolkit、research、browser-docs、workspace）不在這裡裝，install-project.sh 會 SKIP。
+
+## 4. plugharbor 安裝
+
+`<plugins>` 是上表選出的 plugin 名，空白分隔。`git_mode` 是 `init` 時先 `git init <root>`（不 commit）。
+
+| `git_mode` | 指令 |
+|---|---|
+| `local` | `install-project.sh <root> <plugins>` |
+| `shared`、`init` | 1. `install-project.sh --shared <root> <plugins>`<br>2. `install-project.sh --no-claude <root> <plugins>`<br>3. `python3 mirror.py <root> --exclude .agents/plugharbor .pi/settings.json` |
+
+為什麼 shared 要跑兩次：`--shared` 只替 Claude 裝 project scope（進 git、團隊共用），pi、Codex、agy 會被略過（packages 與 symlink 都是本機絕對路徑）；`--no-claude` 補裝這三者（local 規則）並略過 Claude，兩者互斥不能併用。
+`--no-claude` 本身已把 `.pi/settings.json`、`.agents/plugharbor/`、`.agents/skills/<skill>` 寫進 `.git/info/exclude`；第 3 步用 `mirror.py --exclude` 再保證一次（冪等），讓這些本機路徑不進 git。
+這兩步的結果是：Claude 部分進 git，其餘三個 CLI 的部分只在本機。**換機器或 clone 後要重跑第 2 步**，寫進清單「換機器要重跑的指令」。
+
+安裝後 `install-project.sh --check [--shared] <root> <plugins>` 應回 exit 0（3 是有差異）。
+
+## 5. 網路
+
+見 `external-search.md`。`vendor.py <skill_dir> <root> --repo <owner/name> --commit <sha> --path <repo 內路徑>` 回傳 `installed`、`pending`（附原因）、`skipped`（已存在）。
+
+## 6. 自寫
+
+- `AGENTS.md`：`existing.agents_md` 是 `none` 才寫。內容：建置與測試指令（實際跑過；跑不了或沒跑就標「未驗證」）、目錄結構、慣例。
+- `CLAUDE.md`：`existing.claude_md` 是 `none` 才寫，內容只有一行 `@AGENTS.md`。`custom` 不碰，列「待你決定」；`at-agents` 已完成。
+- 缺口 skill：需求裡 plugharbor 與網路都沒涵蓋的工作，才在 `.claude/skills/<名稱>/SKILL.md` 寫，名稱 kebab-case、同名已存在就略過。
+
+## 7. 鏡像與 exclude
+
+`python3 mirror.py <root>`：`.claude/skills/*` 鏡像到 `.agents/skills/*`（相對 symlink，建不了就複製；不覆寫既有同名，列入 `skipped`）。
+`git_mode` 是 `local`：`python3 mirror.py <root> --exclude <新增的檔案與目錄…>`，把這次新增的 `AGENTS.md`、`CLAUDE.md`、`.claude/skills/<名稱>`、`.agents/skills/<名稱>` 等加進 `.git/info/exclude`（錨定專案根、冪等），讓 `git status` 乾淨。
+`init`、`shared`：不 exclude，什麼時候 commit 由使用者決定。
+
+## 8. 驗證
+
+- `install-project.sh --check`（與安裝時相同旗標）。
+- 各 CLI 載入情形：
+
+| CLI | 專案 skill 的位置 | 驗證 |
+|---|---|---|
+| Claude Code | `.claude/skills/`、project／local scope 的 plugin | `claude plugin list` |
+| Codex、agy | `.agents/skills/` | 列 `.agents/skills/` 並確認 symlink 解得開 |
+| pi | pi 是否讀 `.agents/skills/` 待 Task 6 查證；查證前把 pi 的專案 skill 標為未驗證 | 未驗證 |
+
+沒實際驗到的標「未驗證」，不推測。
+
+## 移除方式（寫進清單用）
+
+| 種類 | 移除 |
+|---|---|
+| Claude plugin | `claude plugin uninstall <名>@plugharbor --scope local`（shared 用 `project`） |
+| pi | 從 `.pi/settings.json` 的 `packages` 刪該 plugin 路徑 |
+| Codex、agy | 刪 `.agents/skills/<skill>` 與 `.agents/plugharbor/<plugin>`（symlink） |
+| 外部 skill | 刪 `.claude/skills/<名>` 與對應的 `.agents/skills/<名>` |
+| 自寫 skill、`AGENTS.md`、`CLAUDE.md` | 刪檔；`.agents/skills/<名>` 鏡像一併刪 |
+| exclude 行 | 刪 `.git/info/exclude` 對應行 |
