@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.21.1] - 2026-11-13
+
+- fix(agent-dispatch): herdr 長任務的 cwd 信任檢查改為沿上層目錄找 `hasTrustDialogAccepted: true`，與 Claude Code 的信任繼承一致；原本只比對 cwd 本身是否出現在 `~/.claude.json`，沒開過的子目錄被誤判 missing，key 存在但未信任的反而判 ok。起因：開 worker 前誤判 yunguang-home 未信任（實際由上層 `/` 繼承），叫使用者先手動開一次 Claude Code，使用者已信任卻被多問一輪。
+
 ## [0.21.0] - 2026-11-13
 
 - feat(hooks): 新增 `rm-scratch-allow.py`（PermissionRequest `Bash`）：`rm` 的每個目標解開 `..` 與上層 symlink 後都在暫存區（`<tmp>/claude-<數字>/<專案>/<session>/` 以下、路徑中的 `.tmp`／`.superpowers` 目錄以下），且整條指令只串 echo、cd、ls、grep、head、tail、cat、wc、不帶 `-i` 的 sed、`git status|log|diff|rev-parse|show|branch --show-current`，沒有 `$`、反引號、轉向、萬用字元時自動核准；其他不表態，照常跳確認。起因：自動駕駛與無人值守卡在 user 層 ask 規則（`rm -rf *` 等）的確認畫面，auto mode 也照跳；PreToolUse 回 allow 蓋不過 ask 規則（官方文件），PermissionRequest 回 allow 可放行（`claude -p` 對照實測）。以近一週實際 rm 指令重播，42 條中 17 條改為自動核准，其餘多是串了 heredoc、`git add`、`$(…)`（使用者回報）。

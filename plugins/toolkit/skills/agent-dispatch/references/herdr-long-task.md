@@ -21,14 +21,24 @@ SKILL.md 第 4 節的補充。通用操作以官方 `herdr --skill` 為準。
 
 ## cwd 信任檢查（對象是 claude）
 
+Claude Code 的信任會沿用上層目錄：cwd 或任一上層標了 `hasTrustDialogAccepted: true` 就不會跳對話框。
+
 ```bash
 python3 - "<cwd 絕對路徑>" <<'PY'
 import json, os, sys
 p = os.path.realpath(sys.argv[1])
 projects = json.load(open(os.path.expanduser("~/.claude.json"))).get("projects", {})
-ok = any(os.path.realpath(k) == p for k in projects)
-print("ok" if ok else "missing")
-sys.exit(0 if ok else 1)
+trusted = {os.path.realpath(k) for k, v in projects.items() if v.get("hasTrustDialogAccepted")}
+d = p
+while True:
+    if d in trusted:
+        print("ok"); sys.exit(0)
+    parent = os.path.dirname(d)
+    if parent == d:
+        break
+    d = parent
+print("missing")
+sys.exit(1)
 PY
 ```
 
