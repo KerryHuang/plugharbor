@@ -13,12 +13,13 @@
 
 | 欄位 | 用途 |
 |---|---|
-| `is_empty`、`has_git` | 新目錄判斷 |
-| `git_mode` | `init`（空目錄或沒 `.git`）、`shared`（git 已追蹤 `AGENTS.md`／`CLAUDE.md`／`.claude`／`.agents`）、`local`（其餘既有 repo） |
+| `is_empty`、`has_git`、`git_toplevel` | 新目錄判斷；`has_git` 在任何 work tree 內（含既有 repo 的子目錄）都是 true，`git_toplevel` 是該 work tree 頂層路徑（不在 repo 內為 null） |
+| `git_mode` | `init`（不在任何 repo 內，或本身是空的 repo 頂層；子目錄絕不是 `init`）、`shared`（git 已追蹤 `AGENTS.md`／`CLAUDE.md`／`.claude`／`.agents`）、`local`（其餘既有 repo） |
 | `signals`、`suggested_plugins` | 技術線索（dotnet、vue、react、sql、avalonia、python、node）與機械建議的 plugin |
 | `existing` | `agents_md`（present／none）、`claude_md`（none／at-agents／custom）、`claude_skills`、`agents_skills`、`pi_settings` |
 
 使用者說要共用或不要共用時，以使用者說的為準，覆寫 `git_mode`。
+`git_toplevel` 不是 null 且不等於 `<root>`（`<root>` 是別人 repo 的子目錄）：不 `git init`，告知使用者「在 <toplevel> 的 repo 內」後，把該 repo 當 git 脈絡繼續；`git_mode` 只看 `<root>` 底下追蹤的 AI 設定。`mirror.py --exclude` 會自動把路徑錨定到頂層（如 `/<子目錄>/.agents/skills/x`）。
 
 ## 3. 需求清單與 plugin 對照
 
@@ -38,7 +39,7 @@
 
 ## 4. plugharbor 安裝
 
-`<plugins>` 是上表選出的 plugin 名，空白分隔。`git_mode` 是 `init` 時先 `git init <root>`（不 commit）。
+`<plugins>` 是上表選出的 plugin 名，空白分隔。`git_mode` 是 `init` 時先 `git init <root>`（不 commit）；`git_toplevel` 已存在時不 init（見第 2 步）。
 
 | `git_mode` | 指令 |
 |---|---|
@@ -64,7 +65,7 @@
 ## 7. 鏡像與 exclude
 
 `python3 mirror.py <root>`：`.claude/skills/*` 鏡像到 `.agents/skills/*`（相對 symlink，建不了就複製；不覆寫既有同名，列入 `skipped`）。
-`git_mode` 是 `local`：`python3 mirror.py <root> --exclude <新增的檔案與目錄…>`，把這次新增的 `AGENTS.md`、`CLAUDE.md`、`.claude/skills/<名稱>`、`.agents/skills/<名稱>` 等加進 `.git/info/exclude`（錨定專案根、冪等），讓 `git status` 乾淨。
+`git_mode` 是 `local`：`python3 mirror.py <root> --exclude <新增的檔案與目錄…>`，把這次新增的 `AGENTS.md`、`CLAUDE.md`、`.claude/skills/<名稱>`、`.agents/skills/<名稱>`、`.claude/settings.local.json`（`claude plugin install --scope local` 會寫它；Claude Code 是否自動 ignore 未驗證，所以照加）等加進 `.git/info/exclude`（錨定 repo 頂層、冪等；`./x`、結尾 `/` 會正規化，與既有 `x/` 視為同一行），讓 `git status` 乾淨。
 `init`、`shared`：不 exclude，什麼時候 commit 由使用者決定。
 
 ## 8. 驗證

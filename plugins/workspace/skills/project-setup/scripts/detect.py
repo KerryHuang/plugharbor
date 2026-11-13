@@ -85,6 +85,17 @@ def _git_tracks_ai_config(root):
     return p.returncode == 0 and bool(p.stdout.strip())
 
 
+def _git_toplevel(root):
+    """root 所在 work tree 的頂層路徑；不在 repo 內或沒有 git 回傳 None。"""
+    try:
+        p = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                           capture_output=True, text=True, encoding="utf-8")
+    except OSError:
+        return None
+    out = p.stdout.strip()
+    return out if p.returncode == 0 and out else None
+
+
 def _skill_names(d):
     if not d.is_dir():
         return []
@@ -93,13 +104,16 @@ def _skill_names(d):
 
 def inventory(root):
     root = Path(root)
-    has_git = (root / ".git").exists()
+    git_toplevel = _git_toplevel(root)
+    has_git = git_toplevel is not None
     top = [e for e in root.iterdir() if e.name != ".git"]
     is_empty = not top
     files = _scan(root)
     signals = _signals(files)
 
-    if is_empty or not has_git:
+    # 只有「自己就是 repo 頂層且空」或完全不在 repo 內才 init；子目錄絕不在別人的 repo 裡再 init
+    own_top = has_git and Path(git_toplevel).resolve() == root.resolve()
+    if not has_git or (is_empty and own_top):
         git_mode = "init"
     else:
         git_mode = "shared" if _git_tracks_ai_config(root) else "local"
@@ -115,6 +129,7 @@ def inventory(root):
     return {
         "is_empty": is_empty,
         "has_git": has_git,
+        "git_toplevel": git_toplevel,
         "git_mode": git_mode,
         "signals": signals,
         "suggested_plugins": sorted({SIGNAL_PLUGINS[s] for s in signals if s in SIGNAL_PLUGINS}),
