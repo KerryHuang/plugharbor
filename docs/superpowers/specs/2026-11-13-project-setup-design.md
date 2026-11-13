@@ -95,7 +95,7 @@ workspace plugin 新增一個 skill，暫名 `project-setup`。workspace 裝在 
 ## 驗收
 
 - 在一個空目錄說「幫我做一個 .NET Web API」並叫用：
-  - backend、database 這類 plugin 已裝。
+  - 對得上需求的 plugin 已裝（例如 backend）；需求沒提到的（例如沒提資料庫就不裝 database）不裝。
   - 有 `AGENTS.md`，`CLAUDE.md` 只有一行。
   - 四個 CLI 各自列得出該專案的 skill。
   - 清單完整。
