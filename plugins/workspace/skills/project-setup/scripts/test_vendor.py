@@ -2,6 +2,7 @@
 """vendor.py 的測試：python3 test_vendor.py"""
 import json
 import os
+import shutil
 import stat
 import sys
 import tempfile
@@ -14,7 +15,20 @@ import vendor  # noqa: E402
 MIT = (
     "MIT License\n\nPermission is hereby granted, free of charge, to any person "
     "obtaining a copy of this software...\n"
+    'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.\n'
 )
+ASIS = 'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.'
+ISC = ("Permission to use, copy, modify, and/or distribute this software for any purpose "
+       "with or without fee is hereby granted, provided that the above copyright notice "
+       "and this permission notice appear in all copies. " + ASIS)
+ZERO = ("Permission to use, copy, modify, and/or distribute this software for any purpose "
+        "with or without fee is hereby granted. " + ASIS)
+BSD2 = ("Redistribution and use in source and binary forms, with or without modification, "
+        "are permitted provided that: Redistributions of source code must retain the notice. "
+        "Redistributions in binary form must reproduce the notice. "
+        'THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS".')
+BSD3 = BSD2.replace("THIS SOFTWARE", "Neither the name of the author may be used. THIS SOFTWARE")
+BSD4 = BSD3 + " All advertising materials mentioning features must display acknowledgement."
 GPL = "GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n"
 SRC = {"repo": "https://example.com/o/r", "commit": "abc123", "path": "skills/x"}
 
@@ -94,8 +108,63 @@ class VendorTest(unittest.TestCase):
         self.assertGreaterEqual(len(r["reasons"]), 2)
 
     def test_apache_installs(self):
-        w(self.repo / "LICENSE", "Apache License\nVersion 2.0, January 2004\n")
+        w(self.repo / "LICENSE", "Apache License\nVersion 2.0, January 2004\nTERMS AND CONDITIONS FOR USE\n")
         self.assertEqual(self.run_vendor()["license"], "Apache-2.0")
+
+    def lic(self, text):
+        w(self.repo / "LICENSE", text)
+        return self.run_vendor()
+
+    def test_licenses_positive(self):
+        for text, name in [(ISC, "ISC"), (ZERO, "0BSD"), (BSD2, "BSD-2-Clause"), (BSD3, "BSD-3-Clause"),
+                           ("This is free and unencumbered software released into the public domain.", "Unlicense"),
+                           ("Creative Commons Legal Code\nCC0 1.0 Universal", "CC0-1.0")]:
+            with self.subTest(name):
+                shutil.rmtree(self.proj / ".claude", ignore_errors=True)
+                self.assertEqual(self.lic(text).get("license"), name)
+
+    def test_loose_matches_rejected(self):
+        for text in [GPL + "compatible with Apache License Version 2.0 TERMS AND CONDITIONS",
+                     MIT + " Commons Clause License Condition",
+                     BSD4]:
+            self.assertEqual(self.lic(text)["status"], "pending")
+
+    def test_multiple_license_files(self):
+        w(self.repo / "LICENSE-APACHE", "Apache License\nVersion 2.0\nTERMS AND CONDITIONS\n")
+        w(self.repo / "LICENSE-MIT", MIT)
+        (self.repo / "LICENSE").unlink()
+        r = self.run_vendor()
+        self.assertEqual(r["status"], "installed")
+        self.assertEqual(r["license"], "Apache-2.0 / MIT")
+
+    def test_mixed_license_files_pending(self):
+        w(self.repo / "LICENSE", MIT)
+        w(self.repo / "COPYING", GPL)
+        self.assertEqual(self.run_vendor()["status"], "pending")
+
+    def test_symlinks_pending(self):
+        outside = Path(self.tmp.name) / "outside.txt"
+        w(outside, "o")
+        cases = {"file": outside, "dir": Path(self.tmp.name), "dangling": Path(self.tmp.name) / "nope"}
+        for name, target in cases.items():
+            with self.subTest(name):
+                link = self.skill / f"link-{name}"
+                os.symlink(target, link)
+                r = self.run_vendor()
+                self.assertEqual(r["status"], "pending")
+                self.assertTrue(any("symlink" in s for s in r["reasons"]))
+                self.assertFalse((self.proj / ".claude").exists())
+                link.unlink()
+
+    def test_script_file_and_case_dirs_pending(self):
+        w(self.skill / "references" / "foo.sh", "echo")
+        self.assertTrue(any("executable" in s for s in self.run_vendor()["reasons"]))
+        (self.skill / "references" / "foo.sh").unlink()
+        w(self.skill / "references" / "tool", "#!/bin/sh\n")
+        self.assertTrue(any("executable" in s for s in self.run_vendor()["reasons"]))
+        (self.skill / "references" / "tool").unlink()
+        w(self.skill / "Scripts" / "a.md", "x")
+        self.assertTrue(any("scripts" in s for s in self.run_vendor()["reasons"]))
 
     def test_license_found_at_repo_root(self):
         self.assertFalse(list(self.skill.glob("LICENSE*")))
