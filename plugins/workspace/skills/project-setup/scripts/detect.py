@@ -146,5 +146,5 @@ def inventory(root):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("用法：detect.py <root>")
-    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", errors="surrogateescape")
     print(json.dumps(inventory(Path(sys.argv[1])), ensure_ascii=False, indent=2))

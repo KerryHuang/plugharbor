@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.10.1] - 2026-11-13
+
+- fix(project-setup): `detect.py`、`vendor.py`、`mirror.py` 的 stdout 改用 `errors="surrogateescape"`，ASCII locale 下含中文的路徑被解成 surrogate 時照原位元組輸出 UTF-8，不再 `UnicodeEncodeError`。起因：merge 後 Linux CI（`LC_ALL=C`、`PYTHONUTF8=0`）的中文路徑測試失敗，macOS 檔案系統編碼固定 UTF-8 所以本機沒重現。
+
 ## [1.10.0] - 2026-11-13
 
 - feat(project-setup): 新增 `skills/project-setup`，只從 Claude Code 叫用，在新目錄或接手的 repo 一次補裝專案層設定：盤點現況（`detect.py`）→ 依需求裝 plugharbor 專案層 plugin → 網路純 skill（`vendor.py`，帶 hook／MCP／腳本或授權不寬鬆的只列「待你決定」）→ 自寫 `AGENTS.md`、`CLAUDE.md`（單行 `@AGENTS.md`）與缺口 skill → 鏡像到 `.agents/skills/` 並處理 `.git/info/exclude`（`mirror.py`）→ 交清單。只補缺、不覆寫既有檔案。腳本：`detect.py`、`vendor.py`、`mirror.py` 與各自的 `test_*.py`；references：`flow.md`、`external-search.md`、`report.md`。

@@ -148,7 +148,7 @@ def exclude(project_root, paths):
 
 def main():
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8", errors="surrogateescape")
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
     ap.add_argument("--exclude", nargs="*", default=None, metavar="PATH")

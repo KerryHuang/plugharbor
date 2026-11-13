@@ -163,7 +163,7 @@ def vendor(skill_dir, project_root, source):
 
 def main():
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8", errors="surrogateescape")
     ap = argparse.ArgumentParser()
     ap.add_argument("skill_dir")
     ap.add_argument("project_root")
