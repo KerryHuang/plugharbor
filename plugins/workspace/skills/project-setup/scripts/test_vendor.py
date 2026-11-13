@@ -162,6 +162,9 @@ class VendorTest(unittest.TestCase):
     def test_loose_matches_rejected(self):
         for text in [GPL + "compatible with Apache License Version 2.0 TERMS AND CONDITIONS",
                      MIT + " Commons Clause License Condition",
+                     MIT + " for non-commercial purposes only",
+                     MIT + " NonCommercial use",
+                     MIT + " for non-commercial use only",
                      BSD4]:
             self.assertEqual(self.lic(text)["status"], "pending")
 

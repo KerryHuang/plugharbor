@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import stat
 import sys
@@ -24,17 +25,19 @@ def _read(p):
 
 REJECT = (
     "gnu general public license", "gnu lesser", "affero", "commons clause",
-    "non-commercial use only", "noncommercial use only", "advertising materials",
+    "advertising materials",
 )
 SCRIPT_EXTS = {".sh", ".bash", ".zsh", ".py", ".js", ".mjs", ".ts", ".rb", ".pl", ".ps1", ".bat", ".cmd"}
 SCRIPT_DIRS = {"scripts", "bin"}
 MAX_UP = 6
+# 禁止非商用條款；僅放行 Unlicense 的 "commercial or non-commercial" 用語
+NON_COMMERCIAL = re.compile(r"(?<!commercial or )non[- ]?commercial")
 
 
 def _identify(text):
     """依多句關鍵句辨識授權，回傳 SPDX 名稱；比對不上或含禁用字樣回傳 None。"""
     low = " ".join(text.lower().split())
-    if any(w in low for w in REJECT):
+    if any(w in low for w in REJECT) or NON_COMMERCIAL.search(low):
         return None
     if "apache license" in low and "version 2.0" in low and "terms and conditions" in low:
         return "Apache-2.0"
