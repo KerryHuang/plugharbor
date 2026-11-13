@@ -57,6 +57,25 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
 - `setup/install-project.sh` 據此建 symlink（做法見 `setup/README.md`「plugin 分層」）。
 - Windows Git Bash 的 symlink 行為：待 Windows 實測；建不了 link 時改複製並寫 `.plugharbor-root`。
 
+### pi 與 agy（實測 2026-11-13，pi 讀 symlink 與信任行為；agy 待驗）
+
+- pi：專案根的 `.agents/skills/<skill>/SKILL.md` 與 `.pi/skills/<skill>/SKILL.md` 都會載入，`.agents/skills/` 下指向 `.claude/skills/` 的相對 symlink 也會載入（`pi -p --no-session --approve` 問可用 skill 名稱，三種配置各只多出對應的那個 skill）。所以鏡像只建 `.agents/skills`，Claude Code、Codex、pi、agy 共用一份，`mirror.py` 不另建 `.pi/skills`。
+- pi 的專案層檔案要信任才載入：沒加 `--approve` 的非互動執行，專案的 skill 不會出現（互動模式第一次開專案時會問）。pi 沒有列 skill 的子命令，只能在專案目錄用 `pi --approve -p` 問模型。
+- agy：沒有列 skill 的子命令；實測 `agy --mode plan -p` 時遇到帳號額度用盡（429），專案 skill 是否載入**未驗證**，只有 2026-11-03 的 `.agents/skills` 實測紀錄。
+
+## project-setup 專案層補裝
+
+`workspace:project-setup` 只在 Claude Code 叫用，一次替四個 CLI 補裝專案層設定：
+
+| CLI | 落點 | 驗證方式 |
+|---|---|---|
+| Claude Code | `.claude/skills/`、project／local scope 的 plugin；`AGENTS.md` 與單行 `@AGENTS.md` 的 `CLAUDE.md` | `claude plugin list` |
+| Codex | `.agents/skills/`（symlink） | `codex debug prompt-input` 看 skill roots 與清單 |
+| pi | `.agents/skills/` 與 `.pi/settings.json` 的 packages；專案要信任 | `pi --approve -p` 問可用 skill |
+| agy | `.agents/skills/`（symlink） | 未驗證（見上） |
+
+進 git 的模式（`shared`、`init`）下 pi、Codex、agy 的本機路徑部分不進 git，換機器要重跑 `install-project.sh --no-claude`。
+
 ## 已知落差
 
   其餘 plugin 都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。

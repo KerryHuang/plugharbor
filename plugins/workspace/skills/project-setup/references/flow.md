@@ -46,10 +46,10 @@
 | `shared`、`init` | 1. `install-project.sh --shared <root> <plugins>`<br>2. `install-project.sh --no-claude <root> <plugins>`<br>3. `python3 mirror.py <root> --exclude .agents/plugharbor .pi/settings.json` |
 
 為什麼 shared 要跑兩次：`--shared` 只替 Claude 裝 project scope（進 git、團隊共用），pi、Codex、agy 會被略過（packages 與 symlink 都是本機絕對路徑）；`--no-claude` 補裝這三者（local 規則）並略過 Claude，兩者互斥不能併用。
-`--no-claude` 本身已把 `.pi/settings.json`、`.agents/plugharbor/`、`.agents/skills/<skill>` 寫進 `.git/info/exclude`；第 3 步用 `mirror.py --exclude` 再保證一次（冪等），讓這些本機路徑不進 git。
+`--no-claude` 本身已把 `.pi/settings.json`、`.agents/plugharbor/`、`.agents/skills/<skill>` 寫進 `.git/info/exclude`（無錨定寫法）；第 3 步的 `mirror.py --exclude` 只是保險：已有同路徑的行（無錨定寫法也算）就不重複寫，沒有才補錨定專案根的一行。
 這兩步的結果是：Claude 部分進 git，其餘三個 CLI 的部分只在本機。**換機器或 clone 後要重跑第 2 步**，寫進清單「換機器要重跑的指令」。
 
-安裝後 `install-project.sh --check [--shared] <root> <plugins>` 應回 exit 0（3 是有差異）。
+安裝後用 `install-project.sh --check <root> <plugins>` 驗證，應回 exit 0（3 是有差異）：`local` 跑一次；`shared`、`init` 要跑兩次，一次加 `--shared`、一次加 `--no-claude`（與第 4 步的兩個安裝指令對應）。
 
 ## 5. 網路
 
@@ -76,7 +76,7 @@
 |---|---|---|
 | Claude Code | `.claude/skills/`、project／local scope 的 plugin | `claude plugin list` |
 | Codex、agy | `.agents/skills/` | 列 `.agents/skills/` 並確認 symlink 解得開 |
-| pi | pi 是否讀 `.agents/skills/` 待 Task 6 查證；查證前把 pi 的專案 skill 標為未驗證 | 未驗證 |
+| pi | `.agents/skills/` 與 `.pi/skills/` 都讀，也跟隨 symlink（實測 pi 非互動模式，見 `docs/agent-parity.md`）；專案要先信任（互動時會問，非互動加 `--approve`），沒信任就不載入專案 skill | 在專案目錄跑 `pi --approve -p` 問可用 skill 名稱；沒跑過標未驗證 |
 
 沒實際驗到的標「未驗證」，不推測。
 
