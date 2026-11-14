@@ -1,15 +1,22 @@
 # 功能清單
 
+總計：完成 13／共 19（另有 0 項決定不做）；進行中 0、已規劃 0、構想 6；待確認 0 項。更新於 2026-11-14。
+
 ## workspace：unattended（自動駕駛）
+
+完成 5／共 7。
 
 - [x] 空檔判準：長工作丟背景時依序挑計畫文件、無共用檔的另一個 worktree、同批檔案照順序，帳本記「空檔：」；實作只跑相關測試，完整套件只在閘門跑一次（workspace 1.11.0；只做過 `claude -p` 情境測試，未在真實自動駕駛驗證）
 - [x] 自動排線：lifecycle `--open` 的可開工分「主線」（第一個未完成段）與「可平行」（往後幾段內有 spec、沒被 ⛔ 擋的段），並抓出列序與 ⛔ 矛盾；roadmap 列序只是偏好、硬依賴寫 ⛔；autopilot 每段收尾與丟長工作時重排「主線＋最多 1 條平行線」（平行線過共用檔判準），把排線表寫進累積報告並推播後直接開工（起因：產品化 session 使用者問了 13 次「還有什麼可以先做」，工具只給第一段；使用者 2026-11-14 裁決三題；lifecycle 2.5.0、workspace 1.13.0）
+- [x] 功能清單改名 `docs/feature.md`：lifecycle 腳本預設讀新名、找不到退回舊名；plugharbor、Formwright、xiaoxiao 一起改名（使用者 2026-11-14 要求；lifecycle 2.7.0）
 - [x] 三條線與測試鎖：排線改成主線＋最多 2 條平行線，共用檔（含同檔不同段落）照順序；重測試一律經 `test-lock.sh` 排隊；已各自審查的段可共用一次閘門（起因：產品化 session (c) 回報同時跑 3 條線、重測試撞期多跑一倍；使用者 2026-11-14 裁決兩題；workspace 1.16.0）
 - [x] 合批：相鄰、同一份 spec、改同批檔案的段合成一批，一個 worktree、每段各自 commit，閘門、審查、合併只走一次；roadmap 同一列多個段號＝使用者指定一起做，autopilot 也可自己合並寫進排線表；上限 3 段或約 800 行先到先停；一段卡住就 revert 該段 commit、其餘重跑閘門後合併，卡住的段放回排程並寫待決（起因：產品化 session 每段固定花 50 分鐘～2 小時跑閘門；a2d4、a2d5 已同 commit 上線；使用者 2026-11-14 裁決三題；lifecycle 2.6.0、workspace 1.14.0）
 - [ ] 💡 已合併的主控裁決事後被使用者推翻時的重做方式（當插入單元馬上做，或寫回 roadmap 排隊）；等事故再補
 - [ ] 💡 暫停後逐題問完待決，是否自動恢復自動駕駛（目前只認「繼續自動駕駛」）；等事故再補
 
 ## toolkit：agent-dispatch
+
+完成 7／共 7。
 
 - [x] 腳本一律用 skill 的 Base directory：agent-dispatch 寫明不要 ls／glob 外掛快取（起因：2026-11-12～14 產品化 session 壓縮後自己 glob 到快取舊版 0.9.3，沒用 Claude Code 自動附上的 skill 路徑）
 - [x] 每個 session 自己換新：壓縮後 hook 提示「任務未完、停在沒有背景工作的點才換，完成就不換」；在 herdr 內使用者在場先問一次，同意或無人值守就照 handoff 寫交接檔後自己 `/clear`、`/reload-plugins`、接回；不在 herdr 內建議打 `/handoff`（使用者 2026-11-14 裁決；toolkit 0.23.0）
@@ -21,14 +28,20 @@
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估）
 
+完成 0／共 3。
+
 - [ ] 💡 auto-memory 寫入前程式檢查：秘密樣式、隱藏字元、與既有記憶本文完全重複、索引行數上限、從網頁／貼上內容學來的規則不收；等事故再做
 - [ ] 💡 常改的 skill（unattended、agent-dispatch）附 eval 案例，改動後跑一次量效果（可接 `claude plugin eval`；範本參考 dotnet/skills 的 `tests/<plugin>/<skill>/eval.yaml`＋評分腳本、有無 skill 對照、觸發率）；等事故再做
 - [ ] 💡 agent-dispatch `bg.mjs wait` 為「待決」回專用 exit code（agentrun 用 8），呼叫端不必讀結果檔第一行；現行 herdr 事故已修，等事故再做
 
 ## 借鏡 dotnet/skills（2026-11-13 評估）
 
+完成 0／共 1。
+
 - [ ] 💡 .NET 工具鏈（MSBuild、測試、診斷、升級、EF 查詢最佳化）不在 plugharbor 自寫，需要時在專案層裝 dotnet/skills 對應 plugin；backend／database 只管架構與慣例
 
 ## workspace：project-setup（專案 AI 設定補裝）
+
+完成 1／共 1。
 
 - [x] 只從 Claude Code 叫用，替四個 CLI 在專案層補裝：plugharbor → 網路純 skill → 自寫 AGENTS.md＋缺口 skill；設計見 `docs/superpowers/specs/2026-11-13-project-setup-design.md`（workspace 1.10.0；agy 載入未驗證）

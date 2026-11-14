@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""功能清單（feature-checklist.md）統計：算各節與總計、列待確認與未分類，--write 改寫數字行。
+"""功能清單（feature.md）統計：算各節與總計、列待確認與未分類，--write 改寫數字行。
 
 用法：
-  python3 feature_checklist.py [路徑]           # 印報表（預設 docs/feature-checklist.md）
+  python3 feature_checklist.py [路徑]           # 印報表（預設 docs/feature.md，沒有就讀舊名 docs/feature-checklist.md）
   python3 feature_checklist.py [路徑] --write   # 改寫檔頭「總計：」行與各節「完成 X／共 Y。」小計
   python3 feature_checklist.py [路徑] --check   # 數字行過期就 exit 1（可放 pre-commit）
   python3 feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「可合批」「可平行」「依序等待」「被擋」「未排段」，另列「列序矛盾」；排線用；路徑給 - 讀 stdin
@@ -306,13 +306,15 @@ def open_items(text, roadmap=None):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("path", nargs="?", default="docs/feature-checklist.md")
+    ap.add_argument("path", nargs="?")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--write", action="store_true")
     g.add_argument("--check", action="store_true")
     g.add_argument("--open", action="store_true", help="未完成項目分可開工／被擋（排線用）")
     ap.add_argument("--roadmap", type=Path, help="roadmap 檔：段表欄位含「工作段」「狀態」")
     a = ap.parse_args()
+    if a.path is None:  # 2026-11-14 改名 feature.md；還沒改名的專案照讀舊名
+        a.path = next((n for n in ("docs/feature.md", "docs/feature-checklist.md") if Path(n).is_file()), "docs/feature.md")
     p = Path(a.path)
     text = sys.stdin.read() if a.path == "-" else p.read_text(encoding="utf-8")
     link = ROADMAP_LINK.search(text)

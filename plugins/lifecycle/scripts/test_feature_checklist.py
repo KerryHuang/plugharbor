@@ -254,5 +254,25 @@ class TestFeatureChecklist(unittest.TestCase):
             self.assertIn("未分類", ok.stdout)
 
 
+
+class DefaultPath(unittest.TestCase):
+    """不給路徑：預設 docs/feature.md，沒有就退回舊名 docs/feature-checklist.md（2026-11-14 改名）。"""
+
+    def run_in(self, name):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "docs").mkdir()
+            (Path(d) / "docs" / name).write_text("# 功能清單\n\n## A\n\n- [x] 做完的事\n- [ ] 📋 規劃中\n", encoding="utf-8")
+            return subprocess.run([sys.executable, str(SCRIPT)], cwd=d, capture_output=True, text=True)
+
+    def test_new_name(self):
+        r = self.run_in("feature.md")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("完成 1／共 2", r.stdout)
+
+    def test_falls_back_to_old_name(self):
+        r = self.run_in("feature-checklist.md")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("完成 1／共 2", r.stdout)
+
 if __name__ == "__main__":
     unittest.main()

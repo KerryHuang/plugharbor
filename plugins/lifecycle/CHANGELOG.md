@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.7.0] - 2026-11-14
+
+- feat: 功能清單檔名改為 `docs/feature.md`。`scripts/feature_checklist.py` 不給路徑時預設讀 `docs/feature.md`，沒有就退回舊名 `docs/feature-checklist.md`，還沒改名的專案照常可用；`references/feature-checklist.md` 與 `skills/implement/references/after.md` 改寫新檔名（格式說明檔與腳本名稱不變）。起因：使用者 2026-11-14 要求檔名簡化為 feature.md，並把所有專案一起改名。
+
 ## [2.6.0] - 2026-11-14
 
 - feat(scripts): `feature_checklist.py --open` 新增「可合批」區：緊接主線、連到同一份設計（連結去掉 #錨點比對）的段，含主線最多 3 段，中間被擋或換設計就停；可平行改從合批之後的段找。`parse_roadmap` 改記每段的設計連結集合。附測試。

@@ -1,6 +1,6 @@
-# 功能清單（feature-checklist.md）
+# 功能清單（feature.md）
 
-讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature-checklist.md`（不是規格，不放 `<spec.dir>`）；README 開頭連到它。`docs/` 是文件站、submodule 或有落檔白名單時，本清單與 `docs/todo.md`、`docs/roadmap.md` 改放 repo 根目錄（`FEATURES.md`、`TODO.md`、`ROADMAP.md`），腳本帶路徑參數。
+讓使用者一眼看出哪些做完、哪些在做、哪些已規劃、哪些只是構想。每個專案一份，放 repo 的 `docs/feature.md`（舊名 `docs/feature-checklist.md` 腳本仍讀得到，改名用 `git mv`）（不是規格，不放 `<spec.dir>`）；README 開頭連到它。`docs/` 是文件站、submodule 或有落檔白名單時，本清單與 `docs/todo.md`、`docs/roadmap.md` 改放 repo 根目錄（`FEATURES.md`、`TODO.md`、`ROADMAP.md`），腳本帶路徑參數。
 
 ## 格式
 
@@ -95,7 +95,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --open    # 
 
 `--open` 的可開工＝roadmap 第一個未完成段（含之前未勾的）的項目，可合批＝緊接主線、連到同一份設計（連結去掉 #錨點比對）的段，含主線最多 3 段，中間被擋或換設計就停；可平行＝其後 3 個未完成段中有設計連結的段（佔位段不算），依序等待＝更後面的段與佔位段，被擋＝⛔ 目標未完成，未排段＝沒段號或段號不在 roadmap 的項目與所有 💡。沒有 roadmap 時，沒被擋的非 💡 項目都算可開工。列序矛盾＝排在前面的段卻 ⛔ 等排在後面的段，照列序做一定會卡住，要調列序或確認 ⛔ 只是偏好。`--roadmap <檔>` 可覆寫預設路徑與檔頭連結。不同步指兩種：清單已勾但段狀態沒做完、段做完但清單未勾。
 
-路徑預設 `docs/feature-checklist.md`。總計行可以有前綴（如「依據 <commit>。」），腳本只改寫「總計：」之後。
+路徑預設 `docs/feature.md`，沒有就讀 `docs/feature-checklist.md`。總計行可以有前綴（如「依據 <commit>。」），腳本只改寫「總計：」之後。
 
 ## 排線：找出能並行的，能做的先做
 
