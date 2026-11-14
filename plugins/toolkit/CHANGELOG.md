@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.23.1] - 2026-11-14
+
+- fix(hooks): `reply-language-guard` 只掃最後一個回合起點之後的回覆。跨 session 訊息、subagent 交回、Stop hook 回饋都是 meta 的 user 列，也會開啟新回合；原本只從最後一則真正的提問算起，自動駕駛開場回合的一句英文在之後每個回合都被重擋。起因：2026-11-14 產品化自動駕駛 session 換新後，連續 5 個回合被同一句舊英文擋下（d 類回報）。
+
 ## [0.23.0] - 2026-11-14
 
 - feat(handoff): 在 herdr 內（`HERDR_ENV=1`）寫完交接檔後自己換新：背景啟動 `skills/handoff/scripts/self-rotate.sh`，等 pane 閒置後送 `/clear`、`/reload-plugins` 與接續句，不必使用者手動清空。條件是使用者打了 `/handoff`、在 AskUserQuestion 同意，或無人值守；有還在跑的 subagent／背景工作／CI 等待就先等。不在 herdr 內照舊印接續句。腳本與 workspace plugin 的 unattended 換新腳本是同一份副本，測試會比對。

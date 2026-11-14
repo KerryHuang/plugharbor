@@ -24,6 +24,11 @@ def assistant(*texts):
         {"type": "text", "text": t} for t in texts]}}
 
 
+def meta(text, **extra):
+    """跨 session 訊息、subagent 交回、Stop hook 回饋等：isMeta 的 user 列，會開啟新回合。"""
+    return {"type": "user", "isMeta": True, "message": {"role": "user", "content": text}, **extra}
+
+
 class ReplyLanguageGuard(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -49,6 +54,19 @@ class ReplyLanguageGuard(unittest.TestCase):
         out = json.loads(self.run_hook(rows))
         self.assertEqual(out["decision"], "block")
         self.assertIn("Now updating the README", out["reason"])
+
+    def test_old_english_before_meta_turn_start_is_not_rescanned(self):
+        # 2026-11-14 自動駕駛 session：開場回合的英文句，在之後每個由跨 session 訊息開啟的回合都被重擋
+        rows = [user("繼續自動駕駛"), assistant("Now the docs cleanup. Let me look at the repo state."),
+                tool_result(), assistant("整理完成。"),
+                meta("Another Claude session sent a message: ...", origin={"kind": "peer"}),
+                assistant("收到，照做。"), tool_result(), assistant("✅ 已完成。")]
+        self.assertEqual(self.run_hook(rows), "")
+
+    def test_english_after_meta_turn_start_still_blocks(self):
+        rows = [user("繼續自動駕駛"), assistant("好。"),
+                meta("Stop hook feedback: ..."), assistant("Now checking the CI status again.")]
+        self.assertEqual(json.loads(self.run_hook(rows))["decision"], "block")
 
     def test_all_chinese_passes(self):
         rows = [user("幫我更新平面圖"), assistant("我先看檔案。"), tool_result(), assistant("✅ 已更新 `README.md`。")]
