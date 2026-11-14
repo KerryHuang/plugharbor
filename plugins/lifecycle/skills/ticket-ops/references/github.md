@@ -1,6 +1,6 @@
 # GitHub Issues backend
 
-送出內文（建票、留言、改描述、附圖說明）前先照 SKILL.md §2 做外洩檢查。
+送出標題與內文（建票、留言、改標題或描述、附圖說明）前先照 SKILL.md §2 做外洩檢查。
 
 用 `gh` CLI，repo 取自 `ticket.repo`（所有指令帶 `--repo <owner/repo>`）。先 `gh auth status`，未登入就停下請使用者登入。
 

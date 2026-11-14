@@ -1,6 +1,6 @@
 # Linear backend
 
-送出內文（建票、留言、改描述、附圖說明）前先照 SKILL.md §2 做外洩檢查。
+送出標題與內文（建票、留言、改標題或描述、附圖說明）前先照 SKILL.md §2 做外洩檢查。
 
 用 Linear MCP 工具（Claude Code 名稱 `mcp__linear__*` 或 `mcp__claude_ai_Linear__*`，Pi 對照見 harness-terms）。先確認 MCP 可用；沒有就停下，告訴使用者缺 Linear MCP。
 `ticket.team` 為 team 名稱或 key，所有呼叫都帶它。

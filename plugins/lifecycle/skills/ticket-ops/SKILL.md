@@ -41,7 +41,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
    ```
 
    輸出 JSON（Linear：`{"state": 名稱}`；GitHub：`labels_add`／`labels_remove`／`close`／`reason`）。退出碼 2 → 階段名不合法或 `ticket.states` 缺該階段，把 stderr 回報給叫用端，不自行補值。
-3. **外洩檢查**：`create`、`comment`、改描述、`attach` 的 caption 送出前，把要送的內文寫成暫存檔再跑：
+3. **外洩檢查**：`create`、`comment`、改標題或描述、`attach` 的 caption 送出前，把要送的標題與內文一起寫進暫存檔再跑：
 
    ```bash
    python3 ${CLAUDE_SKILL_DIR}/scripts/ticket_backend.py leak <檔>
@@ -49,7 +49,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
 
    退出碼 4 → 停下，把命中列給叫用端，不送出、不自動改寫。退出碼 5（找不到 `.leak-denylist`）→ GitHub 先查 `gh repo view <repo> --json visibility -q .visibility`，`PUBLIC` 就停下請使用者在 repo 根目錄建 denylist（一行一個字串，`regex:` 開頭為正規式），否則警告後繼續；Linear 警告後繼續。
 4. 照 reference 的對應步驟呼叫工具（Linear MCP 或 `gh`）。
-5. 回傳票 ID／URL 與實際做了什麼；工具降級（例如 GitHub 的 blocked-by 只能寫在內文）時明講落差。
+5. 回傳票 ID／URL 與實際做了什麼；工具降級（例如舊版 gh 沒有 `--parent`，父子票退回內文慣例）時明講落差。
 
 ## 對帳（雙軌時）
 
@@ -59,7 +59,7 @@ repo 清單為準、GitHub 跟著同步的專案，定期（建議每天）在 r
 python3 ${CLAUDE_SKILL_DIR}/scripts/reconcile.py --repo <owner/repo> [--log <jsonl>]
 ```
 
-比對清單與 todo 的行尾 `#n` 對票的階段、parent、看板 Status，列出缺票號、孤兒票、未分類項。🚧 對 `in-progress` 或 `in-review` 都算一致；「[測試]」票、掛 `--exclude-label`（預設 `test`）的票、已關的 todo 票、還在 triage（掛 `triage` 或沒有 `stage:*`）的票不計。parent 要給 `--parents-json`（票號 → 父票號）才比。退出碼 0 差異 0、1 有差異、3 查詢可能截斷（不得當成對帳結果）。
+比對清單與 todo 的行尾 `#n` 對票的階段、parent、看板 Status，列出缺票號、孤兒票、未分類項。🚧 對 `in-progress` 或 `in-review` 都算一致；「[測試]」票、掛 `--exclude-label`（預設 `test`）的票、已關的 todo 票、還在 triage（掛 `triage` 或沒有 `stage:*`）的票不計。parent 預設讀 issue 的原生 parent 欄位，內文慣例的 repo 用 `--parents-json`（票號 → 父票號）覆寫；有設 `ticket.project` 才比看板，只收本 repo 的 Issue。退出碼 0 差異 0、1 有差異、3 查詢可能截斷（不得當成對帳結果）。
 
 ## 紅線
 

@@ -121,6 +121,27 @@ class Reconcile(unittest.TestCase):
         self.assertEqual([d["ref"] for d in r["diffs"]], ["#7"])
         self.assertEqual(kinds(r), ["board"])
 
+    def test_unreferenced_closed_todo_not_counted(self):
+        r = run(base_issues() + [issue(22, "CLOSED", reason="COMPLETED", labels=["todo"])])
+        self.assertEqual(r["counts"]["todo"]["closed"], [0, 0])
+        self.assertEqual(r["excluded"]["todo_closed"], 1)
+
+    def test_multiple_stage_labels_is_diff(self):
+        iss = base_issues()
+        iss[4] = issue(5, stage="todo", labels=["stage:backlog"])
+        self.assertEqual(kinds(run(iss)), ["stage"])
+
+
+class BoardFromItems(unittest.TestCase):
+    def test_filters_other_repo_pr_and_draft(self):
+        data = {"items": [
+            {"status": "Todo", "content": {"type": "Issue", "number": 5, "repository": "o/r"}},
+            {"status": "Done", "content": {"type": "Issue", "number": 5, "repository": "o/other"}},
+            {"status": "Done", "content": {"type": "PullRequest", "number": 6, "repository": "o/r"}},
+            {"status": "Todo", "content": {"type": "DraftIssue", "title": "草稿"}},
+        ]}
+        self.assertEqual(rc.board_from_items(data, "o/r", "Status"), {5: "Todo"})
+
 
 class ParentsFromIssues(unittest.TestCase):
     def test_reads_native_parent_field(self):
@@ -175,6 +196,26 @@ class Cli(unittest.TestCase):
             r = self.cli(d, base_issues() + [issue(100 + i, title="[測試] x") for i in range(992)])
             self.assertEqual(r.returncode, 3)
             self.assertIn("query 完整性：可能截斷", r.stdout)
+
+    def test_board_json_uses_config_options(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".plugharbor").mkdir()
+            cfg = {"ticket": {"tool": "github", "repo": "o/r", "states": {s: f"stage:{s}" for s in rc.STAGES},
+                              "project": {"owner": "o", "number": 1, "options": {s: s.title() for s in rc.STAGES}}}}
+            (Path(d) / ".plugharbor" / "lifecycle.yml").write_text(yaml.safe_dump(cfg), encoding="utf-8")
+            b = Path(d) / "board.json"
+            b.write_text(json.dumps({str(n): "WRONG" for n in range(1, 9)}), encoding="utf-8")
+            r = self.cli(d, base_issues(), "--board-json", str(b))
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("[board]", r.stdout)
+
+    def test_board_without_options_is_noted(self):
+        with tempfile.TemporaryDirectory() as d:
+            b = Path(d) / "board.json"
+            b.write_text(json.dumps({"1": "WRONG"}), encoding="utf-8")
+            r = self.cli(d, base_issues(), "--board-json", str(b))
+            self.assertIn("未比對看板", r.stdout)
 
     def test_log_appends(self):
         with tempfile.TemporaryDirectory() as d:

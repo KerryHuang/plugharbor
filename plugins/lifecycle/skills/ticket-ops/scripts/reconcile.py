@@ -38,8 +38,12 @@ def labels_of(i):
 def gh_stage(i):
     if i["state"] != "OPEN":
         return "done" if i.get("stateReason") == "COMPLETED" else "canceled"
-    st = [x[6:] for x in labels_of(i) if x.startswith("stage:")]
+    st = stage_labels(i)
     return st[0] if st else None
+
+
+def stage_labels(i):
+    return sorted(x[6:] for x in labels_of(i) if x.startswith("stage:"))
 
 
 def parents_from_issues(issues):
@@ -85,9 +89,12 @@ def reconcile(items, todos, issues, board=None, parents=None, options=None, excl
         if i is None:
             continue
         act = gh_stage(i)
+        multi = i["state"] == "OPEN" and len(stage_labels(i)) > 1
+        if multi:
+            diff("stage", f"#{it['ticket']}", f"{name}：票同時掛多個 stage label {stage_labels(i)}")
         if act in counts["feature"] or act == "in-review":
             counts["feature"]["in-progress" if act == "in-review" else act][1] += 1
-        if not same_stage(it["stage"], act):
+        if not multi and not same_stage(it["stage"], act):
             diff("stage", f"#{it['ticket']}", f"{name}：清單 {it['stage']}、票 {act}")
         if parents is not None and parents.get(it["ticket"]) != it["section_ticket"]:
             diff("parent", f"#{it['ticket']}",
@@ -142,8 +149,6 @@ def reconcile(items, todos, issues, board=None, parents=None, options=None, excl
             continue
         if i["state"] != "OPEN":
             excluded["todo_closed" if "todo" in labs else "closed_unreferenced"] += 1
-            if "todo" in labs:
-                counts["todo"]["closed"][1] += 1
         elif "triage" in labs or gh_stage(i) is None:
             excluded["triage"] += 1
         else:
@@ -178,13 +183,17 @@ def load_project_cfg():
         return None
 
 
-def fetch_board(proj):
+def board_from_items(data, repo, field):
+    """gh project item-list 的 JSON → {issue 號: 欄位值}；只收本 repo 的 Issue（看板可能跨 repo、含 PR 與草稿）。"""
+    key = field[:1].lower() + field[1:]
+    return {c["number"]: it.get(key) for it in data.get("items", [])
+            if (c := it.get("content") or {}).get("type") == "Issue" and c.get("repository") == repo}
+
+
+def fetch_board(proj, repo):
     data = gh_json(["project", "item-list", str(proj["number"]), "--owner", proj["owner"],
                     "--format", "json", "--limit", str(LIMIT)])
-    field = proj.get("field", "Status")
-    key = field[:1].lower() + field[1:]
-    return {it["content"]["number"]: it.get(key) for it in data.get("items", [])
-            if it.get("content", {}).get("number")}
+    return board_from_items(data, repo, proj.get("field", "Status"))
 
 
 def render(r, repo, notes):
@@ -224,11 +233,16 @@ def main(argv=None):
                else parents_from_issues(issues))
     if parents is None:
         notes.append("未比對 parent（issue 沒有 parent 欄位，也沒給 --parents-json）")
-    proj = None if a.board_json else load_project_cfg()
+    proj = load_project_cfg()
     board = {int(k): v for k, v in read(a.board_json).items()} if a.board_json else (
-        fetch_board(proj) if proj else None)
+        fetch_board(proj, a.repo) if proj else None)
+    options = (proj or {}).get("options")
+    if board is not None and not options:
+        notes.append("未比對看板（缺 ticket.project.options）")
+    elif board is None:
+        notes.append("未比對看板（沒設 ticket.project）")
     r = reconcile(items, todos, issues, board=board, parents=parents,
-                  options=(proj or {}).get("options"), exclude_label=a.exclude_label)
+                  options=options, exclude_label=a.exclude_label)
     print(render(r, a.repo, notes))
     if a.log:
         with a.log.open("a", encoding="utf-8") as f:

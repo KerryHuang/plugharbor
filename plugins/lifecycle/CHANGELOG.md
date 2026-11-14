@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.12.1] - 2026-11-14
+
+- fix(ticket-ops): `reconcile.py` 給 `--board-json` 時看板比對被靜默跳過（拿不到 `ticket.project.options`），看板全錯仍回「差異 0」；改為一律讀設定的 options，缺 options 或沒設看板時在輸出註明「未比對看板」。看板只收本 repo 的 Issue（`board_from_items`），PR、草稿與其他 repo 的同號 issue 不混入。開著的票掛多個 `stage:*` label 列為差異，不再隨機取一個。沒被引用的已關 todo 票只計入「不計入」，不再出現在 todo 計數。
+- fix(scripts): `feature_checklist.py` 被擋項目本身行尾帶 `#n` 時，`⛔ 等：` 的目標名會黏上票號而永遠解不掉；改為先剝掉行尾票號再解析。
+- fix(ticket-ops): 外洩檢查涵蓋標題（SKILL.md、`skills/ticket-ops/references/github.md`、`skills/ticket-ops/references/linear.md`）；SKILL.md「對帳」改寫為預設讀原生 parent，降級範例更新。起因：2.8.0～2.12.0 的整條分支審查發現，以上各項都有測試重現。
+- test: 2.12.0 的看板同步已實測（2026-11-14，KerryHuang/plugharbor 的私有看板 #1、測試票 #6）：用 `claude -p --plugin-dir` 跑 `create`（stage todo）→ `set_stage in-progress` → `set_stage canceled` → `get`，label、開關、關閉原因（NOT_PLANNED）、看板 Status（Todo → In Progress → Canceled）讀回都一致；外洩檢查退出碼 0。`gh project item-list` 的 JSON 鍵（`status`、`content.type`、`content.repository`）與 `reconcile.py` 相符。看板改了 Status 選項後，原本綁 Status 的內建 workflow 會被 GitHub 自動停用。
+
 ## [2.12.0] - 2026-11-14
 
 - feat(ticket-ops): 同步 GitHub Projects 看板。新設定 `ticket.project`（`owner`、`number`、`field`，預設 `Status`；`options` 是抽象階段對看板選項名的對照，見 `references/config.md`）。有設時，`create` 建完把票加進看板並設欄位，`set_stage` 同步改欄位，`get`／`query` 回 `board_status`、`board_mismatch`。`skills/ticket-ops/scripts/ticket_backend.py project-option <stage>` 印對照 JSON（沒設印 null，缺對照退出碼 2）；`gh project` 的步驟寫在 `skills/ticket-ops/references/github.md`「看板」一節。附測試。起因：使用者 2026-11-14 裁決雙軌示範要用看板。⚠️ `gh project` 指令還沒實測，要等 token 拿到 `project` scope。

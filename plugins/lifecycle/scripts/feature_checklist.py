@@ -144,7 +144,7 @@ def items(text):
         if not m:
             continue
         seg = SEGMENT.search(line)
-        blk = BLOCKED.search(line)
+        blk = BLOCKED.search(TICKET.sub("", line.rstrip()))
         out.append({"line": line.strip(), "section": section, "name": item_name(m.group(2)),
                     "ticket": ticket_of(line), "section_ticket": section_ticket,
                     "stage": STAGES[classify(m.group(1), m.group(2))],

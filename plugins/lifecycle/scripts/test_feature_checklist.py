@@ -312,6 +312,13 @@ class Tickets(unittest.TestCase):
         self.assertEqual(d["unknown"], [])
         self.assertTrue(any("匯入功能" in r for r in d["resolved"]))
 
+    def test_blocked_line_with_own_ticket(self):
+        text = TICKETS.replace("- [ ] 📋 B — ⛔ 等：匯入功能", "- [ ] 📋 B — ⛔ 等：匯入功能 #14").replace(
+            "- [ ] 🚧 匯入功能 #13", "- [x] 匯入功能 #13")
+        b = next(i for i in self.fc.items(text) if i["name"] == "B")
+        self.assertEqual(b["blockers"], ["匯入功能"])
+        self.assertTrue(any("匯入功能" in r for r in self.fc.deps(text)["resolved"]))
+
     def test_todo_items(self):
         got = self.fc.todo_items("# 待辦\n\n說明\n\n- 修 X：脈絡 #9\n- 查 Y\n- [ ] 不是 todo 行\n")
         self.assertEqual(got, [{"text": "修 X：脈絡", "ticket": 9}, {"text": "查 Y", "ticket": None}])
