@@ -76,6 +76,56 @@ class AttachPlan(unittest.TestCase):
         self.assertNotIn("#", url)
         self.assertNotIn("(", url)
 
+DENY = "# 註解\n\nSecretCorp\nregex:10\\.0\\.\\d+\\.\\d+\n"
+
+
+class Leak(unittest.TestCase):
+    def pats(self, d):
+        (Path(d) / ".leak-denylist").write_text(DENY, encoding="utf-8")
+        return tb.load_denylist(Path(d))
+
+    def test_denylist_comments_regex_case(self):
+        with tempfile.TemporaryDirectory() as d:
+            hits = tb.scan_leaks("hello secretcorp\nip 10.0.3.4", self.pats(d))
+        self.assertEqual(hits, [(1, "secretcorp"), (2, "10.0.3.4")])
+
+    def test_no_hit_returns_empty(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(tb.scan_leaks("乾淨內文", self.pats(d)), [])
+
+    def test_missing_denylist_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(tb.load_denylist(Path(d)))
+
+    def test_cli_exit_codes(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.pats(d)
+            f = Path(d) / "body.md"
+            f.write_text("x\n含 SECRETCORP", encoding="utf-8")
+            r = Cli.run_cli(self, d, "leak", str(f))
+            self.assertEqual(r.returncode, 4)
+            self.assertEqual(r.stdout.strip(), "L2 SECRETCORP")
+            f.write_text("乾淨", encoding="utf-8")
+            self.assertEqual(Cli.run_cli(self, d, "leak", str(f)).returncode, 0)
+            (Path(d) / ".leak-denylist").unlink()
+            r = Cli.run_cli(self, d, "leak", str(f))
+            self.assertEqual(r.returncode, 5)
+            self.assertTrue(r.stderr.strip())
+
+    def test_parser_matches_validate(self):
+        v = Path(__file__).resolve().parents[5] / "scripts" / "ci" / "validate.py"
+        if not v.exists():
+            self.skipTest("不在 plugharbor repo 內")
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("validate_ci", v)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as d:
+            ours = self.pats(d)
+            mod.ROOT = Path(d)
+            theirs = mod.load_denylist()
+        self.assertEqual([(p.pattern, p.flags) for p in ours], [(p.pattern, p.flags) for p in theirs])
+
 
 class Cli(unittest.TestCase):
     def run_cli(self, cwd, *args):

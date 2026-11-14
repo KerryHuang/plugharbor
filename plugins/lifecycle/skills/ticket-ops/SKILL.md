@@ -41,11 +41,19 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
    ```
 
    輸出 JSON（Linear：`{"state": 名稱}`；GitHub：`labels_add`／`labels_remove`／`close`／`reason`）。退出碼 2 → 階段名不合法或 `ticket.states` 缺該階段，把 stderr 回報給叫用端，不自行補值。
-3. 照 reference 的對應步驟呼叫工具（Linear MCP 或 `gh`）。
-4. 回傳票 ID／URL 與實際做了什麼；工具降級（例如 GitHub 的 blocked-by 只能寫在內文）時明講落差。
+3. **外洩檢查**：`create`、`comment`、改描述、`attach` 的 caption 送出前，把要送的內文寫成暫存檔再跑：
+
+   ```bash
+   python3 ${CLAUDE_SKILL_DIR}/scripts/ticket_backend.py leak <檔>
+   ```
+
+   退出碼 4 → 停下，把命中列給叫用端，不送出、不自動改寫。退出碼 5（找不到 `.leak-denylist`）→ GitHub 先查 `gh repo view <repo> --json visibility -q .visibility`，`PUBLIC` 就停下請使用者在 repo 根目錄建 denylist（一行一個字串，`regex:` 開頭為正規式），否則警告後繼續；Linear 警告後繼續。
+4. 照 reference 的對應步驟呼叫工具（Linear MCP 或 `gh`）。
+5. 回傳票 ID／URL 與實際做了什麼；工具降級（例如 GitHub 的 blocked-by 只能寫在內文）時明講落差。
 
 ## 紅線
 
+- 外洩檢查命中就不送出。
 - 改描述前先讀回原文再整份送回；送出後讀回確認有寫入（成功回應不等於寫入）。
 - 不替叫用端改階段語意：階段只用 contract 的六個名字。
 - 工具不支援的能力一律明講降級方式，不默默略過。

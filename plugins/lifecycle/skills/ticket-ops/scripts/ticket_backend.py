@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""票務工具層中不需要 MCP 的純函式：抽象階段轉工具原生值、GitHub 附圖計畫。
+"""票務工具層中不需要 MCP 的純函式：抽象階段轉工具原生值、GitHub 附圖計畫、送出前外洩檢查。
 
-用法：python3 ticket_backend.py stage <stage>   （讀目前目錄的 .plugharbor/lifecycle.yml，輸出 JSON）
-缺設定或階段不合法：退出碼 2，stderr 一行說明。
+用法：
+  python3 ticket_backend.py stage <stage>   （讀目前目錄的 .plugharbor/lifecycle.yml，輸出 JSON）
+    缺設定或階段不合法：退出碼 2，stderr 一行說明。
+  python3 ticket_backend.py leak <檔案>     （用目前目錄 repo 的 .leak-denylist 掃內文）
+    0 無命中；4 有命中（stdout 每行 `L<行號> <命中>`）；5 找不到 denylist。
 """
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -50,9 +54,51 @@ def github_attach_plan(repo: str, image_path: str) -> dict:
     return {"method": "commit", "location": location, "markdown": f"![{name}]({url})"}
 
 
+def _main_checkout(root: Path):
+    git = root / ".git"
+    if not git.is_file():
+        return None
+    m = re.match(r"gitdir:\s*(.+)", git.read_text(encoding="utf-8").strip())
+    return Path(m.group(1)).resolve().parents[2] if m else None
+
+
+def load_denylist(root: Path):
+    """讀 root/.leak-denylist（worktree 裡沒有就讀主 checkout 那份）；都沒有回 None。
+    解析規則與 plugharbor repo 的 CI 外洩檢查相同（由測試比對）。"""
+    f = root / ".leak-denylist"
+    if not f.exists() and (main := _main_checkout(root)):
+        f = main / ".leak-denylist"
+    if not f.exists():
+        return None
+    pats = []
+    for line in f.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            pats.append(re.compile(line[6:] if line.startswith("regex:") else re.escape(line), re.I))
+    return pats
+
+
+def scan_leaks(text: str, patterns) -> list:
+    return [(n, m.group(0)) for n, line in enumerate(text.split("\n"), 1)
+            for p in patterns for m in p.finditer(line)]
+
+
+def leak_main(path: str) -> int:
+    pats = load_denylist(Path.cwd())
+    if pats is None:
+        print("找不到 .leak-denylist（repo 根目錄或主 checkout）", file=sys.stderr)
+        return 5
+    hits = scan_leaks(Path(path).read_text(encoding="utf-8"), pats)
+    for n, s in hits:
+        print(f"L{n} {s}")
+    return 4 if hits else 0
+
+
 def main(argv):
+    if len(argv) == 3 and argv[1] == "leak":
+        return leak_main(argv[2])
     if len(argv) != 3 or argv[1] != "stage":
-        print("用法：ticket_backend.py stage <stage>", file=sys.stderr)
+        print("用法：ticket_backend.py stage <stage>｜leak <檔案>", file=sys.stderr)
         return 2
     try:
         print(json.dumps(stage_to_native(load_config(Path.cwd(), "ticket.states"), argv[2]), ensure_ascii=False))

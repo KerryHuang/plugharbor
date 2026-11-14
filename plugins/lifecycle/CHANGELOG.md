@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.8.0] - 2026-11-14
+
+- feat(ticket-ops): 送出前外洩檢查。`skills/ticket-ops/scripts/ticket_backend.py leak <檔>` 用 repo 根目錄的 `.leak-denylist`（worktree 退回主 checkout）掃內文：0 無命中、4 命中（列出行號與字串）、5 找不到 denylist。SKILL.md §2 規定建票、留言、改描述、附圖說明送出前都要跑；命中就停、不自動改寫；找不到 denylist 時公開 GitHub repo 停下，其他情況警告後繼續。解析規則與 plugharbor repo 的 CI 外洩檢查相同，有測試比對。起因：ticket skill 要在公開 repo（plugharbor、xiaoxiao）雙軌實測，送出的內文原本沒有外洩檢查。
+
 ## [2.7.0] - 2026-11-14
 
 - feat: 功能清單檔名改為 `docs/feature.md`。`scripts/feature_checklist.py` 不給路徑時預設讀 `docs/feature.md`，沒有就退回舊名 `docs/feature-checklist.md`，還沒改名的專案照常可用；`references/feature-checklist.md` 與 `skills/implement/references/after.md` 改寫新檔名（格式說明檔與腳本名稱不變）。起因：使用者 2026-11-14 要求檔名簡化為 feature.md，並把所有專案一起改名。
