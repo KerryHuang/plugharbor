@@ -84,12 +84,37 @@
 
 每次改完跑 `--write` 更新數字；清單跟程式碼同一個 commit 進 git。
 
+## 同步票
+
+`.plugharbor/lifecycle.yml` 有設 `ticket.tool` 時，以清單為準、票跟著改：任何流程（brainstorming、spec、implement、手動）改本清單或 `docs/todo.md`，都照下表叫 `lifecycle:ticket-ops`。沒設 `ticket.tool` 就照舊，不問。
+
+票號寫在行尾 ` #n`（前面一個半形空格，必須是最後一個 token），節標題也一樣（`## 模組 A #5`）；說明中間的 `#n` 只是引用，不算這一行的票。腳本解析時會先剝掉行尾票號，功能名與節名不受影響。
+
+| 清單的變動 | 票 |
+|---|---|
+| 新增項目 | `create`（`parent` 為所在節的票、`stage` 照標記），行尾附 ` #n` |
+| 新增 `##` 節 | 建父票，節標題尾附 ` #n`；集中放「不做」的節不開 |
+| 改標記 | `set_stage`：`[x]`→`done`、🚧→`in-progress`、📋→`todo`、💡→`backlog`、`[-]`→`canceled` |
+| 項目換節 | 改 parent |
+| 刪項目 | `set_stage canceled`，留言寫明清單已刪除此項 |
+| todo 新增一行 | `create`，label `todo`、`stage` 為 `todo`，行尾附 ` #n` |
+| todo 刪一行 | `set_stage done` |
+| todo 與清單互搬 | 同一張票：加或移除 `todo` label、補或移除 parent，不另開 |
+
+沒帶 🚧／📋／💡 的 `[ ]`（未分類）不建票，先請使用者補標記。
+
+父票的階段由子票推導，改完子票順手檢查：節內有任一 🚧 → `in-progress`；全部子票關閉 → 關父票（有任一 completed 就 `done`，全部 not planned 就 `canceled`）；其餘維持 `todo`。
+
+`--tickets` 輸出每個項目的抽象階段與票號，`--todo <檔>` 輸出 todo 每行的票號；同步與對帳都讀它，不另寫解析。
+
 ## 腳本
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑]           # 報表：各節／總計、待確認、未分類、阻擋與同步問題
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --write   # 改寫總計行與各節小計
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --check   # 數字過期、阻擋目標找不到、段號重複、清單與 roadmap 不同步就 exit 1
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --tickets # 每項的抽象階段、行尾票號、所在節與節票號（JSON）
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py --todo <檔>     # todo 每行文字與行尾票號（JSON）
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「可合批」「可平行」「依序等待」「被擋」「未排段」，另列「列序矛盾」
 ```
 

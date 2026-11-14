@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.9.0] - 2026-11-14
+
+- feat(scripts): `feature_checklist.py` 支援行尾票號 ` #n`（項目與 `##` 節標題）：解析功能名、節名前先剝掉，`⛔ 等：<功能名>` 與節小計不受影響；說明中間的 `#n` 不算。新增 `--tickets`（每項的抽象階段、票號、所在節與節票號，JSON）與 `--todo <檔>`（todo 每行文字與票號）。附測試。
+- feat(references): `references/feature-checklist.md` 新增「同步票」：有設 `ticket.tool` 時，任何流程改清單或 todo 都同步建票、改階段、換 parent，父票階段由子票推導；`skills/implement/references/after.md` 打勾時指過去。起因：ticket skill 雙軌示範要求以 repo 清單為準、GitHub 跟著同步，原本只有清單、沒有和票的連動。
+
 ## [2.8.0] - 2026-11-14
 
 - feat(ticket-ops): 送出前外洩檢查。`skills/ticket-ops/scripts/ticket_backend.py leak <檔>` 用 repo 根目錄的 `.leak-denylist`（worktree 退回主 checkout）掃內文：0 無命中、4 命中（列出行號與字串）、5 找不到 denylist。SKILL.md §2 規定建票、留言、改描述、附圖說明送出前都要跑；命中就停、不自動改寫；找不到 denylist 時公開 GitHub repo 停下，其他情況警告後繼續。解析規則與 plugharbor repo 的 CI 外洩檢查相同，有測試比對。起因：ticket skill 要在公開 repo（plugharbor、xiaoxiao）雙軌實測，送出的內文原本沒有外洩檢查。

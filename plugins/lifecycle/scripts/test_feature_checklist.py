@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """功能清單統計腳本的測試。直接執行：python3 test_feature_checklist.py"""
 import importlib.util
+import json
 import subprocess
 import sys
 import tempfile
@@ -253,6 +254,80 @@ class TestFeatureChecklist(unittest.TestCase):
             self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
             self.assertIn("未分類", ok.stdout)
 
+
+TICKETS = """# 清單
+
+## 模組 A #5
+
+完成 0／共 0。
+
+- [x] 新增 — 說明 #11
+- [ ] 🚧 匯入功能 #13
+- [ ] 📋 匯出 — 見 x #12
+- [ ] 💡 行動版 — 討論中（待確認） #7
+- [-] 列印 — 不做 #8
+- [ ] 沒標記 #4
+- [ ] 📋 報表 — 見 #12 的討論
+
+## 模組 B
+
+- [ ] 📋 B — ⛔ 等：匯入功能
+"""
+
+
+class Tickets(unittest.TestCase):
+    def setUp(self):
+        self.fc = load()
+        self.t = {i["name"]: i for i in self.fc.tickets(TICKETS)}
+
+    def test_trailing_ticket_stripped_from_name(self):
+        self.assertEqual(self.t["匯出"]["ticket"], 12)
+        self.assertEqual(self.t["匯入功能"]["ticket"], 13)
+
+    def test_section_ticket(self):
+        i = self.t["匯出"]
+        self.assertEqual((i["section"], i["section_ticket"]), ("模組 A", 5))
+        self.assertIsNone(self.t["B"]["section_ticket"])
+        r = self.fc.analyze(TICKETS)
+        self.assertEqual(r["sections"][0]["name"], "模組 A")
+        out = self.fc.rewrite(TICKETS, "2026-11-14")
+        self.assertIn("## 模組 A #5\n\n完成 1／共 6。", out)
+
+    def test_mid_line_ref_ignored(self):
+        self.assertIsNone(self.t["報表"]["ticket"])
+
+    def test_pending_with_ticket(self):
+        i = self.t["行動版"]
+        self.assertEqual((i["ticket"], i["stage"]), (7, "backlog"))
+        self.assertEqual(len(self.fc.analyze(TICKETS)["pending"]), 1)
+
+    def test_stage_mapping(self):
+        got = {n: self.t[n]["stage"] for n in ("新增", "匯入功能", "匯出", "行動版", "列印", "沒標記")}
+        self.assertEqual(got, {"新增": "done", "匯入功能": "in-progress", "匯出": "todo",
+                               "行動版": "backlog", "列印": "canceled", "沒標記": "unclassified"})
+
+    def test_blocker_name_with_ticket(self):
+        text = TICKETS.replace("- [ ] 🚧 匯入功能 #13", "- [x] 匯入功能 #13")
+        d = self.fc.deps(text)
+        self.assertEqual(d["unknown"], [])
+        self.assertTrue(any("匯入功能" in r for r in d["resolved"]))
+
+    def test_todo_items(self):
+        got = self.fc.todo_items("# 待辦\n\n說明\n\n- 修 X：脈絡 #9\n- 查 Y\n- [ ] 不是 todo 行\n")
+        self.assertEqual(got, [{"text": "修 X：脈絡", "ticket": 9}, {"text": "查 Y", "ticket": None}])
+
+    def test_cli_tickets_and_todo(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "feature.md"
+            f.write_text(TICKETS, encoding="utf-8")
+            t = Path(d) / "todo.md"
+            t.write_text("# 待辦\n\n- 修 X #9\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(SCRIPT), str(f), "--tickets"], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(len(json.loads(r.stdout)), 8)
+            r = subprocess.run([sys.executable, str(SCRIPT), "--todo", str(t)], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(json.loads(r.stdout), [{"text": "修 X", "ticket": 9}])
 
 
 class DefaultPath(unittest.TestCase):

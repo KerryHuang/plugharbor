@@ -40,7 +40,7 @@
 ## 4. 規格回填
 
 規格狀態改為「已實作」、補變更紀錄；只改 `<spec.dir>` 下的文件，不動程式碼。無規格時略過。
-有 `docs/feature.md`（舊名 `docs/feature-checklist.md`）就把本功能的項目打勾並跑腳本更新數字（格式見 plugin 根的 `references/feature-checklist.md`）。
+有 `docs/feature.md`（舊名 `docs/feature-checklist.md`）就把本功能的項目打勾並跑腳本更新數字（格式見 plugin 根的 `references/feature-checklist.md`）。有設 `ticket.tool` 時，照同一份的「同步票」一節一併改票。
 
 LEARNINGS、規格回填與功能清單要進 git：照計畫其他 task 的慣例逐檔 `git add`、commit（不用 `git add -A`／`.`）；`spec-trace.md` 不進 git。
 

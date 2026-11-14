@@ -5,6 +5,8 @@
   python3 feature_checklist.py [路徑]           # 印報表（預設 docs/feature.md，沒有就讀舊名 docs/feature-checklist.md）
   python3 feature_checklist.py [路徑] --write   # 改寫檔頭「總計：」行與各節「完成 X／共 Y。」小計
   python3 feature_checklist.py [路徑] --check   # 數字行過期就 exit 1（可放 pre-commit）
+  python3 feature_checklist.py [路徑] --tickets # 每項的抽象階段與行尾票號 #n（JSON，對帳與同步票用）
+  python3 feature_checklist.py --todo <todo.md> # todo 每行文字與行尾票號（JSON）
   python3 feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「可合批」「可平行」「依序等待」「被擋」「未排段」，另列「列序矛盾」；排線用；路徑給 - 讀 stdin
   roadmap：預設讀清單同目錄的 roadmap.md（或 ROADMAP.md），檔頭「Roadmap：[名稱](相對路徑)」或 --roadmap <檔> 可覆寫；讀其段表（欄位含「工作段」「狀態」，列序＝順序），
   可開工只取第一個未完成段（含之前）的項目；可合批取緊接其後、連到同一份設計的段（含主線最多 BATCH_MAX 段）；可平行取其後 PARALLEL_WINDOW 個未完成段中有設計連結的段；沒段號與 💡 歸未排段、
@@ -14,6 +16,7 @@
 """
 import argparse
 import datetime
+import json
 import re
 import sys
 from pathlib import Path
@@ -31,6 +34,18 @@ KEYS = ("done", "doing", "planned", "idea", "unlabeled", "dropped")
 PARALLEL_WINDOW = 3  # 主線之後看幾個未完成段找可平行的；太大會把後期工作也列進來
 BATCH_MAX = 3  # 一批含主線最多幾段；再多審查看不仔細、一段卡住拖整批
 LINK = re.compile(r"\]\(([^)#]+)")
+TICKET = re.compile(r"\s+#(\d+)$")  # 行尾票號，見 references/feature-checklist.md「同步票」
+STAGES = {"done": "done", "doing": "in-progress", "planned": "todo", "idea": "backlog",
+          "dropped": "canceled", "unlabeled": "unclassified"}
+
+
+def ticket_of(text):
+    m = TICKET.search(text.rstrip())
+    return int(m.group(1)) if m else None
+
+
+def section_name(line):
+    return TICKET.sub("", line[3:].strip())
 
 
 def classify(mark, rest):
@@ -53,7 +68,7 @@ def analyze(text):
     current = None
     for line in text.splitlines():
         if line.startswith("## "):
-            current = {"name": line[3:].strip(), "counts": empty()}
+            current = {"name": section_name(line), "counts": empty()}
             sections.append(current)
             continue
         m = ITEM.match(line)
@@ -98,7 +113,7 @@ def rewrite(text, today):
             out += ["", summary_line(r, today)]
             seen_summary = True
         if line.startswith("## "):
-            c = by_name.get(line[3:].strip())
+            c = by_name.get(section_name(line))
             j = i + 1
             while j < len(lines) and not lines[j].strip():
                 j += 1
@@ -116,14 +131,14 @@ def rewrite(text, today):
 def item_name(rest):
     for emoji in LABELS:
         rest = rest.removeprefix(emoji)
-    return SEGMENT.sub("", rest.split(" — ")[0]).strip()
+    return SEGMENT.sub("", TICKET.sub("", rest.rstrip()).split(" — ")[0]).strip()
 
 
 def items(text):
-    out, section = [], None
+    out, section, section_ticket = [], None, None
     for line in text.splitlines():
         if line.startswith("## "):
-            section = line[3:].strip()
+            section, section_ticket = section_name(line), ticket_of(line)
             continue
         m = ITEM.match(line)
         if not m:
@@ -131,10 +146,25 @@ def items(text):
         seg = SEGMENT.search(line)
         blk = BLOCKED.search(line)
         out.append({"line": line.strip(), "section": section, "name": item_name(m.group(2)),
+                    "ticket": ticket_of(line), "section_ticket": section_ticket,
+                    "stage": STAGES[classify(m.group(1), m.group(2))],
                     "done": m.group(1) in "xX", "open": m.group(1) == " ",
                     "idea": m.group(2).startswith("💡"),
                     "segment": seg.group(1) if seg else None,
                     "blockers": [b.strip() for b in blk.group(1).split("、") if b.strip()] if blk else []})
+    return out
+
+
+def tickets(text):
+    return [{k: i[k] for k in ("name", "stage", "ticket", "section", "section_ticket")} for i in items(text)]
+
+
+def todo_items(text):
+    out = []
+    for line in text.splitlines():
+        if line.startswith("- ") and not line.startswith("- ["):
+            body = line[2:].rstrip()
+            out.append({"text": TICKET.sub("", body).strip(), "ticket": ticket_of(body)})
     return out
 
 
@@ -311,8 +341,13 @@ def main():
     g.add_argument("--write", action="store_true")
     g.add_argument("--check", action="store_true")
     g.add_argument("--open", action="store_true", help="未完成項目分可開工／被擋（排線用）")
+    g.add_argument("--tickets", action="store_true", help="每個項目的階段與行尾票號，JSON（對帳用）")
+    g.add_argument("--todo", type=Path, help="todo.md 每行的文字與行尾票號，JSON（對帳用）")
     ap.add_argument("--roadmap", type=Path, help="roadmap 檔：段表欄位含「工作段」「狀態」")
     a = ap.parse_args()
+    if a.todo:
+        print(json.dumps(todo_items(a.todo.read_text(encoding="utf-8")), ensure_ascii=False))
+        return 0
     if a.path is None:  # 2026-11-14 改名 feature.md；還沒改名的專案照讀舊名
         a.path = next((n for n in ("docs/feature.md", "docs/feature-checklist.md") if Path(n).is_file()), "docs/feature.md")
     p = Path(a.path)
@@ -325,6 +360,9 @@ def main():
         print(f"找不到 roadmap：{rp}", file=sys.stderr)
         return 1
     roadmap = parse_roadmap(rp.read_text(encoding="utf-8")) if rp else None
+    if a.tickets:
+        print(json.dumps(tickets(text), ensure_ascii=False))
+        return 0
     if a.open:
         print(open_items(text, roadmap))
         return 0
