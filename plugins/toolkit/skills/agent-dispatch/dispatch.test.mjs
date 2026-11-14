@@ -191,6 +191,11 @@ function shimDir() {
 const mode = process.env['SHIM_${name.toUpperCase()}']
 if (mode === 'quota') { console.log('Error: usage limit reached, try again in 2 hours'); process.exit(1) }
 if (mode === 'long') { process.stdout.write('y'.repeat(20000)); process.exit(0) }
+if (mode === 'log') {  // codex exec：stderr 是整段執行紀錄，-o 指定的檔只放最後答案
+  const i = process.argv.indexOf('-o')
+  if (i > 0) require('node:fs').writeFileSync(process.argv[i + 1], 'final answer')
+  process.stderr.write('hook log '.repeat(3000)); console.log('final answer'); process.exit(0)
+}
 console.log('answer from ${name} ' + process.argv.slice(2).join(' '))
 `)
   }
@@ -232,6 +237,21 @@ test('ask：--to 不查表，但額度錯誤照樣封鎖', () => {
   const r = ask(['--to', 'codex'], { SHIM_CODEX: 'quota' })
   assert.notEqual(r.status, 0)
   assert.ok(r.state.blocks.codex)
+})
+
+test('ask：codex 只回最後答案，執行紀錄另存（產品化 session 2026-11-14 結果檔 39 萬字元）', () => {
+  const r = ask(['--to', 'codex'], { SHIM_CODEX: 'log' })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /final answer/)
+  assert.doesNotMatch(r.stdout, /hook log/)
+  assert.match(r.stdout, /執行紀錄 \d+ 字元，見 .*p\.md\.out\.md/)
+  assert.match(readFileSync(`${r.prompt}.out.md`, 'utf8'), /hook log/)
+})
+
+test('buildArgs：codex 給 lastFile 時加 -o，仍在 prompt 之前', () => {
+  const a = buildArgs('codex', 'ask', 'p', { lastFile: '/t/last.md' })
+  assert.ok(has(a, '-o', '/t/last.md'))
+  assert.equal(a.at(-1), 'p')
 })
 
 test('ask：--model 與 --effort 覆寫查表結果並傳給 CLI', () => {

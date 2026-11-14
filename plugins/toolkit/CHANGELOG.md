@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.23.2] - 2026-11-14
+
+- fix(agent-dispatch): `skills/agent-dispatch/scripts/ask.mjs` 問 codex 時改用 `-o` 把最後答案寫到獨立檔，只印答案；完整執行紀錄（stdout＋stderr，含 hook 訊息與 skill 原文）一律存到結果檔備查，並在答案後註明字元數與路徑。`skills/agent-mesh-check/scripts/clis.mjs` 的 `buildArgs` 加 `lastFile` 選項。起因：2026-11-14 產品化自動駕駛 session 回報 codex 審查的結果檔約 39 萬字元，答案還印兩次，主控只能 grep 最後一個「codex」行之後的段落。
+
 ## [0.23.1] - 2026-11-14
 
 - fix(hooks): `reply-language-guard` 只掃最後一個回合起點之後的回覆。跨 session 訊息、subagent 交回、Stop hook 回饋都是 meta 的 user 列，也會開啟新回合；原本只從最後一則真正的提問算起，自動駕駛開場回合的一句英文在之後每個回合都被重擋。起因：2026-11-14 產品化自動駕駛 session 換新後，連續 5 個回合被同一句舊英文擋下（d 類回報）。

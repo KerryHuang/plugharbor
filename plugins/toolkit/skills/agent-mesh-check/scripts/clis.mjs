@@ -26,7 +26,7 @@ export function resolveBin(name, env = process.env, platform = process.platform)
 // probe：唯讀只回字串；driver：自動核准，只用在驗證第 3 層的 A；ask：派工短問答，唯讀但保留使用者設定；
 // worker：背景 worker 要能改檔（claude 自動接受編輯、pi 開讀寫工具，codex／agy 同 driver）。
 // opts.model／opts.effort：派工指定模型與思考等級（參數名見 ../references/cli-notes.md）；不給就和以前完全相同。
-export function buildArgs(name, mode, prompt, { model, effort, resultFile } = {}) {
+export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastFile } = {}) {
   const m = (flag, v) => (v ? [flag, v] : [])
   // prompt 以 - 開頭（如 --- frontmatter）會被當成選項（claude 報 unknown option）；前面補一個半形空格，四家都當位置參數
   if (String(prompt).startsWith('-')) prompt = ` ${prompt}`
@@ -43,7 +43,8 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile } = {}
       const lean = mode === 'ask' ? [] : ['--ignore-user-config', '--ignore-rules']
       const pick = [...m('-m', model), ...m('-c', effort && `model_reasoning_effort=${effort}`)]
       const full = mode === 'driver' || mode === 'worker'
-      return ['exec', ...lean, ...pick, '--ephemeral', '--skip-git-repo-check', '-s', full ? 'danger-full-access' : 'read-only', prompt]
+      // lastFile：最後答案另寫一檔（-o）；stdout／stderr 混著整段執行紀錄（hook、skill 原文），可達數十萬字元
+      return ['exec', ...lean, ...pick, '--ephemeral', '--skip-git-repo-check', '-s', full ? 'danger-full-access' : 'read-only', ...m('-o', lastFile), prompt]
     }
     case 'agy': {
       // agy 沒有真正的唯讀：--mode plan 在 -p 只產計畫不回答，--sandbox 只限 shell、不限它的寫檔工具。

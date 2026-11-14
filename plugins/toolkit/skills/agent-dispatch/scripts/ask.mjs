@@ -3,7 +3,9 @@
 // 對象：--to 指定，或 --type／--tier 查 ../references/routing.json 依序挑；額度用盡就封鎖該家、改派下一家。
 // 第一行固定印「[ask] 交給 <cli>（<模型>／<等級>），理由：…」；輸出超過 16000 字元時全文寫進結果檔，只印摘要。
 // exit：目標 CLI 的 exit code；逾時 124；PATH 上找不到 127；用法錯誤 2；所有候選都不能用 75。
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CLIS, resolveBin, buildArgs, scrubEnv, run, quotaInfo } from '../../agent-mesh-check/scripts/clis.mjs'
 import { statePath as meshStatePath } from '../../agent-mesh-check/scripts/mesh.mjs'
@@ -69,7 +71,11 @@ async function main(argv) {
       if (o.to) return 127
       continue
     }
-    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, c), { cwd: o.cwd, timeoutMs: o.timeout * 1000, env: scrubEnv(process.env) })
+    const tmp = c.cli === 'codex' ? mkdtempSync(join(tmpdir(), 'ask-')) : null
+    const lastFile = tmp && join(tmp, 'last.md')
+    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, { ...c, lastFile }), { cwd: o.cwd, timeoutMs: o.timeout * 1000, env: scrubEnv(process.env) })
+    let last = ''
+    if (tmp) { try { last = readFileSync(lastFile, 'utf8').trim() } catch {} rmSync(tmp, { recursive: true, force: true }) }
     const q = r.code !== 0 && !r.timedOut ? quotaInfo(r.out) : null
     if (q) {
       blockCli(stateFile, c.cli, q.resetAt, 'quota')
@@ -79,9 +85,14 @@ async function main(argv) {
       continue
     }
     const out = o.out ?? `${file}.out.md`
-    if (r.out.length > 16000) writeFileSync(out, r.out)
     console.log(`[ask] 交給 ${c.cli}（${c.model ?? '預設模型'}／${c.effort ?? '預設等級'}），理由：${reason}`)
-    process.stdout.write(summarize(r.out, 16000, 4000, out))
+    if (last) {  // 有獨立的最後答案：只印答案，執行紀錄存檔備查
+      writeFileSync(out, r.out)
+      process.stdout.write(`${summarize(last, 16000, 4000, out)}\n\n（執行紀錄 ${r.out.length} 字元，見 ${out}）\n`)
+    } else {
+      if (r.out.length > 16000) writeFileSync(out, r.out)
+      process.stdout.write(summarize(r.out, 16000, 4000, out))
+    }
     if (r.timedOut) { console.error(`\n[ask] ${c.cli} 超過 ${o.timeout} 秒，已中斷`); return 124 }
     return r.code ?? 1
   }
