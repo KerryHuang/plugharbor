@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 13／共 25（另有 0 項決定不做）；進行中 0、已規劃 6、構想 6；待確認 0 項。更新於 2026-11-14。
+總計：完成 17／共 25（另有 0 項決定不做）；進行中 0、已規劃 2、構想 6；待確認 0 項。更新於 2026-11-14。
 
 ## workspace：unattended（自動駕駛）
 
@@ -28,14 +28,14 @@
 
 ## lifecycle：ticket skill 雙軌示範（2026-11-14 規劃）
 
-完成 0／共 6。
+完成 4／共 6。
 
 ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：repo 的 roadmap／feature／todo 為準，GitHub Issues＋Projects 跟著同步，對不上就是 skill 的 bug。段→父票、feature 項目→子票（清單行附 `#n`）、todo→`todo` label 票；外部回饋先開 issue 走 triage。設計見 `docs/superpowers/specs/2026-11-14-ticket-dual-track-design.md`。
 
-- [ ] 📋 ticket-ops 送出前外洩檢查：建票、留言、改描述前用 `.leak-denylist` 掃內文，命中就停（兩個示範 repo 都公開）
-- [ ] 📋 ticket-ops 同步 GitHub Projects：建票自動加進看板，改階段同時改「狀態」欄位（使用者 2026-11-14 裁決）
-- [ ] 📋 lifecycle 改清單同步票：任何流程改 feature.md／todo.md（新增、改標記、換節、刪除）都同步建票或改階段，行尾附 `#n`
-- [ ] 📋 查 GitHub 原生 sub-issue 與 blocked-by 能否取代內文慣例
+- [x] ticket-ops 送出前外洩檢查（lifecycle 2.8.0，標題一併檢查 2.12.1）：建票、留言、改描述前用 `.leak-denylist` 掃內文，命中就停（兩個示範 repo 都公開）
+- [x] ticket-ops 同步 GitHub Projects：建票自動加進看板，改階段同時改「狀態」欄位（使用者 2026-11-14 裁決；lifecycle 2.12.0，私有看板 #1 實測）
+- [x] lifecycle 改清單同步票（lifecycle 2.9.0；對帳腳本 reconcile.py 2.10.0）：任何流程改 feature.md／todo.md（新增、改標記、換節、刪除）都同步建票或改階段，行尾附 `#n`
+- [x] 查 GitHub 原生 sub-issue 與 blocked-by 能否取代內文慣例：都能用，已改為原生、內文慣例降為退路（lifecycle 2.11.0）
 - [ ] 📋 第一階段：plugharbor、xiaoxiao 現有項目全部補開（完成的關閉）、跑兩週；過關條件：7 個操作加看板同步各實跑且讀回一致、各階段數量最後連續 5 天差異 0、外洩掃描 0、第二份週報對得上、發現的 bug 都處理（使用者 2026-11-14 裁決）
 - [ ] 📋 第二階段：條件達成後擴到 Formwright，補驗 qa-verify `--sweep` 與大量票的報表
 
