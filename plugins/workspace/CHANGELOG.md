@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.15.2] - 2026-11-14
+
+- fix(unattended): `skills/unattended/references/autopilot.md` 開場檢查加「專案層 plugin 沒載入（不擋開跑）」：改用 `installed_plugins.json` 記的版本路徑、不翻快取挑版本，並提醒使用者改用 project 範圍裝、從專案 repo 開 session。`skills/unattended/references/project-config.md` 外洩掃描要寫明清單檔絕對路徑。起因：2026-11-14 產品化 session 換新後回報——session 從上層目錄開、lifecycle 只用 local 範圍裝在兩個 worktree，載入不到；專案設定沒寫外洩清單路徑，新 session 要自己找。
+
 ## [1.15.1] - 2026-11-14
 
 - fix(unattended): `skills/unattended/scripts/self-rotate.sh` 確認接回訊息時只比對前 10 個字，長句在畫面折行也不會重送；腳本與 toolkit handoff 的副本保持一致。`skills/unattended/references/autopilot.md` 換新前的記帳加「試過但排除的方向」「下一步的第一個動作」，並寫明帳本就是交接檔、不另跑 `/handoff`。起因：2026-11-14 討論換新前要不要先 `/handoff`，發現帳本規則少這兩項；toolkit handoff 共用腳本時接續句含絕對路徑會折行。
