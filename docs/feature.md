@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 13／共 19（另有 0 項決定不做）；進行中 0、已規劃 0、構想 6；待確認 0 項。更新於 2026-11-14。
+總計：完成 13／共 25（另有 0 項決定不做）；進行中 0、已規劃 6、構想 6；待確認 0 項。更新於 2026-11-14。
 
 ## workspace：unattended（自動駕駛）
 
@@ -25,6 +25,19 @@
 - [x] 工具故障不靜默降級：`route.mjs reviewer` 回 `crossFamily: false` 才算湊不到別家；腳本報錯或輸出不是 JSON 算工具故障，用正確路徑重試一次，仍失敗就繼續跑、報告標紅並推播（使用者 2026-11-14 裁決；toolkit 0.22.0、workspace 1.12.0）
 - [x] 無人值守 worker 不卡在提問：無人值守派出的 worker 帶「沒人在場」標記（環境變數，傳不進 herdr pane 就改標記檔），ask-question-guard 擋下 AskUserQuestion，叫它照「（推薦）」做並把題目與選擇寫進結果檔的「主控裁決待確認」；不可逆操作照舊停下（起因：2026-11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 腳本；使用者 2026-11-14 裁決）
 - [x] ask.mjs 封鎖到期時間改印本地時間並標時區（起因：UTC 無標記，主控誤判封鎖已過）
+
+## lifecycle：ticket skill 雙軌示範（2026-11-14 規劃）
+
+完成 0／共 6。
+
+ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：repo 的 roadmap／feature／todo 為準，GitHub Issues＋Projects 跟著同步，對不上就是 skill 的 bug。段→父票、feature 項目→子票（清單行附 `#n`）、todo→`todo` label 票；外部回饋先開 issue 走 triage。設計見 `docs/superpowers/specs/2026-11-14-ticket-dual-track-design.md`。
+
+- [ ] 📋 ticket-ops 送出前外洩檢查：建票、留言、改描述前用 `.leak-denylist` 掃內文，命中就停（兩個示範 repo 都公開）
+- [ ] 📋 ticket-ops 同步 GitHub Projects：建票自動加進看板，改階段同時改「狀態」欄位（使用者 2026-11-14 裁決）
+- [ ] 📋 lifecycle 改清單同步票：任何流程改 feature.md／todo.md（新增、改標記、換節、刪除）都同步建票或改階段，行尾附 `#n`
+- [ ] 📋 查 GitHub 原生 sub-issue 與 blocked-by 能否取代內文慣例
+- [ ] 📋 第一階段：plugharbor、xiaoxiao 現有項目全部補開（完成的關閉）、跑兩週；過關條件：7 個操作加看板同步各實跑且讀回一致、各階段數量最後連續 5 天差異 0、外洩掃描 0、第二份週報對得上、發現的 bug 都處理（使用者 2026-11-14 裁決）
+- [ ] 📋 第二階段：條件達成後擴到 Formwright，補驗 qa-verify `--sweep` 與大量票的報表
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估）
 
