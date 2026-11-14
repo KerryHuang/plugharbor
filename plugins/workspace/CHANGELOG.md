@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.11.0] - 2026-11-14
+
+- feat(unattended): 長工作丟背景時改成照「空檔判準」挑工作：計畫、文件、報告永遠可做；另一個 worktree 的實作要和進行中的單元沒有共用檔、且重測試錯開；改到同一批檔案的照順序。每次在帳本記一行 `空檔：…`。實作與修正只跑相關測試加 typecheck、build，完整套件只在閘門跑一次（本機或 CI 照專案設定）。資源規則改為只共用 CPU 的可並行實作、重測試不同時跑。`skills/unattended/references/project-config.md` 範本加「完整套件在哪跑」與共用檔清單。起因：2026-11-14 一個專案的自動駕駛 session，主控多半在等 20–30 分鐘的本機完整測試，實作 subagent 和 CI 各跑一次佔掉本機兩次；同晚測試並行佔滿 xUnit 工作執行緒，一個有牆鐘上限的測試讓 CI 失敗兩次。原規則只寫「先做不衝突的待辦」，沒有判準，主控照樣閒著等。
+
 ## [1.10.1] - 2026-11-13
 
 - fix(project-setup): `detect.py`、`vendor.py`、`mirror.py` 的 stdout 改用 `errors="surrogateescape"`，ASCII locale 下含中文的路徑被解成 surrogate 時照原位元組輸出 UTF-8，不再 `UnicodeEncodeError`。起因：merge 後 Linux CI（`LC_ALL=C`、`PYTHONUTF8=0`）的中文路徑測試失敗，macOS 檔案系統編碼固定 UTF-8 所以本機沒重現。
