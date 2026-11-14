@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.16.0] - 2026-11-14
+
+- feat(unattended): 排線放寬為「主線＋最多 2 條平行線」（同時最多三條），平行線的共用檔要和其他每條線都沒有交集，同檔不同段落也算共用。新增 `skills/unattended/scripts/test-lock.sh`：重測試一律經它排隊，同一台機器一次只跑一支，殘留鎖（持有者已不在）自動接手；SKILL.md 空檔表與資源規則改成用它，不再靠 prompt 約定錯開。`skills/unattended/references/autopilot.md` 合批節加「共用閘門」：已各自審查過、疊在同一條分支上的段可以共用一次閘門與合併，不受 800 行上限。起因：2026-11-14 產品化自動駕駛 session 回報 (c)，實際同時跑了 3 條線（超過原上限 2 條），fg1a、fg1b 以「改不同段落」放行共用檔；重測試只靠 prompt 約定錯開，a3g 的後端測試因撞期多跑約一倍；fg1b＋fg1c 約 2.6k 行各自審查後共用一次 CI，省下一次閘門。使用者裁決兩題：放寬到 3 條、共用檔仍照順序、重測試真的排隊；共用閘門允許。
+
 ## [1.15.2] - 2026-11-14
 
 - fix(unattended): `skills/unattended/references/autopilot.md` 開場檢查加「專案層 plugin 沒載入（不擋開跑）」：改用 `installed_plugins.json` 記的版本路徑、不翻快取挑版本，並提醒使用者改用 project 範圍裝、從專案 repo 開 session。`skills/unattended/references/project-config.md` 外洩掃描要寫明清單檔絕對路徑。起因：2026-11-14 產品化 session 換新後回報——session 從上層目錄開、lifecycle 只用 local 範圍裝在兩個 worktree，載入不到；專案設定沒寫外洩清單路徑，新 session 要自己找。
