@@ -5,9 +5,10 @@
   python3 feature_checklist.py [路徑]           # 印報表（預設 docs/feature-checklist.md）
   python3 feature_checklist.py [路徑] --write   # 改寫檔頭「總計：」行與各節「完成 X／共 Y。」小計
   python3 feature_checklist.py [路徑] --check   # 數字行過期就 exit 1（可放 pre-commit）
-  python3 feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「依序等待」「被擋」「未排段」四區，排線用；路徑給 - 讀 stdin
+  python3 feature_checklist.py [路徑] --open    # 未完成項目分「可開工」「可平行」「依序等待」「被擋」「未排段」，另列「列序矛盾」；排線用；路徑給 - 讀 stdin
   roadmap：預設讀清單同目錄的 roadmap.md（或 ROADMAP.md），檔頭「Roadmap：[名稱](相對路徑)」或 --roadmap <檔> 可覆寫；讀其段表（欄位含「工作段」「狀態」，列序＝順序），
-  可開工只取第一個未完成段（含之前）的項目、沒段號與 💡 歸未排段、段號阻擋依段狀態判斷，報表與 --check 另比對清單勾選與段狀態。
+  可開工只取第一個未完成段（含之前）的項目；可平行取其後 PARALLEL_WINDOW 個未完成段中有設計連結的段；沒段號與 💡 歸未排段、
+  段號阻擋依段狀態判斷，報表與 --check 另比對清單勾選與段狀態。
 
 格式見 ../references/feature-checklist.md。
 """
@@ -27,6 +28,7 @@ BLOCKED = re.compile(r"⛔ 等：([^。（]+)")
 DONE_STATUS = ("已上線", "已完成", "完成")
 LABELS = {"🚧": "doing", "📋": "planned", "💡": "idea"}
 KEYS = ("done", "doing", "planned", "idea", "unlabeled", "dropped")
+PARALLEL_WINDOW = 3  # 主線之後看幾個未完成段找可平行的；太大會把後期工作也列進來
 
 
 def classify(mark, rest):
@@ -135,8 +137,8 @@ def items(text):
 
 
 def parse_roadmap(text):
-    """markdown 表格中表頭含「工作段」與「狀態」者；回傳 {段號: (列序, 狀態)}，跨表依出現順序。
-    同一格的多個段號共用列序；重複段號記在 "_dups"。"""
+    """markdown 表格中表頭含「工作段」與「狀態」者；回傳 {段號: (列序, 狀態, 有設計連結)}，跨表依出現順序。
+    同一格的多個段號共用列序；重複段號記在 "_dups"。其他欄有 markdown 連結就算有設計（沒有的是佔位段）。"""
     segs, dups, cols, row = {}, [], None, 0
     for line in text.splitlines():
         if not line.strip().startswith("|"):
@@ -148,11 +150,12 @@ def parse_roadmap(text):
             continue
         if not cols or set("".join(cells)) <= set("-: "):
             continue
+        spec = any("](" in c for k, c in enumerate(cells) if k not in cols)
         for seg in re.split(r"[、,，\s]+", cells[cols[0]]):
             if seg in segs:
                 dups.append(seg)
             elif seg:
-                segs[seg] = (row, cells[cols[1]])
+                segs[seg] = (row, cells[cols[1]], spec)
         row += 1
     segs["_dups"] = dups
     return segs
@@ -225,16 +228,35 @@ def report_deps(d):
                 print(f"  {x}")
 
 
+def blocker_row(b, by_name, roadmap):
+    """阻擋目標所在的 roadmap 列序；目標是段號，或有段號的清單項名。找不到就 None。"""
+    if b in roadmap:
+        return roadmap[b][0]
+    seg = by_name.get(b, {}).get("segment")
+    return roadmap[seg][0] if seg in roadmap else None
+
+
 def open_items(text, roadmap=None):
-    """未完成項目分四區：可開工（roadmap 第一個未完成段及之前的段；沒 roadmap 時為全部非 💡）、
-    依序等待（更後面的段）、被擋（附仍在等的目標）、未排段（沒段號或段號不在 roadmap，以及 💡）。"""
+    """未完成項目分區：可開工（roadmap 第一個未完成段及之前的段；沒 roadmap 時為全部非 💡）、
+    可平行（其後 PARALLEL_WINDOW 個未完成段中有設計連結的段）、依序等待（更後面的段與佔位段）、
+    被擋（附仍在等的目標）、未排段（沒段號或段號不在 roadmap，以及 💡）。
+    另列「列序矛盾」：排在前面的段卻 ⛔ 等排在後面的段，照列序做一定會卡住。"""
     its = items(text)
     by_name = {i["name"]: i for i in its}
-    rows = [v for k, v in (roadmap or {}).items() if k != "_dups"]
-    current = min((r for r, st in rows if not seg_done(st)), default=None)
-    ready, queued, blocked, unplanned = [], [], [], []
+    rows = sorted({(v[0], v[1], v[2]) for k, v in (roadmap or {}).items() if k != "_dups"})
+    current = min((r for r, st, _ in rows if not seg_done(st)), default=None)
+    later = [(r, spec) for r, st, spec in rows if current is not None and r > current and not seg_done(st)]
+    parallel_rows = {r for r, spec in later[:PARALLEL_WINDOW] if spec}
+    ready, parallel, queued, blocked, unplanned, conflicts = [], [], [], [], [], []
     for n, i in enumerate(x for x in its if x["open"]):
         still = [b for b in i["blockers"] if blocker_state(b, by_name, roadmap) != "resolved"]
+        if roadmap is not None and i["segment"] in roadmap:
+            mine = roadmap[i["segment"]][0]
+            for b in still:
+                br = blocker_row(b, by_name, roadmap)
+                if br is not None and br > mine:
+                    conflicts.append(f"{i['name']}（段 {i['segment']}）排在段 {b} 前面，卻等 {b}："
+                                     "把它移到後面，或確認 ⛔ 是否只是排序偏好")
         if still:
             blocked.append(f"{i['line']}\n    ← 等：{'、'.join(still)}")
             continue
@@ -246,11 +268,15 @@ def open_items(text, roadmap=None):
             ready.append((n, n, line))
         elif current is None or seg[0] <= current:
             ready.append((seg[0], n, line))
+        elif seg[0] in parallel_rows:
+            parallel.append((seg[0], n, line))
         else:
             queued.append((seg[0], n, line))
     out = ["## 可開工", ""] + [x for *_, x in sorted(ready)]
-    for title, rows_ in (("依序等待", [x for *_, x in sorted(queued)]), ("被擋", blocked),
-                         ("未排段（要排程就在 roadmap 加列，可用佔位段號）", unplanned)):
+    for title, rows_ in (("可平行（開工前確認和主線不共用檔案）", [x for *_, x in sorted(parallel)]),
+                         ("依序等待", [x for *_, x in sorted(queued)]), ("被擋", blocked),
+                         ("未排段（要排程就在 roadmap 加列，可用佔位段號）", unplanned),
+                         ("列序矛盾", conflicts)):
         if rows_:
             out += ["", f"## {title}", ""] + rows_
     return "\n".join(out)

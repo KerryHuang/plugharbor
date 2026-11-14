@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.13.0] - 2026-11-14
+
+- feat(unattended): `skills/unattended/references/autopilot.md` 新增「排線：主線＋最多 1 條平行線」。每段收尾與丟長工作時重排：主線取 `--open` 的可開工，平行線從「可平行」挑第一個和主線不共用檔的段、開在另一個 worktree，重測試錯開；有列序矛盾就不繞過、寫待決並推播；排線表寫進累積報告並推播後直接開工，使用者回訊息改排線當插手。沒裝 lifecycle 時自己照同樣規則挑。起因同 lifecycle 2.5.0。
+
 ## [1.12.0] - 2026-11-14
 
 - feat(unattended): 派審查的工具故障而退回同家時照常往下做，但在回來報告最前面標 🔴、附錯誤訊息並推播，不能寫成湊不到別家；開 herdr pane worker 時帶 `--env AGENT_DISPATCH_UNATTENDED=1`（toolkit 0.22.0 起 worker 的提問會被擋下、改照推薦做），worker 代做的決定收進「主控裁決待確認」。起因：同 toolkit 0.22.0——自動駕駛 session 的跨家族審查因工具故障悄悄降級十多段，以及 11-08 worker 卡在選擇題。

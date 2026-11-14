@@ -151,6 +151,37 @@ class TestFeatureChecklist(unittest.TestCase):
             subprocess.run([sys.executable, str(SCRIPT), str(p), "--write"], check=True, capture_output=True)
             self.assertEqual(run("--check").returncode, 1)  # 數字對了，但不同步仍失敗
 
+    def test_parallel_window_and_order_conflict(self):
+        roadmap = ("| 工作段 | 內容 | 狀態 | 設計 |\n|---|---|---|---|\n"
+                   "| d1 | 已做 | 已上線 | [d](d.md) |\n"
+                   "| m1 | 主線 | 未開始 | [m](m.md) |\n"
+                   "| x1 | 有設計 | 未開始 | [x1](x1.md) |\n"
+                   "| x2 | 佔位 | 未開始（設計待寫） | — |\n"
+                   "| x3 | 有設計但等後面 | 未開始 | [x3](x3.md) |\n"
+                   "| x4 | 窗外 | 未開始 | [x4](x4.md) |\n")
+        checklist = ("# 清單\n\n## A\n\n"
+                     "- [ ] 📋 主（段 m1）\n- [ ] 📋 平甲（段 x1）\n- [ ] 📋 佔（段 x2）\n"
+                     "- [ ] 📋 平乙（段 x3） — ⛔ 等：x4\n- [ ] 📋 遠（段 x4）\n")
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "roadmap.md").write_text(roadmap, encoding="utf-8")
+            p = d / "feature-checklist.md"
+            p.write_text(checklist, encoding="utf-8")
+            out = subprocess.run([sys.executable, str(SCRIPT), str(p), "--open"],
+                                 capture_output=True, text=True, check=True).stdout
+            ready, rest = out.split("## 可平行")
+            parallel, rest = rest.split("## 依序等待")
+            queued, rest = rest.split("## 被擋")
+            self.assertIn("主", ready)
+            self.assertIn("平甲", parallel)  # 往後 3 段內、有設計、沒被擋
+            self.assertNotIn("佔", parallel)  # 佔位段（沒設計連結）不平行
+            self.assertIn("佔", queued)
+            self.assertIn("遠", queued)  # 窗外（第 4 段）照順序等
+            self.assertNotIn("平乙", parallel)
+            self.assertIn("平乙", rest)  # 被擋
+            self.assertIn("## 列序矛盾", rest)
+            self.assertIn("平乙（段 x3）排在段 x4 前面，卻等 x4", rest)
+
     def test_default_sibling_roadmap(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
