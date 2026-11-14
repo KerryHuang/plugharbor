@@ -51,6 +51,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
 4. 照 reference 的對應步驟呼叫工具（Linear MCP 或 `gh`）。
 5. 回傳票 ID／URL 與實際做了什麼；工具降級（例如 GitHub 的 blocked-by 只能寫在內文）時明講落差。
 
+## 對帳（雙軌時）
+
+repo 清單為準、GitHub 跟著同步的專案，定期（建議每天）在 repo 根目錄跑：
+
+```bash
+python3 ${CLAUDE_SKILL_DIR}/scripts/reconcile.py --repo <owner/repo> [--log <jsonl>]
+```
+
+比對清單與 todo 的行尾 `#n` 對票的階段、parent、看板 Status，列出缺票號、孤兒票、未分類項。🚧 對 `in-progress` 或 `in-review` 都算一致；「[測試]」票、掛 `--exclude-label`（預設 `test`）的票、已關的 todo 票、還在 triage（掛 `triage` 或沒有 `stage:*`）的票不計。parent 要給 `--parents-json`（票號 → 父票號）才比。退出碼 0 差異 0、1 有差異、3 查詢可能截斷（不得當成對帳結果）。
+
 ## 紅線
 
 - 外洩檢查命中就不送出。
