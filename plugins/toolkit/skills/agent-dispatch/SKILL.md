@@ -8,7 +8,7 @@ argument-hint: "[對象] <任務>"
 
 你可以是 claude、codex、agy、pi 其中任何一個入口（主控）。四家對等，共用 `references/routing.json` 這份路由規則。
 
-腳本都在本 SKILL.md 旁的 `scripts/`；在非 Claude 入口，`${CLAUDE_SKILL_DIR}` 換成本 SKILL.md 所在的目錄。
+腳本都在本 SKILL.md 旁的 `scripts/`；在非 Claude 入口，`${CLAUDE_SKILL_DIR}` 換成本 SKILL.md 所在的目錄。context 壓縮後也照用 skill 開頭的 Base directory，不要 ls 或 glob 外掛快取找腳本：快取留著幾十個舊版，挑錯版本會缺子命令。
 
 ## 1. 選對象
 
@@ -60,6 +60,7 @@ argument-hint: "[對象] <任務>"
 - 挑審查者：用 `route.mjs` 的 `reviewer()` 規則——top 等級候選裡第一個跟作者不同家族的。家族：claude 與 pi 是 anthropic、codex 是 openai、agy 是 google。
 - 每次派審查前都先跑 `node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" reviewer <作者 CLI>`，不沿用上一次的審查者。回傳的 `crossFamily` 是 `false` 就直接走同家審查，不要先送別家再等失敗。
 - 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
+- 只有 `reviewer` 正常回傳 JSON 且 `crossFamily` 是 `false` 才算湊不到別家。腳本報錯、印出用法或輸出不是 JSON 是**工具故障**：用 Base directory 的腳本重試一次；仍失敗才同家審查，回報寫「工具故障，退回同家審查」並附錯誤訊息，不能寫成湊不到別家。
 - 審查用短問答（`--to <查到的審查者> --model … --effort high`），把 diff 寫進 prompt 檔。prompt 從 `references/review-prompt.md` 的範本開始寫。
 - 封鎖到期後同一家又因沒額度失敗：用 `route.mjs block <cli> <到期時間>` 手動延長封鎖，並在回報裡寫明。
 
@@ -114,6 +115,7 @@ argument-hint: "[對象] <任務>"
 
    - 每開一個 pane 就跑一次 `herdr_layout.py`（主 session 最大並掛「★」標籤，同 tab 最多 6 個 worker）；不手動 `--direction down`、不 `pane resize`。`--label` 第一次給即可。
    - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
+   - 主控在無人值守時再加 `--env AGENT_DISPATCH_UNATTENDED=1`：worker 要用 AskUserQuestion 時會被擋下，改照「（推薦）」做，並把題目與選擇寫進結果檔的「主控裁決待確認」。
    - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`（`--env` 同上），取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
    - 起好後 `herdr pane rename <pane_id> <名稱>`。
    - 指定 agent 定義（claude／codex）：`agent start` 尾端的 `--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。

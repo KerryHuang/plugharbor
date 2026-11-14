@@ -167,7 +167,7 @@ test('meshAvailable：只排除第 2 層明確沒過的；結果裡沒有的（�
 import { spawnSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { summarize } from './scripts/ask.mjs'
+import { summarize, fmt } from './scripts/ask.mjs'
 
 const ASK = fileURLToPath(new URL('./scripts/ask.mjs', import.meta.url))
 
@@ -598,4 +598,16 @@ test('route.mjs reviewer 挑跟作者不同家族的審查者', () => {
   const got = JSON.parse(r.stdout)
   assert.equal(got.cli, 'agy')
   assert.equal(got.crossFamily, true)
+})
+
+test('fmt 印本地時間並標時區（UTC 不標會被誤讀成本地）', () => {
+  const tz = process.env.TZ
+  try {
+    process.env.TZ = 'Asia/Taipei'
+    assert.equal(fmt(Date.UTC(2026, 10, 14, 8, 41)), '2026-11-14 16:41（UTC+8）')
+    process.env.TZ = 'UTC'
+    assert.equal(fmt(Date.UTC(2026, 10, 14, 8, 41)), '2026-11-14 08:41（UTC+0）')
+  } finally {
+    if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz
+  }
 })

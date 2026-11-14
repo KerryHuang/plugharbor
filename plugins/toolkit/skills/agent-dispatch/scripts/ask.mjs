@@ -13,7 +13,13 @@ const usage = `用法：node ask.mjs (--to <${CLIS.join('|')}> | --type <類型>
   [--model <模型>] [--effort <low|medium|high|xhigh|max>] [--timeout <秒，預設 600>] [--cwd <目錄>]
   [--out <結果檔，預設 <prompt 檔>.out.md>] [--state <狀態檔>] [--mesh <agent-mesh last.json>] <prompt 檔>`
 
-const fmt = t => new Date(t).toISOString().replace('T', ' ').slice(0, 16)
+// 本地時間並標時區：只印 UTC 又不標，主控曾把 08:41（台北 16:41）誤讀成本地時間、以為封鎖已過
+export const fmt = t => {
+  const d = new Date(t), p = n => String(n).padStart(2, '0')
+  const off = -d.getTimezoneOffset(), a = Math.abs(off)
+  const tz = `UTC${off < 0 ? '-' : '+'}${Math.floor(a / 60)}${a % 60 ? ':' + p(a % 60) : ''}`
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}（${tz}）`
+}
 
 export function summarize(text, limit = 16000, head = 4000, file) {
   if (text.length <= limit) return text

@@ -2,6 +2,14 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.22.0] - 2026-11-14
+
+- feat(hooks): `compact-context` 壓縮後比對本 session 載入的 toolkit 版本與 `installed_plugins.json` 的已安裝版本，落後就提醒「告一段落時換新 session」；判斷不了就不提醒。
+- feat(hooks): `ask-question-guard` 看到 `AGENT_DISPATCH_UNATTENDED=1` 就擋下 AskUserQuestion，叫 worker 照「（推薦）」做、把題目與選擇寫進結果檔的「主控裁決待確認」，不可逆操作寫進待決後停下。
+- feat(agent-dispatch): 腳本一律用 skill 開頭的 Base directory，不 ls／glob 外掛快取；`reviewer` 正常回 JSON 且 `crossFamily: false` 才算湊不到別家，腳本報錯、印用法或輸出不是 JSON 算工具故障，重試一次仍失敗才同家審查並寫「工具故障，退回同家審查」；herdr pane 在無人值守時加 `--env AGENT_DISPATCH_UNATTENDED=1`。
+- fix(agent-dispatch): `ask.mjs` 的封鎖到期時間改印本地時間並標時區（例：`2026-11-14 16:41（UTC+8）`）。
+- 起因：2026-11-06～14 一個自動駕駛 session（壓縮 49 次）。壓縮後 Claude Code 已自動附上用過的 skill 與正確路徑，主控卻自己 glob 快取挑到舊版 0.9.3（沒有 `reviewer`），把報錯當成湊不到別家，之後十多段審查都悄悄降成同家；該 session 開了 9 天一直跑 0.13.0，漏了 8 版修正；11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 的腳本；11-11 主控把 UTC 08:41 誤讀成本地時間、以為封鎖已過。
+
 ## [0.21.3] - 2026-11-13
 
 - fix(hooks): `rm-scratch-allow.py` 先把同一條指令裡以純字面值賦值的變數代回（`S=/路徑; rm -rf $S/x`），重複賦值、在賦值前使用、前置環境變數寫法照舊不放行；多行指令換行後的 rm 原本被切成沒有目標的片段（只會多跳確認），一併修正。起因：使用者回報無人值守仍卡在 rm 確認（「A variable in this command can't be checked」）；重播 1270 條歷史 rm 指令，這兩項只多放行 2 條，其餘多是帶轉向、`$(…)`、迴圈變數的長指令，所以同時在 setup 範本拿掉 rm 的 ask 規則、交給 auto mode 判斷（deny 規則保留）。

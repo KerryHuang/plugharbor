@@ -7,6 +7,7 @@ question 太短、選項 description 太短、沒有任何選項標「（推薦�
 同 lifecycle／sdlc preludes）。門檻只是最低線，寫夠長不代表自明。解析不到 stdin 時 fail-open。
 """
 import json
+import os
 import sys
 
 MIN_QUESTION = 40
@@ -36,6 +37,23 @@ def problems(questions) -> list:
     return out
 
 
+# 無人值守派出的 worker（agent-dispatch 在 pane 帶 AGENT_DISPATCH_UNATTENDED=1）沒人會回答提問，
+# 問了就卡住（2026-11-08 主控曾臨時寫腳本自動按 Enter）。擋下並叫它照推薦做、記待確認。
+UNATTENDED = ("ask-question-guard：你是無人值守派出的 worker，沒人會回答提問。不要問：照你標「（推薦）」的選項做，"
+              "把題目、你的選擇與理由寫進結果檔的「主控裁決待確認」一節，再繼續。"
+              "不可逆或破壞性操作（force push、刪分支或資料、reset --hard）不要做，寫進結果檔的「待決」後停下。")
+
+
+def deny(reason: str) -> None:
+    json.dump({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }, sys.stdout, ensure_ascii=False)
+
+
 def main() -> int:
     # Windows 預設編碼不是 UTF-8：中文 payload 解碼失敗會被下面吞掉、guard 靜默失效
     sys.stdin.reconfigure(encoding="utf-8")
@@ -44,20 +62,15 @@ def main() -> int:
         payload = json.load(sys.stdin)
         if payload.get("tool_name") != "AskUserQuestion":
             return 0
+        if os.environ.get("AGENT_DISPATCH_UNATTENDED") == "1":
+            deny(UNATTENDED)
+            return 0
         questions = payload["tool_input"]["questions"]
         found = problems(questions) if isinstance(questions, list) else []
     except Exception:
         return 0
-    if not found:
-        return 0
-    json.dump({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": "ask-question-guard：使用者可能只看得到對話框，題目要能單獨看懂。請修正後重問：\n- "
-                                        + "\n- ".join(found),
-        }
-    }, sys.stdout, ensure_ascii=False)
+    if found:
+        deny("ask-question-guard：使用者可能只看得到對話框，題目要能單獨看懂。請修正後重問：\n- " + "\n- ".join(found))
     return 0
 
 

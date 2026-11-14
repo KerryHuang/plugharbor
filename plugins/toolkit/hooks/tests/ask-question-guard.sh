@@ -60,4 +60,12 @@ done
 OUT="$(echo 'not json' | "$PY" "$GUARD")"; RC=$?
 [ "$RC" = 0 ] && [ -z "$OUT" ] || fail "壞 stdin 應 fail-open"
 
+# 7) 無人值守 worker（AGENT_DISPATCH_UNATTENDED=1）：合格的題目也擋，叫它照推薦做並記待確認
+OUT="$(payload "$GOOD_Q" "自動轉換舊檔（推薦）" "$GOOD_D" | AGENT_DISPATCH_UNATTENDED=1 "$PY" "$GUARD")"
+denied "$OUT" || fail "無人值守 worker 的提問沒被擋"
+echo "$OUT" | grep -q "（推薦）" || fail "無人值守退回訊息沒叫它照推薦做"
+echo "$OUT" | grep -q "主控裁決待確認" || fail "無人值守退回訊息沒叫它記進結果檔"
+OUT="$(payload "$GOOD_Q" "自動轉換舊檔（推薦）" "$GOOD_D" | AGENT_DISPATCH_UNATTENDED=0 "$PY" "$GUARD")"
+[ -z "$OUT" ] || fail "AGENT_DISPATCH_UNATTENDED=0 不該擋：$OUT"
+
 echo "PASS: ask-question-guard"
