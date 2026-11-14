@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.23.0] - 2026-11-14
+
+- feat(handoff): 在 herdr 內（`HERDR_ENV=1`）寫完交接檔後自己換新：背景啟動 `skills/handoff/scripts/self-rotate.sh`，等 pane 閒置後送 `/clear`、`/reload-plugins` 與接續句，不必使用者手動清空。條件是使用者打了 `/handoff`、在 AskUserQuestion 同意，或無人值守；有還在跑的 subagent／背景工作／CI 等待就先等。不在 herdr 內照舊印接續句。腳本與 workspace plugin 的 unattended 換新腳本是同一份副本，測試會比對。
+- feat(hooks): `compact-context` 壓縮後提示換新的時機：任務還沒做完、停在沒有背景工作的點才換，任務完成就不換；在 herdr 內指向 handoff 的 SKILL.md（使用者在場先問一次），否則建議使用者打 `/handoff`。版本落後提醒改成只陳述版本，做法統一看這句。
+- fix(hooks): `compact-context` 的語言提醒明寫涵蓋工具呼叫的說明文字。
+- 起因：2026-11-14 使用者指出換新 session 不只自動駕駛需要，要每個 session 自己判斷；使用者裁決在場先問一次、同意後自己跑完，只在任務中途的穩定點換。同日本 session 壓縮後 Bash 指令說明改用英文，原提醒只寫「回覆語言」。
+
 ## [0.22.0] - 2026-11-14
 
 - feat(hooks): `compact-context` 壓縮後比對本 session 載入的 toolkit 版本與 `installed_plugins.json` 的已安裝版本，落後就提醒「告一段落時換新 session」；判斷不了就不提醒。

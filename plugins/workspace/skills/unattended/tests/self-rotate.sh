@@ -33,6 +33,23 @@ check "最後一行是完成" "$([ "$(tail -1 "$TMP/log")" = 完成 ]; echo $?)"
 check "被吞掉的 /reload-plugins 有重送" "$([ "$(grep -c '^/reload-plugins$' "$TMP/sent")" -eq 2 ]; echo $?)"
 check "接回訊息送到" "$(grep -qF '❯ 繼續自動駕駛' "$TMP/screen"; echo $?)"
 
+# 情境 1b：長接回句在畫面上折行，仍只送一次
+rm -f "$TMP/sent" "$TMP/log"; LONG="讀 /a/很長的路徑/handoff.md，從「下一步」接著做；完工時照檔末刪掉它。"
+cat > "$TMP/b3" <<'STUB'
+#!/usr/bin/env bash
+S="$STUB_DIR"
+case "$1 $2" in
+  "agent get") echo "{\"agent_session\":{\"value\":\"$(cat "$S/sid3" 2>/dev/null || echo s0)\"}}" ;;
+  "agent read") cat "$S/screen3" 2>/dev/null || true ;;
+  "agent prompt") echo "$4" >> "$S/sent"
+    case "$4" in /clear) echo s9 > "$S/sid3" ;; /reload-plugins) echo Reloaded >> "$S/screen3" ;;
+      *) printf '%s\n' "$4" | fold -b -w 30 >> "$S/screen3" ;; esac ;;
+esac
+STUB
+mkdir -p "$TMP/b3d"; mv "$TMP/b3" "$TMP/b3d/herdr"; chmod +x "$TMP/b3d/herdr"
+PATH="$TMP/b3d:$PATH" STUB_DIR="$TMP" HERDR_PANE_ID=wX:p1 ROTATE_DELAY=0 sh "$SCRIPT" "$LONG" "$TMP/log"
+check "折行的長句只送一次" "$([ "$(grep -cF '讀 /a/' "$TMP/sent")" -eq 1 ] && [ "$(tail -1 "$TMP/log")" = 完成 ]; echo $?)"
+
 # 情境 2：不在 herdr pane 內就不跑
 if env -u HERDR_PANE_ID PATH="$TMP:$PATH" sh "$SCRIPT" 2>/dev/null; then r=1; else r=0; fi
 check "沒有 HERDR_PANE_ID 就退出" "$r"

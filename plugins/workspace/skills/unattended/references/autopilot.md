@@ -64,7 +64,7 @@
 收尾 commit 進了主線、累積報告與下一步排線寫好後，在 herdr 內（`HERDR_ENV=1`）就換新 session 再開下一段：下一段拿到乾淨的 context 與已安裝的最新版 plugin。不在 herdr 內就不換，直接接下一段。
 
 - **前提**：沒有還在跑的 subagent、背景工作或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一段收尾再試。
-- **先記帳**：帳本寫 `換新：<段> 收尾後`；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。
+- **先記帳**：帳本寫 `換新：<段> 收尾後`，加上這段試過但排除的方向、下一步的第一個動作（具體到檔案或指令）；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。帳本就是交接檔，不另跑 `/handoff`。
 - **啟動**：執行 `nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh 繼續自動駕駛 <帳本資料夾>/rotate.log >/dev/null 2>&1 &`，然後直接結束這一回合，不再呼叫工具。腳本等這個 pane 閒置後送 `/clear`、`/reload-plugins`、「繼續自動駕駛」，新 context 照「接回」接著做。
 - **失敗時**：`rotate.log` 最後一行不是「完成」，session 會停在原地；使用者送「繼續自動駕駛」照常接回。
 

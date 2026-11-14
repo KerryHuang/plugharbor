@@ -1,5 +1,6 @@
 #!/bin/sh
-# 自動駕駛換新 session：等本 pane 閒置（呼叫它的回合結束）後送 /clear、/reload-plugins，再送接回訊息。
+# 換新 session：等本 pane 閒置（呼叫它的回合結束）後送 /clear、/reload-plugins，再送接回訊息。
+# 副本：workspace/skills/unattended/scripts/self-rotate.sh 與 toolkit/skills/handoff/scripts/self-rotate.sh 必須一致（兩個 plugin 各自能單獨安裝）。
 # 用法（在 herdr pane 內由 session 背景啟動）：
 #   nohup sh self-rotate.sh [接回訊息] [log] >/dev/null 2>&1 &
 # /clear 後立刻送的指令會在畫面重繪時被吞掉，所以每步都確認生效、最多試 3 次。
@@ -26,5 +27,7 @@ OLD="$(sid)"
 send /clear '[ "$(sid)" != "$OLD" ]'
 send /reload-plugins 'herdr agent read "$P" 2>/dev/null | grep -q Reloaded'
 herdr agent wait "$P" --until idle --timeout 60000 >>"$LOG" 2>&1
-send "$MSG" 'herdr agent read "$P" 2>/dev/null | grep -qF -- "$MSG"'
+# 長句在畫面上會折行，只比對前 10 個字（perl 按字元切，不切壞中文）
+HEAD="$(perl -CSA -e 'print substr($ARGV[0], 0, 10)' "$MSG")"
+send "$MSG" 'herdr agent read "$P" 2>/dev/null | grep -qF -- "$HEAD"'
 echo 完成 >>"$LOG"
