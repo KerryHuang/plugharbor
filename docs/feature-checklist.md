@@ -2,8 +2,17 @@
 
 ## workspace：unattended（自動駕駛）
 
+- [x] 空檔判準：長工作丟背景時依序挑計畫文件、無共用檔的另一個 worktree、同批檔案照順序，帳本記「空檔：」；實作只跑相關測試，完整套件只在閘門跑一次（workspace 1.11.0；只做過 `claude -p` 情境測試，未在真實自動駕駛驗證）
 - [ ] 💡 已合併的主控裁決事後被使用者推翻時的重做方式（當插入單元馬上做，或寫回 roadmap 排隊）；等事故再補
 - [ ] 💡 暫停後逐題問完待決，是否自動恢復自動駕駛（目前只認「繼續自動駕駛」）；等事故再補
+
+## toolkit：agent-dispatch
+
+- [ ] 📋 壓縮後重新叫用 skill：compact-context hook 掃 transcript 列出壓縮前叫用過的 skill，提醒主控重新叫用，順帶找回正確的腳本路徑（起因：2026-11-12～14 產品化 session 壓縮後 glob 到快取舊版 0.9.3，沒有 `reviewer`；使用者 2026-11-14 裁決）
+- [ ] 💡 自動駕駛每段做完換新 session 接手（沿用 autopilot 的接回機制）；重新叫用 skill 仍不夠時再做
+- [ ] 📋 工具故障不靜默降級：`route.mjs reviewer` 回 `crossFamily: false` 才算湊不到別家；腳本報錯或輸出不是 JSON 算工具故障，用正確路徑重試一次，仍失敗就繼續跑、報告標紅並推播（使用者 2026-11-14 裁決）
+- [ ] 📋 無人值守 worker 不卡在提問：無人值守派出的 worker 帶「沒人在場」標記（環境變數，傳不進 herdr pane 就改標記檔），ask-question-guard 擋下 AskUserQuestion，叫它照「（推薦）」做並把題目與選擇寫進結果檔的「主控裁決待確認」；不可逆操作照舊停下（起因：2026-11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 腳本；使用者 2026-11-14 裁決）
+- [ ] 📋 ask.mjs 封鎖到期時間改印本地時間並標時區（起因：UTC 無標記，主控誤判封鎖已過）
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估）
 
