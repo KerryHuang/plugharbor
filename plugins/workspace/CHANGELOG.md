@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.15.0] - 2026-11-14
+
+- feat(unattended): 自動駕駛每段收尾自動換新 session。`skills/unattended/references/autopilot.md` 新增「換新 session」：在 herdr 內、沒有還在跑的 subagent／背景工作／pane worker 時，先記帳，再背景啟動 `skills/unattended/scripts/self-rotate.sh` 並結束回合；腳本等 pane 閒置後送 `/clear`、`/reload-plugins`、「繼續自動駕駛」，每步確認生效（`/clear` 看 session id 換了沒，因為畫面重繪時緊接的指令會被吞掉），最多試 3 次。平行線還在做就這次不換。不在 herdr 內照舊。起因：產品化 session 開了 9 天，一直跑 toolkit 0.13.0，拿不到 8 版修正；換新只能等使用者手動開。2026-11-14 在 herdr 實測自我觸發可行，使用者裁決由 session 自己換、每段收尾都換。
+
 ## [1.14.0] - 2026-11-14
 
 - feat(unattended): `skills/unattended/references/autopilot.md` 新增「合批：一條線一次做幾段」。roadmap 同列多段號與 `--open` 的可合批（平行線同條件）在確認改同批檔案後合成一批：一個 worktree、每段各自 commit，閘門、審查、合併只走一次；上限 3 段或約 800 行；一段卡住就 revert 該段 commit、其餘重跑閘門後合併，卡住的段放回排程並推播。起因同 lifecycle 2.6.0。
