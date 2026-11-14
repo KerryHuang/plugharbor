@@ -3,17 +3,18 @@
 ## workspace：unattended（自動駕駛）
 
 - [x] 空檔判準：長工作丟背景時依序挑計畫文件、無共用檔的另一個 worktree、同批檔案照順序，帳本記「空檔：」；實作只跑相關測試，完整套件只在閘門跑一次（workspace 1.11.0；只做過 `claude -p` 情境測試，未在真實自動駕駛驗證）
+- [ ] 📋 自動排線：lifecycle `--open` 的可開工分「主線」（第一個未完成段）與「可平行」（往後幾段內有 spec、沒被 ⛔ 擋的段），並抓出列序與 ⛔ 矛盾；roadmap 列序只是偏好、硬依賴寫 ⛔；autopilot 每段收尾與丟長工作時重排「主線＋最多 1 條平行線」（平行線過共用檔判準），把排線表寫進累積報告並推播後直接開工（起因：產品化 session 使用者問了 13 次「還有什麼可以先做」，工具只給第一段；使用者 2026-11-14 裁決三題）
 - [ ] 💡 已合併的主控裁決事後被使用者推翻時的重做方式（當插入單元馬上做，或寫回 roadmap 排隊）；等事故再補
 - [ ] 💡 暫停後逐題問完待決，是否自動恢復自動駕駛（目前只認「繼續自動駕駛」）；等事故再補
 
 ## toolkit：agent-dispatch
 
-- [ ] 📋 腳本一律用 skill 的 Base directory：agent-dispatch 寫明不要 ls／glob 外掛快取（起因：2026-11-12～14 產品化 session 壓縮後自己 glob 到快取舊版 0.9.3，沒用 Claude Code 自動附上的 skill 路徑）
-- [ ] 📋 版本落後提醒：壓縮後 compact-context hook 比對本 session 載入的 toolkit 版本與已安裝版本，落後就提醒告一段落時換新 session（起因：產品化 session 開 9 天一直跑 toolkit 0.13.0，漏了 8 版修正；使用者 2026-11-14 裁決，取代原「壓縮後重新叫用 skill」——Claude Code 壓縮後已自動附上用過的 skill）
+- [x] 腳本一律用 skill 的 Base directory：agent-dispatch 寫明不要 ls／glob 外掛快取（起因：2026-11-12～14 產品化 session 壓縮後自己 glob 到快取舊版 0.9.3，沒用 Claude Code 自動附上的 skill 路徑）
+- [x] 版本落後提醒：壓縮後 compact-context hook 比對本 session 載入的 toolkit 版本與已安裝版本，落後就提醒告一段落時換新 session（起因：產品化 session 開 9 天一直跑 toolkit 0.13.0，漏了 8 版修正；使用者 2026-11-14 裁決，取代原「壓縮後重新叫用 skill」——Claude Code 壓縮後已自動附上用過的 skill）
 - [ ] 💡 自動駕駛每段做完強制換新 session 接手（沿用 autopilot 的接回機制）；版本落後提醒仍不夠時再做
-- [ ] 📋 工具故障不靜默降級：`route.mjs reviewer` 回 `crossFamily: false` 才算湊不到別家；腳本報錯或輸出不是 JSON 算工具故障，用正確路徑重試一次，仍失敗就繼續跑、報告標紅並推播（使用者 2026-11-14 裁決）
-- [ ] 📋 無人值守 worker 不卡在提問：無人值守派出的 worker 帶「沒人在場」標記（環境變數，傳不進 herdr pane 就改標記檔），ask-question-guard 擋下 AskUserQuestion，叫它照「（推薦）」做並把題目與選擇寫進結果檔的「主控裁決待確認」；不可逆操作照舊停下（起因：2026-11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 腳本；使用者 2026-11-14 裁決）
-- [ ] 📋 ask.mjs 封鎖到期時間改印本地時間並標時區（起因：UTC 無標記，主控誤判封鎖已過）
+- [x] 工具故障不靜默降級：`route.mjs reviewer` 回 `crossFamily: false` 才算湊不到別家；腳本報錯或輸出不是 JSON 算工具故障，用正確路徑重試一次，仍失敗就繼續跑、報告標紅並推播（使用者 2026-11-14 裁決；toolkit 0.22.0、workspace 1.12.0）
+- [x] 無人值守 worker 不卡在提問：無人值守派出的 worker 帶「沒人在場」標記（環境變數，傳不進 herdr pane 就改標記檔），ask-question-guard 擋下 AskUserQuestion，叫它照「（推薦）」做並把題目與選擇寫進結果檔的「主控裁決待確認」；不可逆操作照舊停下（起因：2026-11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 腳本；使用者 2026-11-14 裁決）
+- [x] ask.mjs 封鎖到期時間改印本地時間並標時區（起因：UTC 無標記，主控誤判封鎖已過）
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估）
 
