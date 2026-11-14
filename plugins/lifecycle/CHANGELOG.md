@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.6.0] - 2026-11-14
+
+- feat(scripts): `feature_checklist.py --open` 新增「可合批」區：緊接主線、連到同一份設計（連結去掉 #錨點比對）的段，含主線最多 3 段，中間被擋或換設計就停；可平行改從合批之後的段找。`parse_roadmap` 改記每段的設計連結集合。附測試。
+- feat(references): `references/feature-checklist.md` 補「想一起做的段寫在同一列，或排成相鄰並連到同一份設計」與可合批說明。
+- 起因：一個專案的自動駕駛 session 每段固定花 50 分鐘～2 小時跑閘門，再加一輪審查與合併；改同一塊功能的相鄰段（如 a2d4、a2d5）其實已經同一個 commit 上線，但沒有規則，靠主控臨場。使用者 2026-11-14 裁決：roadmap 同列指定＋autopilot 也可自己合；上限 3 段或約 800 行；一段卡住就抽掉該段、其餘先合併。
+
 ## [2.5.0] - 2026-11-14
 
 - feat(scripts): `feature_checklist.py --open` 新增「可平行」區（主線之後 3 個未完成段中有設計連結的段，佔位段不算）與「列序矛盾」區（排在前面的段卻 ⛔ 等排在後面的段）；`parse_roadmap` 另記每段有沒有設計連結。附測試。

@@ -182,6 +182,46 @@ class TestFeatureChecklist(unittest.TestCase):
             self.assertIn("## 列序矛盾", rest)
             self.assertIn("平乙（段 x3）排在段 x4 前面，卻等 x4", rest)
 
+    def test_batch_adjacent_same_spec(self):
+        roadmap = ("| 工作段 | 內容 | 狀態 | 設計 |\n|---|---|---|---|\n"
+                   "| m1 | 主線 | 未開始 | [s](s.md#a) |\n"
+                   "| b1 | 同設計 | 未開始 | [s](s.md#b) |\n"
+                   "| b2 | 同設計 | 未開始 | [s](s.md) |\n"
+                   "| b3 | 同設計但超過 3 段 | 未開始 | [s](s.md) |\n"
+                   "| x1 | 別的設計 | 未開始 | [t](t.md) |\n")
+        checklist = ("# 清單\n\n## A\n\n- [ ] 📋 主（段 m1）\n- [ ] 📋 合一（段 b1）\n- [ ] 📋 合二（段 b2）\n"
+                     "- [ ] 📋 超量（段 b3）\n- [ ] 📋 別線（段 x1）\n")
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "roadmap.md").write_text(roadmap, encoding="utf-8")
+            p = d / "feature-checklist.md"
+            p.write_text(checklist, encoding="utf-8")
+            out = subprocess.run([sys.executable, str(SCRIPT), str(p), "--open"],
+                                 capture_output=True, text=True, check=True).stdout
+            ready, rest = out.split("## 可合批")
+            batch, rest = rest.split("## 可平行")
+            self.assertIn("主", ready)
+            self.assertIn("合一", batch)
+            self.assertIn("合二", batch)
+            self.assertNotIn("超量", batch)  # 含主線最多 3 段
+            self.assertNotIn("別線", batch)
+            self.assertIn("別線", rest)
+
+    def test_batch_stops_at_blocked_or_other_spec(self):
+        roadmap = ("| 工作段 | 內容 | 狀態 | 設計 |\n|---|---|---|---|\n"
+                   "| m1 | 主線 | 未開始 | [s](s.md) |\n"
+                   "| x1 | 別的設計 | 未開始 | [t](t.md) |\n"
+                   "| b1 | 同設計但不相鄰 | 未開始 | [s](s.md) |\n")
+        checklist = "# 清單\n\n## A\n\n- [ ] 📋 主（段 m1）\n- [ ] 📋 別線（段 x1）\n- [ ] 📋 不鄰（段 b1）\n"
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "roadmap.md").write_text(roadmap, encoding="utf-8")
+            p = d / "feature-checklist.md"
+            p.write_text(checklist, encoding="utf-8")
+            out = subprocess.run([sys.executable, str(SCRIPT), str(p), "--open"],
+                                 capture_output=True, text=True, check=True).stdout
+            self.assertNotIn("## 可合批", out)
+
     def test_default_sibling_roadmap(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
