@@ -9,7 +9,7 @@
 | 操作 | 指令 |
 |---|---|
 | `create` | `gh issue create --repo R --title T --body-file F --label L[,L2]`；`stage` 轉成 `labels_add` 併入 `--label`。帶 `parent` 時加 `--parent p`（原生 sub-issue，見「父子票」） |
-| `set_stage` | `gh issue edit N --repo R --add-label … --remove-label …`；`close` 為真時再 `gh issue close N --repo R --reason completed｜"not planned"` |
+| `set_stage` | `gh issue edit N --repo R --add-label … --remove-label …`；`close` 為真時再 `gh issue close N --repo R --reason completed｜"not planned"`；有設看板再改欄位（見「看板」） |
 | `comment` | `gh issue comment N --repo R --body-file F` |
 | `attach` | 見下 |
 | `query` | `gh issue list --repo R --state all --label … --search "…" --json number,title,state,stateReason,labels,updatedAt,createdAt,closedAt,assignees,url,parent --limit 1000`（`parent` 取 `.parent.number`；依 parent 篩選在取回後自己過濾，`--search "parent-issue:…"` 實測查不到）；時間範圍用 `--search "created:A..B"`、`--search "closed:A..B"`、`--search "updated:A..B"`，**一次只放一個時間欄位**——同一個 search 裡的多個條件是 AND，`created:… closed:…` 只會回窗內建立且窗內關閉的票。**不得靜默截斷**，見下「查詢不截斷」。`階段` 由 `stage:*` label 與 `state` 還原，label 不在 `ticket.states` 對照內時回 `unmapped:<name>`（叫用端列為未分類，不計入任何階段） |
@@ -28,6 +28,16 @@
 4. 回傳要附一行 `query 完整性：完整｜已分段合併（N 段）｜可能截斷`。報表要把這一行帶進來。
 
 階段 label 要先存在：`gh label create "stage:todo" --repo R`（已存在會報錯，忽略即可）。重新開啟已關閉的票改階段時，先 `gh issue reopen`。`body` 一律用 `--body-file`，避免 shell 跳脫。
+
+## 看板（GitHub Projects）
+
+`ticket.project` 有設才做，沒設就跳過本節。先確認 `gh auth status` 的 scopes 含 `project`，沒有就停下請使用者跑 `gh auth refresh -s project`。
+
+1. 取對照：`python3 ${CLAUDE_SKILL_DIR}/scripts/ticket_backend.py project-option <stage>` → `{"owner","number","field","option"}`；退出碼 2（缺對照）→ 停下回報，不自行對映。
+2. 查 id（每次查，不快取）：`gh project view <number> --owner <owner> --format json -q .id` 取 project id；`gh project field-list <number> --owner <owner> --format json` 找 `name` 等於 `field` 的欄位 id 與 `option` 的選項 id。看板上找不到該選項 → 停下，列出看板實際有的選項。
+3. `create` 後加入看板：`gh project item-add <number> --owner <owner> --url <issue url> --format json -q .id` 取 item id，再做第 4 步。
+4. 改欄位：`gh project item-edit --id <item> --project-id <pid> --field-id <fid> --single-select-option-id <oid>`。`set_stage` 時 item id 從 `gh project item-list <number> --owner <owner> --format json --limit 1000` 以 issue URL 找；票不在看板上就先做第 3 步，回報寫明補加了。
+5. 讀回：同一份 `item-list` 取該 issue 的欄位值（JSON 鍵是欄位名的小寫開頭，如 `status`），和第 1 步的 `option` 不同就回 `board_mismatch: true`；`get`、`query` 也照這樣回 `board_status`。
 
 ## 父子票
 

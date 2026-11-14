@@ -19,6 +19,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 | `ticket.tool` | 票務工具：`linear`、`github`、`jira` | 無（票務操作時必填：`ticket-ops` 及經它開票、改票的 skill，如 `ticket-create`、`ticket-reply`） |
 | `ticket.team` | Linear 的 team 名稱或 key | 無（`linear` 時必填） |
 | `ticket.repo` | GitHub Issues 的 `owner/repo` | 無（`github` 時必填） |
+| `ticket.project` | GitHub Projects 看板：`owner`、`number`、`field`（預設 `Status`）、`options`（抽象階段 → 單選欄位的選項名）。設了 `ticket-ops` 建票時加進看板、改階段時同步改欄位 | 無（選填，只用於 `github`） |
 | `ticket.states` | 抽象階段 → 工具的狀態名（Linear、Jira）或 label（GitHub）對照 | 無（票務操作時必填，`ticket-ops` 缺鍵時與 `ticket.tool` 一併詢問） |
 | `publish-target` | 會議記錄等文件的發布位置，`file:<相對目錄>` 或 `hedgedoc:<url>` | 無（`meeting-minutes` 發布時必填；詢問時建議 `file:docs/meetings`） |
 | `manual-brand` | 操作手冊封面的品牌文字（字串）。`--brand` 優先；留空或不設則封面不印品牌 | 無（選填） |
@@ -59,7 +60,20 @@ ticket:
     in-review: "stage:in-review"
     done: closed
     canceled: "closed: not planned"
+  project:              # 選填：同步 GitHub Projects 看板
+    owner: example-org
+    number: 3
+    field: Status
+    options:
+      backlog: Backlog
+      todo: Todo
+      in-progress: In Progress
+      in-review: In Review
+      done: Done
+      canceled: Canceled
 ```
+
+看板的選項要自己先在 Project 建好（名稱與 `options` 一致），並關掉 Project 內建的 workflow（Project → Workflows 的 Item closed、Item reopened、Auto-add 等），否則它會和 ticket-ops 搶著改 Status，把 not planned 關閉的票也改成 Done。gh token 要有 `project` scope（`gh auth refresh -s project`）。
 
 Jira 對照範例（**未實測**，僅供參考；`config.py` 接受 `jira`，但沒有對應的票務層實作驗證過）：
 

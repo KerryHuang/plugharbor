@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.12.0] - 2026-11-14
+
+- feat(ticket-ops): 同步 GitHub Projects 看板。新設定 `ticket.project`（`owner`、`number`、`field`，預設 `Status`；`options` 是抽象階段對看板選項名的對照，見 `references/config.md`）。有設時，`create` 建完把票加進看板並設欄位，`set_stage` 同步改欄位，`get`／`query` 回 `board_status`、`board_mismatch`。`skills/ticket-ops/scripts/ticket_backend.py project-option <stage>` 印對照 JSON（沒設印 null，缺對照退出碼 2）；`gh project` 的步驟寫在 `skills/ticket-ops/references/github.md`「看板」一節。附測試。起因：使用者 2026-11-14 裁決雙軌示範要用看板。⚠️ `gh project` 指令還沒實測，要等 token 拿到 `project` scope。
+
 ## [2.11.0] - 2026-11-14
 
 - feat(ticket-ops): GitHub 後端的父子票與 blocked-by 改用原生功能。`create` 帶 `parent` 時用 `gh issue create --parent`，`link_blocked_by` 用 `gh issue edit --add-blocked-by`，`get`／`query` 讀 `--json parent,subIssues`。內文慣例（`parent: #p`、task list、`blocked-by: #n`）降為舊版 gh 或 API 失敗時的退路，回報要寫明降級。`skills/ticket-ops/references/github.md` 記下實測限制：同一個 parent 重掛會報錯、`subIssuesSummary` 把 not planned 也算成完成、blocker 關閉沒有通知也不會自動解除、`parent-issue:` 搜尋查不到。`skills/ticket-ops/references/contract.md` 能力差異表與 `skills/ticket-create/references/create-dispatch.md` 跟著改。

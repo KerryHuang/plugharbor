@@ -4,6 +4,7 @@
 用法：
   python3 ticket_backend.py stage <stage>   （讀目前目錄的 .plugharbor/lifecycle.yml，輸出 JSON）
     缺設定或階段不合法：退出碼 2，stderr 一行說明。
+  python3 ticket_backend.py project-option <stage>   （有設 ticket.project 時印看板對照 JSON，沒設印 null）
   python3 ticket_backend.py leak <檔案>     （用目前目錄 repo 的 .leak-denylist 掃內文）
     0 無命中；4 有命中（stdout 每行 `L<行號> <命中>`）；5 找不到 denylist。
 """
@@ -43,6 +44,20 @@ def stage_to_native(cfg: dict, stage: str) -> dict:
             result["reason"] = CLOSING[name]
         return result
     raise ValueError(f"不支援的 ticket.tool：{tool}（linear、github；jira 僅有設定範例）")
+
+
+def project_option(cfg: dict, stage: str):
+    """GitHub Projects 看板的 Status 選項名；沒設 ticket.project 回 None。"""
+    name = stage.replace("_", "-")
+    if name not in STAGES:
+        raise ValueError(f"未知階段 {stage!r}，合法值：{', '.join(STAGES)}")
+    proj = (cfg.get("ticket") or {}).get("project")
+    if not proj:
+        return None
+    opt = (proj.get("options") or {}).get(name)
+    if not opt:
+        raise ValueError(f"ticket.project.options 缺階段 {name}（要對照到看板 {proj.get('field', 'Status')} 欄位的選項名）")
+    return opt
 
 
 def github_attach_plan(repo: str, image_path: str) -> dict:
@@ -97,9 +112,20 @@ def leak_main(path: str) -> int:
 def main(argv):
     if len(argv) == 3 and argv[1] == "leak":
         return leak_main(argv[2])
-    if len(argv) != 3 or argv[1] != "stage":
-        print("用法：ticket_backend.py stage <stage>｜leak <檔案>", file=sys.stderr)
+    if len(argv) != 3 or argv[1] not in ("stage", "project-option"):
+        print("用法：ticket_backend.py stage <stage>｜project-option <stage>｜leak <檔案>", file=sys.stderr)
         return 2
+    if argv[1] == "project-option":
+        try:
+            cfg = load_config(Path.cwd(), "ticket.states")
+            opt = project_option(cfg, argv[2])
+        except (ConfigMissing, ValueError) as e:
+            print(e.hint if isinstance(e, ConfigMissing) else e, file=sys.stderr)
+            return 3 if isinstance(e, ConfigMissing) and e.key == "(rename)" else 2
+        proj = cfg["ticket"].get("project") or {}
+        print(json.dumps(opt and {"owner": proj["owner"], "number": proj["number"],
+                                  "field": proj.get("field", "Status"), "option": opt}, ensure_ascii=False))
+        return 0
     try:
         print(json.dumps(stage_to_native(load_config(Path.cwd(), "ticket.states"), argv[2]), ensure_ascii=False))
     except (ConfigMissing, ValueError) as e:

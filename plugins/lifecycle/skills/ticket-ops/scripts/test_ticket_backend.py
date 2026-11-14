@@ -127,6 +127,43 @@ class Leak(unittest.TestCase):
         self.assertEqual([(p.pattern, p.flags) for p in ours], [(p.pattern, p.flags) for p in theirs])
 
 
+GITHUB_BOARD = {"ticket": {**GITHUB["ticket"], "project": {"owner": "example-org", "number": 3, "options": {
+    "backlog": "Backlog", "todo": "Todo", "in-progress": "In Progress", "in-review": "In Review",
+    "done": "Done", "canceled": "Canceled"}}}}
+
+
+class ProjectOption(unittest.TestCase):
+    def test_no_project_returns_none(self):
+        self.assertIsNone(tb.project_option(GITHUB, "todo"))
+
+    def test_maps_stage(self):
+        self.assertEqual(tb.project_option(GITHUB_BOARD, "in_progress"), "In Progress")
+
+    def test_missing_option_raises(self):
+        import copy
+        cfg = copy.deepcopy(GITHUB_BOARD)
+        del cfg["ticket"]["project"]["options"]["canceled"]
+        with self.assertRaises(ValueError) as cm:
+            tb.project_option(cfg, "canceled")
+        self.assertIn("canceled", str(cm.exception))
+
+    def test_unknown_stage_raises(self):
+        with self.assertRaises(ValueError):
+            tb.project_option(GITHUB_BOARD, "shipping")
+
+    def test_cli_json(self):
+        import yaml
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".plugharbor").mkdir()
+            (Path(d) / ".plugharbor" / "lifecycle.yml").write_text(yaml.safe_dump(GITHUB_BOARD), encoding="utf-8")
+            r = Cli.run_cli(self, d, "project-option", "done")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(json.loads(r.stdout), {"owner": "example-org", "number": 3, "field": "Status", "option": "Done"})
+            (Path(d) / ".plugharbor" / "lifecycle.yml").write_text(yaml.safe_dump(GITHUB), encoding="utf-8")
+            r = Cli.run_cli(self, d, "project-option", "done")
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "null"))
+
+
 class Cli(unittest.TestCase):
     def run_cli(self, cwd, *args):
         return subprocess.run([sys.executable, str(Path(tb.__file__).resolve()), *args],
