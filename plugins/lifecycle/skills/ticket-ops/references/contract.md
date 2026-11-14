@@ -34,8 +34,8 @@ GitHub 慣例：階段用 label `stage:<名稱>` 表示（`ticket.states` 填 `s
 | 能力 | Linear | GitHub Issues |
 |---|---|---|
 | 階段 | team 自訂 state（先查 ID） | `stage:*` label＋open／closed |
-| 父子票 | `parentId`，子票進度自動 rollup | 內文 task list（`- [ ] #n`）；rollup 弱 |
-| blocked-by | 原生 `blockedBy`，blocker 完成時推通知 | 內文 `blocked-by: #n` 慣例，無通知 |
-| 讀單張票 | `get_issue`；子票另用 `list_issues(parentId)` | `gh issue view`；parent 讀 body 的 `parent: #n`，children 讀 body 的 task list |
+| 父子票 | `parentId`，子票進度自動 rollup | 原生 sub-issue（`--parent`）；只有進度摘要，不自動關父票；舊版 gh 退回內文慣例 |
+| blocked-by | 原生 `blockedBy`，blocker 完成時推通知 | 原生 dependencies（`--add-blocked-by`），blocker 關閉無通知 |
+| 讀單張票 | `get_issue`；子票另用 `list_issues(parentId)` | `gh issue view --json parent,subIssues` |
 | 附圖 | 三步簽名上傳 | 無官方 API，圖存 repo、push 後再貼連結 |
 | priority／estimate／dueDate | 原生欄位 | 無，需要時用 label |

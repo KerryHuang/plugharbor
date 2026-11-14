@@ -6,7 +6,7 @@
                        [--exclude-label test] [--log <jsonl>]
                        [--issues-json F] [--parents-json F] [--board-json F]
   --issues-json／--parents-json／--board-json 給了就不打 gh（測試或離線用）。
-  沒給 --parents-json 時不比對 parent（輸出會註明）；沒設 ticket.project 且沒給 --board-json 時不比對看板。
+  parent 預設取 issue 的原生 parent 欄位，--parents-json 可覆寫（內文慣例的 repo 用）；沒設 ticket.project 且沒給 --board-json 時不比對看板。
 退出碼：0 差異 0；1 有差異；3 查詢可能截斷（結果不可用）。
 比對規則見 ticket-ops 的 SKILL.md「對帳」與 plugin 根的 references/feature-checklist.md「同步票」。
 """
@@ -40,6 +40,13 @@ def gh_stage(i):
         return "done" if i.get("stateReason") == "COMPLETED" else "canceled"
     st = [x[6:] for x in labels_of(i) if x.startswith("stage:")]
     return st[0] if st else None
+
+
+def parents_from_issues(issues):
+    """gh issue list --json …,parent 的原生 parent 欄位 → {票號: 父票號或 None}；沒有任何一筆帶 parent 欄位回 None。"""
+    if not any("parent" in i for i in issues):
+        return None
+    return {i["number"]: (i.get("parent") or {}).get("number") for i in issues}
 
 
 def same_stage(expected, actual):
@@ -208,14 +215,15 @@ def main(argv=None):
     todos = fc.todo_items(a.todo.read_text(encoding="utf-8")) if a.todo.is_file() else []
     issues = read(a.issues_json) if a.issues_json else gh_json(
         ["issue", "list", "--repo", a.repo, "--state", "all", "--limit", str(LIMIT),
-         "--json", "number,state,stateReason,labels,title"])
+         "--json", "number,state,stateReason,labels,title,parent"])
     notes = []
     if len(issues) >= LIMIT:
         print(f"query 完整性：可能截斷（取得 {len(issues)} 筆，已達上限），不對帳")
         return 3
-    parents = {int(k): v for k, v in read(a.parents_json).items()} if a.parents_json else None
+    parents = ({int(k): v for k, v in read(a.parents_json).items()} if a.parents_json
+               else parents_from_issues(issues))
     if parents is None:
-        notes.append("未比對 parent（沒給 --parents-json）")
+        notes.append("未比對 parent（issue 沒有 parent 欄位，也沒給 --parents-json）")
     proj = None if a.board_json else load_project_cfg()
     board = {int(k): v for k, v in read(a.board_json).items()} if a.board_json else (
         fetch_board(proj) if proj else None)

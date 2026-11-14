@@ -31,9 +31,9 @@ prompt: |
 ## 建票規則
 
 - **順序**：先建被依賴的票（blocker 先建）與父票，再建子票；序號換成已建立的票號後才寫 `parent`、`blocked_by`。
-- **父子**：先建父票，子票 `create` 時帶 `parent`（父票號）。全部子票建完後，由建票 subagent 回填父票的子票清單（GitHub：改父票 body 的 task list `- [ ] #n`，子票 body 有 `parent: #p`；其他後端依 ticket-ops 契約）；回填失敗列入失敗清單，不省略。
+- **父子**：先建父票，子票 `create` 時帶 `parent`（父票號）。GitHub 用原生 sub-issue，`create` 帶 `parent` 就掛好，不必回填；ticket-ops 降級為內文慣例時，才由建票 subagent 回填父票 body 的子票清單（見 `${CLAUDE_PLUGIN_ROOT}/skills/ticket-ops/references/github.md`「父子票」）；回填或掛 parent 失敗列入失敗清單，不省略。
 - **階段**：照 ticket-plan 的抽象階段傳給 `create`，由 ticket-ops 轉成工具原生值；不自己查或猜狀態名。
 - **票源 flag**：新建的票描述最後一行加 `_from lifecycle:ticket-create@{version}_`（斜體一行，前面空一行），`{version}` 取 `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` 的 `version`。不放標題。`lifecycle:dev-feedback` 靠這一行判斷票面是不是本 plugin 產生的。
 - **blocked_by**：用 `link_blocked_by` 寫入；被拒就停下回報，不改掛弱關聯。後端沒有原生欄位時（如 GitHub）必須照 ticket-ops 的後端慣例寫出（見 `github.md`「blocked-by」），不可只在回報裡說「已相依」；回報的相依表逐條列出是否落地。回報表寫實際寫入的票號，與 ticket-plan 不同時在備註說明。
-- **降級**：ticket-ops 回報的工具降級（blocked-by 只能寫在內文、父子只能用 task list 等）原樣放進備註欄。
+- **降級**：ticket-ops 回報的工具降級（例如舊版 gh 沒有 `--parent`、`--add-blocked-by`，退回內文慣例）原樣放進備註欄。
 - **既有票**：只補相依或補缺的子票，不改既有票內容。

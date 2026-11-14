@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.11.0] - 2026-11-14
+
+- feat(ticket-ops): GitHub 後端的父子票與 blocked-by 改用原生功能。`create` 帶 `parent` 時用 `gh issue create --parent`，`link_blocked_by` 用 `gh issue edit --add-blocked-by`，`get`／`query` 讀 `--json parent,subIssues`。內文慣例（`parent: #p`、task list、`blocked-by: #n`）降為舊版 gh 或 API 失敗時的退路，回報要寫明降級。`skills/ticket-ops/references/github.md` 記下實測限制：同一個 parent 重掛會報錯、`subIssuesSummary` 把 not planned 也算成完成、blocker 關閉沒有通知也不會自動解除、`parent-issue:` 搜尋查不到。`skills/ticket-ops/references/contract.md` 能力差異表與 `skills/ticket-create/references/create-dispatch.md` 跟著改。
+- feat(ticket-ops): `reconcile.py` 預設從 issue 的原生 `parent` 欄位比對 parent，`--parents-json` 改成選填的覆寫。起因：設計要求查證原生 sub-issue 與 blocked-by 能否取代內文慣例；2026-11-14 在 KerryHuang/plugharbor 用 #4、#5 兩張「[測試]」票實測（gh 2.98），都能用。
+
 ## [2.10.0] - 2026-11-14
 
 - feat(ticket-ops): 新增雙軌對帳腳本 `skills/ticket-ops/scripts/reconcile.py`：以 `feature_checklist.py --tickets`／`--todo` 的解析為準，對 `gh issue list`（與看板 Status）比各階段數量（子票、父票、todo 票分開計），逐項列出階段不符、缺票號、票不存在、parent 不符、孤兒票、看板不符、未分類；「[測試]」票、排除 label、已關 todo 票、triage 中的票不計。`--log` 追加 JSONL 供「連續 N 天差異 0」判斷；查詢達 1000 筆回退出碼 3，不當成結果。SKILL.md 新增「對帳」一節。附測試。起因：ticket skill 雙軌示範的過關條件要求各階段數量連續 5 天差異 0，需要可重跑的對帳。

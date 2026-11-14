@@ -122,6 +122,29 @@ class Reconcile(unittest.TestCase):
         self.assertEqual(kinds(r), ["board"])
 
 
+class ParentsFromIssues(unittest.TestCase):
+    def test_reads_native_parent_field(self):
+        iss = [dict(issue(3), parent={"number": 1}), dict(issue(1), parent=None), issue(9)]
+        self.assertEqual(rc.parents_from_issues(iss), {3: 1, 1: None, 9: None})
+
+    def test_none_when_field_absent_everywhere(self):
+        self.assertIsNone(rc.parents_from_issues([issue(1), issue(2)]))
+
+    def test_cli_uses_issue_parent_without_parents_json(self):
+        iss = [dict(i, parent={"number": PARENTS[i["number"]]} if i["number"] in PARENTS else None)
+               for i in base_issues()]
+        iss[4]["parent"] = {"number": 1}  # 丙 #5 應在 #2 下
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "issues.json"
+            f.write_text(json.dumps(iss), encoding="utf-8")
+            (Path(d) / "feature.md").write_text(FEATURE, encoding="utf-8")
+            r = subprocess.run([sys.executable, str(Path(rc.__file__).resolve()), "--repo", "o/r",
+                                "--feature", str(Path(d) / "feature.md"), "--todo", str(Path(d) / "none.md"),
+                                "--issues-json", str(f)], cwd=d, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("[parent] #5", r.stdout)
+
+
 class Cli(unittest.TestCase):
     def cli(self, d, issues, *extra):
         f = Path(d) / "issues.json"
