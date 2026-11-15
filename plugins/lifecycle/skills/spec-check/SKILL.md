@@ -18,7 +18,7 @@ argument-hint: "[--sample] [規格路徑] [原始碼範圍]"
 
 ## Step 0：找規格
 
-規格是單一 `<spec.dir>/<feature>.md`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）。
+規格是單一 `<spec.dir>/<feature>.md`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）；給短名找不到時再找 `<spec.dir>/*<feature>*.md`（檔名可能有日期前綴）。
 未給路徑時，從對話推斷最近處理的規格並告知「偵測到：<path>」；推不出才提示用法並終止。
 
 ## sample 模式（`--sample`）
@@ -32,7 +32,7 @@ argument-hint: "[--sample] [規格路徑] [原始碼範圍]"
 | # | 檢查 | 等級 |
 |---|------|------|
 | 1 | 全文無殘留 `[NEEDS CLARIFICATION` | BLOCKER |
-| 2 | §2.3 每條驗收案例符合 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/acceptance-format.md`（降兩級標題、有步驟與預期、預期可觀察）；每條 US 都有案例，關鍵 BR 有正例與反例且代入具體數字 | CRITICAL |
+| 2 | §2.3 每條驗收案例符合 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/acceptance-format.md`（降兩級標題、有步驟與預期、預期可觀察；機械檢查：§2.3 升兩級標題存到 `.tmp/qa/<feature>.md` 跑 qa-verify 的 `validate.py acceptance`）；每條 US 都有案例，關鍵 BR 有正例與反例且代入具體數字 | CRITICAL |
 | 3 | 決策表每列「否決的選項與原因」非空 | CRITICAL |
 | 4 | §3 提到的既有元件、端點、資料表實際存在（Grep／唯讀 DB 查詢；範圍大時派 `lifecycle:scout`） | CRITICAL |
 | 5 | §3.4 邊界涵蓋空值、極值、狀態、並發、權限（不適用要寫理由） | WARNING |

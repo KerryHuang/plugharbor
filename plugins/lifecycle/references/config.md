@@ -6,7 +6,7 @@
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺鍵或格式錯誤：退出碼 2；只有舊檔：退出碼 3；stderr 一行說明
 ```
 
-有預設值的鍵（`spec.dir`）缺檔或缺鍵時直接回預設值。專案只有舊檔 `.plugharbor/delivery-flow.yml` 時一律退出碼 3 並提示改名為 `lifecycle.yml`（鍵不變），有預設值的鍵也一樣：不要當成沒設定而重問全部鍵。`spec.dir` 沒設、而專案根 `CLAUDE.md` 有舊鍵 `sdlc-docs-path:` 時沿用其值，stderr 提示改設 `spec.dir`。
+有預設值的鍵（`spec.dir`）缺檔或缺鍵時直接回預設值。專案只有舊檔 `.plugharbor/delivery-flow.yml` 時一律退出碼 3 並提示改名為 `lifecycle.yml`（鍵不變），有預設值的鍵也一樣：不要當成沒設定而重問全部鍵。`spec.dir` 沒設、而專案根 `CLAUDE.md` 有舊鍵 `sdlc-docs-path:` 時沿用其值，stderr 提示改設 `spec.dir`。兩者都沒有而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄時，`lifecycle:spec` 會把它寫成 `spec.dir`。
 
 ## 鍵
 

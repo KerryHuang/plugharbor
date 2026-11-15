@@ -111,5 +111,17 @@ class SkillContracts(unittest.TestCase):
         self.assertNotIn("§Step 0.5", read("skills/interview-prep/SKILL.md"))
 
 
+    def test_spec_lookup_tolerates_dated_filenames(self):
+        # 檔名可照慣例加日期前綴（S10），用短名找 <spec.dir>/<feature>.md 會落空
+        for rel in ["skills/spec-check/SKILL.md", "skills/implement/SKILL.md"]:
+            self.assertIn("*<feature>*", read(rel), rel)
+
+    def test_config_doc_records_spec_dir_rule(self):
+        self.assertIn("專案規則", read("references/config.md"))
+
+    def test_spec_check_says_how_to_validate_cases(self):
+        self.assertIn("升兩級", read("skills/spec-check/SKILL.md"))
+
+
 if __name__ == "__main__":
     unittest.main()
