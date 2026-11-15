@@ -32,6 +32,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定
 
 `get scale` 的 stderr 有「已在 lifecycle 3.0.0 移除」→ 照錯誤處理表，在最後回報的第一行轉告使用者（可刪掉設定檔的 `scale` 鍵），流程照常。
 
+`spec.dir` 沒設（設定檔沒有這個鍵）而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄 → 用專案規則的目錄，回報時建議寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`。
+
 只要讀／查／改既有規格的某一章 → 「讀寫既有規格」；其餘走「寫規格」。
 `config.py` 退出碼 3（只有舊檔 `delivery-flow.yml`）→ 停下請使用者改名。
 
@@ -69,17 +71,18 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定
 產出 `<spec.dir>/<feature>.md`（`<feature>` 用 kebab-case 短名）。範本與自查清單：`references/lean-template.md`。
 
 1. **定位**：`<spec.dir>/<feature>.md` 已存在 → 視為更新（等同 `--change`）；否則新建。有設計文件（brainstorming 產出）就沿用，不重問已定案的事。
-2. **蒐證**：搜既有程式碼與規格找可重用元件、受影響範圍；涉及資料表且有唯讀 DB 工具時查表結構。範圍大時派 `lifecycle:scout` 落檔，主 session 只讀結論。命中 domain 邊界照 `${CLAUDE_PLUGIN_ROOT}/references/consultant-desk.md` 開顧問桌；舊系統移植照 `${CLAUDE_PLUGIN_ROOT}/references/legacy-parity.md`。
-3. **收決策**：依共通原則 1，列待決事項 → 機械決策自己定 → 品味決策逐題問。
-4. **撰寫**：照範本寫；決策寫進 §5 決策表，不另開 `decisions.md`。
-5. **自查**：跑範本的品質檢查清單；`[NEEDS CLARIFICATION` 未清零就照原則 2 回報。
-6. **CR（`--change` 或檔案已存在）**：in-place 修改受影響段落，**取代不追加**；版本號 +1、§7 加一列，有票號就寫上。需要回覆票時交給 `lifecycle:ticket-reply`。
+2. **章節**：照範本；專案規則規定的必要章節（AGENTS.md、`.claude/rules/`，例如「ERP 對照」）照加在 §6 之後，不刪範本章節。
+3. **蒐證**：搜既有程式碼與規格找可重用元件、受影響範圍；涉及資料表且有唯讀 DB 工具時查表結構。範圍大時派 `lifecycle:scout` 落檔，主 session 只讀結論。命中 domain 邊界照 `${CLAUDE_PLUGIN_ROOT}/references/consultant-desk.md` 開顧問桌；舊系統移植照 `${CLAUDE_PLUGIN_ROOT}/references/legacy-parity.md`。
+4. **收決策**：依共通原則 1，列待決事項 → 機械決策自己定 → 品味決策逐題問。
+5. **撰寫**：照範本寫；決策寫進 §5 決策表，不另開 `decisions.md`。
+6. **自查**：跑範本的品質檢查清單；`[NEEDS CLARIFICATION` 未清零就照原則 2 回報。
+7. **CR（`--change` 或檔案已存在）**：in-place 修改受影響段落，**取代不追加**；版本號 +1、§7 加一列，有票號就寫上。需要回覆票時交給 `lifecycle:ticket-reply`。
 
 **下一步**：`lifecycle:spec-check`（規格檢查）就在這一步跑一次；`lifecycle:implement` 的品質閘門見到通過紀錄不重跑。通過後 `lifecycle:ticket-create` 或 `lifecycle:implement`。
 
 ## 讀寫既有規格
 
-規格是單一檔：直接讀整份；只改某一章時 `grep -n "^## "` 定位後就地修改，CR 照「寫規格」第 6 步。
+規格是單一檔：直接讀整份；只改某一章時 `grep -n "^## "` 定位後就地修改，CR 照「寫規格」第 7 步。
 
 ## 錯誤處理
 

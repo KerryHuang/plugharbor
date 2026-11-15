@@ -30,7 +30,7 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 ## Step 1：解析輸入
 
 - `$ARGUMENTS` 是 `lifecycle:spec` 的規格（`<spec.dir>` 下的 `.md`，或檔內有 `## 2. 需求` 章）→ **規格模式**：照 `references/spec-to-acceptance.md` 把 §2.3 轉成 `<ws>/.tmp/qa/<feature>.md`，再以該檔走下一列。
-- `$ARGUMENTS` 是存在的檔案路徑 → **案例檔模式**。先 `<PY> -B <plugin>/skills/qa-verify/scripts/validate.py acceptance <路徑>`，非 `OK` → 停，把錯誤回給使用者（`.md` 或 `.yml`／`.yaml` 皆可）。案例檔 sha：在 git 內用 `git log -1 --format=%h -- <路徑>`，不在 git 內用 `shasum` 前 8 碼。
+- `$ARGUMENTS` 是存在的檔案路徑 → **案例檔模式**。先 `<PY> -B <plugin>/skills/qa-verify/scripts/validate.py acceptance <路徑>`，非 `OK` → 停，把錯誤回給使用者（`.md` 或 `.yml`／`.yaml` 皆可）。案例檔 sha：檔案已被 git 追蹤（`git ls-files --error-unmatch <路徑>` 成功）用 `git log -1 --format=%h -- <路徑>`，否則（含 `.tmp/` 轉出的檔）用 `shasum` 前 8 碼。
 - `$ARGUMENTS` 含票號（`[A-Z]+-\d+` 或 `#\d+`）→ **票面模式**：經 `lifecycle:ticket-ops` 先 `get` 父票，再逐一 `get` 每個 child id，把各票標題＋body 寫成 `<工作區>/ticket.md`；記下父票 `updatedAt`。功能碼取票標題標明的功能代碼，取不到就用功能名的 ASCII slug 或 `AskUserQuestion` 問。
 - 都不是 → 視為功能名，`AskUserQuestion` 請使用者給案例檔路徑或票號。
 - 環境：`--env <名稱>`，預設 `qa.environments` 的第一項；網址取該項 `url`。前端路由：從專案前端的 router 設定找該功能的 `path`，實機網址是 `<url>/<path>`（hash 或 history 模式依專案而定，先在實機驗一次）。

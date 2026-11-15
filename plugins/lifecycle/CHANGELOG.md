@@ -25,6 +25,14 @@
 - 既有孤兒 `references/skill-design.md` 改由 plugin README「維護」一節引用。
 - `setup/install-project.sh` 裝 lifecycle 不再在 `settings.local.json` 停用 superpowers（`setup/tests/install-project.sh` 第 12 段改測兩種情境）。
 
+**試用修正**（Formwright 情境試用發現，3.0.0 尚未發佈，併入本版）
+
+- spec-check 通過時在規格表頭寫 `| 規格檢查 | ✅ 日期（版本） |`，implement 以版本比對判斷不重跑（原本跨 session 無從判斷）；implement 不再讀、不再傳 `scale`。
+- qa-verify 案例檔 sha：沒被 git 追蹤的檔（含 `.tmp/` 轉出的）用 `shasum`；規格模式轉檔前檢查 `.tmp/` 是否被 gitignore，沒有就提醒。
+- 規格範本 §2.3 註明：案例以外的說明文字不會轉進案例檔、`[api]` 案例 qa-verify 不執行要由 §4 整合測試涵蓋。
+- spec 照加專案規則規定的必要章節（例：ERP 對照）；`spec.dir` 沒設而專案規則指定了設計文件目錄時用專案規則的目錄。
+- 新增 `scripts/test_skill_contracts.py`：skill 間接點契約。
+
 **遷移**
 
 - `.plugharbor/lifecycle.yml` 有 `scale: full`：照 lean 跑並提示，可刪掉這個鍵。

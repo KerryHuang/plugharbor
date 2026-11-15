@@ -22,7 +22,6 @@ $ARGUMENTS
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/specs
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # lean｜full，預設 lean
 ```
 
 讀 `<spec.dir>/LEARNINGS.md`（沒有就略過），挑出跟本功能相關的條目，步驟 3 交給規劃時一起帶上。「否決」條目一律照抄：規劃不再提出已否決的方案，除非使用者自己重開。
@@ -46,13 +45,13 @@ git branch --show-current && git status --short
 
 - 規格在 `<spec.dir>/` 底下找本功能的檔。找不到 → 停下，建議先跑 `lifecycle:spec`；使用者明說不寫規格時，把他的描述當目標交給步驟 3，回報標「無規格」。
 - 規格裡還有 `[NEEDS CLARIFICATION]` → 停下問使用者，不猜。
-- 跑 `lifecycle:spec-check` 驗規格品質（lean 規格已在 `lifecycle:spec` 之後跑過、結論 ✅ 且規格之後沒再改 → 不重跑，直接繼續；沒跑過或之後改過才跑。lean 的 spec-check 全流程只跑這一次）：
+- 跑 `lifecycle:spec-check` 驗規格品質（規格表頭有 `| 規格檢查 | ✅ … |` 且括號裡的版本等於表頭「版本」→ 已通過、之後沒改過，不重跑，直接繼續；沒有這列或版本不同才跑。spec-check 全流程只跑這一次）：
   - 通過 → 繼續。
   - 有條件通過（⚠️，0 critical、有 warning）或不通過 → 修規格後重驗（⚠️ 也是修正後才開發，與 spec-check 一致），**最多 3 次**；3 次仍不過 → 列剩餘缺失，請使用者決定。
 
 ## 3. 交給規劃與執行
 
-可用 skill 清單裡有 `superpowers:writing-plans` → 叫用它，輸入規格路徑、`spec.dir`、`scale`、步驟 0 挑出的 LEARNINGS 條目（含否決），並明確要求：
+可用 skill 清單裡有 `superpowers:writing-plans` → 叫用它，輸入規格路徑、`spec.dir`、步驟 0 挑出的 LEARNINGS 條目（含否決），並明確要求：
 
 > 計畫開頭寫明規格路徑與 `spec.dir`。計畫的最後一個 task 是後段：照 `${CLAUDE_PLUGIN_ROOT}/skills/implement/references/after.md` 做。
 
