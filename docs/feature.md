@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 17／共 25（另有 0 項決定不做）；進行中 0、已規劃 2、構想 6；待確認 0 項。更新於 2026-11-14。
+總計：完成 17／共 28（另有 0 項決定不做）；進行中 0、已規劃 5、構想 6；待確認 0 項。更新於 2026-11-15。
 
 ## workspace：unattended（自動駕駛）
 
@@ -38,6 +38,16 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 - [x] 查 GitHub 原生 sub-issue 與 blocked-by 能否取代內文慣例：都能用，已改為原生、內文慣例降為退路（lifecycle 2.11.0）
 - [ ] 📋 第一階段：plugharbor、xiaoxiao 現有項目全部補開（完成的關閉）、跑兩週；過關條件：7 個操作加看板同步各實跑且讀回一致、各階段數量最後連續 5 天差異 0、外洩掃描 0、第二份週報對得上、發現的 bug 都處理（使用者 2026-11-14 裁決）
 - [ ] 📋 第二階段：條件達成後擴到 Formwright，補驗 qa-verify `--sweep` 與大量票的報表
+
+## lifecycle：簡化與拆分（2026-11-15 規劃）
+
+完成 0／共 3。
+
+單人專案實際順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；改成 superpowers 當工程核心、lifecycle 只管做之前與做之後，拿掉四份文件規格鏈，拆出 tickets／discovery／delivery。團隊有裝、沒裝 superpowers 產物同格式。設計見 `docs/specs/2026-11-15-lifecycle-split-design.md`。
+
+- [ ] 📋 第一批「先刪」：拿掉規格鏈與連帶 skill（spec-chain、explore、consolidate-docs、write-doc、dev-feedback）、agent、範本與 `scale`；install-project 不再停用 superpowers；qa-verify 改讀設計文件驗收一節；ticket-create 拿掉角色子票（lifecycle major）
+- [ ] 📋 第二批「再拆」：tickets、discovery、delivery 三個新 plugin，只搬不改行為；共用 agent 副本改名＋同步測試；有票務設定的專案安裝時自動補裝 tickets（lifecycle major）
+- [ ] 📋 第三批「最後接」：專案層 AGENTS.md 標準段落（`--shared` 寫入、含計畫審查與精簡驗收格式）、implement 薄入口＋同格式退路、spec-check 縮成實作前檢查、after.md 只留驗收對照與回填、user 層 superpowers.md 改寫
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估）
 
