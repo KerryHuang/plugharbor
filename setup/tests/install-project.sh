@@ -33,7 +33,7 @@ if grep -q 'marketplace add' "$STUB_LOG"; then fail "user 層已有 marketplace�
 S="$P/.pi/settings.json"
 grep -q "$(native "$REPO_DIR/plugins/lifecycle")" "$S" || fail "pi 應寫入 lifecycle 的絕對路徑：$(cat "$S" 2>/dev/null)"
 grep -qx '.pi/settings.json' "$P/.git/info/exclude" || fail ".pi/settings.json 應加進 .git/info/exclude"
-linked "$P/.agents/skills/explore" || fail "codex／agy 應建 .agents/skills/explore 的 link：$OUT"
+linked "$P/.agents/skills/triage" || fail "codex／agy 應建 .agents/skills/triage 的 link：$OUT"
 linked "$P/.agents/skills/designing-ui" || fail "codex／agy 應建 ui-ux 的 skill link"
 if grep -q -E '^(codex|agy) plugin (add|install)' "$STUB_LOG"; then fail "codex／agy 不該用 plugin 指令安裝專案層 plugin"; fi
 # 重跑：pi 不重複、exclude 不重複
@@ -130,26 +130,26 @@ realp() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"; 
 if [ "$CAN_LINK" -eq 1 ]; then
 P9="$(newproj "p 九")"
 OUT="$(run "$P9" lifecycle)" || fail "symlink 安裝 exit 非 0：$OUT"
-L="$P9/.agents/skills/explore"
+L="$P9/.agents/skills/triage"
 [ -L "$L" ] || fail "(a) 應建 link：$OUT"
-[ "$(readlink "$L")" = "../plugharbor/lifecycle/skills/explore" ] || fail "(a) skill link 應為相對路徑：$(readlink "$L")"
-[ "$(realp "$L")" = "$(realp "$REPO_DIR/plugins/lifecycle/skills/explore")" ] || fail "(a) realpath 應落在 plugharbor clone：$(realp "$L")"
+[ "$(readlink "$L")" = "../plugharbor/lifecycle/skills/triage" ] || fail "(a) skill link 應為相對路徑：$(readlink "$L")"
+[ "$(realp "$L")" = "$(realp "$REPO_DIR/plugins/lifecycle/skills/triage")" ] || fail "(a) realpath 應落在 plugharbor clone：$(realp "$L")"
 EX="$P9/.git/info/exclude"
 grep -qx '.agents/plugharbor/' "$EX" || fail "(a) exclude 應含 .agents/plugharbor/"
-grep -qx '.agents/skills/explore' "$EX" || fail "(a) exclude 應含每個 skill link"
+grep -qx '.agents/skills/triage' "$EX" || fail "(a) exclude 應含每個 skill link"
 if grep -qx '.agents/skills/' "$EX"; then fail "(a) 不該排除整個 .agents/skills/"; fi
-echo "$OUT" | grep -q '^OK:   codex/agy link explore' || fail "(a) 應印 OK link：$OUT"
+echo "$OUT" | grep -q '^OK:   codex/agy link triage' || fail "(a) 應印 OK link：$OUT"
 # (b) 重跑：UP-TO-DATE、exclude 不重複
 OUT="$(run "$P9" lifecycle)" || fail "(b) 重跑 exit 非 0"
-echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
 [ "$(grep -cx '.agents/plugharbor/' "$EX")" = 1 ] || fail "(b) exclude 重複"
-[ "$(grep -cx '.agents/skills/explore' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
+[ "$(grep -cx '.agents/skills/triage' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
 fi
 # (c) 使用者自己的同名實體目錄：SKIP、內容不動
-P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/write-doc"; echo mine > "$P9c/.agents/skills/write-doc/SKILL.md"
+P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/ticket-report"; echo mine > "$P9c/.agents/skills/ticket-report/SKILL.md"
 OUT="$(run "$P9c" lifecycle)" || fail "(c) exit 非 0"
-echo "$OUT" | grep -q "^SKIP: .*write-doc 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
-[ "$(cat "$P9c/.agents/skills/write-doc/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/write-doc" ] || fail "(c) 使用者目錄被動到"
+echo "$OUT" | grep -q "^SKIP: .*ticket-report 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
+[ "$(cat "$P9c/.agents/skills/ticket-report/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/ticket-report" ] || fail "(c) 使用者目錄被動到"
 # (d) 失效的 plugharbor link：--check 報 BROKEN，實跑移除；別人的失效 link 不動
 if [ "$CAN_LINK" -eq 1 ]; then
 ln -s "$REPO_DIR/plugins/no-such/skills/x" "$P9/.agents/skills/x"
@@ -173,7 +173,7 @@ P9f="$(newproj p9f)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle)" || fail "(f) exit 非 0：$OUT"
 echo "$OUT" | grep -q '^NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式' || fail "(f) 強制複製應印 NOTE、不說建不了 symlink：$OUT"
 if echo "$OUT" | grep -q '無法建 symlink'; then fail "(f) 強制複製不該說無法建 symlink：$OUT"; fi
-D="$P9f/.agents/skills/explore"
+D="$P9f/.agents/skills/triage"
 ROOT_SA="$(native "$REPO_DIR/plugins/lifecycle")"
 [ -d "$D" ] && [ ! -L "$D" ] && [ -f "$D/SKILL.md" ] || fail "(f) 應複製 skill 目錄"
 [ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(f) .plugharbor-root 應記 plugin 根：$(cat "$D/.plugharbor-root" 2>/dev/null)"
@@ -181,10 +181,10 @@ ROOT_SA="$(native "$REPO_DIR/plugins/lifecycle")"
 if grep -rq '\${CLAUDE_PLUGIN_ROOT}' "$D"; then fail "(f) 複本仍有 \${CLAUDE_PLUGIN_ROOT}：$(grep -rn '\${CLAUDE_PLUGIN_ROOT}' "$D" | head -2)"; fi
 grep -q "$ROOT_SA/references/" "$D/SKILL.md" || fail "(f) 複本應把 plugin 根換成 $ROOT_SA"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
 echo changed >> "$D/SKILL.md"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(f) 內容不同應報 DIFF：$OUT"
+echo "$OUT" | grep -q '^DIFF: .*triage' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(f) 重跑 exit 非 0"
 if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
 # (f2) 複製模式遇到完全不含 ${CLAUDE_PLUGIN_ROOT} 的 skill（ui-ux-pro-max）不能中止（grep 沒命中＋pipefail）
@@ -192,11 +192,11 @@ P9f2="$(newproj p9f2)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f2" ui-ux)" || fail "(f2) 不含 plugin 根的 skill 讓複製模式中止：$OUT"
 [ -f "$P9f2/.agents/skills/ui-ux-pro-max/SKILL.md" ] || fail "(f2) 應複製 ui-ux-pro-max"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^UP-TO-DATE: link explore' || fail "(f) 換過路徑的複本應視為一致：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(f) 換過路徑的複本應視為一致：$OUT"
 # (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除
 echo "/old/clone/plugins/lifecycle" > "$D/.plugharbor-root"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(g) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^DIFF: .*explore' || fail "(g) marker 過期應報 DIFF：$OUT"
+echo "$OUT" | grep -q '^DIFF: .*triage' || fail "(g) marker 過期應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 exit 非 0"
 [ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
 mkdir -p "$P9f/.agents/skills/gone"; echo x > "$P9f/.agents/skills/gone/SKILL.md"; echo "$REPO_DIR/plugins/no-such" > "$P9f/.agents/skills/gone/.plugharbor-root"
@@ -234,60 +234,38 @@ grep -qx 'claude plugin uninstall delivery-flow@plugharbor --scope local' "$STUB
 [ "$(grep -c '^claude plugin uninstall ' "$STUB_LOG")" = 2 ] || fail "(11) 應只卸兩次：$(cat "$STUB_LOG")"
 rm "$STUB_STATE/claude-list"
 
-# ---------- 12) 裝 lifecycle：在 settings.local.json 停用 Superpowers（含其他 marketplace 的），其他鍵保留 ----------
+# ---------- 12) 裝 lifecycle：不再停用 Superpowers（lifecycle 3.0.0 起兩者並存）；舊版寫過的停用鍵原樣保留 ----------
 SP="superpowers@claude-plugins-official"; SP2="superpowers@superpowers-marketplace"
 sp_val() {  # $1=settings 檔 $2=plugin id；印 enabledPlugins 的值（json 形式），沒有印 MISSING
   python3 -c 'import json,sys;d=json.load(open(sys.argv[1],encoding="utf-8"));e=d.get("enabledPlugins",{});print(json.dumps(e[sys.argv[2]]) if sys.argv[2] in e else "MISSING")' "$1" "$2"
 }
 printf '[{"id": "%s", "version": "5.0.0", "scope": "user"}]\n' "${SP2}" > "$STUB_STATE/claude-list"
-P12="$(newproj p12)"; mkdir -p "$P12/.claude"
-echo '{"permissions": {"allow": ["Bash(ls)"]}, "enabledPlugins": {"mine@x": true}}' > "$P12/.claude/settings.local.json"
-cp "$P12/.claude/settings.local.json" "$TMP/sl-before"
-# (c) --check：不寫檔，印 DISABLE
-OUT="$(run --check "$P12" lifecycle)" || [ $? -eq 3 ] || fail "(12c) --check exit 不是 0／3：$OUT"
-echo "$OUT" | grep -qx "DISABLE: ${SP}" || fail "(12c) --check 應報 DISABLE: ${SP}：$OUT"
-echo "$OUT" | grep -qx "DISABLE: ${SP2}" || fail "(12c) --check 應報 DISABLE: ${SP2}：$OUT"
-cmp -s "$P12/.claude/settings.local.json" "$TMP/sl-before" || fail "(12c) --check 不該寫 settings.local.json"
-# (b) 實跑：兩個都設 false，其他鍵原樣
-OUT="$(run "$P12" lifecycle)" || fail "(12b) 實跑 exit 非 0：$OUT"
-SL="$P12/.claude/settings.local.json"
-[ "$(sp_val "$SL" "${SP}")" = false ] || fail "(12b) ${SP} 應為 false：$(cat "$SL")"
-[ "$(sp_val "$SL" "${SP2}")" = false ] || fail "(12b) ${SP2} 應為 false：$(cat "$SL")"
-[ "$(sp_val "$SL" mine@x)" = true ] || fail "(12b) enabledPlugins 其他項被動到：$(cat "$SL")"
-grep -q 'Bash(ls)' "$SL" || fail "(12b) 其他鍵被動到：$(cat "$SL")"
-grep -qx '.claude/settings.local.json' "$P12/.git/info/exclude" || fail "(12b) settings.local.json 應加進 .git/info/exclude"
-# 已是 false：--check 不再報
-OUT="$(run --check "$P12" lifecycle)" || [ $? -eq 3 ] || fail "(12c) 第二次 --check exit 不是 0／3"
-if echo "$OUT" | grep -q '^DISABLE:'; then fail "(12c) 已是 false 不該再報 DISABLE：$OUT"; fi
-# --shared 也寫 settings.local.json（不寫 settings.json）
-P12s="$(newproj p12s)"
-OUT="$(run --shared "$P12s" lifecycle)" || fail "(12b) --shared exit 非 0：$OUT"
-[ "$(sp_val "$P12s/.claude/settings.local.json" "${SP}")" = false ] || fail "(12b) --shared 也應寫 settings.local.json：$OUT"
-if [ -f "$P12s/.claude/settings.json" ] && grep -q superpowers "$P12s/.claude/settings.json"; then fail "(12b) --shared 不該寫進 settings.json"; fi
-# (d) 沒裝 lifecycle：不碰 settings.local.json
-P12d="$(newproj p12d)"
-OUT="$(run "$P12d" backend)" || fail "(12d) exit 非 0：$OUT"
-[ ! -e "$P12d/.claude/settings.local.json" ] || fail "(12d) 沒裝 lifecycle 不該建 settings.local.json"
-if echo "$OUT" | grep -q 'DISABLE\|superpowers'; then fail "(12d) 沒裝 lifecycle 不該提 superpowers：$OUT"; fi
-# (e) 專案共用 settings.json 啟用了別家 marketplace 的 superpowers、本機還沒裝：local 也要設 false，settings.json 不動
-echo '[]' > "$STUB_STATE/claude-list"
-P12e="$(newproj p12e)"; mkdir -p "$P12e/.claude"
-echo '{"enabledPlugins": {"superpowers@x": true, "other@y": true}}' > "$P12e/.claude/settings.json"
-cp "$P12e/.claude/settings.json" "$TMP/ss-before"
-OUT="$(run "$P12e" lifecycle)" || fail "(12e) exit 非 0：$OUT"
-[ "$(sp_val "$P12e/.claude/settings.local.json" superpowers@x)" = false ] || fail "(12e) 共用設定啟用的 superpowers@x 應在 local 設 false：$OUT"
-[ "$(sp_val "$P12e/.claude/settings.local.json" other@y)" = MISSING ] || fail "(12e) 非 superpowers 的鍵不該寫進 local"
-cmp -s "$P12e/.claude/settings.json" "$TMP/ss-before" || fail "(12e) 不該改 settings.json"
+# (a) 新專案裝 lifecycle：--check 不報 DISABLE，實跑不在 settings.local.json 寫 superpowers 鍵
+P12="$(newproj p12)"
+OUT="$(run --check "$P12" lifecycle)" || [ $? -eq 3 ] || fail "(12a) --check exit 不是 0／3：$OUT"
+if echo "$OUT" | grep -q '^DISABLE:'; then fail "(12a) 不該再報 DISABLE：$OUT"; fi
+OUT="$(run "$P12" lifecycle)" || fail "(12a) 實跑 exit 非 0：$OUT"
+if echo "$OUT" | grep -q '停用 superpowers'; then fail "(12a) 不該停用 superpowers：$OUT"; fi
+if [ -f "$P12/.claude/settings.local.json" ]; then
+  [ "$(sp_val "$P12/.claude/settings.local.json" "${SP}")" = MISSING ] || fail "(12a) 不該寫 ${SP}：$(cat "$P12/.claude/settings.local.json")"
+  [ "$(sp_val "$P12/.claude/settings.local.json" "${SP2}")" = MISSING ] || fail "(12a) 不該寫 ${SP2}"
+fi
+# (b) 舊版已寫入停用鍵的專案重跑：鍵原樣保留（不刪、不改 true），其他鍵不動
+P12b="$(newproj p12b)"; mkdir -p "$P12b/.claude"
+echo '{"permissions": {"allow": ["Bash(ls)"]}, "enabledPlugins": {"superpowers@claude-plugins-official": false, "mine@x": true}}' > "$P12b/.claude/settings.local.json"
+cp "$P12b/.claude/settings.local.json" "$TMP/sl-before"
+OUT="$(run "$P12b" lifecycle)" || fail "(12b) 實跑 exit 非 0：$OUT"
+cmp -s "$P12b/.claude/settings.local.json" "$TMP/sl-before" || fail "(12b) settings.local.json 不該被改：$(cat "$P12b/.claude/settings.local.json")"
 rm "$STUB_STATE/claude-list"
 
-# ---------- 13) --no-claude：整段 Claude 略過（含 marketplace、停用 Superpowers），pi／Codex／agy 照 local 裝；與 --shared 互斥 ----------
+# ---------- 13) --no-claude：整段 Claude 略過（含 marketplace），pi／Codex／agy 照 local 裝；與 --shared 互斥 ----------
 P13="$(newproj p13)"; : > "$STUB_LOG"
 OUT="$(run --no-claude "$P13" lifecycle)" || fail "(13) --no-claude exit 非 0：$OUT"
 [ "$(echo "$OUT" | grep -c '^SKIP: claude（--no-claude）$')" = 1 ] || fail "(13) 應印一次 SKIP: claude（--no-claude）：$OUT"
 if grep -q '^claude ' "$STUB_LOG"; then fail "(13) --no-claude 不該呼叫 claude：$(cat "$STUB_LOG")"; fi
 [ ! -e "$P13/.claude" ] || fail "(13) --no-claude 不該建 .claude（含 settings.local.json）"
 grep -q "$(native "$REPO_DIR/plugins/lifecycle")" "$P13/.pi/settings.json" || fail "(13) pi 應照常寫入"
-linked "$P13/.agents/skills/explore" || fail "(13) codex／agy 應照常建 link：$OUT"
+linked "$P13/.agents/skills/triage" || fail "(13) codex／agy 應照常建 link：$OUT"
 rc=0; run --shared --no-claude "$P13" lifecycle >/dev/null 2>&1 || rc=$?
 [ "$rc" -eq 2 ] || fail "(13) --shared --no-claude 應 exit 2，實際 ${rc}"
 rc=0; run --no-claude --shared "$P13" lifecycle >/dev/null 2>&1 || rc=$?

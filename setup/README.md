@@ -15,7 +15,7 @@
   setup/install-project.sh [--shared] [--no-claude] [--check] <專案根> <plugin…>
   ```
 
-  `--no-claude` 略過整段 Claude Code（含 marketplace、停用 Superpowers，`--check` 也不報），只裝 pi、Codex、agy（照預設 local 規則）；不可與 `--shared` 併用（exit 2）。通常先 `--shared` 裝 Claude，再 `--no-claude` 補另外三個 CLI。
+  `--no-claude` 略過整段 Claude Code（含 marketplace，`--check` 也不報），只裝 pi、Codex、agy（照預設 local 規則）；不可與 `--shared` 併用（exit 2）。通常先 `--shared` 裝 Claude，再 `--no-claude` 補另外三個 CLI。
 
   | CLI | 預設（只自己用） | `--shared`（進 git，團隊共用） |
   |---|---|---|
@@ -31,10 +31,8 @@
 
   pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
 
-  裝 `lifecycle` 時（Claude Code 有裝才做），lifecycle 取代 Superpowers，所以在 `<專案>/.claude/settings.local.json` 的 `enabledPlugins` 把
-  `superpowers@claude-plugins-official`，以及 `claude plugin list` 看到的其他 marketplace 的 `superpowers@…` 設成 `false`，其他鍵不動。
-  不論 `--shared` 與否都寫 `settings.local.json`（不進版控，並加進 `.git/info/exclude`）；`--check` 只印 `DISABLE: superpowers@…`（已是 false 不報）。
-  沒有專案層移除入口，想在該專案恢復 Superpowers，就手動刪掉 `enabledPlugins` 裡這幾個 `superpowers@…` 鍵。
+  lifecycle 與 superpowers 並存：工程流程交 superpowers，lifecycle 管做之前與做之後（3.0.0 起不再停用 superpowers）。
+  舊版曾在 `<專案>/.claude/settings.local.json` 寫入 `superpowers@…: false` 的專案，重跑不會自動改回；要恢復就手動刪掉那幾個鍵。
 - 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項，Codex／agy 刪掉 `.agents/skills/` 下對應的 link 與 `.agents/plugharbor/<p>`。
 - **改名對照**：plugin 改名時在 `lib.sh` 的 `PH_RENAMES_DEFAULT` 加 `舊名:新名`（空白分隔）。目前開放：`backend-dotnet→backend`、`frontend-vue→frontend`、`database-sqlserver→database`、`desktop-avalonia→desktop`、`kid-ui→ui-ux`、
   `sa-flow→lifecycle`、`delivery-flow→lifecycle`、`dev-flow→workspace`。

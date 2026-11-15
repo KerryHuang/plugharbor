@@ -110,7 +110,7 @@ prompt: |
 錨點只記「實際落在哪」，**不寫進規格正文**——規格技術中立，不得出現類別或方法名。
 
 判讀時區分兩種 MISSING：**該補進規格的業務邏輯**，與**本來就不該進規格的實作細節**
-（依 `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md` 的 owner 矩陣）。
+（判準：外部看得見的行為、規則、資料語意進規格；手段與內部結構不進）。
 agent 只負責找出「程式有做但規格沒寫」，**哪些值得寫進規格是主 session 的判斷**。
 
 ## 收尾條件
@@ -122,8 +122,7 @@ agent 只負責找出「程式有做但規格沒寫」，**哪些值得寫進規
 3. 落差報告含結論、覆蓋度統計、五類發現（含 UNCERTAIN），並註明本輪是全量或增量（增量時附基準 commit）
 4. 每條 MISSING／INACCURATE 都標了建議落點（哪份文件、哪一章）
 5. `analysis/impl-anchors/{規格檔名}.yml` 已寫回且解析通過
-6. 已明確告知使用者下一步：補規格走 `lifecycle:spec --stage frd --change`／
-   `lifecycle:spec --stage bfs --change`，或先開票
+6. 已明確告知使用者下一步：補規格走 `lifecycle:spec --change`，或先開票
 
 **報告落檔位置**由使用者決定（預設不落檔，只在對話輸出）——
 這是分析中間產物，不是交付文件。要落檔時放功能目錄的 `analysis/`。
@@ -138,12 +137,11 @@ agent 只負責找出「程式有做但規格沒寫」，**哪些值得寫進規
 | 一支檔一組 | 啟動成本大於效益，3~6 支較合理 |
 | 直接採信 agent 的覆蓋率數字 | 量化斷言自己抽驗一次 |
 | 把 DEAD_CODE 順手刪掉 | 只提出。既有 dead code 不動 |
-| 把所有 MISSING 都當成要補進規格 | 先過 `doc-boundaries.md` 的 owner 矩陣 |
+| 把所有 MISSING 都當成要補進規格 | 先過「外部看得見才進規格」的判準 |
 | 把方法名、檔名寫進規格正文當錨點 | 錨點只進 `analysis/impl-anchors/{規格檔名}.yml`，規格維持技術中立 |
 | 有錨點檔還每輪全量重驗 | 走 Step 0 增量；要全量請明確帶 `--full` |
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/agents/spec-sampler.md` — 取樣 agent（SCB 定義與分類規則在其定義內）
-- `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md` — 文件邊界與 owner 矩陣
 - [${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md) — 實作錨點檔格式、增量判定、寫回規則

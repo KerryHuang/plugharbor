@@ -1,6 +1,6 @@
 ---
 name: scout
-description: 證據蒐集：codebase／DB／文件勘察結果，供 domain-advisor 與規格撰寫共用。只列證據不解讀。由 explore 與 spec 的 FRD、SAD 棒派發，不主動觸發。
+description: 證據蒐集：codebase／DB／文件勘察結果，供 domain-advisor 與規格撰寫共用。只列證據不解讀。由 spec、spec-check、survey-existing-system、triage 派發，不主動觸發。
 model: sonnet
 maxTurns: 100
 ---
@@ -73,9 +73,8 @@ docs_root: 文件搜尋起點（可選，預設專案 `{docs-root}`）
 
 `Glob` 於 `{docs_root}/**/*.md`：
 
-- `*需求文件*.md` / `*FRD*.md`
-- `*系統分析*.md` / `*SAD*.md`
-- `*功能規格*.md` / `*BFS*.md` / `*FFS*.md`
+- 規格（`<spec.dir>/*.md`）、設計文件
+- 檔名含「需求」「分析」「規格」的既有文件
 
 對命中的文件：抽取一級標題與「業務規則」「狀態機」相關段落（不全文抄錄，只列章節索引）。
 

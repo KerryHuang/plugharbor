@@ -34,13 +34,13 @@
 ①範本與一手證據定格式與結論 ②既有同類產出只給在地化參數 ③`analysis/*.yml`／他人結論只是線索。動手前問：我照的是範本，還是某人上次的產出？
 
 ## 核心原則：決策回寫的掃描義務
-回寫前列全部落點（四份規格含索引與 CHANGELOG、`analysis/*.yml`、上游既定敘述）。硬性四條：契約異動先枚舉現行契約；yml 與規格同批更新；以語意全檔 grep 不用行號；**取代不追加**——舊敘述必刪，回寫後正文淨增 >10% 記 `decisions.md`。
+回寫前列全部落點（規格含 §7 變更紀錄、`analysis/*.yml`、上游既定敘述）。硬性四條：契約異動先枚舉現行契約；yml 與規格同批更新；以語意全檔 grep 不用行號；**取代不追加**——舊敘述必刪，回寫後正文淨增 >10% 在規格 §5 記一列理由。
 
 ## Step 0.3: Plugin 版本對版
-鏈起頭與每個硬性停點，比對已載入的 plugin 版本與 marketplace（`plugharbor`）最新版本。跨 patch 一行告知；跨 minor 以上停下建議 `/reload-plugins`。查不到 marketplace 資訊則略過。
+起頭與每個硬性停點，比對已載入的 plugin 版本與 marketplace（`plugharbor`）最新版本。跨 patch 一行告知；跨 minor 以上停下建議 `/reload-plugins`。查不到 marketplace 資訊則略過。
 
 ## 核心原則：技術中立
-只寫做什麼、輸入輸出、規則與**約束**；選型與**手段**（framework、快取、鎖、佇列、儲存位置、併發原語、重試做法）由 RD／PG 決定——規格遇到手段層問題寫成 **TD 留置**（約束＋現況＋陷阱，見 `decision-record.md`），不定案；完工後回寫、TD 轉已定案並註「完工回寫：實作對齊」。
+只寫做什麼、輸入輸出、規則與**約束**；選型與**手段**（framework、快取、鎖、佇列、儲存位置、併發原語、重試做法）由 RD／PG 決定——規格遇到手段層問題寫成 **TD 留置**（約束＋現況＋陷阱，記在規格 §5 決策表、`拍板` 寫「待實作」），不定案；完工後回寫、TD 轉已定案並註「完工回寫：實作對齊」。
 
 ## Step 0.5: Docs 同步
 若 docs 在獨立 repo，開工前先 pull 一次（每 session 一次）；docs 在本 repo 則略過。
@@ -69,10 +69,9 @@ lifecycle 單獨安裝就能用；`superpowers`、`browser-docs`、`toolkit` 都
 
 | 用到 | 哪裡 | 沒裝時 |
 |---|---|---|
-| `browser-docs:browser-surveyor`、`live-drive` | spec 的 FRD／SAD／FFS 棒 C 路畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依 FRD／BFS 推導 |
+| `browser-docs:browser-surveyor`、`live-drive` | spec 蒐證步驟的畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依既有規格與程式碼推導 |
 | `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
-| `toolkit:agent-dispatch` | spec-chain、顧問討論的 herdr pane 模式 | 同「不在 herdr」：spec-chain 改單 session 逐棒接手（handoff-protocol.md），顧問討論改 subagent 模式 |
-| `toolkit:retrospective` | dev-feedback、預算放行的轉交 | 列在本 skill 報告的建議裡，不轉交 |
+| `toolkit:agent-dispatch` | 顧問討論的 herdr pane 模式 | 同「不在 herdr」：顧問討論改 subagent 模式 |
 | `superpowers:writing-plans` | implement 的規劃到收尾 | 照 `skills/implement/references/fallback.md` 的極簡退路，並建議安裝 superpowers |
 
 ## 引用方式（在 SKILL.md 中）

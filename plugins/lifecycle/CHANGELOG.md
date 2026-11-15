@@ -2,6 +2,34 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [3.0.0] - 2026-11-15
+
+起因：盤點單人專案 24 個 session，順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；本機沒有專案用 `scale: full`。決定 superpowers 當工程核心、lifecycle 只管做之前與做之後（設計見 `docs/specs/2026-11-15-lifecycle-split-design.md`，第一批「先刪」）。
+
+**BREAKING**
+
+- 移除 skill：`spec-chain`、`explore`、`consolidate-docs`、`write-doc`、`dev-feedback`；移除 agent `spec-writer`。
+- 移除四份文件規格鏈：`spec` 不再有 `--stage`，範本 `frd`／`sad`／`bfs`／`ffs`／`cr-*`／`examples/` 與 `skills/spec/references/{frd,sad,bfs,ffs,stages,index}` 刪除；`spec` 一律產一份 `<spec.dir>/<feature>.md`。
+- 移除設定 `scale`：`config.py get scale` 固定回 `lean`、stderr 提示已移除、退出碼 0（舊呼叫端不壞）。
+- `spec-check` 移除 verify、readiness 模式與 `check-decision-propagation.py`；預設跑規格檢查表，`--sample` 保留。帶舊旗標時回一句「已移除」照預設跑。
+- `ticket-create` 拿掉 PM／SA／QA／Dev 角色子票：預設一張票，使用者要拆或功能清單該節已有父票時才建子票。
+- 刪除只服務規格鏈的共用 references：`chain-profile`、`boundary-dimensions`、`screen-spec-format`、`doc-boundaries`、`spec-dedup-and-budget`、`cr-update-flow`、`auto-verification-loop`、`upstream-workflow`、`response-structure-standards`、`handoff-protocol`、`decision-record`、`ffs8-to-acceptance`；刪完後沒人引用的 `ui-analysis-guide`、`program-code-inventory`、`sort-order-standards` 一併刪除。決策一律記在規格 §5 決策表。
+
+**改動**
+
+- `spec` 範本 §2.3 驗收標準改成 qa-verify 案例格式（`acceptance-format.md` 降兩級標題）；`spec-check` 第 2 項檢查它是否可測。
+- `qa-verify` 新增規格模式：輸入規格路徑時依 `skills/qa-verify/references/spec-to-acceptance.md` 把 §2.3 轉成 `.tmp/qa/<feature>/cases.md`，缺欄就停；§2.3 不是案例格式時擬草稿先給使用者確認。批次模式同步改讀 §2.3。
+- `references/pipeline.md` 改寫成新流程；`consultant-desk.md`、`legacy-parity.md`、`shared-preludes*.md`、`domain-advisor`（刪 triage 模式）、`scout` 改成單份規格用法。
+- 新增守門測試 `scripts/test_no_spec_chain.py`：規格鏈字樣、已刪 skill、孤兒檔、`scale` 預設都不得回來。
+- 既有孤兒 `references/skill-design.md` 改由 plugin README「維護」一節引用。
+- `setup/install-project.sh` 裝 lifecycle 不再在 `settings.local.json` 停用 superpowers（`setup/tests/install-project.sh` 第 12 段改測兩種情境）。
+
+**遷移**
+
+- `.plugharbor/lifecycle.yml` 有 `scale: full`：照 lean 跑並提示，可刪掉這個鍵。
+- 既有 FRD／SAD／BFS／FFS 文件不會被讀成規格鏈；要繼續改就以一份 lean 規格重寫，或把需要的段落整理進 `<spec.dir>/<feature>.md`。
+- 被舊版停用 superpowers 的專案：手動刪掉 `.claude/settings.local.json` 裡 `enabledPlugins` 的 `superpowers@…: false` 鍵。
+
 ## [2.12.1] - 2026-11-14
 
 - fix(ticket-ops): `reconcile.py` 給 `--board-json` 時看板比對被靜默跳過（拿不到 `ticket.project.options`），看板全錯仍回「差異 0」；改為一律讀設定的 options，缺 options 或沒設看板時在輸出註明「未比對看板」。看板只收本 repo 的 Issue（`board_from_items`），PR、草稿與其他 repo 的同號 issue 不混入。開著的票掛多個 `stage:*` label 列為差異，不再隨機取一個。沒被引用的已關 todo 票只計入「不計入」，不再出現在 todo 計數。

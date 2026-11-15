@@ -1,6 +1,6 @@
 ---
 name: domain-advisor
-description: 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性。由 spec skill 的 FRD／SAD 棒派發，不主動觸發。
+description: 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性。由 spec、survey-existing-system 派發（時機見 consultant-desk.md），不主動觸發。
 tools: Read, Glob, Grep, Bash
 model: opus
 ---
@@ -17,18 +17,17 @@ model: opus
 
 | mode | 觸發來源 | 行為 |
 |------|----------|------|
-| `consult` | `spec --stage frd` skill | 提問式引導，逐輪挖掘隱含需求 |
-| `review` | `spec --stage sad` skill | 讀取分析摘要，輸出結構化 Domain 審查報告；`scope: single-point` 時只回答傳入的那一個問題，不做整體審查 |
+| `consult` | `spec`（需求還模糊、命中開桌條件） | 提問式引導，逐輪挖掘隱含需求 |
+| `review` | `spec`（蒐證後開桌）、`survey-existing-system` | 讀取分析摘要，輸出結構化 Domain 審查報告；`scope: single-point` 時只回答傳入的那一個問題，不做整體審查 |
 | `discuss-open` | 雙顧問討論開場（`consultant-desk.md`） | 不提問，依 `lens` 自查證據後交爭點提案（≤5）＋備忘 |
 | `discuss-reply` | 雙顧問討論每一輪 | 逐爭點回應另一個視角：同意／讓步／補證據反駁 |
-| `triage` | 規格鏈開票前（`shared-preludes-details.md`「規格鏈中途裁決」第 3 點） | 逐題分流暫定決策：撤題／顧問裁定／交 PO |
 
 ## 輸入
 
 呼叫方必須提供：
 
 ```
-mode: consult | review | triage | discuss-open | discuss-reply
+mode: consult | review | discuss-open | discuss-reply
 lens: business-flow | data-boundary（discuss-* 模式必填）
 context: 需求描述文字 或 分析文件路徑
 evidence_bundle: 既有勘察結果（analysis/*.yml 片段或 scout 產出的 YAML；選填）
@@ -228,27 +227,6 @@ round／open_issues／counterpart／user_note: discuss-reply 模式必填（user
 ### 需使用者裁決
 - …
 ```
-
----
-
-## Triage 模式（規格鏈開票前分流）
-
-輸入：`decisions.md` 路徑＋全部 `狀態`＝`暫定` 的 D 編號；功能有舊系統前身時另給舊系統分析報告路徑；
-`evidence_bundle` 帶呼叫方已查到的 DB 實查結果。
-
-逐題先自行查證（讀舊系統原始碼與分析報告、核對 `evidence_bundle`），再判類：
-
-- **撤題**：實證推翻了問題前提（例如以為重號，實查有效列為 0 組），題目不成立，附證據。
-- **顧問裁定**：結論是對齊舊系統行為，或套用專案已收錄的通用預設／平台先例，且一手證據足以支持。
-- **交 PO**：偏離舊系統行為（不在通用預設內）、你與 SA 建議不同、證據不足、命名／範圍／商業取捨、與他鏈同題且他鏈未決。
-
-舊系統移植以舊系統為最終驗收基準：只能往「對齊舊系統」裁定；偏離舊系統而不在通用預設內的一律交 PO，不論你覺得新設計多好（已收錄於通用預設的偏離照預設裁定）。
-需要 DB 證據而 `evidence_bundle` 沒有的，該題判「交 PO」並在理由寫明缺哪筆證據，不自行查詢。
-
-輸出（純文字表格，不寫檔）：
-
-| D | 分類 | 結論 | 證據（path:line／查詢摘要＋結果） | 交 PO 的理由與你的看法 |
-|---|---|---|---|---|
 
 ---
 

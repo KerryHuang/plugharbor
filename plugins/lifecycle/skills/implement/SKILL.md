@@ -35,7 +35,7 @@ git branch --show-current && git status --short
 
 | 檢查項 | 規則 | 失敗處理 |
 |--------|------|----------|
-| 工作區乾淨 | 沒有未提交變更 | 未提交變更只有 `<spec.dir>` 下的規格／探索摘要（explore、spec 不 commit）→ 不停下：先照下一列開功能分支，逐檔 `git add` 這些檔，commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
+| 工作區乾淨 | 沒有未提交變更 | 未提交變更只有 `<spec.dir>` 下的規格（spec 不 commit）→ 不停下：先照下一列開功能分支，逐檔 `git add` 這些檔，commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
 | 非主幹 | 不在 main／develop 上實作 | 開 `feature/<name>`（從專案慣例的基底分支） |
 | 分支對應本功能 | 分支名含功能或票的識別碼 | 停下，提示切分支或 cd 到正確 worktree |
 | worktree 一致 | 在 worktree 裡時，目錄名含分支識別碼 | 提醒使用者確認 |
@@ -44,7 +44,7 @@ git branch --show-current && git status --short
 
 ## 2. 定位規格與品質閘門
 
-- 規格在 `<spec.dir>/` 底下找本功能的檔（`scale: full` 時是 FRD／SAD／BFS／FFS 一組）。找不到 → 停下，建議先跑 `lifecycle:spec`；使用者明說不寫規格時，把他的描述當目標交給步驟 3，回報標「無規格」。
+- 規格在 `<spec.dir>/` 底下找本功能的檔。找不到 → 停下，建議先跑 `lifecycle:spec`；使用者明說不寫規格時，把他的描述當目標交給步驟 3，回報標「無規格」。
 - 規格裡還有 `[NEEDS CLARIFICATION]` → 停下問使用者，不猜。
 - 跑 `lifecycle:spec-check` 驗規格品質（lean 規格已在 `lifecycle:spec` 之後跑過、結論 ✅ 且規格之後沒再改 → 不重跑，直接繼續；沒跑過或之後改過才跑。lean 的 spec-check 全流程只跑這一次）：
   - 通過 → 繼續。

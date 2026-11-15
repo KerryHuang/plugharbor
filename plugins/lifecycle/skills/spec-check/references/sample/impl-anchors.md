@@ -35,7 +35,7 @@ deferred: []                   # 範圍內沒讀到的檔（下一輪優先讀�
 
 ## 增量判定（Step 0 用）
 
-1. 檔名取規格檔名去掉 `.md`（如 `<功能>_後端功能規格書.yml`）——同一功能目錄的 BFS、FFS 各自一檔，互不覆蓋。檔案不存在 → 走全量。
+1. 檔名取規格檔名去掉 `.md`（如 `<feature>.yml`），每份規格一檔，互不覆蓋。檔案不存在 → 走全量。
 2. 對 `_meta.repos` 每一行：`git -C <repo> cat-file -e <commit>` 失敗（被 rebase／淺 clone）→ 該 repo 走全量。
 3. 變動檔 ＝ `git -C <repo> diff --name-only <commit> HEAD`（輸出相對 repo 根，先補上 `<repo>/` 前綴），取與 `_meta.scope` 的交集，再加上：
    - `deferred` 全部；

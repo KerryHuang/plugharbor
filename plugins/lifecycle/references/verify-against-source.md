@@ -78,5 +78,4 @@ agent 自報的量化數字與實測不符是反覆出現的模式，不限於�
 再加一層檢查，只是多一個可能失效的中介物。
 **方向是把驗證的終點換成原物本身**，而不是延長驗證鏈。
 
-相關：[handoff-protocol.md](handoff-protocol.md)（交接產物要附成立條件）、
-[dispatch-conventions.md](dispatch-conventions.md)（派工與收尾）。
+相關：[dispatch-conventions.md](dispatch-conventions.md)（派工與收尾）。

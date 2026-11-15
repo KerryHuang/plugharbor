@@ -140,8 +140,8 @@ class ConfigTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             d = pathlib.Path(t) / ".plugharbor"
             d.mkdir()
-            (d / "delivery-flow.yml").write_text("scale: full\n", encoding="utf-8")
-            r = subprocess.run([sys.executable, str(CLI), "get", "scale"],
+            (d / "delivery-flow.yml").write_text("spec:\n  dir: specs\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
                                cwd=t, capture_output=True, text=True)
             self.assertEqual((r.returncode, r.stdout.strip()), (3, ""))
             self.assertIn("delivery-flow.yml", r.stderr)
@@ -179,16 +179,21 @@ class ConfigTest(unittest.TestCase):
 
     def test_defaults_apply_without_config_file(self):
         with tempfile.TemporaryDirectory() as t:
-            r = subprocess.run([sys.executable, str(CLI), "get", "scale"],
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
                                cwd=t, capture_output=True, text=True)
-            self.assertEqual((r.returncode, r.stdout.strip()), (0, "lean"))
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/specs"))
 
-    def test_scale_explicit_full(self):
+    def test_scale_removed_prints_notice_and_lean(self):
+        # 舊設定 scale: full 不報錯、不走舊路：stdout 回 lean，stderr 提示已移除
         with tempfile.TemporaryDirectory() as t:
             write_cfg(t, "scale: full\n")
             r = subprocess.run([sys.executable, str(CLI), "get", "scale"],
                                cwd=t, capture_output=True, text=True)
-            self.assertEqual((r.returncode, r.stdout.strip()), (0, "full"))
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "lean"))
+            self.assertIn("已在 lifecycle 3.0.0 移除", r.stderr)
+
+    def test_defaults_without_scale(self):
+        self.assertNotIn("scale", config.DEFAULTS)
 
 
 if __name__ == "__main__":

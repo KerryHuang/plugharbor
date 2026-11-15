@@ -120,64 +120,6 @@ elif command -v claude >/dev/null 2>&1; then
       run claude plugin install "$p@plugharbor" --scope "$SCOPE"
     fi
   done
-  # lifecycle 取代 Superpowers：在本專案停用它（官方 marketplace 的，加上 list 裡其他 marketplace 的）。
-  # 一律寫 settings.local.json（不進 git，--shared 也一樣），只動 enabledPlugins 的這幾個鍵。
-  case " $PLUGINS " in *" lifecycle "*) disable_sp=1 ;; *) disable_sp=0 ;; esac
-  if [ "$disable_sp" -eq 1 ] && [ -z "$PY" ]; then
-    echo "WARN: 找不到 python 3，未在 .claude/settings.local.json 停用 Superpowers"
-  elif [ "$disable_sp" -eq 1 ]; then
-    set +e
-    sp_out="$(printf '%s\n' "$out" | PYTHONUTF8=1 "$PY" -c '
-import json, os, sys
-path, check = sys.argv[1], sys.argv[2] == "1"
-try:
-    items = json.load(sys.stdin)
-except Exception:
-    items = []
-ids = ["superpowers@claude-plugins-official"]
-for x in items if isinstance(items, list) else []:
-    i = x.get("id", "") if isinstance(x, dict) else ""
-    if i.split("@")[0] == "superpowers" and i not in ids:
-        ids.append(i)
-try:
-    d = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
-    ep = d.setdefault("enabledPlugins", {})
-    assert isinstance(ep, dict), "enabledPlugins 不是物件"
-except Exception as e:
-    print(f"FAIL: 讀不了 {path}：{e}"); sys.exit(1)
-# 專案共用 settings.json（與 local 本身）啟用的 superpowers@*：本機還沒裝，信任專案後也會被裝上
-shared = os.path.join(os.path.dirname(path), "settings.json")
-try:
-    sep = json.load(open(shared, encoding="utf-8")).get("enabledPlugins") or {} if os.path.exists(shared) else {}
-except Exception:
-    sep = {}
-for i in list(sep if isinstance(sep, dict) else {}) + list(ep):
-    if i.split("@")[0] == "superpowers" and i not in ids:
-        ids.append(i)
-todo = [i for i in ids if ep.get(i) is not False]
-for i in todo:
-    print(f"DISABLE: {i}" if check else f"OK:   停用 {i}（.claude/settings.local.json）")
-if todo and not check:
-    for i in todo:
-        ep[i] = False
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2); f.write("\n")
-' "$(ph_native_path "$ROOT/.claude/settings.local.json")" "$CHECK" | tr -d '\r')"
-    rc=$?
-    set -e
-    [ -z "$sp_out" ] || echo "$sp_out"
-    if [ "$rc" -ne 0 ]; then FAILS=$((FAILS + 1))
-    elif [ "$CHECK" -eq 1 ]; then [ -z "$sp_out" ] || DIFFS=$((DIFFS + $(printf '%s\n' "$sp_out" | wc -l)))
-    else
-      ex="$(git -C "$ROOT" rev-parse --git-path info/exclude 2>/dev/null)" || ex=""
-      if [ -n "$ex" ]; then
-        case "$ex" in /*|[A-Za-z]:*) ;; *) ex="$ROOT/$ex" ;; esac  # Git for Windows 回 C:/… 也是絕對路徑
-        mkdir -p "$(dirname "$ex")"; touch "$ex"
-        grep -qxF '.claude/settings.local.json' "$ex" || echo '.claude/settings.local.json' >> "$ex"
-      fi
-    fi
-  fi
 else
   echo "SKIP: claude（未安裝）"
 fi

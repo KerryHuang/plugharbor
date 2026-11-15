@@ -4,6 +4,7 @@
 用法：python3 config.py get <key>   （key 用點號，例如 ticket.tool；以目前目錄為專案根）
 缺檔、缺鍵（值為空也算）或檔案格式錯誤（YAML 語法、最上層不是對應、非 UTF-8）：退出碼 2，stderr 一行說明。
 有預設值的鍵（DEFAULTS）缺檔或缺鍵時回預設值；只有舊檔 delivery-flow.yml 時一律退出碼 3 並提示改名（呼叫端停下請使用者改名，不問鍵、不寫檔）。
+`get scale` 為 3.0.0 移除的舊鍵：stderr 提示、stdout 固定 lean、退出碼 0。
 spec.dir 沒設時，專案根 CLAUDE.md 有舊鍵 `sdlc-docs-path:` 就沿用其值（stderr 提示搬到 lifecycle.yml）。
 """
 import json
@@ -17,7 +18,8 @@ CONFIG_PATH = Path(".plugharbor") / "lifecycle.yml"
 OLD_PATH = Path(".plugharbor") / "delivery-flow.yml"
 HINT = "請在專案根的 .plugharbor/lifecycle.yml 補上 {key}（範例見 references/config.md）"
 RENAME_HINT = "找到舊設定 .plugharbor/delivery-flow.yml：請改名為 .plugharbor/lifecycle.yml（鍵不變）後再跑"
-DEFAULTS = {"scale": "lean", "spec.dir": "docs/specs"}
+DEFAULTS = {"spec.dir": "docs/specs"}
+SCALE_NOTICE = "scale 已在 lifecycle 3.0.0 移除，一律 lean（可從 .plugharbor/lifecycle.yml 刪掉這個鍵）"
 LEGACY_HINT = "沿用專案 CLAUDE.md 的舊鍵 sdlc-docs-path；請改設 .plugharbor/lifecycle.yml 的 spec.dir"
 
 
@@ -72,6 +74,10 @@ def main(argv):
         print("用法：config.py get <key>", file=sys.stderr)
         return 2
     key = argv[2]
+    if key == "scale":  # 舊鍵：呼叫端不壞，一律回 lean
+        print(SCALE_NOTICE, file=sys.stderr)
+        print("lean")
+        return 0
     try:
         value = require(load_config(Path.cwd(), key), key)
     except ConfigMissing as e:

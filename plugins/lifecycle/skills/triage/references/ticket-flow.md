@@ -63,7 +63,7 @@
 
 ### Feature／CR
 
-本 skill 不自己寫規格。以票描述為需求輸入：摘要重點、標示資訊缺口（需求太淺建議先 `lifecycle:explore`），整理建議起點與理由寫進報告（`lifecycle:spec` 新規格或變更既有規格、或先 `lifecycle:explore`）。起點選擇待閘道 A 判型確認後再問。pipeline 全貌見 `${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`。
+本 skill 不自己寫規格。以票描述為需求輸入：摘要重點、標示資訊缺口（需求太淺就在 `lifecycle:spec` 開頭先問清楚），整理建議起點與理由寫進報告（`lifecycle:spec` 新規格或變更既有規格）。起點選擇待閘道 A 判型確認後再問。pipeline 全貌見 `${CLAUDE_PLUGIN_ROOT}/references/pipeline.md`。
 
 規格走完且通過 `lifecycle:spec-check` 後才叫用 `lifecycle:ticket-create` 開票；此時機通常不在本次分流內，本 skill 只做起步引導。
 
@@ -107,7 +107,7 @@
 - 結論需修正 → 依補充修正後重印完整報告再問。
 - 到此結束 → 輸出摘要並終止（不發佈、不開票）。
 
-Feature／CR 判型確認後再問起點：從 `lifecycle:spec` 開始（已有需求輪廓）／以變更既有規格開始（CR）／先 `lifecycle:explore`（需求尚淺）／只做分流，稍後自行接續。
+Feature／CR 判型確認後再問起點：從 `lifecycle:spec` 開始（已有需求輪廓）／以變更既有規格開始（CR）／只做分流，稍後自行接續。
 
 ## 9. 回票（預覽、閘道 B、發佈）
 

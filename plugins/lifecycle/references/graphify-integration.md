@@ -20,7 +20,7 @@ ${GRAPHIFY_PYTHON:-python} -c "import graphify" 2>/dev/null
 
 ## Query 區塊
 
-**使用者**：`spec --stage frd`（判「需新建」前）、`spec --stage sad`、`spec --stage bfs`、`spec --stage ffs`
+**使用者**：`spec`（蒐證步驟，判「需新建」前）
 
 **觸發時機**：取得功能名稱 / 讀取輸入參數之後，讀取任何 MD 文件之前。
 
@@ -31,7 +31,7 @@ ${GRAPHIFY_PYTHON:-python} -c "import graphify" 2>/dev/null
    - 讀取當前專案 `CLAUDE.local.md` 或 `CLAUDE.md` 裡的 `graphify.graphs` 設定
    - 有設定 → 使用清單中所有路徑
    - 無設定 → fallback 到 `./graphify-out/graph.json`
-3. 逐一對每個存在的 graph 執行 BFS query：
+3. 逐一對每個存在的 graph 執行 breadth-first query：
    ```bash
    ${GRAPHIFY_PYTHON:-python} -m graphify query "{功能名稱}" --graph {graph路徑}
    ```
