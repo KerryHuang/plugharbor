@@ -18,7 +18,7 @@ argument-hint: "[--sample] [規格路徑] [原始碼範圍]"
 
 ## Step 0：找規格
 
-規格是單一 `<spec.dir>/<feature>.md`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）；給短名找不到時再找 `<spec.dir>/*<feature>*.md`（檔名可能有日期前綴）。
+規格是單一 `<spec.dir>/<feature>.md`（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/superpowers/specs`）；給短名找不到時再找 `<spec.dir>/*<feature>*.md`（檔名可能有日期前綴）。
 未給路徑時，從對話推斷最近處理的規格並告知「偵測到：<path>」；推不出才提示用法並終止。
 
 ## sample 模式（`--sample`）

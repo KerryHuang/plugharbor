@@ -1,6 +1,6 @@
 # Development Pipeline
 
-以 lifecycle 與 tickets 等 plugin 走完需求到驗收的動線；規格到驗收在 lifecycle，票務在 tickets，沒裝的段落照 `shared-preludes.md`「可選依賴」降級。一個功能一份規格 `<spec.dir>/<feature>.md`（`spec.dir` 預設 `docs/specs`），一張票（要拆才有子票）。
+以 lifecycle 與 tickets 等 plugin 走完需求到驗收的動線；規格到驗收在 lifecycle，票務在 tickets，沒裝的段落照 `shared-preludes.md`「可選依賴」降級。一個功能一份規格 `<spec.dir>/<feature>.md`（`spec.dir` 預設 `docs/superpowers/specs`），一張票（要拆才有子票）。
 
 ```
 triage／ticket-create → spec → spec-check → implement → release → qa-verify

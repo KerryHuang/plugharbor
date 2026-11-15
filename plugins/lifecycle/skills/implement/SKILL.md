@@ -21,7 +21,7 @@ $ARGUMENTS
 ## 0. 讀設定與前次經驗
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/specs
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/superpowers/specs
 ```
 
 讀 `<spec.dir>/LEARNINGS.md`（沒有就略過），挑出跟本功能相關的條目，步驟 3 交給規劃時一起帶上。「否決」條目一律照抄：規劃不再提出已否決的方案，除非使用者自己重開。

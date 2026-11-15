@@ -37,7 +37,7 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(config.require(cfg, "ticket.states.todo"), "To Do")
 
     def test_dotted_top_level_key_is_format_error(self):
-        # 寫成 `spec.dir: x`（最上層點號鍵）原本默默退回預設 docs/specs，implement／spec-check 就找不到規格
+        # 寫成 `spec.dir: x`（最上層點號鍵）原本默默退回預設 docs/superpowers/specs，implement／spec-check 就找不到規格
         with tempfile.TemporaryDirectory() as t:
             write_cfg(t, "spec.dir: docs/design\n")
             r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"], cwd=t, capture_output=True, text=True)
@@ -189,13 +189,13 @@ class ConfigTest(unittest.TestCase):
             write_cfg(t, "ticket:\n  tool: github\n")
             r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
                                cwd=t, capture_output=True, text=True)
-            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/specs"))
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/superpowers/specs"))
 
     def test_defaults_apply_without_config_file(self):
         with tempfile.TemporaryDirectory() as t:
             r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"],
                                cwd=t, capture_output=True, text=True)
-            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/specs"))
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/superpowers/specs"))
 
     def test_scale_removed_prints_notice_and_lean(self):
         # 舊設定 scale: full 不報錯、不走舊路：stdout 回 lean，stderr 提示已移除

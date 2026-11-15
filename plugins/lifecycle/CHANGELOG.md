@@ -6,6 +6,8 @@
 
 起因：lifecycle 3.0.0 一包裝了票務、需求與會議、交付文件與開發主線，只要其中一塊的人也得整包安裝、整包載入 description；盤點使用紀錄也顯示各塊的使用者不同（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第二批「拆 plugin」）。lifecycle 收斂成開發主線，其餘拆成三個各自能單獨安裝的 plugin。
 
+**BREAKING**：`spec.dir` 預設由 `docs/specs` 改為 `docs/superpowers/specs`（與 superpowers 產物路徑規範一致，使用者 2026-11-15 裁決；不做相容）。規格放在 `docs/specs` 又沒設 `spec.dir` 的專案，請在 `.plugharbor/lifecycle.yml` 設 `spec.dir`（巢狀寫法 `spec:` 下 `dir: docs/specs`） 或搬目錄。tickets、discovery、delivery 的 `config.py` 同。
+
 **BREAKING**（叫用名改了，舊名不再有效）
 
 | 舊（lifecycle 內） | 新叫用 |

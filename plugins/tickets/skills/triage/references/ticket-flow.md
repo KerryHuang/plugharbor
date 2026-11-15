@@ -41,7 +41,7 @@
 
 **A. 規格佐證**（必查，最易被略過）
 
-1. 搜規格目錄（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`；專案另有文件目錄一併搜）。用功能名稱或模組搜內容，檔名常不含票號。
+1. 搜規格目錄（`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/superpowers/specs`；專案另有文件目錄一併搜）。用功能名稱或模組搜內容，檔名常不含票號。
 2. 對照票要的行為與既有規格：CR 牴觸既有規格＝改規格的 CR，需 PM 確認並回寫規格，不是默默改碼；規格把某欄或行為設為刻意如此（必填、不可為空、刻意保留）→ 回報務必點出，別當可隨意移除。
 3. 也用 `query` 掃既有票（同義功能、前序票），避免重複或漏掉規格鏈。
 

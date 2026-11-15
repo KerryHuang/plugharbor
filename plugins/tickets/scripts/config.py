@@ -19,7 +19,7 @@ CONFIG_PATH = Path(".plugharbor") / "lifecycle.yml"
 OLD_PATH = Path(".plugharbor") / "delivery-flow.yml"
 HINT = "請在專案根的 .plugharbor/lifecycle.yml 補上 {key}（範例見 references/config.md）"
 RENAME_HINT = "找到舊設定 .plugharbor/delivery-flow.yml：請改名為 .plugharbor/lifecycle.yml（鍵不變）後再跑"
-DEFAULTS = {"spec.dir": "docs/specs"}
+DEFAULTS = {"spec.dir": "docs/superpowers/specs"}
 SCALE_NOTICE = "scale 已在 lifecycle 3.0.0 移除，一律 lean（可從 .plugharbor/lifecycle.yml 刪掉這個鍵）"
 LEGACY_HINT = "沿用專案 CLAUDE.md 的舊鍵 sdlc-docs-path；請改設 .plugharbor/lifecycle.yml 的 spec.dir"
 

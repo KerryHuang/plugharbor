@@ -14,7 +14,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 
 | 鍵 | 說明 | 預設 |
 |----|------|------|
-| `spec.dir` | 規格與 `LEARNINGS.md` 的目錄（相對專案根） | `docs/specs` |
+| `spec.dir` | 規格與 `LEARNINGS.md` 的目錄（相對專案根） | `docs/superpowers/specs` |
 | `ticket.tool` | 票務工具：`linear`、`github`、`jira` | 無（票務操作時必填：`ticket-ops` 及經它開票、改票的 skill，如 `ticket-create`、`ticket-reply`） |
 | `ticket.team` | Linear 的 team 名稱或 key | 無（`linear` 時必填） |
 | `ticket.repo` | GitHub Issues 的 `owner/repo` | 無（`github` 時必填） |

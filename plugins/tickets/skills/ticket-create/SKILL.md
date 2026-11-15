@@ -50,7 +50,7 @@ model: sonnet
 
 ### 5. 讀取依據、寫草稿
 
-找已完成的規格（目錄取 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/specs`）。找到就在票描述附路徑，並只讀取材需要的章節，不整檔載入。沒有規格就依 `ticket-templates.md` 從描述生成。
+找已完成的規格（目錄取 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`，預設 `docs/superpowers/specs`）。找到就在票描述附路徑，並只讀取材需要的章節，不整檔載入。沒有規格就依 `ticket-templates.md` 從描述生成。
 
 草稿含：每張票的標題、階段、labels、描述全文、parent、相依表（每條相依的依據）。規格已存在時票描述附規格路徑。有子票時，子票間的先後以 `blocked_by` 表達；父子之間不另掛。
 

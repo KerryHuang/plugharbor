@@ -15,7 +15,7 @@ SA 薄編排：用既有 agent 蒐集唯讀證據，再彙整成**現況分析�
 
 蒐集前先與使用者確認：
 1. **目標**——哪個 app／服務（monorepo 或 submodule 容器下的哪個子目錄）、要勘察哪段行為／範圍。
-2. **產出**——預設 `{docs-root}`（即 `spec.dir` 設定，預設 `docs/specs`），
+2. **產出**——預設 `{docs-root}`（即 `spec.dir` 設定，預設 `docs/superpowers/specs`），
    落點與命名依該專案的文件慣例；判不出落點就問，不自建第一階目錄。
 3. **來源判斷**——若對象是待汰換的舊系統（要遷移而非維持運作），停止並改走 `lifecycle:spec`；
    本 skill 只處理**現役 in-production** 系統。

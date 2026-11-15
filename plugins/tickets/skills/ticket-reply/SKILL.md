@@ -70,7 +70,7 @@ model: sonnet
 
 #### 3e. 更新規格
 
-規格目錄取 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`（預設 `docs/specs`）。
+規格目錄取 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir`（預設 `docs/superpowers/specs`）。
 
 1. 搜尋對應規格並**定向讀取**相關章節，不整檔載入。
 2. 定位問題相關段落，用 Edit 補充或修正；問題揭示遺漏就新增段落。

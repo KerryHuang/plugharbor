@@ -26,7 +26,7 @@ $ARGUMENTS → [--change {ticket}] {功能描述}
 ## Step 0：讀設定
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/specs
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get spec.dir   # 預設 docs/superpowers/specs
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定回 lean
 ```
 

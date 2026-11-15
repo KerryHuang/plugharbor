@@ -19,7 +19,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 
 專案根 `.plugharbor/lifecycle.yml`，鍵與預設值見 `references/config.md`。重點：
 
-- `spec.dir`：規格目錄，預設 `docs/specs`。
+- `spec.dir`：規格目錄，預設 `docs/superpowers/specs`。
 - `ticket.tool`：`linear`、`github`、`jira`；票務動作經 `tickets:ticket-ops`（沒裝 `tickets` 時只更新清單，見可選依賴）。
 
 舊專案只有 `.plugharbor/delivery-flow.yml` 時，讀設定的 skill 會停下提示改名為 `lifecycle.yml`（鍵不變）。
