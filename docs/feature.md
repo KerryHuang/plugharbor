@@ -32,7 +32,7 @@
 
 同一專案多個 session 互相看不到，造成重工與合併衝突；起飛申報、飛行追蹤、進 main 前核對、下機釋放。設計見 `docs/superpowers/specs/2026-11-15-session-tower-design.md`。
 
-- [ ] 📋 單機塔台（段 T1）：`tower.py` 登記表、起飛提醒、改動追蹤、進 main 前硬擋（只 Claude Code）、feature.md 核對、unattended 可選接入（使用者 2026-11-15 裁決 11 項）
+- [ ] 🚧 單機塔台（段 T1）：`tower.py` 登記表、起飛提醒、改動追蹤、進 main 前硬擋（只 Claude Code）、feature.md 核對、unattended 可選接入（使用者 2026-11-15 裁決 11 項）
 - [ ] 💡 第二階段（段 T2）：跨機器跨人（票的 in-progress／git ref 同步）與 git pre-commit／pre-push 硬擋
 
 ## lifecycle：ticket skill 雙軌示範（2026-11-14 規劃）

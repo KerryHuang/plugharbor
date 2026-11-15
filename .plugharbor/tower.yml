@@ -1,0 +1,4 @@
+shared:
+  - .claude-plugin/marketplace.json
+  - README.md
+  - plugins/*/.claude-plugin/plugin.json

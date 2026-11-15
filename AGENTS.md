@@ -22,7 +22,7 @@
 - **常駐 context 不變胖**：skill／agent description 與 user 層規則（setup 的 home 目錄）改了不得變長；要變長就寫明拿什麼換。
 - **先查重疊**：新增或改 skill 前，先查 superpowers 等已裝的外部 plugin 有沒有同樣功能；分工見 user 層規則的 `superpowers.md`。
 - **副本一起改**：同一段話在多處（如 user 層 rule 與 plugin 的 references），改一處就全改；能機械比對的加檢查。
-- **並行**：動手前看 `git worktree list` 與 `git branch -a --no-merged origin/main`，有別的 session 正在改同一塊就先協調。
+- **並行**：先 `tower.py radar`，否則 `git worktree list`、`git branch -a --no-merged origin/main`；同塊有人須協調。
 
 ## 版號同步
 

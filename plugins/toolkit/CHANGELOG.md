@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.24.0] - 2026-11-15
+
+- feat(tower): 新增 `tower` skill 與 `skills/tower/scripts/tower.py`（航班登記表 takeoff／amend／beat／radar／override／landed／land-check／release），並新增三支 hook：`tower-context.py`（SessionStart 摘要在飛航班）、`tower-track.py`（PreToolUse／UserPromptSubmit 心跳、PostToolUse 記錄改動並提醒撞檔）、`tower-landing.py`（把東西落到預設分支前跑 land-check，超出範圍、撞檔、落後時擋下或詢問）。plugharbor 自用 `.plugharbor/tower.yml` 登記共用跑道；AGENTS.md「並行」條改成優先看 `tower.py radar`。起因：使用者實際遇過多 session 重工與衝突，未留文字紀錄（2026-11-15 裁決整套一次做完）。
+- 實測 hook 延遲（macOS、Python 3.14，每次新開子程序）：beat ≈25.5 ms（100 次平均）、PostToolUse touch ≈25.1 ms（20 次）、beat 經 `run-py.sh` ≈50 ms、空 python 啟動 ≈10.5 ms。
+- fix(tower)：整支分支審查修正（同屬 0.24.0）。`tower-landing`：merge／rebase 的目標分支或 push 的來源分支對到別班航班時（含已有自己航班、停在預設分支的 session，與沒有航班的主 checkout），改用那班航班做 land-check；預設分支上以本 worktree 航班 merge／rebase 視為同步，不套用超出範圍與落後；追蹤 `cd` 目標目錄（含 `git -C`、`~` 展開）。`tower-context`：摘要的在飛數排除失聯航班。`tower-track`：寫入前重讀，航班已 release／landed 就不寫，避免復活或改回 flying。`tower.py`：`land_check` 與重疊判斷排除 worktree 相同的他班（takeoff 無鎖造成的同 worktree 雙班）。起因：2026-11-15 整支分支審查（tower 實作完成後）。另含跨家族審查（agy）修正：`tower-landing` 模擬指令中的 `git checkout|switch <既有分支>`（`git checkout main && git merge feat/x` 算在 main 上落地）、預設分支上只有不指定 ref 或遠端預設分支才算同步（併入其他本地分支算落地，並比對其帶進來的檔）；`tower.py` 的 `beat --touched` 相對路徑以 cwd 為基準轉成 repo 相對路徑，`beat`／`amend`／`override` 寫入前重讀（已 release 或非 flying 不寫），`--paths` 反斜線轉正斜線；workspace `unattended` 的 takeoff 範例補必填的 `--goal`。
+- 已知限制：`tower.yml` 只支援區塊式 `shared:` 清單；hook 指令解析是字串近似（引號內字樣會誤判，`env`／`sudo`／`bash -c`、`git pull`、`cherry-pick` 不涵蓋）；在預設分支上以本 worktree 航班 merge／rebase 只有不指定 ref 或目標為遠端預設分支才視為同步（不擋落後與超出範圍）；沒有 origin 的本地 repo 在預設分支上已 commit 的改動不計入核對；以他班分支為目標時該班未 commit 的檔也計入；`git push --all`／`--mirror` 與 upstream 為 main 的裸 `git push` 不核對；子 shell 內 `cd` 會外洩；beat／touch 寫入不加鎖；其他 CLI 沒有自動追蹤與硬擋（Codex 可能經 `hooks.json` 載入 hook，未驗證）。
+
 ## [0.23.4] - 2026-11-15
 
 - fix(guards): 新增 `herdr-tab-create`（ask）與 `herdr-pane-run-agent`（deny）兩條 guard；`agent-dispatch` 補一行：替別的專案開不回報的長駐獨立 session 時也開新 tab，一樣用 `agent start` 帶模型參數。起因：2026-11-14～15 plugharbor 主 session 沒載入 agent-dispatch，兩次用 `herdr tab create`＋`herdr pane run <pane> claude` 開 session（重啟 Formwright 自動駕駛、lifecycle 3.0 試用），沒帶 model／effort、沒重排，也沒掛 worker 標記。

@@ -43,6 +43,9 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `loop-guard.py` | ✅ PostToolUseFailure、UserPromptSubmit（重置主 session） | ✅ PostToolUse：`loop-guard.mjs` 轉給同一支 `loop-guard.py`。Codex 沒有失敗事件、`tool_response` 只有輸出字串，成敗改查 `transcript_path` 裡同 `tool_use_id` 的 `item_completed`（`status: failed`／`exit_code`）；輪界用 `turn_id`；subagent 帶 `agent_id`。狀態在 `~/.codex/loop-guard/` | 無：adapter 只替 agy 註冊 Stop | 無：pi 沒有 hook 機制 |
 | `context-size-reminder.py` | ✅ Stop | 無：依賴 Claude transcript 格式與 context 級距；Codex 自己管理 context | 無 | 無 |
 | `notification.sh` | ✅ Notification、Stop | ✅ Stop：`notify.mjs` 把 stdin 轉給 repo 內的 `notification.sh`，通知規則只維護一處（無 Notification 事件） | ✅ Stop：同一支 `notify.mjs`，經 `hooks.json` 的 `plugharbor-notify` | 無：pi 沒有 hook 機制 |
+| `tower-context.py` | ✅ SessionStart | 無（未驗證：Codex 可能經 plugin hooks.json 載入） | 無，照 skill 手動 | 無，照 skill 手動 |
+| `tower-track.py` | ✅ PreToolUse、UserPromptSubmit、PostToolUse `Edit\|Write\|MultiEdit` | 無（未驗證：Codex 可能經 plugin hooks.json 載入） | 無，照 skill 手動 | 無，照 skill 手動 |
+| `tower-landing.py` | ✅ PreToolUse `Bash` | 無（未驗證：Codex 可能經 plugin hooks.json 載入） | 無，照 skill 手動 | 無，照 skill 手動 |
 
 「無」的原因是該 CLI 沒有對應事件，或該 hook 讀的資料（Claude transcript、`~/.claude/feedback-loop/`）只有 Claude 會產生。
 要補的話是各 CLI 自己寫 adapter，不是搬 Python hook。
