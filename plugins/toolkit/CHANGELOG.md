@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.23.3] - 2026-11-15
+
+- fix(retrospective): pi 的提問工具名改為 `ask_user_question`。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。
+
 ## [0.23.2] - 2026-11-14
 
 - fix(agent-dispatch): `skills/agent-dispatch/scripts/ask.mjs` 問 codex 時改用 `-o` 把最後答案寫到獨立檔，只印答案；完整執行紀錄（stdout＋stderr，含 hook 訊息與 skill 原文）一律存到結果檔備查，並在答案後註明字元數與路徑。`skills/agent-mesh-check/scripts/clis.mjs` 的 `buildArgs` 加 `lastFile` 選項。起因：2026-11-14 產品化自動駕駛 session 回報 codex 審查的結果檔約 39 萬字元，答案還印兩次，主控只能 grep 最後一個「codex」行之後的段落。

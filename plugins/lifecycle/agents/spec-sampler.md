@@ -41,7 +41,7 @@ ERROR: Missing required input — {spec_path / files / group_name}。
 
 <law>
 **規格一律定向讀取，不整檔載入**：
-`grep -n 'SPEC-INDEX v1'` 定位索引（規格若無索引，改 `grep -n "^## "` 直接取章起行） → `grep -n "^## "` 取章起行 → `Read` 帶 offset/limit。
+`grep -n "^## "` 取章起行 → `Read` 帶 offset/limit。
 
 覆蓋度檢查用**檔名／欄位名／錯誤訊息文字**去定位規格章節，不要通篇讀入。
 你要讀的是原始碼，規格只是對照表。

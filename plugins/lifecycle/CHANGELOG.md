@@ -32,6 +32,9 @@
 - 規格範本 §2.3 註明：案例以外的說明文字不會轉進案例檔、`[api]` 案例 qa-verify 不執行要由 §4 整合測試涵蓋。
 - spec 照加專案規則規定的必要章節（例：ERP 對照）；`spec.dir` 沒設而專案規則指定了設計文件目錄時用專案規則的目錄。
 - 新增 `scripts/test_skill_contracts.py`：skill 間接點契約。
+- pi：harness-terms 的提問工具改 `ask_user_question`（已安裝擴充的實際名稱，參數同 `AskUserQuestion`），沒有該工具或 `pi -p` 回 `no_ui` 時改純文字；qa-verify、prototype-html、ticket-ops 指向 harness-terms 的那句改相對路徑（pi 不展開 `${CLAUDE_PLUGIN_ROOT}`）。
+- 清掉逐棒時代殘留：shared-preludes Step 0.6 的 full 落檔規則改為「規格落 `spec.dir`」且 `spec.dir` 不算自建目錄、「每棒」「交棒前」；analysis-rigor 的 `explore`；triage 開票「依 scale 設定」；spec-check sample 與 spec-sampler 的 `SPEC-INDEX`；consultant-desk「該階段正式文件」改記在 §5 決策表。
+- spec-check 讀到「來源｜舊系統移植」表頭時套用 legacy-parity（原本 legacy-parity 承諾了但 spec-check 沒引用）。
 
 **遷移**
 

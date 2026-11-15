@@ -1,6 +1,6 @@
 # Shared Preludes — 常駐卡
 
-> 每棒都載，故只留要點；案例與細節在 `shared-preludes-details.md`（同名節，命中才讀）。
+> 每個 lifecycle skill 都載，故只留要點；案例與細節在 `shared-preludes-details.md`（同名節，命中才讀）。
 
 ## 核心原則：問題漏斗——實證 → 顧問 → 使用者
 每個要決定的問題依序過三層，前一層解得掉就不往下送：
@@ -25,7 +25,7 @@
 4. **落檔**：確認過的例子直接寫成驗收條件的正反例，後續 QA 沿用同一筆。
 
 ## 核心原則：不猜測
-先找答案→找不到才問（附建議）→確認後才寫→寫前總清查。當下問不到（subagent 無法問人、使用者暫不答）就在原處標 `[NEEDS CLARIFICATION: 具體問題]`，不自行補值；交棒前清零，殘留即 `spec-check` BLOCKER。不用其他變體（如 `[需要澄清]`）。
+先找答案→找不到才問（附建議）→確認後才寫→寫前總清查。當下問不到（subagent 無法問人、使用者暫不答）就在原處標 `[NEEDS CLARIFICATION: 具體問題]`，不自行補值；完稿前清零，殘留即 `spec-check` BLOCKER。不用其他變體（如 `[需要澄清]`）。
 
 ## 核心原則：分析嚴謹度閘
 下結論（需新建／沒有／根因是 X）前逐項過六條閘：來源查齊、深度到源頭、現況對齊、維度齊全、domain 邊界必叫顧問、證據優先；結論標 Confirmed／Likely／Unknown。全文與踩雷索引見 `analysis-rigor.md`。
@@ -46,11 +46,8 @@
 若 docs 在獨立 repo，開工前先 pull 一次（每 session 一次）；docs 在本 repo 則略過。
 
 ## Step 0.6: 落檔位置
-full 規格一律落 `{docs-root}/{模組}/{功能}/`（lean 不分模組，不問這題）。**模組名取自專案既有的第一階模組目錄，禁止自創**——
-不在清單內時先確認是不是既有模組的子功能，真要新增先問使用者；既有第一階目錄為空（新專案）→ 直接請使用者給新模組名。
-會議記錄的位置看 `publish-target`（見 `config.md`）；開發流程產物（ADR／code review／debug／brainstorming 草稿）依專案既有目錄慣例落檔；
-**一律不得自建 docs 第一階目錄**，都不適用就問使用者。
-> 教訓：agent 自由填 `_context.yml` 的模組欄位會長出平行目錄與重複規格，演進多日才被發現——模組名只能取自既有目錄。
+規格一律落 `spec.dir`（見 spec Step 0，不分模組）。會議記錄看 `publish-target`（見 `config.md`）；開發流程產物（ADR／code review／debug／brainstorming 草稿）依專案既有目錄慣例落檔；
+除 `spec.dir` 外**一律不得自建 docs 第一階目錄**，都不適用就問使用者。
 
 ## Step 0.7: Graphify 查詢（選配）
 依 `graphify-integration.md` Query 區塊，同功能每 session 一次，未安裝靜默跳過。

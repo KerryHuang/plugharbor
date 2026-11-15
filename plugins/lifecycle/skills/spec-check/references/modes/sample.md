@@ -23,7 +23,7 @@ $ARGUMENTS → <規格路徑> [原始碼範圍]
 
 ## Step 0：讀實作錨點，決定全量或增量
 
-讀規格所在功能目錄的 `analysis/impl-anchors/{規格檔名}.yml`（格式與判定細節見 [${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md)）。
+讀 `{spec.dir}/analysis/impl-anchors/{規格檔名}.yml`（格式與判定細節見 [${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md](${CLAUDE_PLUGIN_ROOT}/skills/spec-check/references/sample/impl-anchors.md)）。
 這份檔記錄每條規則在程式哪裡執行，以及上一輪比對時各 repo 的 commit。
 
 - **不存在**、帶 `--full`、或使用者明確給了原始碼範圍 → 全量，進 Step 1。
@@ -36,7 +36,7 @@ $ARGUMENTS → <規格路徑> [原始碼範圍]
 
 ## Step 1：定取樣範圍
 
-從規格反推要讀哪些原始碼——**定向讀取**規格（`grep -n 'SPEC-INDEX v1'` → `grep -n "^## "` → `Read` 帶 offset/limit），
+從規格反推要讀哪些原始碼——**定向讀取**規格（`grep -n "^## "` 取章起行 → `Read` 帶 offset/limit），
 取出它宣稱涵蓋的端點、Handler、Entity、資料表，再 `Grep`／`Glob` 定位對應檔案。
 
 **只列檔案路徑清單，不要開始讀內容**——讀是 agent 的事。

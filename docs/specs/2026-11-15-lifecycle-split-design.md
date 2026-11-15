@@ -63,7 +63,7 @@
 - **共用素材各複製一份＋同步測試**：
   - 腳本：`config.py`、清單解析（`feature_checklist.py` 的解析部分）。
   - agent：`report-writer`（spec-check、ticket-report、triage、meeting-minutes）、`scout`（spec、spec-check、triage、survey-existing-system）、`silent-failure-hunter`（triage、survey-existing-system）、`domain-advisor`（spec、survey-existing-system）。同名 agent 會撞 `validate.py` 的 `check_name_collisions`（pi、Codex 扁平命名）→ **副本改名**（使用者裁決），例如 `ticket-report-writer`、`discovery-scout`；檢查器不動，同步測試比對改名後的內文。
-  - references：`harness-terms.md`（22 個 skill 都用）、`shared-preludes.md`、`dispatch-conventions.md`、`config.md`、`decision-record.md`（ticket-reply）、`pipeline.md`（triage）、`feature-checklist.md`（ticket-ops）。
+  - references：`harness-terms.md`（22 個 skill 都用）、`shared-preludes.md`、`dispatch-conventions.md`、`config.md`、`pipeline.md`（triage）、`feature-checklist.md`（ticket-ops）。
   - 既有的 `scripts/test_harness_terms_sync.py` 比對 lifecycle 與 browser-docs 的 5 個副本，annotate／anonymize 相關檔隨 operation-manual 搬到 delivery，測試要跟著改。
 - **agent 去留要算跨 plugin 引用**：`architect`、`developer` 在 lifecycle 內沒有 skill 引用，但 backend（data-access、layered-architecture、unit-testing）、frontend-architecture、workspace 的 `debugging/references/tdd-cycle.md` 可選引用它們 → 保留。
 - **轉交改指**：triage、ticket-create 指向 explore 的地方改指 spec。

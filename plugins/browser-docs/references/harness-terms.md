@@ -34,7 +34,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 
 | Claude Code | Pi |
 |---|---|
-| `AskUserQuestion` | `ask_user`。一次呼叫只問一題：多題批次改成同一回合依序多次呼叫；`options` 的 label／description 對應 `title`／`description`；`multiSelect: true` 對應 `allowMultiple: true`；`header` 併入 `context`。「推薦項置首標（推薦）」等規則照舊。 |
+| `AskUserQuestion` | `ask_user_question`（`rpiv-ask-user-question` 擴充提供），參數同 `AskUserQuestion`。沒有這個工具，或沒有介面（`pi -p`）回 `no_ui` 時，改純文字一次一題。「推薦項置首標（推薦）」等規則照舊。 |
 | `Skill` | Pi 沒有 `Skill` 工具：叫用 `<plugin>:<skill>` 時，改讀該 skill 的 SKILL.md（Pi 的 skill 名稱不帶 plugin 前綴）照做。 |
 | `WebFetch`、`WebSearch` | Pi 沒有內建網頁工具：有對應 MCP server 就經 `mcp` gateway 呼叫，沒有就用 `bash` 跑 `curl`，或請使用者貼上內容。 |
 | `TodoWrite`、`TaskCreate` | `todo`（`create`／`update`／`list`）。 |

@@ -119,7 +119,7 @@ Feature／CR 判型確認後再問起點：從 `lifecycle:spec` 開始（已有�
 
 | 輸入票型 | 開票方向 |
 |----------|----------|
-| Feature／CR 根票，規格已產出且通過 spec-check | 叫用 `lifecycle:ticket-create` 開票（依 `scale` 設定） |
+| Feature／CR 根票，規格已產出且通過 spec-check | 叫用 `lifecycle:ticket-create` 開票 |
 | Bug 根票 | 叫用 `lifecycle:ticket-create`，帶入根因三段作描述輸入 |
 | 葉票需驗收 | 建議以 `lifecycle:ticket-create` 另開驗收票 |
 

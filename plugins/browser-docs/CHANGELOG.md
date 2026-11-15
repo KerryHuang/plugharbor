@@ -3,6 +3,10 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.3.5] - 2026-11-15
+
+- fix(references): `references/harness-terms.md` 的 pi 提問工具改為 `ask_user_question`（參數同 `AskUserQuestion`），沒有該工具或 `pi -p` 回 `no_ui` 時改純文字一次一題；lifecycle 副本同步。`pdf-converter` 的「與 FRD／SAD 同目錄」改為「與該功能規格同目錄」（lifecycle 3.0.0 已移除四份文件）。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。
+
 ## [0.3.4] - 2026-11-10
 
 - fix(references): `references/harness-terms.md` 的「Skill frontmatter」表補 `triggers:` 一列（Pi 上不使用）。lifecycle 與 browser-docs 兩份副本同步。起因：lifecycle 2.0.1 給 skill 加了 `triggers`，lifecycle 的 test_harness_neutral 測試要求非標準 frontmatter 欄位都要有說明，CI 因此失敗。

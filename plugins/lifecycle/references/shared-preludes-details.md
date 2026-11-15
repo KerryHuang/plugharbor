@@ -1,6 +1,6 @@
 # Shared Preludes — 細節與實證
 
-> `shared-preludes.md` 是每棒都載的常駐卡，只留要點；本檔放案例、做法細節與實證。
+> `shared-preludes.md` 是每個 lifecycle skill 都載的常駐卡，只留要點；本檔放案例、做法細節與實證。
 > **命中才讀**：只讀與當下情境同名的節，不整檔載入。
 
 ## 核心原則：問題漏斗（先推導，再詢問）

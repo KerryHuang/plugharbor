@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.6.1] - 2026-11-15
+
+- fix(plugin-harvest): pi 的提問工具名改為 `ask_user_question`。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。
+
 ## [0.6.0] - 2026-11-13
 
 - feat(plugin-harvest): 搜尋來源加入本機 blog repo 每日技術情報（`data/tech-snapshots/` 近 7 天的 `skills.picks` 新進榜／竄升與 `discussed.items` HN 熱門貼文），ai-radar 週報 `--lean` 也間接用到；檔案或欄位不存在就跳過。起因：blog 的雲端 routine 每天產這些資料，plugharbor 只讀 `official`，skill 排行與 HN 討論都沒用到（使用者經 blog session 派工）。不接進每日版（已停用）。

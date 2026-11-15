@@ -1,6 +1,6 @@
 # 分析嚴謹度閘（上游分析下結論前）
 
-> 在 `explore`／`spec`／`triage` 根因分析等上游階段，
+> 在 `spec`／`triage` 根因分析等上游階段，
 > 下**結論**前逐項過這六條閘。每一條都對應一次真實踩過的坑。碰到不確定就先查證，不憑印象定論。
 > 經 `shared-preludes.md` 適用於所有 lifecycle skill；顧問桌的開桌條件對應第 5 條（見 `consultant-desk.md`）。
 

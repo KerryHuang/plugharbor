@@ -6,7 +6,7 @@ argument-hint: "[功能名] [--from <需求文件路徑>] [--design-system <URL 
 
 # prototype-html — 需求描述 → 單檔 HTML 原型
 
-> 非 Claude Code（如 Pi）執行時，先讀 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`（Claude Code 照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。提問照該檔對照：Claude Code 用 `AskUserQuestion`，pi 用 `ask_user`，其他純文字一次一題。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。提問照該檔對照：Claude Code 用 `AskUserQuestion`，pi 用 `ask_user_question`，其他純文字一次一題。
 
 把一個功能的畫面做成單一、self-contained、可點切換的 HTML 原型，讓 PO 或客戶在需求階段確認「畫面長這樣對不對」。原型不是正式前端：不寫框架程式、不串真實 API、不當開發版面依據。
 

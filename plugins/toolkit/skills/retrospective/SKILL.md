@@ -37,7 +37,7 @@ retrospective:
 
 - `path` 不可指向 `${CLAUDE_PLUGIN_ROOT}`（那是安裝快取，更新時會被蓋掉），要在專案的版控目錄內。
 - 檔案或 `retrospective.path` 缺失 → 用一題提問問使用者要放哪（建議 `docs/retrospective`），確認後寫入該檔，不猜路徑。
-- 提問工具：Claude Code 用 `AskUserQuestion`、pi 用 `ask_user`，其他環境用純文字一次問一題。
+- 提問工具：Claude Code 用 `AskUserQuestion`、pi 用 `ask_user_question`，其他環境用純文字一次問一題。
 
 ## 執行流程
 
