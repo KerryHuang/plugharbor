@@ -138,5 +138,10 @@ class SkillContracts(unittest.TestCase):
         self.assertIn("不帶前綴", read("references/shared-preludes.md"))
 
 
+    def test_ask_rule_allows_text_fallback_without_tool(self):
+        # 寫死「必用 AskUserQuestion、不可純文字」，沒有提問工具的 harness 會無路可走（agy 試用）
+        self.assertNotIn("1. 必用 `AskUserQuestion`，不可用純文字選單模擬。", read("references/shared-preludes-details.md"))
+
+
 if __name__ == "__main__":
     unittest.main()
