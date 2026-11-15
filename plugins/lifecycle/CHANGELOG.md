@@ -4,7 +4,7 @@
 
 ## [3.0.0] - 2026-11-15
 
-起因：盤點單人專案 24 個 session，順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；本機沒有專案用 `scale: full`。決定 superpowers 當工程核心、lifecycle 只管做之前與做之後（設計見 `docs/specs/2026-11-15-lifecycle-split-design.md`，第一批「先刪」）。
+起因：盤點單人專案 24 個 session，順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；本機沒有專案用 `scale: full`。決定 superpowers 當工程核心、lifecycle 只管做之前與做之後（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第一批「先刪」）。
 
 **BREAKING**
 

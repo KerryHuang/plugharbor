@@ -30,7 +30,7 @@
 
 完成 0／共 2。
 
-同一專案多個 session 互相看不到，造成重工與合併衝突；起飛申報、飛行追蹤、進 main 前核對、下機釋放。設計見 `docs/specs/2026-11-15-session-tower-design.md`。
+同一專案多個 session 互相看不到，造成重工與合併衝突；起飛申報、飛行追蹤、進 main 前核對、下機釋放。設計見 `docs/superpowers/specs/2026-11-15-session-tower-design.md`。
 
 - [ ] 📋 單機塔台：`tower.py` 登記表、起飛提醒、改動追蹤、進 main 前硬擋（只 Claude Code）、feature.md 核對、unattended 可選接入（使用者 2026-11-15 裁決 11 項）
 - [ ] 💡 第二階段：跨機器跨人（票的 in-progress／git ref 同步）與 git pre-commit／pre-push 硬擋
@@ -52,7 +52,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 完成 1／共 3。
 
-單人專案實際順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；改成 superpowers 當工程核心、lifecycle 只管做之前與做之後，拿掉四份文件規格鏈，拆出 tickets／discovery／delivery。團隊有裝、沒裝 superpowers 產物同格式。設計見 `docs/specs/2026-11-15-lifecycle-split-design.md`。
+單人專案實際順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；改成 superpowers 當工程核心、lifecycle 只管做之前與做之後，拿掉四份文件規格鏈，拆出 tickets／discovery／delivery。團隊有裝、沒裝 superpowers 產物同格式。設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`。
 
 - [x] 第一批「先刪」：拿掉規格鏈與連帶 skill（spec-chain、explore、consolidate-docs、write-doc、dev-feedback）、agent、範本與 `scale`；install-project 不再停用 superpowers；qa-verify 改讀規格 §2.3 驗收案例；ticket-create 拿掉角色子票；勘察檔每個功能一份（使用者 2026-11-15 裁決；lifecycle 3.0.0，未 push）
 - [ ] 📋 第二批「再拆」：tickets、discovery、delivery 三個新 plugin，只搬不改行為；共用 agent 副本改名＋同步測試；有票務設定的專案安裝時自動補裝 tickets（lifecycle major）

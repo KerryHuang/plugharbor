@@ -19,3 +19,5 @@ ticket:
       in-review: In Review
       done: Done
       canceled: Canceled
+spec:
+  dir: docs/superpowers/specs

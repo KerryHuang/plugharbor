@@ -117,7 +117,7 @@
 2. implement 讀 LEARNINGS 的前段隨 LEARNINGS 移除。
 3. `install-project.sh` 不再停用 superpowers 放第一批（不等第三批），因為它直接違反目標 1。
 4. 新 plugin 版號從 1.0.0 起；lifecycle 第一、二批各一次 major。
-5. 計畫位置沿用 `.tmp/plans/<yyyymmdd-slug>/`，寫進 AGENTS.md 段落。
+5. 計畫位置改用 superpowers 預設 `docs/superpowers/plans/`、進版控（使用者 2026-11-15 推翻原「沿用 `.tmp/plans/`」），寫進 AGENTS.md 段落。
 6. 第一批到第三批之間，superpowers 產的設計文件還沒有驗收一節：qa-verify 的退路是從設計文件內文擬案例、請人確認。
 7. 在專案 `.claude/settings.json` 宣告 superpowers 只在 `install-project.sh --shared` 時做，預設的 local 模式不寫。
 
