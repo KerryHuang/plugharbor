@@ -9,7 +9,8 @@ STUB="$TMP/stub"; TOOLS="$TMP/tools"
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" claude codex agy pi
 export STUB_LOG="$TMP/cli.log" STUB_STATE="$TMP/state" STUB_CWD_LOG="$TMP/cwd.log"
 mkdir -p "$STUB_STATE" "$TMP/home"
-run() { HOME="$TMP/home" PATH="$STUB:$TOOLS:/usr/bin:/bin" bash "$SCRIPT" "$@"; }
+# stub 裡有 agy：不帶 PLUGHARBOR_LINK_MODE 會因偵測到 agy 改走複製，既有斷言預設釘 symlink（第 9 節 (h) 另測偵測）
+run() { HOME="$TMP/home" PATH="$STUB:$TOOLS:/usr/bin:/bin" PLUGHARBOR_LINK_MODE="${PLUGHARBOR_LINK_MODE:-symlink}" bash "$SCRIPT" "$@"; }
 ver() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO_DIR/plugins/$1/.claude-plugin/plugin.json" | head -1; }
 newproj() {  # $1=名稱 → 建 git repo，印出實體路徑
   local d="$TMP/$1"; mkdir -p "$d"; git -C "$d" init -q; (cd "$d" && pwd -P)
@@ -204,6 +205,17 @@ OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] 
 echo "$OUT" | grep -q '^BROKEN: .*\.agents/skills/gone' || fail "(g) 失效複本應報 BROKEN：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 exit 非 0"
 [ ! -e "$P9f/.agents/skills/gone" ] || fail "(g) 失效複本應移除"
+# (h) 沒指定連結模式：PATH 有 agy（只載入實體檔，不跟隨 symlink）→ 預設複製並說明原因；沒有 agy → 維持 symlink
+P9h="$(newproj p9h)"
+OUT="$(HOME="$TMP/home" PATH="$STUB:$TOOLS:/usr/bin:/bin" bash "$SCRIPT" "$P9h" lifecycle)" || fail "(h) exit 非 0：$OUT"
+[ -d "$P9h/.agents/skills/triage" ] && [ ! -L "$P9h/.agents/skills/triage" ] && [ -f "$P9h/.agents/skills/triage/.plugharbor-root" ] || fail "(h) 有 agy 應建實體複本：$OUT"
+echo "$OUT" | grep -q '^NOTE: 偵測到 agy' || fail "(h) 應說明因 agy 改用複製：$OUT"
+NOAGY="$TMP/stub-noagy"; mkdir -p "$NOAGY"; for c in claude codex pi; do cp "$STUB/$c" "$NOAGY/$c"; done
+if [ "$CAN_LINK" -eq 1 ]; then
+P9i="$(newproj p9i)"
+OUT="$(HOME="$TMP/home" PATH="$NOAGY:$TOOLS:/usr/bin:/bin" bash "$SCRIPT" "$P9i" lifecycle)" || fail "(h) 無 agy exit 非 0：$OUT"
+[ -L "$P9i/.agents/skills/triage" ] || fail "(h) 沒有 agy 應維持 symlink：$OUT"
+fi
 
 # ---------- 10) 正式改名對照：每條新名都存在、舊名都已移除；命令列給舊名自動換新名 ----------
 PAIRS="$(bash -c '. "$1/setup/lib.sh"; ph_rename_pairs' _ "$REPO_DIR")"

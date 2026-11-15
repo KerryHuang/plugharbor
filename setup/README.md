@@ -21,13 +21,14 @@
   |---|---|---|
   | Claude Code | `plugin install --scope local` | 專案 scope 登記 marketplace 後 `plugin install --scope project` |
   | pi | 寫 `<專案>/.pi/settings.json` 的 packages，並加進 `.git/info/exclude` | 略過 |
-  | Codex、agy | 在 `<專案>/.agents/skills/` 建 symlink（見下），並加進 `.git/info/exclude` | 略過 |
+  | Codex、agy | 在 `<專案>/.agents/skills/` 建 symlink 或複本（見下），並加進 `.git/info/exclude` | 略過 |
 
-  Codex 與 agy 都讀 `<專案>/.agents/skills/<skill>/SKILL.md` 並跟隨 symlink，兩者共用一份：
+  Codex 與 agy 都讀 `<專案>/.agents/skills/<skill>/SKILL.md`，兩者共用一份；Codex 跟隨 symlink：
   `.agents/plugharbor/<plugin>` 指向 clone 的 `plugins/<plugin>`，`.agents/skills/<skill>` 指向 `../plugharbor/<plugin>/skills/<skill>`。
   skill 的 plugin 根以 SKILL.md 的 realpath 往上兩層為準，所以 references 讀得到。
   已存在、不是 plugharbor 的同名項目（例如 `dual-tool-mirror` 鏡像出來的 skill）一律 `SKIP:` 不動；指向 plugharbor 但失效的 link，`--check` 報 `BROKEN:`、實跑移除。
   建不了 symlink（Windows 沒開開發人員模式）時改複製 skill，同目錄寫 `.plugharbor-root` 記 plugin 根，印 WARN；plugharbor 更新後要重跑。
+  agy 不載入 symlink 的 skill，所以本機有 agy 時預設複製並印 NOTE；要 symlink 就設 `PLUGHARBOR_LINK_MODE=symlink`。
 
   pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
 

@@ -49,19 +49,19 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 
 ## 專案層 skill 路徑（實測 2026-11-03，macOS）
 
-Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而且會跟隨 symlink：
+Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`；Codex 會跟隨 symlink，agy 不會（見下節）：
 
 - 回報給模型的是 link 路徑（`<專案>/.agents/skills/<skill>/SKILL.md`），不是實體路徑。
 - 要求「以 SKILL.md 的實體路徑（realpath）往上兩層找 plugin 根」時，兩者都正確讀到 plugin 根的 `references/`。
-- 所以專案層只建一份 `.agents/skills`，兩個 CLI 共用；`harness-terms.md` 寫明以 realpath 為準。
-- `setup/install-project.sh` 據此建 symlink（做法見 `setup/README.md`「plugin 分層」）。
+- 所以專案層只建一份 `.agents/skills`，各 CLI 共用；`harness-terms.md` 寫明以 realpath 為準，複本則看同目錄的 `.plugharbor-root`。
+- `setup/install-project.sh` 據此建 symlink；本機有 agy 時預設改複製（做法見 `setup/README.md`「plugin 分層」）。
 - Windows Git Bash 的 symlink 行為：待 Windows 實測；建不了 link 時改複製並寫 `.plugharbor-root`。
 
-### pi 與 agy（實測 2026-11-13，pi 讀 symlink 與信任行為；agy 待驗）
+### pi 與 agy（實測：pi 2026-11-13、agy 2026-11-15）
 
 - pi：專案根的 `.agents/skills/<skill>/SKILL.md` 與 `.pi/skills/<skill>/SKILL.md` 都會載入，`.agents/skills/` 下指向 `.claude/skills/` 的相對 symlink 也會載入（`pi -p --no-session --approve` 問可用 skill 名稱，三種配置各只多出對應的那個 skill）。所以鏡像只建 `.agents/skills`，Claude Code、Codex、pi、agy 共用一份，`mirror.py` 不另建 `.pi/skills`。
 - pi 的專案層檔案要信任才載入：沒加 `--approve` 的非互動執行，專案的 skill 不會出現（互動模式第一次開專案時會問）。pi 沒有列 skill 的子命令，只能在專案目錄用 `pi --approve -p` 問模型。
-- agy：沒有列 skill 的子命令；實測 `agy --mode plan -p` 時遇到帳號額度用盡（429），專案 skill 是否載入**未驗證**，只有 2026-11-03 的 `.agents/skills` 實測紀錄。
+- agy：`.agents/skills/` 下的目錄 symlink 與檔案 symlink 都不會載入，只有實體複本出現在 skill 清單；沒載入的同名 skill 會被別處的同名 skill 頂替。所以 `install-project.sh` 偵測到 agy 就預設複製（`PLUGHARBOR_LINK_MODE=symlink` 可改回），代價是 plugharbor 更新後要重跑。
 
 ## project-setup 專案層補裝
 
@@ -72,7 +72,7 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
 | Claude Code | `.claude/skills/`、project／local scope 的 plugin；`AGENTS.md` 與單行 `@AGENTS.md` 的 `CLAUDE.md` | `claude plugin list` |
 | Codex | `.agents/skills/`（symlink） | `codex debug prompt-input` 看 skill roots 與清單 |
 | pi | `.agents/skills/` 與 `.pi/settings.json` 的 packages；專案要信任 | `pi --approve -p` 問可用 skill |
-| agy | `.agents/skills/`（symlink） | 未驗證（見上） |
+| agy | `.agents/skills/`（實體複本） | `agy -p` 問可用 skill 名稱 |
 
 進 git 的模式（`shared`、`init`）下 pi、Codex、agy 的本機路徑部分不進 git，換機器要重跑 `install-project.sh --no-claude`。
 
@@ -81,7 +81,7 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`，而
   其餘 plugin 都有 `package.json`，install.sh 掃到 `pi` 欄位就寫進 packages，不用另外維護清單。
 - **Codex／agy 是快照安裝**：plugin 內容在安裝當下複製，repo 更新或 bump 版號後要重跑 `install.sh`（版號不同才重裝）。Claude 走 marketplace，同樣靠 `marketplace update` 取新版。
 - **`agent-model-guard` 只由 toolkit 註冊**：lifecycle（前身 sa-flow 4.0.0 起）不註冊，不會重複。
-- **分層安裝**：user 層 4 個（toolkit、research、browser-docs、workspace）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（只限 local）。
+- **分層安裝**：user 層 4 個（toolkit、research、browser-docs、workspace）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（有 agy 時改複製；只限 local）。
 - **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
   lifecycle 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；lifecycle 叫用 browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
 - **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 專案層 plugin → 指定專案：Claude Code 裝到 local（預設，不進 git）或 project（--shared，進 git 與團隊共用）scope；
-# pi 寫專案的 .pi/settings.json；Codex、agy 在專案 .agents/skills 建 symlink（兩者都只限 local）。user 層 plugin 由 install.sh 負責。
+# pi 寫專案的 .pi/settings.json；Codex、agy 在專案 .agents/skills 建 symlink，有 agy 時改複製（兩者都只限 local）。user 層 plugin 由 install.sh 負責。
 # --no-claude：略過整段 Claude Code，只裝 pi／Codex／agy（local 規則）；不可與 --shared 併用。
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -182,12 +182,16 @@ sys.exit(2 if (add or old) and check else 0)
   fi
 fi
 
-# ---------- Codex／agy：都讀 <專案>/.agents/skills/<skill>/SKILL.md 並跟隨 symlink ----------
+# ---------- Codex／agy：都讀 <專案>/.agents/skills/<skill>/SKILL.md（Codex 跟隨 symlink，agy 不跟隨）----------
 # .agents/plugharbor/<plugin> → clone 的 plugins/<plugin>；.agents/skills/<skill> → ../plugharbor/<plugin>/skills/<skill>。
 # skill 用 ${CLAUDE_PLUGIN_ROOT} 時以 SKILL.md 的 realpath 往上兩層為 plugin 根。
 # 建不了 symlink（Windows 沒開開發人員模式）就複製 skill，同目錄 .plugharbor-root 記 plugin 根。
+# 本機有 agy 也預設複製：agy 只載入實體檔，目錄或檔案 symlink 都不會出現在它的 skill 清單（2026-11-15 實測）。
 AG="$ROOT/.agents"
-LINK_MODE="${PLUGHARBOR_LINK_MODE:-symlink}"
+AGY_COPY=0
+if [ -n "${PLUGHARBOR_LINK_MODE:-}" ]; then LINK_MODE="$PLUGHARBOR_LINK_MODE"
+elif command -v agy >/dev/null 2>&1; then LINK_MODE=copy; AGY_COPY=1
+else LINK_MODE=symlink; fi
 ours_link() {  # $1=link 路徑；指向 plugharbor 的才算
   local t; t="$(readlink "$1")" || return 1
   case "$t" in ../plugharbor/*|"$REPO_DIR"/plugins/*) return 0 ;; *) return 1 ;; esac
@@ -210,7 +214,8 @@ pin_root() {  # $1=目錄 $2=plugin 根（原生形式）
 copy_skill() {  # $1=plugin $2=skill
   local d="$AG/skills/$2" root
   if [ "$WARNED_COPY" -eq 0 ]; then
-    if [ "$LINK_MODE" = copy ]; then echo "NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式；plugharbor 更新後要重跑本腳本"
+    if [ "$AGY_COPY" -eq 1 ]; then echo "NOTE: 偵測到 agy（不載入 symlink 的 skill），使用複製模式；plugharbor 更新後要重跑本腳本（要 symlink 設 PLUGHARBOR_LINK_MODE=symlink）"
+    elif [ "$LINK_MODE" = copy ]; then echo "NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式；plugharbor 更新後要重跑本腳本"
     else echo "WARN: 無法建 symlink，改用複製；plugharbor 更新後要重跑本腳本"; fi
     WARNED_COPY=1
   fi
