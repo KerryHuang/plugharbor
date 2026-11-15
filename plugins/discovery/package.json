@@ -1,0 +1,10 @@
+{
+  "name": "discovery",
+  "private": true,
+  "description": "discovery plugin as a Pi package. Version lives in .claude-plugin/plugin.json; Pi-specific wording is in references/harness-terms.md.",
+  "license": "MIT",
+  "keywords": ["pi-package", "discovery"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

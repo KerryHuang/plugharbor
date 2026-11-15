@@ -1,6 +1,6 @@
 # Shared Preludes — 常駐卡
 
-> 每個 lifecycle skill 都載，故只留要點；案例與細節在 `shared-preludes-details.md`（同名節，命中才讀）。
+> 每個 skill 都載，故只留要點；案例與細節在 `shared-preludes-details.md`（同名節，命中才讀）。
 
 ## 核心原則：問題漏斗——實證 → 顧問 → 使用者
 每個要決定的問題依序過三層，前一層解得掉就不往下送：
@@ -62,14 +62,19 @@
 一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄；沒裝見下節「可選依賴」。
 
 ## 可選依賴
-lifecycle 單獨安裝就能用；`superpowers`、`browser-docs`、`toolkit` 都是可選。標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有（Pi 的名稱不帶前綴，看 `<名稱>`），派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
+本 plugin 單獨安裝就能用；其他 plugin（`superpowers`、`browser-docs`、`toolkit`、同套的 lifecycle／tickets／discovery 等）都是可選。標註與換假資料工具在 delivery。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有（Pi 的名稱不帶前綴，看 `<名稱>`），派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
 
 | 用到 | 哪裡 | 沒裝時 |
 |---|---|---|
 | `browser-docs:browser-surveyor`、`live-drive` | spec 蒐證步驟的畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依既有規格與程式碼推導 |
 | `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
 | `toolkit:agent-dispatch` | 顧問討論的 herdr pane 模式 | 同「不在 herdr」：顧問討論改 subagent 模式 |
-| `superpowers:writing-plans` | implement 的規劃到收尾 | 照 `skills/implement/references/fallback.md` 的極簡退路，並建議安裝 superpowers |
+| `superpowers:writing-plans` | implement 的規劃到收尾 | 照 `lifecycle:implement` 的極簡退路，並建議安裝 superpowers |
+| `tickets:ticket-ops` 等票務 skill | implement 收尾同步票、qa-verify 開缺陷票、spec 回寫票、operation-manual 當場開票 | 只更新清單，把要開或要改的票列給使用者，不呼叫票務工具，並建議安裝 tickets（設定有 `ticket:` 區塊時，重跑 `setup/install-project.sh <專案根> lifecycle` 會自動補裝） |
+| `lifecycle:spec`、`spec-check`、`implement` | triage、survey-existing-system、ticket-reply、ticket-create 建議下一步 | 只給建議與要點（規格、驗證、實作），只印出建議的指令，不叫用 |
+| 顧問 `lifecycle:domain-advisor`、勘察 `lifecycle:scout` | triage 根因分析、顧問桌（consultant-desk） | 可用清單裡沒有該 agent 就跳過顧問層（勘察改由主 session 直接查），結論標 Likely、該題交使用者 |
+| `tickets:triage` | discovery 的 meeting-minutes、interview-prep、survey-existing-system 建議分流 | 列出建議與要點，請使用者裝 tickets 或手動分流 |
+| `discovery:meeting-minutes` | triage 批次、ticket-report 引用會議記錄 | 請使用者貼上會議內容或記錄檔路徑 |
 
 ## 引用方式（在 SKILL.md 中）
 `> 核心原則 / 前置步驟：依 ${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md。`

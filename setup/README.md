@@ -32,6 +32,8 @@
 
   pi 的 packages 是本機絕對路徑，所以 `--shared` 不寫；該檔已進版控時也不寫，只印 WARN。第一次在 pi 開該專案要信任專案。
 
+  從 lifecycle 3.x 升上來：lifecycle 拆出 tickets（ticket 流程），專案 `.plugharbor/lifecycle.yml` 有 `ticket:` 區塊時，install-project 對 lifecycle 自動補裝 tickets（`--check` 也會報）；失效的舊 skill link 會移除並重建。用 discovery／delivery 的專案要自己跑 `setup/install-project.sh <專案根> lifecycle discovery delivery`，`--check` 不會報它們。
+
   lifecycle 與 superpowers 並存：工程流程交 superpowers，lifecycle 管做之前與做之後（3.0.0 起不再停用 superpowers）。
   舊版曾在 `<專案>/.claude/settings.local.json` 寫入 `superpowers@…: false` 的專案，重跑不會自動改回；要恢復就手動刪掉那幾個鍵。
 - 專案層移除：在專案根 `claude plugin uninstall <p>@plugharbor --scope local`（或 `project`），pi 從 `.pi/settings.json` 刪掉對應項，Codex／agy 刪掉 `.agents/skills/` 下對應的 link 與 `.agents/plugharbor/<p>`。

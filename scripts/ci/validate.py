@@ -277,6 +277,53 @@ def check_leaks() -> None:
                     err(f, f"L{lineno} 命中本機黑名單：{m.group(0)}")
 
 
+def expected_copy(text: str, copy_plugin: str, aliases: dict) -> str:
+    """把 canonical 文字依改名對照轉成副本應有的內容。"""
+    for orig, new in aliases.get(copy_plugin, {}).items():
+        pat = re.compile(rf"(?<![\w-])(?:([a-z][a-z0-9-]*):)?{re.escape(orig)}(?![\w-])")
+        text = pat.sub(lambda m: f"{copy_plugin}:{new}" if m.group(1) else new, text)
+    return text
+
+
+def _plugin_of(rel: str) -> str:
+    return rel.split("/")[1]
+
+
+def shared_copy_errors(root: Path, manifest: dict) -> list[str]:
+    """每組第一個是 canonical，其餘是副本；副本須等於 expected_copy(canonical)。"""
+    out = []
+    aliases = manifest.get("aliases", {})
+    for group in manifest["groups"]:
+        canon_rel, copies = group[0], group[1:]
+        canon = root / canon_rel
+        if not canon.is_file():
+            out.append(f"{canon_rel}: 缺 canonical")
+            continue
+        raw = canon.read_bytes()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = None
+        for copy_rel in copies:
+            copy = root / copy_rel
+            if not copy.is_file():
+                out.append(f"{copy_rel}: 缺副本（canonical：{canon_rel}）")
+                continue
+            if text is None:
+                want = raw
+            else:
+                want = expected_copy(text, _plugin_of(copy_rel), aliases).encode("utf-8")
+            if copy.read_bytes() != want:
+                out.append(f"{copy_rel}: 與 canonical {canon_rel} 不同步，請從 canonical 重新複製（改名對照見 scripts/ci/shared-copies.json）")
+    return out
+
+
+def check_shared_copies() -> None:
+    manifest = json.loads((ROOT / "scripts" / "ci" / "shared-copies.json").read_text(encoding="utf-8"))
+    for msg in shared_copy_errors(ROOT, manifest):
+        errors.append(msg)
+
+
 def main() -> int:
     market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -294,6 +341,7 @@ def main() -> int:
         check_refs(pdir, all_plugins)
     check_name_collisions([ROOT / e["source"] for e in market["plugins"]])
     check_leaks()
+    check_shared_copies()
 
     if errors:
         uniq = list(dict.fromkeys(errors))

@@ -117,7 +117,7 @@ dev-password: <密碼>
 
 ## 跨 plugin 依賴的決定
 
-lifecycle 的實機驗收、操作手冊、PDF 轉檔等流程會叫用 `browser-docs` 的 skill 與 agent，`toolkit` 亦同。`plugin.json` 不宣告 `dependencies`：每個 plugin 都要能單獨安裝，叫用其他 plugin 一律可選，沒裝時照 `shared-preludes.md`「可選依賴」降級。
+lifecycle 的實機驗收、delivery 的操作手冊、PDF 轉檔等流程會叫用 `browser-docs` 的 skill 與 agent，`toolkit` 亦同。`plugin.json` 不宣告 `dependencies`：每個 plugin 都要能單獨安裝，叫用其他 plugin 一律可選，沒裝時照 `shared-preludes.md`「可選依賴」降級。
 
 - 跨 plugin 叫用用命名空間 `browser-docs:<skill>`。
-- `${CLAUDE_PLUGIN_ROOT}` 只指向擁有該檔的 plugin，不能用它讀 `browser-docs` 的檔案；因此 `harness-terms.md` 等共用素材在兩個 plugin 各放一份，由 `scripts/test_harness_terms_sync.py` 驗內容一致。
+- `${CLAUDE_PLUGIN_ROOT}` 只指向擁有該檔的 plugin，不能用它讀 `browser-docs` 的檔案；因此 `harness-terms.md` 等共用素材在需要的 plugin 各放一份，由 repo 根 scripts/ci 的 validate.py 依 shared-copies.json 驗內容一致。

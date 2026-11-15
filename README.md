@@ -1,9 +1,9 @@
 # plugharbor
 
-所有 AI 工作模式的唯一來源：11 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
+所有 AI 工作模式的唯一來源：14 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
 同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘 7 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘 10 個是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 
@@ -45,7 +45,10 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [lifecycle](./plugins/lifecycle/README.md) | 3.0.0 | 軟體交付生命週期——規格、票務、實作入口、發版、QA 實機驗收、操作手冊與會議記錄；工程核心交 superpowers，票務工具可換（Linear／GitHub／Jira） |
+| [lifecycle](./plugins/lifecycle/README.md) | 4.0.0 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
+| [tickets](./plugins/tickets/README.md) | 1.0.0 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
+| [discovery](./plugins/discovery/README.md) | 1.0.0 | 需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型 |
+| [delivery](./plugins/delivery/README.md) | 1.0.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |
 | [workspace](./plugins/workspace/README.md) | 1.16.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
 | [backend](./plugins/backend/README.md) | 1.0.3 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
@@ -61,7 +64,10 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 | 外掛 | skills | agents |
 |------|--------|--------|
-| lifecycle | `demo-video` `implement` `interview-prep` `meeting-minutes` `operation-manual` `plugin-healthcheck` `prototype-html` `qa-verify` `release` `spec` `spec-check` `survey-existing-system` `ticket-create` `ticket-ops` `ticket-reply` `ticket-report` `triage` | `architect` `debugger` `developer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `reviewer` `scout` `silent-failure-hunter` `spec-sampler` `tester` |
+| lifecycle | `implement` `qa-verify` `release` `spec` `spec-check` | `architect` `debugger` `developer` `domain-advisor` `qa-fixture` `qa-planner` `qa-runner-ui` `reviewer` `scout` `spec-sampler` `tester` |
+| tickets | `ticket-create` `ticket-ops` `ticket-reply` `ticket-report` `triage` | `report-writer` `silent-failure-hunter` `tickets-scout` |
+| discovery | `interview-prep` `meeting-minutes` `prototype-html` `survey-existing-system` | `discovery-domain-advisor` `discovery-report-writer` `discovery-scout` `discovery-silent-failure-hunter` |
+| delivery | `demo-video` `operation-manual` | `manual-explorer` `manual-reviewer` `manual-writer` |
 | workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` `project-setup` | — |
 | backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
 | frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
@@ -75,9 +81,11 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 ## 典型動線
 
-需求進來 → `lifecycle` 的 `spec`（或 superpowers 的 brainstorming）→ `spec-check` → `ticket-create`（經 `ticket-ops` 換成專案的票務工具）；
+需求進來 → `lifecycle` 的 `spec`（或 superpowers 的 brainstorming）→ `spec-check` → `tickets:ticket-create`（經 `tickets:ticket-ops` 換成專案的票務工具）；
+需求還模糊時先用 `discovery` 的 `meeting-minutes`、`interview-prep`、`survey-existing-system` 釐清。
 進實作由 `lifecycle` 的 `implement` 起頭（規劃與執行交給 superpowers，建議安裝），技術層面再取用 `backend`、`frontend`、
-`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit`／`review` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收。一個功能一份規格、一張票。
+`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit`／`review` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收，
+需要交付客戶的操作手冊與示範影片走 `delivery`。一個功能一份規格、一張票。
 
 ## 目錄結構
 

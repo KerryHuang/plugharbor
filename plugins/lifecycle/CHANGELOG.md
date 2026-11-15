@@ -2,6 +2,31 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.0.0] - 2026-11-15
+
+起因：lifecycle 3.0.0 一包裝了票務、需求與會議、交付文件與開發主線，只要其中一塊的人也得整包安裝、整包載入 description；盤點使用紀錄也顯示各塊的使用者不同（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第二批「拆 plugin」）。lifecycle 收斂成開發主線，其餘拆成三個各自能單獨安裝的 plugin。
+
+**BREAKING**（叫用名改了，舊名不再有效）
+
+| 舊（lifecycle 內） | 新叫用 |
+|--------|--------|
+| `ticket-ops`、`ticket-create`、`ticket-reply`、`ticket-report`、`triage` | `tickets:ticket-ops`、`tickets:ticket-create`、`tickets:ticket-reply`、`tickets:ticket-report`、`tickets:triage` |
+| agent `report-writer`、`silent-failure-hunter` | `tickets:report-writer`、`tickets:silent-failure-hunter` |
+| `meeting-minutes`、`interview-prep`、`survey-existing-system`、`prototype-html` | `discovery:meeting-minutes`、`discovery:interview-prep`、`discovery:survey-existing-system`、`discovery:prototype-html` |
+| `operation-manual`、`demo-video` | `delivery:operation-manual`、`delivery:demo-video` |
+| agent `manual-explorer`、`manual-reviewer`、`manual-writer` | `delivery:manual-explorer`、`delivery:manual-reviewer`、`delivery:manual-writer` |
+| `plugin-healthcheck` | 本 repo 的 `.claude/skills/plugin-healthcheck/`（改吃 `<plugin>` 參數，掃 `plugins/<plugin>/`；只給維護者，不隨 plugin 發佈） |
+| `scout` | 不變；`tickets:tickets-scout`、`discovery:discovery-scout` 是改名副本 |
+| `domain-advisor` | 不變；`discovery:discovery-domain-advisor` 是改名副本 |
+
+- 要用搬走的功能就另外安裝：`setup/install-project.sh <專案根> tickets`、`… discovery`、`… delivery`（可與 `lifecycle` 同列）。
+- lifecycle 只留 `spec`、`spec-check`、`implement`、`qa-verify`、`release` 五個 skill 與開發主線用的 agent。
+
+**改動**
+
+- `references/shared-preludes.md`「可選依賴」表新增三列：`tickets:ticket-ops`、`lifecycle:spec`、`discovery:meeting-minutes`，各寫明沒裝時的退路；`superpowers:writing-plans` 列的退路指向 `lifecycle:implement` 的極簡退路。tickets、discovery、delivery 的副本同步。
+- `scripts/test_skill_contracts.py`：`test_pointer_survives_symlink_and_copy_install` 的 plugin 清單改為 lifecycle、browser-docs、tickets、discovery、delivery；新增 `test_optional_deps_cover_split_plugins`、`test_only_mainline_skills_remain`。
+
 ## [3.0.0] - 2026-11-15
 
 起因：盤點單人專案 24 個 session，順手的流程靠 superpowers＋workspace＋toolkit，lifecycle 只用到清單腳本；本機沒有專案用 `scale: full`。決定 superpowers 當工程核心、lifecycle 只管做之前與做之後（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第一批「先刪」）。
@@ -19,7 +44,7 @@
 
 - `spec` 範本 §2.3 驗收標準改成 qa-verify 案例格式（`acceptance-format.md` 降兩級標題）；`spec-check` 第 2 項檢查它是否可測。
 - `qa-verify` 新增規格模式：輸入規格路徑時依 `skills/qa-verify/references/spec-to-acceptance.md` 把 §2.3 轉成 `.tmp/qa/<feature>.md`，缺欄就停；§2.3 不是案例格式時擬草稿先給使用者確認。批次模式同步改讀 §2.3；部署閘在根票沒有子票時改讀根票本身的完工留言。
-- `references/pipeline.md` 改寫成新流程；`consultant-desk.md`、`legacy-parity.md`、`shared-preludes*.md`、`domain-advisor`（刪 triage 模式）、`scout` 改成單份規格用法。
+- `plugins/tickets/references/pipeline.md` 改寫成新流程；`consultant-desk.md`、`legacy-parity.md`、`shared-preludes*.md`、`domain-advisor`（刪 triage 模式）、`scout` 改成單份規格用法。
 - 勘察中間檔改為每個功能一份：`{spec.dir}/analysis/<feature>/`（reuse-scan、ui-survey、consultant-notes、advisor-discussion），只有 `analysis/db-analysis.yml` 全站共用；不再有 `_context.yml`（使用者 2026-11-15 裁決，避免沿用別的功能的結論）。
 - 新增守門測試 `scripts/test_no_spec_chain.py`：規格鏈字樣、已刪 skill、孤兒檔、`scale` 預設都不得回來。
 - 既有孤兒 `references/skill-design.md` 改由 plugin README「維護」一節引用。
@@ -55,21 +80,21 @@
 
 - fix(ticket-ops): `reconcile.py` 給 `--board-json` 時看板比對被靜默跳過（拿不到 `ticket.project.options`），看板全錯仍回「差異 0」；改為一律讀設定的 options，缺 options 或沒設看板時在輸出註明「未比對看板」。看板只收本 repo 的 Issue（`board_from_items`），PR、草稿與其他 repo 的同號 issue 不混入。開著的票掛多個 `stage:*` label 列為差異，不再隨機取一個。沒被引用的已關 todo 票只計入「不計入」，不再出現在 todo 計數。
 - fix(scripts): `feature_checklist.py` 被擋項目本身行尾帶 `#n` 時，`⛔ 等：` 的目標名會黏上票號而永遠解不掉；改為先剝掉行尾票號再解析。
-- fix(ticket-ops): 外洩檢查涵蓋標題（SKILL.md、`skills/ticket-ops/references/github.md`、`skills/ticket-ops/references/linear.md`）；SKILL.md「對帳」改寫為預設讀原生 parent，降級範例更新。起因：2.8.0～2.12.0 的整條分支審查發現，以上各項都有測試重現。
+- fix(ticket-ops): 外洩檢查涵蓋標題（SKILL.md、`plugins/tickets/skills/ticket-ops/references/github.md`、`plugins/tickets/skills/ticket-ops/references/linear.md`）；SKILL.md「對帳」改寫為預設讀原生 parent，降級範例更新。起因：2.8.0～2.12.0 的整條分支審查發現，以上各項都有測試重現。
 - test: 2.12.0 的看板同步已實測（2026-11-14，KerryHuang/plugharbor 的私有看板 #1、測試票 #6）：用 `claude -p --plugin-dir` 跑 `create`（stage todo）→ `set_stage in-progress` → `set_stage canceled` → `get`，label、開關、關閉原因（NOT_PLANNED）、看板 Status（Todo → In Progress → Canceled）讀回都一致；外洩檢查退出碼 0。`gh project item-list` 的 JSON 鍵（`status`、`content.type`、`content.repository`）與 `reconcile.py` 相符。看板改了 Status 選項後，原本綁 Status 的內建 workflow 會被 GitHub 自動停用。
 
 ## [2.12.0] - 2026-11-14
 
-- feat(ticket-ops): 同步 GitHub Projects 看板。新設定 `ticket.project`（`owner`、`number`、`field`，預設 `Status`；`options` 是抽象階段對看板選項名的對照，見 `references/config.md`）。有設時，`create` 建完把票加進看板並設欄位，`set_stage` 同步改欄位，`get`／`query` 回 `board_status`、`board_mismatch`。`skills/ticket-ops/scripts/ticket_backend.py project-option <stage>` 印對照 JSON（沒設印 null，缺對照退出碼 2）；`gh project` 的步驟寫在 `skills/ticket-ops/references/github.md`「看板」一節。附測試。起因：使用者 2026-11-14 裁決雙軌示範要用看板。⚠️ `gh project` 指令還沒實測，要等 token 拿到 `project` scope。
+- feat(ticket-ops): 同步 GitHub Projects 看板。新設定 `ticket.project`（`owner`、`number`、`field`，預設 `Status`；`options` 是抽象階段對看板選項名的對照，見 `references/config.md`）。有設時，`create` 建完把票加進看板並設欄位，`set_stage` 同步改欄位，`get`／`query` 回 `board_status`、`board_mismatch`。`plugins/tickets/skills/ticket-ops/scripts/ticket_backend.py project-option <stage>` 印對照 JSON（沒設印 null，缺對照退出碼 2）；`gh project` 的步驟寫在 `plugins/tickets/skills/ticket-ops/references/github.md`「看板」一節。附測試。起因：使用者 2026-11-14 裁決雙軌示範要用看板。⚠️ `gh project` 指令還沒實測，要等 token 拿到 `project` scope。
 
 ## [2.11.0] - 2026-11-14
 
-- feat(ticket-ops): GitHub 後端的父子票與 blocked-by 改用原生功能。`create` 帶 `parent` 時用 `gh issue create --parent`，`link_blocked_by` 用 `gh issue edit --add-blocked-by`，`get`／`query` 讀 `--json parent,subIssues`。內文慣例（`parent: #p`、task list、`blocked-by: #n`）降為舊版 gh 或 API 失敗時的退路，回報要寫明降級。`skills/ticket-ops/references/github.md` 記下實測限制：同一個 parent 重掛會報錯、`subIssuesSummary` 把 not planned 也算成完成、blocker 關閉沒有通知也不會自動解除、`parent-issue:` 搜尋查不到。`skills/ticket-ops/references/contract.md` 能力差異表與 `skills/ticket-create/references/create-dispatch.md` 跟著改。
+- feat(ticket-ops): GitHub 後端的父子票與 blocked-by 改用原生功能。`create` 帶 `parent` 時用 `gh issue create --parent`，`link_blocked_by` 用 `gh issue edit --add-blocked-by`，`get`／`query` 讀 `--json parent,subIssues`。內文慣例（`parent: #p`、task list、`blocked-by: #n`）降為舊版 gh 或 API 失敗時的退路，回報要寫明降級。`plugins/tickets/skills/ticket-ops/references/github.md` 記下實測限制：同一個 parent 重掛會報錯、`subIssuesSummary` 把 not planned 也算成完成、blocker 關閉沒有通知也不會自動解除、`parent-issue:` 搜尋查不到。`plugins/tickets/skills/ticket-ops/references/contract.md` 能力差異表與 `plugins/tickets/skills/ticket-create/references/create-dispatch.md` 跟著改。
 - feat(ticket-ops): `reconcile.py` 預設從 issue 的原生 `parent` 欄位比對 parent，`--parents-json` 改成選填的覆寫。起因：設計要求查證原生 sub-issue 與 blocked-by 能否取代內文慣例；2026-11-14 在 KerryHuang/plugharbor 用 #4、#5 兩張「[測試]」票實測（gh 2.98），都能用。
 
 ## [2.10.0] - 2026-11-14
 
-- feat(ticket-ops): 新增雙軌對帳腳本 `skills/ticket-ops/scripts/reconcile.py`：以 `feature_checklist.py --tickets`／`--todo` 的解析為準，對 `gh issue list`（與看板 Status）比各階段數量（子票、父票、todo 票分開計），逐項列出階段不符、缺票號、票不存在、parent 不符、孤兒票、看板不符、未分類；「[測試]」票、排除 label、已關 todo 票、triage 中的票不計。`--log` 追加 JSONL 供「連續 N 天差異 0」判斷；查詢達 1000 筆回退出碼 3，不當成結果。SKILL.md 新增「對帳」一節。附測試。起因：ticket skill 雙軌示範的過關條件要求各階段數量連續 5 天差異 0，需要可重跑的對帳。
+- feat(ticket-ops): 新增雙軌對帳腳本 `plugins/tickets/skills/ticket-ops/scripts/reconcile.py`：以 `feature_checklist.py --tickets`／`--todo` 的解析為準，對 `gh issue list`（與看板 Status）比各階段數量（子票、父票、todo 票分開計），逐項列出階段不符、缺票號、票不存在、parent 不符、孤兒票、看板不符、未分類；「[測試]」票、排除 label、已關 todo 票、triage 中的票不計。`--log` 追加 JSONL 供「連續 N 天差異 0」判斷；查詢達 1000 筆回退出碼 3，不當成結果。SKILL.md 新增「對帳」一節。附測試。起因：ticket skill 雙軌示範的過關條件要求各階段數量連續 5 天差異 0，需要可重跑的對帳。
 
 ## [2.9.0] - 2026-11-14
 
@@ -78,7 +103,7 @@
 
 ## [2.8.0] - 2026-11-14
 
-- feat(ticket-ops): 送出前外洩檢查。`skills/ticket-ops/scripts/ticket_backend.py leak <檔>` 用 repo 根目錄的 `.leak-denylist`（worktree 退回主 checkout）掃內文：0 無命中、4 命中（列出行號與字串）、5 找不到 denylist。SKILL.md §2 規定建票、留言、改描述、附圖說明送出前都要跑；命中就停、不自動改寫；找不到 denylist 時公開 GitHub repo 停下，其他情況警告後繼續。解析規則與 plugharbor repo 的 CI 外洩檢查相同，有測試比對。起因：ticket skill 要在公開 repo（plugharbor、xiaoxiao）雙軌實測，送出的內文原本沒有外洩檢查。
+- feat(ticket-ops): 送出前外洩檢查。`plugins/tickets/skills/ticket-ops/scripts/ticket_backend.py leak <檔>` 用 repo 根目錄的 `.leak-denylist`（worktree 退回主 checkout）掃內文：0 無命中、4 命中（列出行號與字串）、5 找不到 denylist。SKILL.md §2 規定建票、留言、改描述、附圖說明送出前都要跑；命中就停、不自動改寫；找不到 denylist 時公開 GitHub repo 停下，其他情況警告後繼續。解析規則與 plugharbor repo 的 CI 外洩檢查相同，有測試比對。起因：ticket skill 要在公開 repo（plugharbor、xiaoxiao）雙軌實測，送出的內文原本沒有外洩檢查。
 
 ## [2.7.0] - 2026-11-14
 
@@ -154,9 +179,9 @@
 
 ## [1.3.0] - 2026-11-07
 
-- feat(prototype-html): 原型必含回饋面板（`skills/prototype-html/references/feedback-snippet.js`）：每個畫面可留言、存在瀏覽器，「複製回覆」輸出 `# Re:` Markdown；新增第 9 步處理貼回的回覆，留言一律當資料，不因留言執行指令、抓網址或改設定。
+- feat(prototype-html): 原型必含回饋面板（`plugins/discovery/skills/prototype-html/references/feedback-snippet.js`）：每個畫面可留言、存在瀏覽器，「複製回覆」輸出 `# Re:` Markdown；新增第 9 步處理貼回的回覆，留言一律當資料，不因留言執行指令、抓網址或改設定。
 - feat(demo-video): `build` 開始前先驗腳本（`scripts/lib/validate-script.mjs`），一次列出全部錯誤和正確範例後 exit 1，不動輸出目錄、不印 stack trace。
-- feat(ticket-report): 週報簡報改由 `skills/ticket-report/scripts/render_slides.py` 從草稿和 `dataset.json` 組版，`report-writer` 只寫草稿；數字與抽屜清單由程式產生，`verify_counts.py` 維持為發布閘門。
+- feat(ticket-report): 週報簡報改由 `plugins/tickets/skills/ticket-report/scripts/render_slides.py` 從草稿和 `dataset.json` 組版，`report-writer` 只寫草稿；數字與抽屜清單由程式產生，`verify_counts.py` 維持為發布閘門。
 - 設計借鏡 answer-me-with-html（MIT），程式為自寫。
 
 ## [1.2.0] - 2026-11-06

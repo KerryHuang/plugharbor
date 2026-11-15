@@ -83,7 +83,7 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`；Cod
 - **`agent-model-guard` 只由 toolkit 註冊**：lifecycle（前身 sa-flow 4.0.0 起）不註冊，不會重複。
 - **分層安裝**：user 層 4 個（toolkit、research、browser-docs、workspace）由 install.sh 裝進四個 CLI；其餘是專案層，`setup/install-project.sh` 替 Claude Code（`--scope local`／`project`）、pi（專案 `.pi/settings.json`）安裝，Codex、agy 則在專案 `.agents/skills/` 建 symlink（有 agy 時改複製；只限 local）。
 - **plugin 互不依賴**：每個 plugin 單獨安裝都要能用，`plugin.json` 不宣告 `dependencies`（validate.py 檢查）。
-  lifecycle 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；lifecycle 叫用 browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
+  delivery 需要的截圖標註與換假資料工具與 browser-docs 各放一份（同步測試驗內容相同）；delivery 叫用 browser-docs／toolkit 都是可選，沒裝照 `references/shared-preludes.md`「可選依賴」降級。
 - **跨 plugin 叫用**：可選地叫另一個 plugin 的 skill 時，agent 的 `tools` 要加 `Skill`；
   `${CLAUDE_PLUGIN_ROOT}` 摸不到別的 plugin 的檔案，所以必要的共用素材各放一份。
   Claude Code、Codex、pi 都實測過（2026-11-02）：Codex 從安裝快取讀 skill，pi 從 repo 讀並照 `harness-terms.md` 把 `${CLAUDE_PLUGIN_ROOT}` 換成實際路徑。

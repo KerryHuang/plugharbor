@@ -19,7 +19,9 @@ jobs:
           python-version: "3.12"
 
       - name: Marketplace 驗證（版號、frontmatter、交互引用、README 清單、外洩樣式）
-        run: python scripts/ci/validate.py
+        run: |
+          python scripts/ci/validate.py
+          python scripts/ci/test_validate.py
 
       - name: Plugin 腳本測試
         run: |
@@ -47,7 +49,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/dv" && cd "$RUNNER_TEMP/dv"
           npm init -y >/dev/null && npm install --silent playwright-core
           # 缺依賴時要失敗，不能跳過後仍顯示成功
-          DEMO_VIDEO_E2E_REQUIRED=1 node --test "$GITHUB_WORKSPACE/plugins/lifecycle/skills/demo-video/scripts/e2e.test.mjs"
+          DEMO_VIDEO_E2E_REQUIRED=1 node --test "$GITHUB_WORKSPACE/plugins/delivery/skills/demo-video/scripts/e2e.test.mjs"
 
       - name: Hook 測試（pytest 與 shell）
         run: |

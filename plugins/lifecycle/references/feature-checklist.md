@@ -86,7 +86,7 @@
 
 ## 同步票
 
-`.plugharbor/lifecycle.yml` 有設 `ticket.tool` 時，以清單為準、票跟著改：任何流程（brainstorming、spec、implement、手動）改本清單或 `docs/todo.md`，都照下表叫 `lifecycle:ticket-ops`。沒設 `ticket.tool` 就照舊，不問。
+`.plugharbor/lifecycle.yml` 有設 `ticket.tool` 時，以清單為準、票跟著改：任何流程（brainstorming、spec、implement、手動）改本清單或 `docs/todo.md`，都照下表叫 `tickets:ticket-ops`。沒設 `ticket.tool` 就照舊，不問；沒裝 tickets 照 `shared-preludes.md`「可選依賴」降級。
 
 票號寫在行尾 ` #n`（前面一個半形空格，必須是最後一個 token），節標題也一樣（`## 模組 A #5`）；說明中間的 `#n` 只是引用，不算這一行的票。腳本解析時會先剝掉行尾票號，功能名與節名不受影響。
 

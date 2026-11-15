@@ -81,9 +81,9 @@ spec:
 4. **收決策**：依共通原則 1，列待決事項 → 機械決策自己定 → 品味決策逐題問。
 5. **撰寫**：照範本寫；決策寫進 §5 決策表，不另開 `decisions.md`。
 6. **自查**：跑範本的品質檢查清單；`[NEEDS CLARIFICATION` 未清零就照原則 2 回報。
-7. **CR（`--change` 或檔案已存在）**：in-place 修改受影響段落，**取代不追加**；版本號 +1、§7 加一列，有票號就寫上。需要回覆票時交給 `lifecycle:ticket-reply`。
+7. **CR（`--change` 或檔案已存在）**：in-place 修改受影響段落，**取代不追加**；版本號 +1、§7 加一列，有票號就寫上。需要回覆票時交給 `tickets:ticket-reply`。
 
-**下一步**：`lifecycle:spec-check`（規格檢查）就在這一步跑一次；`lifecycle:implement` 的品質閘門見到通過紀錄不重跑。通過後 `lifecycle:ticket-create` 或 `lifecycle:implement`。
+**下一步**：`lifecycle:spec-check`（規格檢查）就在這一步跑一次；`lifecycle:implement` 的品質閘門見到通過紀錄不重跑。通過後 `tickets:ticket-create` 或 `lifecycle:implement`。
 
 ## 讀寫既有規格
 

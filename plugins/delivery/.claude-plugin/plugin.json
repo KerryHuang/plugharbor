@@ -1,0 +1,9 @@
+{
+  "name": "delivery",
+  "version": "1.0.0",
+  "description": "交付文件——操作手冊（Word／PDF／簡報）與示範影片",
+  "author": {
+    "name": "KerryHuang"
+  },
+  "license": "MIT"
+}

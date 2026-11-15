@@ -35,6 +35,17 @@ DIFFS=0; FAILS=0
 note_diff() { echo "$1"; DIFFS=$((DIFFS + 1)); }
 run() { echo "RUN:  $*"; "$@" || { echo "FAIL: $*"; FAILS=$((FAILS + 1)); }; }
 
+# lifecycle 拆分遷移：舊版 lifecycle 含 ticket 流程，專案設定有 ticket: 區塊就一併補 tickets
+case " $PLUGINS " in
+  *" lifecycle "*)
+    case " $PLUGINS " in
+      *" tickets "*) ;;
+      *) if [ -f "$ROOT/.plugharbor/lifecycle.yml" ] && grep -q '^ticket:' "$ROOT/.plugharbor/lifecycle.yml"; then
+           PLUGINS="$PLUGINS tickets"; echo "ADD: tickets（.plugharbor/lifecycle.yml 有 ticket: 區塊）"
+         fi ;;
+    esac ;;
+esac
+
 # 這次要裝的新名所對應的舊名（改名對照）；每行「舊名 新名」
 # （寫成函式：bash 3.2 解析 $( ) 裡的 case 會出錯）
 renamed_pairs() {
@@ -232,6 +243,14 @@ same_copy() {  # $1=複本 $2=來源 $3=plugin；內容（換過 plugin 根之�
   diff -rq -x .plugharbor-root "$1" "$t/s" >/dev/null 2>&1; rc=$?
   rm -rf "$t"; return "$rc"
 }
+moved_note() {  # $1=skill 名 $2=舊 plugin：這個 skill 現在在別的 plugin 就提示
+  local np
+  for np in "$REPO_DIR"/plugins/*/; do
+    np="$(basename "$np")"
+    [ "$np" != "$2" ] && [ -d "$REPO_DIR/plugins/$np/skills/$1" ] || continue
+    echo "NOTE: ${1} 已搬到 ${np}（install-project.sh <專案根> ${np}）"; return 0
+  done
+}
 EXCLUDES=""
 if [ -z "$PLUGINS" ]; then
   :
@@ -243,7 +262,9 @@ else
   # 失效的 plugharbor link：--check 報 BROKEN，實跑移除
   for l in "$AG"/skills/* "$AG"/plugharbor/*; do
     [ -L "$l" ] && [ ! -e "$l" ] && ours_link "$l" || continue
+    old="$(basename "$(dirname "$(dirname "$(readlink "$l" 2>/dev/null || true)")")")"
     if [ "$CHECK" -eq 1 ]; then note_diff "BROKEN: ${l}"; else rm -f "$l"; echo "OK:   移除失效 link ${l}"; fi
+    moved_note "$(basename "$l")" "$old"
   done
   # 複製模式的複本：.plugharbor-root 指的 plugin 已不存在（clone 裡被移除或改名）
   for l in "$AG"/skills/*; do
@@ -252,6 +273,7 @@ else
     [ "$(basename "$(dirname "$r")")" = plugins ] || continue
     [ ! -d "$REPO_DIR/plugins/$(basename "$r")/skills/$(basename "$l")" ] || continue
     if [ "$CHECK" -eq 1 ]; then note_diff "BROKEN: ${l}"; else rm -rf "$l"; echo "OK:   移除失效複本 ${l}"; fi
+    moved_note "$(basename "$l")" "$(basename "$r")"
   done
   for p in $PLUGINS; do
     [ -d "$REPO_DIR/plugins/$p/skills" ] || continue

@@ -34,7 +34,7 @@ if grep -q 'marketplace add' "$STUB_LOG"; then fail "user 層已有 marketplace�
 S="$P/.pi/settings.json"
 grep -q "$(native "$REPO_DIR/plugins/lifecycle")" "$S" || fail "pi 應寫入 lifecycle 的絕對路徑：$(cat "$S" 2>/dev/null)"
 grep -qx '.pi/settings.json' "$P/.git/info/exclude" || fail ".pi/settings.json 應加進 .git/info/exclude"
-linked "$P/.agents/skills/triage" || fail "codex／agy 應建 .agents/skills/triage 的 link：$OUT"
+linked "$P/.agents/skills/release" || fail "codex／agy 應建 .agents/skills/release 的 link：$OUT"
 linked "$P/.agents/skills/designing-ui" || fail "codex／agy 應建 ui-ux 的 skill link"
 if grep -q -E '^(codex|agy) plugin (add|install)' "$STUB_LOG"; then fail "codex／agy 不該用 plugin 指令安裝專案層 plugin"; fi
 # 重跑：pi 不重複、exclude 不重複
@@ -131,26 +131,26 @@ realp() { python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"; 
 if [ "$CAN_LINK" -eq 1 ]; then
 P9="$(newproj "p 九")"
 OUT="$(run "$P9" lifecycle)" || fail "symlink 安裝 exit 非 0：$OUT"
-L="$P9/.agents/skills/triage"
+L="$P9/.agents/skills/release"
 [ -L "$L" ] || fail "(a) 應建 link：$OUT"
-[ "$(readlink "$L")" = "../plugharbor/lifecycle/skills/triage" ] || fail "(a) skill link 應為相對路徑：$(readlink "$L")"
-[ "$(realp "$L")" = "$(realp "$REPO_DIR/plugins/lifecycle/skills/triage")" ] || fail "(a) realpath 應落在 plugharbor clone：$(realp "$L")"
+[ "$(readlink "$L")" = "../plugharbor/lifecycle/skills/release" ] || fail "(a) skill link 應為相對路徑：$(readlink "$L")"
+[ "$(realp "$L")" = "$(realp "$REPO_DIR/plugins/lifecycle/skills/release")" ] || fail "(a) realpath 應落在 plugharbor clone：$(realp "$L")"
 EX="$P9/.git/info/exclude"
 grep -qx '.agents/plugharbor/' "$EX" || fail "(a) exclude 應含 .agents/plugharbor/"
-grep -qx '.agents/skills/triage' "$EX" || fail "(a) exclude 應含每個 skill link"
+grep -qx '.agents/skills/release' "$EX" || fail "(a) exclude 應含每個 skill link"
 if grep -qx '.agents/skills/' "$EX"; then fail "(a) 不該排除整個 .agents/skills/"; fi
-echo "$OUT" | grep -q '^OK:   codex/agy link triage' || fail "(a) 應印 OK link：$OUT"
+echo "$OUT" | grep -q '^OK:   codex/agy link release' || fail "(a) 應印 OK link：$OUT"
 # (b) 重跑：UP-TO-DATE、exclude 不重複
 OUT="$(run "$P9" lifecycle)" || fail "(b) 重跑 exit 非 0"
-echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link release' || fail "(b) 重跑應 UP-TO-DATE：$OUT"
 [ "$(grep -cx '.agents/plugharbor/' "$EX")" = 1 ] || fail "(b) exclude 重複"
-[ "$(grep -cx '.agents/skills/triage' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
+[ "$(grep -cx '.agents/skills/release' "$EX")" = 1 ] || fail "(b) skill exclude 重複"
 fi
 # (c) 使用者自己的同名實體目錄：SKIP、內容不動
-P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/ticket-report"; echo mine > "$P9c/.agents/skills/ticket-report/SKILL.md"
+P9c="$(newproj p9c)"; mkdir -p "$P9c/.agents/skills/qa-verify"; echo mine > "$P9c/.agents/skills/qa-verify/SKILL.md"
 OUT="$(run "$P9c" lifecycle)" || fail "(c) exit 非 0"
-echo "$OUT" | grep -q "^SKIP: .*ticket-report 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
-[ "$(cat "$P9c/.agents/skills/ticket-report/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/ticket-report" ] || fail "(c) 使用者目錄被動到"
+echo "$OUT" | grep -q "^SKIP: .*qa-verify 已存在且不是 plugharbor 的 link" || fail "(c) 應 SKIP 使用者目錄：$OUT"
+[ "$(cat "$P9c/.agents/skills/qa-verify/SKILL.md")" = mine ] && [ ! -L "$P9c/.agents/skills/qa-verify" ] || fail "(c) 使用者目錄被動到"
 # (d) 失效的 plugharbor link：--check 報 BROKEN，實跑移除；別人的失效 link 不動
 if [ "$CAN_LINK" -eq 1 ]; then
 ln -s "$REPO_DIR/plugins/no-such/skills/x" "$P9/.agents/skills/x"
@@ -174,7 +174,7 @@ P9f="$(newproj p9f)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle)" || fail "(f) exit 非 0：$OUT"
 echo "$OUT" | grep -q '^NOTE: PLUGHARBOR_LINK_MODE=copy，使用複製模式' || fail "(f) 強制複製應印 NOTE、不說建不了 symlink：$OUT"
 if echo "$OUT" | grep -q '無法建 symlink'; then fail "(f) 強制複製不該說無法建 symlink：$OUT"; fi
-D="$P9f/.agents/skills/triage"
+D="$P9f/.agents/skills/release"
 ROOT_SA="$(native "$REPO_DIR/plugins/lifecycle")"
 [ -d "$D" ] && [ ! -L "$D" ] && [ -f "$D/SKILL.md" ] || fail "(f) 應複製 skill 目錄"
 [ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(f) .plugharbor-root 應記 plugin 根：$(cat "$D/.plugharbor-root" 2>/dev/null)"
@@ -182,10 +182,10 @@ ROOT_SA="$(native "$REPO_DIR/plugins/lifecycle")"
 if grep -rq '\${CLAUDE_PLUGIN_ROOT}' "$D"; then fail "(f) 複本仍有 \${CLAUDE_PLUGIN_ROOT}：$(grep -rn '\${CLAUDE_PLUGIN_ROOT}' "$D" | head -2)"; fi
 grep -q "$ROOT_SA/references/" "$D/SKILL.md" || fail "(f) 複本應把 plugin 根換成 $ROOT_SA"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link release' || fail "(f) 內容相同應 UP-TO-DATE：$OUT"
 echo changed >> "$D/SKILL.md"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^DIFF: .*triage' || fail "(f) 內容不同應報 DIFF：$OUT"
+echo "$OUT" | grep -q '^DIFF: .*release' || fail "(f) 內容不同應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(f) 重跑 exit 非 0"
 if grep -q '^changed$' "$D/SKILL.md"; then fail "(f) 重跑應更新複本"; fi
 # (f2) 複製模式遇到完全不含 ${CLAUDE_PLUGIN_ROOT} 的 skill（ui-ux-pro-max）不能中止（grep 沒命中＋pipefail）
@@ -193,11 +193,11 @@ P9f2="$(newproj p9f2)"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P9f2" ui-ux)" || fail "(f2) 不含 plugin 根的 skill 讓複製模式中止：$OUT"
 [ -f "$P9f2/.agents/skills/ui-ux-pro-max/SKILL.md" ] || fail "(f2) 應複製 ui-ux-pro-max"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(f) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^UP-TO-DATE: link triage' || fail "(f) 換過路徑的複本應視為一致：$OUT"
+echo "$OUT" | grep -q '^UP-TO-DATE: link release' || fail "(f) 換過路徑的複本應視為一致：$OUT"
 # (g) 複製模式：clone 搬家後 .plugharbor-root 過期 → --check 報 DIFF、實跑修正；root 指的 plugin 不存在 → BROKEN、實跑移除
 echo "/old/clone/plugins/lifecycle" > "$D/.plugharbor-root"
 OUT="$(PLUGHARBOR_LINK_MODE=copy run --check "$P9f" lifecycle)" || [ $? -eq 3 ] || fail "(g) --check exit 不是 0／3"
-echo "$OUT" | grep -q '^DIFF: .*triage' || fail "(g) marker 過期應報 DIFF：$OUT"
+echo "$OUT" | grep -q '^DIFF: .*release' || fail "(g) marker 過期應報 DIFF：$OUT"
 PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 exit 非 0"
 [ "$(cat "$D/.plugharbor-root")" = "$ROOT_SA" ] || fail "(g) 實跑應修正 marker：$(cat "$D/.plugharbor-root")"
 mkdir -p "$P9f/.agents/skills/gone"; echo x > "$P9f/.agents/skills/gone/SKILL.md"; echo "$REPO_DIR/plugins/no-such" > "$P9f/.agents/skills/gone/.plugharbor-root"
@@ -208,13 +208,13 @@ PLUGHARBOR_LINK_MODE=copy run "$P9f" lifecycle >/dev/null || fail "(g) 實跑 ex
 # (h) 沒指定連結模式：PATH 有 agy（只載入實體檔，不跟隨 symlink）→ 預設複製並說明原因；沒有 agy → 維持 symlink
 P9h="$(newproj p9h)"
 OUT="$(HOME="$TMP/home" PATH="$STUB:$TOOLS:/usr/bin:/bin" bash "$SCRIPT" "$P9h" lifecycle)" || fail "(h) exit 非 0：$OUT"
-[ -d "$P9h/.agents/skills/triage" ] && [ ! -L "$P9h/.agents/skills/triage" ] && [ -f "$P9h/.agents/skills/triage/.plugharbor-root" ] || fail "(h) 有 agy 應建實體複本：$OUT"
+[ -d "$P9h/.agents/skills/release" ] && [ ! -L "$P9h/.agents/skills/release" ] && [ -f "$P9h/.agents/skills/release/.plugharbor-root" ] || fail "(h) 有 agy 應建實體複本：$OUT"
 echo "$OUT" | grep -q '^NOTE: 偵測到 agy' || fail "(h) 應說明因 agy 改用複製：$OUT"
 NOAGY="$TMP/stub-noagy"; mkdir -p "$NOAGY"; for c in claude codex pi; do cp "$STUB/$c" "$NOAGY/$c"; done
 if [ "$CAN_LINK" -eq 1 ]; then
 P9i="$(newproj p9i)"
 OUT="$(HOME="$TMP/home" PATH="$NOAGY:$TOOLS:/usr/bin:/bin" bash "$SCRIPT" "$P9i" lifecycle)" || fail "(h) 無 agy exit 非 0：$OUT"
-[ -L "$P9i/.agents/skills/triage" ] || fail "(h) 沒有 agy 應維持 symlink：$OUT"
+[ -L "$P9i/.agents/skills/release" ] || fail "(h) 沒有 agy 應維持 symlink：$OUT"
 fi
 
 # ---------- 10) 正式改名對照：每條新名都存在、舊名都已移除；命令列給舊名自動換新名 ----------
@@ -277,7 +277,7 @@ OUT="$(run --no-claude "$P13" lifecycle)" || fail "(13) --no-claude exit 非 0�
 if grep -q '^claude ' "$STUB_LOG"; then fail "(13) --no-claude 不該呼叫 claude：$(cat "$STUB_LOG")"; fi
 [ ! -e "$P13/.claude" ] || fail "(13) --no-claude 不該建 .claude（含 settings.local.json）"
 grep -q "$(native "$REPO_DIR/plugins/lifecycle")" "$P13/.pi/settings.json" || fail "(13) pi 應照常寫入"
-linked "$P13/.agents/skills/triage" || fail "(13) codex／agy 應照常建 link：$OUT"
+linked "$P13/.agents/skills/release" || fail "(13) codex／agy 應照常建 link：$OUT"
 rc=0; run --shared --no-claude "$P13" lifecycle >/dev/null 2>&1 || rc=$?
 [ "$rc" -eq 2 ] || fail "(13) --shared --no-claude 應 exit 2，實際 ${rc}"
 rc=0; run --no-claude --shared "$P13" lifecycle >/dev/null 2>&1 || rc=$?
@@ -290,4 +290,47 @@ if echo "$OUT" | grep -q -E 'claude (lifecycle|marketplace)|DISABLE|RENAME: clau
 echo "$OUT" | grep -q '^MISSING: pi lifecycle' || fail "(13) --no-claude --check 仍應報 pi：$OUT"
 if grep -q '^claude ' "$STUB_LOG"; then fail "(13) --no-claude --check 不該呼叫 claude"; fi
 
-echo "PASS: install-project.sh（13 組）"
+# ---------- 14) lifecycle 拆分遷移：lifecycle.yml 有 ticket: 就自動補 tickets；--check 也套用；舊 link 換指向 ----------
+mkticket() {  # $1=專案；$2=yes 時寫 ticket: 區塊
+  mkdir -p "$1/.plugharbor"
+  if [ "${2:-}" = yes ]; then printf 'ticket:\n  tool: github\n' > "$1/.plugharbor/lifecycle.yml"; else printf 'spec:\n  dir: docs/specs\n' > "$1/.plugharbor/lifecycle.yml"; fi
+}
+# (a) 有 ticket: → 補裝 tickets
+P14="$(newproj p14)"; mkticket "$P14" yes; : > "$STUB_CWD_LOG"
+OUT="$(run "$P14" lifecycle)" || fail "(14a) exit 非 0：$OUT"
+echo "$OUT" | grep -q 'ADD: tickets（.plugharbor/lifecycle.yml 有 ticket: 區塊）' || fail "(14a) 應印 ADD: tickets：$OUT"
+grep -qx "claude plugin install tickets@plugharbor --scope local @ $P14" "$STUB_CWD_LOG" || fail "(14a) 應裝 tickets：$(cat "$STUB_CWD_LOG")"
+# (b) 沒有 ticket: → 不裝
+P14b="$(newproj p14b)"; mkticket "$P14b" no; : > "$STUB_CWD_LOG"
+OUT="$(run "$P14b" lifecycle)" || fail "(14b) exit 非 0：$OUT"
+if echo "$OUT" | grep -q 'ADD: tickets'; then fail "(14b) 不該補 tickets：$OUT"; fi
+if grep -q 'install tickets@' "$STUB_CWD_LOG"; then fail "(14b) 不該裝 tickets"; fi
+# (c) --check：只有 lifecycle 裝著 → tickets MISSING、exit 3
+P14c="$(newproj p14c)"; mkticket "$P14c" yes
+printf '[{"id": "lifecycle@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"}]\n' "$(ver lifecycle)" "$(native "$P14c")" > "$STUB_STATE/claude-list"
+rc=0; OUT="$(run --check "$P14c" lifecycle)" || rc=$?
+[ "$rc" -eq 3 ] || fail "(14c) --check 應 exit 3，實際 ${rc}：$OUT"
+echo "$OUT" | grep -q 'ADD: tickets' || fail "(14c) --check 應印 ADD：$OUT"
+echo "$OUT" | grep -q 'MISSING: claude tickets' || fail "(14c) 應報 tickets MISSING：$OUT"
+rm "$STUB_STATE/claude-list"
+# (d) 舊 lifecycle 的 triage link 已失效 → 移除並改指 tickets，並提示 skill 搬去哪
+if [ "$CAN_LINK" -eq 1 ]; then
+P14d="$(newproj p14d)"; mkticket "$P14d" yes; mkdir -p "$P14d/.agents/skills"
+ln -s ../plugharbor/lifecycle/skills/triage "$P14d/.agents/skills/triage"
+OUT="$(run "$P14d" lifecycle)" || fail "(14d) exit 非 0：$OUT"
+echo "$OUT" | grep -q '移除失效 link' || fail "(14d) 應印移除失效 link：$OUT"
+echo "$OUT" | grep -q '^NOTE: triage 已搬到 tickets（install-project.sh <專案根> tickets）' || fail "(14d) 應提示 triage 已搬到 tickets：$OUT"
+[ "$(readlink "$P14d/.agents/skills/triage")" = "../plugharbor/tickets/skills/triage" ] || fail "(14d) triage 應改指 tickets：$(readlink "$P14d/.agents/skills/triage")"
+else
+echo "SKIP: 這台不能建 symlink，略過 14(d)"
+fi
+# (e) 複製模式：舊 lifecycle 的 triage 複本（.plugharbor-root 指 lifecycle）→ 移除失效複本、提示、從 tickets 重建
+P14e="$(newproj p14e)"; mkticket "$P14e" yes; mkdir -p "$P14e/.agents/skills/triage"
+printf 'old\n' > "$P14e/.agents/skills/triage/SKILL.md"
+printf '%s\n' "$(native "$REPO_DIR/plugins/lifecycle")" > "$P14e/.agents/skills/triage/.plugharbor-root"
+OUT="$(PLUGHARBOR_LINK_MODE=copy run "$P14e" lifecycle)" || fail "(14e) exit 非 0：$OUT"
+echo "$OUT" | grep -q '移除失效複本' || fail "(14e) 應印移除失效複本：$OUT"
+echo "$OUT" | grep -q '^NOTE: triage 已搬到 tickets' || fail "(14e) 應提示 triage 已搬到 tickets：$OUT"
+[ "$(cat "$P14e/.agents/skills/triage/.plugharbor-root")" = "$(native "$REPO_DIR/plugins/tickets")" ] || fail "(14e) triage 複本應改從 tickets 建：$OUT"
+
+echo "PASS: install-project.sh（14 組）"

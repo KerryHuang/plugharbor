@@ -36,14 +36,12 @@ class SkillContracts(unittest.TestCase):
     def test_pi_ask_tool_name_matches_installed_extension(self):
         # pi 的提問擴充（rpiv-ask-user-question）註冊的工具名是 ask_user_question，沒有 ask_user
         import re
-        for rel in ["references/harness-terms.md", "skills/prototype-html/SKILL.md"]:
-            self.assertIsNone(re.search(r"`ask_user`", read(rel)), rel)
+        self.assertIsNone(re.search(r"`ask_user`", read("references/harness-terms.md")))
         self.assertIn("`ask_user_question`", read("references/harness-terms.md"))
 
     def test_harness_terms_pointer_is_relative(self):
         # pi 不展開 ${CLAUDE_PLUGIN_ROOT}，指向對照檔的那一句要用相對路徑
-        for skill in ["qa-verify", "prototype-html", "ticket-ops"]:
-            self.assertIn("../../" + "references/harness-terms.md", read(f"skills/{skill}/SKILL.md"), skill)
+        self.assertIn("../../" + "references/harness-terms.md", read("skills/qa-verify/SKILL.md"))
 
     def test_no_removed_scale_or_explore_in_shared_refs(self):
         self.assertNotIn("full 規格", read("references/shared-preludes.md"))
@@ -56,7 +54,6 @@ class SkillContracts(unittest.TestCase):
     def test_no_relay_era_wording(self):
         for rel, word in [("references/shared-preludes.md", "每棒"), ("references/shared-preludes.md", "交棒前清零"),
                           ("references/shared-preludes-details.md", "每棒"),
-                          ("skills/triage/references/ticket-flow.md", "`scale`"),
                           ("skills/spec-check/references/modes/sample.md", "SPEC-INDEX"),
                           ("skills/spec-check/references/modes/sample.md", "規格所在功能目錄"),
                           ("agents/spec-sampler.md", "SPEC-INDEX"),
@@ -65,7 +62,11 @@ class SkillContracts(unittest.TestCase):
 
     def test_pointer_survives_symlink_and_copy_install(self):
         # .agents/skills/<skill> 是 symlink 或複製：../../ 要從實體路徑算，否則解到 .agents/references（試用 pi 實測 ENOENT）
-        for f in sorted(list((ROOT / "skills").glob("*/SKILL.md")) + list((ROOT.parent / "browser-docs" / "skills").glob("*/SKILL.md"))):
+        files = []
+        for plugin in ["lifecycle", "browser-docs", "tickets", "discovery", "delivery"]:
+            self.assertTrue((ROOT.parent / plugin / "skills").is_dir(), plugin)
+            files += (ROOT.parent / plugin / "skills").glob("*/SKILL.md")
+        for f in sorted(files):
             head = f.read_text(encoding="utf-8")[:2000]
             self.assertIn("../../" + "references/harness-terms.md", head, f.parent.name)
             self.assertIn("realpath", head, f.parent.name)
@@ -108,7 +109,6 @@ class SkillContracts(unittest.TestCase):
     def test_relay_era_module_paths_gone(self):
         self.assertNotIn("需求文件.md", read("agents/scout.md"))
         self.assertNotIn("_context.yml", read("skills/spec-check/references/sample/impl-anchors.md"))
-        self.assertNotIn("§Step 0.5", read("skills/interview-prep/SKILL.md"))
 
 
     def test_spec_lookup_tolerates_dated_filenames(self):
@@ -141,6 +141,17 @@ class SkillContracts(unittest.TestCase):
     def test_ask_rule_allows_text_fallback_without_tool(self):
         # 寫死「必用 AskUserQuestion、不可純文字」，沒有提問工具的 harness 會無路可走（agy 試用）
         self.assertNotIn("1. 必用 `AskUserQuestion`，不可用純文字選單模擬。", read("references/shared-preludes-details.md"))
+
+    def test_optional_deps_cover_split_plugins(self):
+        s = read("references/shared-preludes.md")
+        for name in ("`tickets:ticket-ops`", "`lifecycle:spec`", "`discovery:meeting-minutes`",
+                     "`lifecycle:spec`、`spec-check`、`implement`", "`tickets:triage`",
+                     "顧問 `lifecycle:domain-advisor`、勘察 `lifecycle:scout`"):
+            self.assertIn(name, s)
+
+    def test_only_mainline_skills_remain(self):
+        self.assertEqual(sorted(p.name for p in (ROOT / "skills").iterdir() if p.is_dir()),
+                         ["implement", "qa-verify", "release", "spec", "spec-check"])
 
 
 if __name__ == "__main__":

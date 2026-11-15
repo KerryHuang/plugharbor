@@ -77,9 +77,9 @@
       "subtree": null,
       "adopted": "2026-11-07",
       "targets": [
-        "lifecycle:demo-video",
-        "lifecycle:prototype-html",
-        "lifecycle:ticket-report"
+        "delivery:demo-video",
+        "discovery:prototype-html",
+        "tickets:ticket-report"
       ]
     }
   ]

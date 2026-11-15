@@ -64,7 +64,7 @@ class NoSpecChain(unittest.TestCase):
 
     def test_analysis_is_per_feature(self):
         # 勘察中間檔每個功能一份（只有 DB 結構事實全站共用），避免沿用別的功能的結論
-        for rel in ["references/pipeline.md", "references/shared-preludes-details.md", "references/shared-preludes.md"]:
+        for rel in ["references/shared-preludes-details.md", "references/shared-preludes.md"]:
             self.assertIn("analysis/<feature>/", (ROOT / rel).read_text(encoding="utf-8"), rel)
 
     def test_spec_writer_agent_removed(self):
