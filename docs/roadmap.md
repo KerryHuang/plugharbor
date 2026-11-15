@@ -6,7 +6,7 @@
 |---|---|---|---|
 | L1 | lifecycle 第一批「先刪」 | [lifecycle-split](superpowers/specs/2026-11-15-lifecycle-split-design.md) | 已完成（3.0.0） |
 | L2 | lifecycle 第二批「再拆」：tickets、discovery、delivery | [lifecycle-split](superpowers/specs/2026-11-15-lifecycle-split-design.md) | 進行中：已合本機 main，等試用後 push |
-| T1 | Session 塔台單機版 | [session-tower](superpowers/specs/2026-11-15-session-tower-design.md) | 未開始 |
+| T1 | Session 塔台單機版 | [session-tower](superpowers/specs/2026-11-15-session-tower-design.md) | 已完成（本機 main，未 push） |
 | L3 | lifecycle 第三批「最後接」 | [lifecycle-split](superpowers/specs/2026-11-15-lifecycle-split-design.md) | 未開始 |
 | D1 | 票務雙軌示範第一階段（跑兩週） | [ticket-dual-track](superpowers/specs/2026-11-14-ticket-dual-track-design.md) | 未開始 |
 | D2 | 票務雙軌示範第二階段（擴到 Formwright） | [ticket-dual-track](superpowers/specs/2026-11-14-ticket-dual-track-design.md) | 未開始 |
