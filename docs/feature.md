@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 18／共 28（另有 0 項決定不做）；進行中 0、已規劃 4、構想 6；待確認 0 項。更新於 2026-11-15。
+總計：完成 18／共 30（另有 0 項決定不做）；進行中 0、已規劃 5、構想 7；待確認 0 項。更新於 2026-11-15。
 
 ## workspace：unattended（自動駕駛）
 
@@ -25,6 +25,15 @@
 - [x] 工具故障不靜默降級：`route.mjs reviewer` 回 `crossFamily: false` 才算湊不到別家；腳本報錯或輸出不是 JSON 算工具故障，用正確路徑重試一次，仍失敗就繼續跑、報告標紅並推播（使用者 2026-11-14 裁決；toolkit 0.22.0、workspace 1.12.0）
 - [x] 無人值守 worker 不卡在提問：無人值守派出的 worker 帶「沒人在場」標記（環境變數，傳不進 herdr pane 就改標記檔），ask-question-guard 擋下 AskUserQuestion，叫它照「（推薦）」做並把題目與選擇寫進結果檔的「主控裁決待確認」；不可逆操作照舊停下（起因：2026-11-08 worker 卡在選擇題，主控臨時寫自動按 Enter 腳本；使用者 2026-11-14 裁決）
 - [x] ask.mjs 封鎖到期時間改印本地時間並標時區（起因：UTC 無標記，主控誤判封鎖已過）
+
+## toolkit：Session 塔台（2026-11-15 規劃）
+
+完成 0／共 2。
+
+同一專案多個 session 互相看不到，造成重工與合併衝突；起飛申報、飛行追蹤、進 main 前核對、下機釋放。設計見 `docs/specs/2026-11-15-session-tower-design.md`。
+
+- [ ] 📋 單機塔台：`tower.py` 登記表、起飛提醒、改動追蹤、進 main 前硬擋（只 Claude Code）、feature.md 核對、unattended 可選接入（使用者 2026-11-15 裁決 11 項）
+- [ ] 💡 第二階段：跨機器跨人（票的 in-progress／git ref 同步）與 git pre-commit／pre-push 硬擋
 
 ## lifecycle：ticket skill 雙軌示範（2026-11-14 規劃）
 
