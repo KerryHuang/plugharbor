@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 18／共 30（另有 0 項決定不做）；進行中 1、已規劃 4、構想 7；待確認 0 項。更新於 2026-11-15。
+總計：完成 18／共 29（另有 1 項決定不做）；進行中 1、已規劃 4、構想 6；待確認 0 項。更新於 2026-11-15。
 
 ## workspace：unattended（自動駕駛）
 
@@ -70,7 +70,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 完成 0／共 1。
 
-- [ ] 💡 .NET 工具鏈（MSBuild、測試、診斷、升級、EF 查詢最佳化）不在 plugharbor 自寫，需要時在專案層裝 dotnet/skills 對應 plugin；backend／database 只管架構與慣例
+- [-] .NET 工具鏈（MSBuild、測試、診斷、升級、EF 查詢最佳化）不在 plugharbor 自寫——理由：需要時在專案層裝 dotnet/skills 對應 plugin，backend／database 只管架構與慣例（使用者 2026-11-15 確認）
 
 ## workspace：project-setup（專案 AI 設定補裝）
 
