@@ -7,7 +7,7 @@ argument-hint: "[--sample] [規格路徑] [原始碼範圍]"
 
 # 規格檢查
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 實作前回答一個問題：**開發者能不能只看這份規格就寫 code，而且寫出來在現有架構與真實資料上跑得通？**
 

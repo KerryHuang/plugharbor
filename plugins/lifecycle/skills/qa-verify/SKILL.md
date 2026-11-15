@@ -5,7 +5,7 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 
 # qa-verify — 驗收案例 → 實機 E2E 驗收
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 驗「做出來的跟驗收案例一不一樣」。案例來源不限：人寫的驗收清單、其他 skill 轉出的案例，只要符合 `${CLAUDE_SKILL_DIR}/references/acceptance-format.md`。派工慣例見 `${CLAUDE_PLUGIN_ROOT}/references/dispatch-conventions.md`。
 

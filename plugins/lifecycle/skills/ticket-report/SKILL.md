@@ -9,7 +9,7 @@ context: fork
 
 # 票務進度報表
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 本 skill 以 `context: fork` 執行：在不帶對話歷史的 subagent 裡跑，大量查詢結果不留在呼叫方的 context。fork 裡**沒有 `AskUserQuestion`**，不能中途問使用者，缺設定一律報錯終止。
 

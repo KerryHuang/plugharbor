@@ -6,7 +6,7 @@ argument-hint: "<影片名稱> <要示範的網址>"
 
 # Demo Video — 操作示範影片
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 輸入一份「旁白＋操作步驟」腳本，產出配音、字幕、可直接播放的 MP4，以及 SRT。
 要的是**文件型的操作手冊**用 `lifecycle:operation-manual`（截圖＋文字）；要**影片**才用本 skill。

@@ -27,12 +27,13 @@ FIXED_TERMS = {
     "context: fork": r"context: fork",
     "run_in_background": r"\brun_in_background\b",
     "/reload-plugins": r"/reload-plugins\b",
+    "/rename": r"/rename\b",
 }
 CLAUDE_TOOLS = (
     "AskUserQuestion", "TodoWrite", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet", "TaskOutput", "TaskStop",
     "SendMessage", "TeamCreate", "TeamDelete", "NotebookEdit", "WebFetch", "WebSearch", "BashOutput", "KillShell",
     "ExitPlanMode", "EnterPlanMode", "EnterWorktree", "ExitWorktree", "ListMcpResourcesTool", "ReadMcpResourceTool",
-    "ScheduleWakeup", "CronCreate", "CronDelete", "CronList", "SlashCommand", "ToolSearch",
+    "ScheduleWakeup", "CronCreate", "CronDelete", "CronList", "SlashCommand", "ToolSearch", "Monitor",
 )
 ENV_VAR = re.compile(r"\$\{?CLAUDE_[A-Z_]+\}?")
 MCP_PREFIX = re.compile(r"mcp__([A-Za-z0-9_-]+?)__")

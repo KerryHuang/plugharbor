@@ -6,7 +6,7 @@ argument-hint: "<功能名或規格路徑>"
 
 # 實作功能（入口）
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 本 skill 夾在 superpowers 的頭尾：前段（本檔）讀經驗、開分支、過規格閘門；規劃、執行、審查、收尾交給 superpowers；後段（`references/after.md`）由計畫的最後一個 task 執行。**規格是唯一依據**：實作與驗收都對照 `<spec.dir>` 的規格，不對照對話記憶。
 
@@ -34,7 +34,7 @@ git branch --show-current && git status --short
 
 | 檢查項 | 規則 | 失敗處理 |
 |--------|------|----------|
-| 工作區乾淨 | 沒有未提交變更 | 未提交變更只有 `<spec.dir>` 下的規格（spec 不 commit）→ 不停下：先照下一列開功能分支，逐檔 `git add` 這些檔，commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
+| 工作區乾淨 | 沒有未提交變更 | 未提交的只有 `<spec.dir>` 下的規格（spec skill 寫完不 commit）、`.plugharbor/lifecycle.yml` 與 `.tmp/` 底下的工作檔 → 不停下：先照下一列開功能分支，逐檔 `git add` 規格與設定檔（`.tmp/` 不 add），commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
 | 非主幹 | 不在 main／develop 上實作 | 開 `feature/<name>`（從專案慣例的基底分支） |
 | 分支對應本功能 | 分支名含功能或票的識別碼 | 停下，提示切分支或 cd 到正確 worktree |
 | worktree 一致 | 在 worktree 裡時，目錄名含分支識別碼 | 提醒使用者確認 |

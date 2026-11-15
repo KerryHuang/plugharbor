@@ -7,9 +7,9 @@ argument-hint: "[--change {ticket}] {功能描述}"
 
 # 規格
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
-把需求寫成規格。規格是 `implement`、`review`、`qa-verify` 的唯一依據。
+把需求寫成規格。規格是 `implement`、`spec-check`、`qa-verify` 的唯一依據。
 一律產一份規格檔。原則：**先收決策、再寫規格；不確定就標記，不猜。**
 
 ## 輸入
@@ -32,7 +32,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定
 
 `get scale` 的 stderr 有「已在 lifecycle 3.0.0 移除」→ 照錯誤處理表，在最後回報的第一行轉告使用者（可刪掉設定檔的 `scale` 鍵），流程照常。
 
-`spec.dir` 沒設（設定檔沒有這個鍵）而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄 → 用專案規則的目錄，回報時建議寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`。
+`spec.dir` 沒設（設定檔沒有這個鍵）而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄 → 把該目錄寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`（沒有檔就建，格式見 config.md），回報第一行告知；之後 implement、spec-check 等都從同一個設定讀。已設 `spec.dir` 就以設定為準，不看專案規則。
 
 只要讀／查／改既有規格的某一章 → 「讀寫既有規格」；其餘走「寫規格」。
 `config.py` 退出碼 3（只有舊檔 `delivery-flow.yml`）→ 停下請使用者改名。
@@ -68,10 +68,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定
 
 ## 寫規格
 
-產出 `<spec.dir>/<feature>.md`（`<feature>` 用 kebab-case 短名）。範本與自查清單：`references/lean-template.md`。
+產出 `<spec.dir>/<feature>.md`（`<feature>` 用 kebab-case 短名；目錄裡既有設計文件有命名慣例，例如 `YYYY-MM-DD-<slug>-design`，就照慣例）。範本與自查清單：本 skill 目錄的 `references/lean-template.md`。
 
 1. **定位**：`<spec.dir>/<feature>.md` 已存在 → 視為更新（等同 `--change`）；否則新建。有設計文件（brainstorming 產出）就沿用，不重問已定案的事。
-2. **章節**：照範本；專案規則規定的必要章節（AGENTS.md、`.claude/rules/`，例如「ERP 對照」）照加在 §6 之後，不刪範本章節。
+2. **章節**：照範本；專案規則規定的必要章節（AGENTS.md、`.claude/rules/`，例如「ERP 對照」）放在 §6 與 §7 之間、不編號（§7 變更歷史的編號不動），不刪範本章節。
 3. **蒐證**：搜既有程式碼與規格找可重用元件、受影響範圍；涉及資料表且有唯讀 DB 工具時查表結構。範圍大時派 `lifecycle:scout` 落檔，主 session 只讀結論。命中 domain 邊界照 `${CLAUDE_PLUGIN_ROOT}/references/consultant-desk.md` 開顧問桌；舊系統移植照 `${CLAUDE_PLUGIN_ROOT}/references/legacy-parity.md`。
 4. **收決策**：依共通原則 1，列待決事項 → 機械決策自己定 → 品味決策逐題問。
 5. **撰寫**：照範本寫；決策寫進 §5 決策表，不另開 `decisions.md`。

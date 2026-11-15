@@ -7,7 +7,7 @@ model: sonnet
 
 # 開票
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 把自然語言描述變成票：判類型（Feature／Bug）、盤點既有票、出草稿讓使用者確認，再經 `lifecycle:ticket-ops` 建票。票面只放「要交付什麼、對齊哪條需求、去哪查明細」，規格明細用路徑指路，不抄進票。
 互動詢問依 `${CLAUDE_PLUGIN_ROOT}/references/shared-preludes.md` §互動詢問規範（推薦置首、一次一題）。

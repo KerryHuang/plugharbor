@@ -24,7 +24,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 | `manual-brand` | 操作手冊封面的品牌文字（字串）。`--brand` 優先；留空或不設則封面不印品牌 | 無（選填） |
 | `qa.environments` | `qa-verify` 可驗收的環境清單，每項 `{name, url, writable}`；`writable` 為 true 才允許建資料與送出 | 無（`qa-verify` 必填） |
 
-`scale` 已在 3.0.0 移除：`config.py get scale` 固定回 `lean` 並在 stderr 提示，設定檔裡的這個鍵可以刪掉。
+`scale` 已在 3.0.0 移除：`config.py get scale` 固定回 `lean`；設定檔有這個鍵時 stderr 提示，可以刪掉。
 
 抽象階段固定為 `backlog`、`todo`、`in-progress`、`in-review`、`done`、`canceled`；skill 只用這些名字，由 `ticket.states` 轉成工具上的實際名稱。
 

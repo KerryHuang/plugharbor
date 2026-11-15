@@ -7,7 +7,7 @@ model: sonnet
 
 # 會議記錄
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 記錄與整理會議——客戶／部門內部／研討會／學習。專注三件事：**會議中即時記錄**、**會後摘要**、**待辦事項**。可選在整理階段請第二意見 agent 全文審。輸入可以是貼入的文字，也可以是錄音（本機轉逐字稿，§2C）。
 

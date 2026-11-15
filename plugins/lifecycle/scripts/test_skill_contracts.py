@@ -63,6 +63,40 @@ class SkillContracts(unittest.TestCase):
                           ("references/consultant-desk.md", "該階段正式文件")]:
             self.assertNotIn(word, read(rel), rel)
 
+    def test_pointer_survives_symlink_and_copy_install(self):
+        # .agents/skills/<skill> 是 symlink 或複製：../../ 要從實體路徑算，否則解到 .agents/references（試用 pi 實測 ENOENT）
+        for f in sorted((ROOT / "skills").glob("*/SKILL.md")):
+            s = f.read_text(encoding="utf-8")
+            if "references/harness-terms.md`（相對本檔" in s:
+                self.assertIn("realpath", s[:2000], f.parent.name)
+
+    def test_harness_terms_scope_names_agy_and_path_rule_applies_everywhere(self):
+        head = read("references/harness-terms.md")[:800]
+        self.assertIn("agy", head)
+        self.assertIn("所有 harness", head)
+
+    def test_spec_dir_resolved_once_and_shared(self):
+        # 只有 spec 改用專案目錄、其他 skill 只讀 config.py → implement／spec-check 找不到規格（S2、S3）
+        s = read("skills/spec/SKILL.md")
+        self.assertNotIn("回報時建議寫進", s)
+        self.assertIn("寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`", s)
+
+    def test_project_sections_do_not_shift_changelog_number(self):
+        s = read("skills/spec/SKILL.md")
+        self.assertNotIn("照加在 §6 之後", s)
+        self.assertIn("§6 與 §7 之間", s)
+
+    def test_spec_names_only_existing_downstream_skills(self):
+        self.assertNotIn("`review`", read("skills/spec/SKILL.md"))
+
+    def test_implement_clean_tree_rule_is_consistent(self):
+        s = read("skills/implement/SKILL.md")
+        self.assertNotIn("（spec 不 commit）", s)
+        self.assertIn("`.tmp/`", s)
+
+    def test_config_doc_matches_scale_notice_behavior(self):
+        self.assertNotIn("固定回 `lean` 並在 stderr 提示", read("references/config.md"))
+
 
 if __name__ == "__main__":
     unittest.main()

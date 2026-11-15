@@ -35,6 +35,11 @@
 - pi：harness-terms 的提問工具改 `ask_user_question`（已安裝擴充的實際名稱，參數同 `AskUserQuestion`），沒有該工具或 `pi -p` 回 `no_ui` 時改純文字；qa-verify、prototype-html、ticket-ops 指向 harness-terms 的那句改相對路徑（pi 不展開 `${CLAUDE_PLUGIN_ROOT}`）。
 - 清掉逐棒時代殘留：shared-preludes Step 0.6 的 full 落檔規則改為「規格落 `spec.dir`」且 `spec.dir` 不算自建目錄、「每棒」「交棒前」；analysis-rigor 的 `explore`；triage 開票「依 scale 設定」；spec-check sample 與 spec-sampler 的 `SPEC-INDEX`；consultant-desk「該階段正式文件」改記在 §5 決策表。
 - spec-check 讀到「來源｜舊系統移植」表頭時套用 legacy-parity（原本 legacy-parity 承諾了但 spec-check 沒引用）。
+- 規格目錄只解析一次：`spec.dir` 沒設而專案規則指定了設計文件目錄時，spec 把它寫進 `.plugharbor/lifecycle.yml`（原本只有 spec 自己改用，implement、spec-check 仍讀預設 `docs/specs` 而找不到規格）；已設就以設定為準。檔名可照目錄既有命名慣例。
+- 專案必要章節放在 §6 與 §7 之間、不編號（原本「§6 之後」會擠掉 §7 變更歷史的編號）。
+- implement 工作區檢查：規格、`.plugharbor/lifecycle.yml` 與 `.tmp/` 工作檔不算其他未提交變更（原本同一格寫「不 commit」又要求 commit）。
+- 經 `.agents/skills/` symlink 或複製安裝時，SKILL.md 開頭指向 harness-terms 的相對路徑改從實體路徑算（pi 依字面解成 `.agents/references/` 讀不到）；harness-terms 註明 plugin 根那列所有 harness 都適用、補 agy，並補 `Monitor`、`/rename` 對照。
+- spec 的下游 skill 名稱更正（沒有 `review` skill）；config.md 的 scale 說明改成「設定檔有這個鍵時才提示」。
 
 **遷移**
 

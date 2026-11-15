@@ -6,7 +6,7 @@ argument-hint: "<截圖路徑> [標註意圖｜spec.json]"
 
 # Annotate-Screenshot — 截圖標註與合成
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 輸入乾淨截圖與標註意圖 → 寫 spec.json → 跑 `annotate.py` → 輸出 `<原檔名>-annotated.png`。**乾淨原圖一律保留，不覆寫。**
 

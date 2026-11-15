@@ -7,7 +7,7 @@ model: sonnet
 
 # PDF Converter — 高擬真 PDF 轉 Word / Excel
 
-> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
+> 非 Claude Code（如 Pi）執行時，先讀 `../../references/harness-terms.md`（相對本檔實體路徑：symlink 先 `realpath`，同目錄有 `.plugharbor-root` 就以其內容為 plugin 根；Claude Code 為 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md`，照字面執行可略過），把 Claude 專屬工具與路徑換成對應項。
 
 把 PDF 轉成 Word 或 Excel，目標是**版面與內容一模一樣**，並以機器量測的回轉驗證迴圈自證——不是「看起來像」，而是文字逐字元比對、版面座標量偏差、頁面渲染疊圖比對。
 

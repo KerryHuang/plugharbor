@@ -3,8 +3,8 @@
 本 plugin 的 skill、agent、reference 以 Claude Code 用語撰寫。
 在 Claude Code 照字面執行，本檔不必讀。
 在 Pi 執行時，先讀本檔，把下表左欄換成右欄再照做；步驟、規則、收尾條件不變。
-**本檔右欄只適用 Pi**：Codex 等其他 harness 讀到本檔時忽略對照表，照自己原本的工具與慣例執行；
-Codex 沒有 `AskUserQuestion` 時，提問改純文字、一次一題，建議選項置首標（推薦）。
+**本檔右欄只適用 Pi**：Codex、agy 等其他 harness 讀到本檔時忽略對照表，照自己原本的工具與慣例執行（〈路徑與參數〉的 `${CLAUDE_PLUGIN_ROOT}` 一列例外，所有 harness 都照它找 plugin 根）；
+沒有 `AskUserQuestion` 時，提問改純文字、一次一題，建議選項置首標（推薦）。
 Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 
 ## 路徑與參數
@@ -17,6 +17,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 | `${CLAUDE_CODE_SESSION_ID}` | Pi 沒有對應值。依賴它的量測（例如讀 Claude transcript 估算 context 用量）在 Pi 上略過，回報時註明「Pi 未量測」。 |
 | `<plugin>:<skill>`、`/<plugin>:<skill>` | Pi skill 名稱不帶 plugin 前綴：`<skill>`，手動觸發用 `/skill:<skill>`。 |
 | `/reload-plugins` | Pi 以本機 checkout 載入，改版後用 `/reload`。 |
+| `/rename` | Pi 沒有改 session 標題的指令：標題建議照樣寫在回報裡，由使用者決定。 |
 | `.claude/rules/`、`CLAUDE.md` | 這些是 workspace 檔案，Pi 上照路徑直接讀。 |
 
 ## Skill frontmatter
@@ -38,6 +39,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 | `Skill` | Pi 沒有 `Skill` 工具：叫用 `<plugin>:<skill>` 時，改讀該 skill 的 SKILL.md（Pi 的 skill 名稱不帶 plugin 前綴）照做。 |
 | `WebFetch`、`WebSearch` | Pi 沒有內建網頁工具：有對應 MCP server 就經 `mcp` gateway 呼叫，沒有就用 `bash` 跑 `curl`，或請使用者貼上內容。 |
 | `TodoWrite`、`TaskCreate` | `todo`（`create`／`update`／`list`）。 |
+| `Monitor` | 用 `bash` 迴圈輪詢（`sleep` 後 `grep` 目標檔），`timeout` 給足；每輪只讀新增部分。 |
 | `ToolSearch` | `direct` 工具已直接宣告，看工具清單即可；其餘在 `codemode` 腳本裡用 `await searchTools("<工具名>")` 或 `await describeNamespace("mcp__<server>")` 確認存在；`select:a,b` 逐一確認。 |
 | `ListMcpResourcesTool` | system prompt 的 `mcp_servers` 段列出 `codemode`／`deferred` server；`codemode` 腳本讀 `ALL_TOOLS` 可列全部。判斷條件（如「名稱含 linear」）照舊。 |
 | `SendMessage` | `intercom`（`action: "send"`，收件人用 `intercom({ action: "list" })` 查到的 session）。 |
