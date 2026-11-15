@@ -30,6 +30,13 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool   # 缺檔、缺
 
 ## 範例
 
+規格目錄（巢狀寫法，不寫成 `spec.dir:`）：
+
+```yaml
+spec:
+  dir: docs/design
+```
+
 Linear：
 
 ```yaml

@@ -34,7 +34,7 @@ git branch --show-current && git status --short
 
 | 檢查項 | 規則 | 失敗處理 |
 |--------|------|----------|
-| 工作區乾淨 | 沒有未提交變更 | 未提交的只有 `<spec.dir>` 下的規格（spec skill 寫完不 commit）、`.plugharbor/lifecycle.yml` 與 `.tmp/` 底下的工作檔 → 不停下：先照下一列開功能分支，逐檔 `git add` 規格與設定檔（`.tmp/` 不 add），commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
+| 工作區乾淨 | 沒有未提交變更 | 未提交的只有本功能的規格檔與 `<spec.dir>/analysis/<feature>/`（spec skill 寫完不 commit）、只多了 `spec:` 區塊的 `.plugharbor/lifecycle.yml`，以及 `.tmp/` 底下的工作檔 → 不停下：先照下一列開功能分支，逐檔 `git add` 規格與設定檔（`.tmp/` 不 add），commit 成分支第一個 commit（`docs(spec): <功能名> 規格`），再繼續；有其他未提交變更 → 停下問使用者（先 commit 或保留），不自動 stash |
 | 非主幹 | 不在 main／develop 上實作 | 開 `feature/<name>`（從專案慣例的基底分支） |
 | 分支對應本功能 | 分支名含功能或票的識別碼 | 停下，提示切分支或 cd 到正確 worktree |
 | worktree 一致 | 在 worktree 裡時，目錄名含分支識別碼 | 提醒使用者確認 |

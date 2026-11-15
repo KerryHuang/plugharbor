@@ -4,6 +4,7 @@
 用法：python3 config.py get <key>   （key 用點號，例如 ticket.tool；以目前目錄為專案根）
 缺檔、缺鍵（值為空也算）或檔案格式錯誤（YAML 語法、最上層不是對應、非 UTF-8）：退出碼 2，stderr 一行說明。
 有預設值的鍵（DEFAULTS）缺檔或缺鍵時回預設值；只有舊檔 delivery-flow.yml 時一律退出碼 3 並提示改名（呼叫端停下請使用者改名，不問鍵、不寫檔）。
+最上層鍵含點號（如 `spec.dir: x`）算格式錯誤，提示改巢狀。
 `get scale` 為 3.0.0 移除的舊鍵：stdout 固定 lean、退出碼 0；設定檔有這個鍵時 stderr 提示。
 spec.dir 沒設時，專案根 CLAUDE.md 有舊鍵 `sdlc-docs-path:` 就沿用其值（stderr 提示搬到 lifecycle.yml）。
 """
@@ -47,6 +48,10 @@ def load_config(root: Path, key: str = "ticket.tool") -> dict:
         return {}
     if not isinstance(data, dict):
         raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：最上層必須是 key: value 的對應，不是 {type(data).__name__}")
+    dotted = [k for k in data if isinstance(k, str) and "." in k]
+    if dotted:  # `spec.dir: x` 會默默退回預設值，改成明確報錯
+        a, _, b = dotted[0].partition(".")
+        raise ConfigMissing("(format)", f"{CONFIG_PATH} 格式錯誤：鍵 `{dotted[0]}` 要寫成巢狀（`{a}:` 下一行縮兩格 `{b}:`）")
     return data
 
 

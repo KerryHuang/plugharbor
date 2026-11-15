@@ -36,6 +36,20 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(config.require(cfg, "ticket.tool"), "jira")
             self.assertEqual(config.require(cfg, "ticket.states.todo"), "To Do")
 
+    def test_dotted_top_level_key_is_format_error(self):
+        # 寫成 `spec.dir: x`（最上層點號鍵）原本默默退回預設 docs/specs，implement／spec-check 就找不到規格
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "spec.dir: docs/design\n")
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"], cwd=t, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("spec:", r.stderr)
+
+    def test_nested_spec_dir_is_read(self):
+        with tempfile.TemporaryDirectory() as t:
+            write_cfg(t, "ticket:\n  tool: linear\nspec:\n  dir: docs/design\n")
+            r = subprocess.run([sys.executable, str(CLI), "get", "spec.dir"], cwd=t, capture_output=True, text=True)
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "docs/design"))
+
     def test_cli_missing_key(self):
         with tempfile.TemporaryDirectory() as t:
             write_cfg(t, "ticket:\n  tool: linear\n")

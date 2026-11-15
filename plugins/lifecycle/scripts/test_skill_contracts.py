@@ -65,10 +65,10 @@ class SkillContracts(unittest.TestCase):
 
     def test_pointer_survives_symlink_and_copy_install(self):
         # .agents/skills/<skill> 是 symlink 或複製：../../ 要從實體路徑算，否則解到 .agents/references（試用 pi 實測 ENOENT）
-        for f in sorted((ROOT / "skills").glob("*/SKILL.md")):
-            s = f.read_text(encoding="utf-8")
-            if "references/harness-terms.md`（相對本檔" in s:
-                self.assertIn("realpath", s[:2000], f.parent.name)
+        for f in sorted(list((ROOT / "skills").glob("*/SKILL.md")) + list((ROOT.parent / "browser-docs" / "skills").glob("*/SKILL.md"))):
+            head = f.read_text(encoding="utf-8")[:2000]
+            self.assertIn("../../" + "references/harness-terms.md", head, f.parent.name)
+            self.assertIn("realpath", head, f.parent.name)
 
     def test_harness_terms_scope_names_agy_and_path_rule_applies_everywhere(self):
         head = read("references/harness-terms.md")[:800]
@@ -80,6 +80,9 @@ class SkillContracts(unittest.TestCase):
         s = read("skills/spec/SKILL.md")
         self.assertNotIn("回報時建議寫進", s)
         self.assertIn("寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`", s)
+        self.assertIn("spec:\n  dir:", s)  # 寫明巢狀格式
+        self.assertIn("其他鍵不動", s)
+        self.assertIn("spec:\n  dir:", read("references/config.md"))
 
     def test_project_sections_do_not_shift_changelog_number(self):
         s = read("skills/spec/SKILL.md")
@@ -96,6 +99,16 @@ class SkillContracts(unittest.TestCase):
 
     def test_config_doc_matches_scale_notice_behavior(self):
         self.assertNotIn("固定回 `lean` 並在 stderr 提示", read("references/config.md"))
+
+
+    def test_any_edit_after_spec_check_bumps_version(self):
+        # 免重跑只比版本號：通過後改內容不 +1 就會被誤判沒改過
+        self.assertIn("通過後再改任何內容", read("skills/spec-check/SKILL.md"))
+
+    def test_relay_era_module_paths_gone(self):
+        self.assertNotIn("需求文件.md", read("agents/scout.md"))
+        self.assertNotIn("_context.yml", read("skills/spec-check/references/sample/impl-anchors.md"))
+        self.assertNotIn("§Step 0.5", read("skills/interview-prep/SKILL.md"))
 
 
 if __name__ == "__main__":

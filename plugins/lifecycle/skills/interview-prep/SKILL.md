@@ -43,7 +43,7 @@ disable-model-invocation: true
 3. **五區塊歸位**：依 `${CLAUDE_PLUGIN_ROOT}/skills/interview-prep/references/synthesis-format.md` 填入範本 `${CLAUDE_PLUGIN_ROOT}/templates/requirement-synthesis.md` 的五區塊。
 4. **矛盾與缺口偵測**：跨場同主題說法不一致 → 進區塊 4，**兩方出處與日期都列**，不以「後面那場為準」自行定案。
 5. **Top 5**：依 synthesis-format §排序準則挑出最值得優先確認的 5 題，寫明「為何優先」與「該問誰」。
-6. **落檔**：放專案既有文件目錄中對應的模組／功能位置，檔名 `{名稱}_需求彙整.md`（依 shared-preludes §Step 0.5，**不自建第一階目錄**）。沒有對應位置時**先問使用者**。
+6. **落檔**：放 `spec.dir`（或專案既有文件目錄的對應位置），檔名 `{名稱}_需求彙整.md`（依 shared-preludes Step 0.6，**不自建第一階目錄**）。沒有對應位置時**先問使用者**。
 7. **迭代**：第二輪以後**更新既有檔、不重寫**——【待確認】獲答覆升為【已確認】並補出處、【可能推測】被推翻則刪除並記入「已解決」小節（避免同一題再問客戶第二次）。
 
 ### A.1a 從 Fireflies 取素材（選配）

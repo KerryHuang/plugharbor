@@ -40,6 +40,7 @@
 - implement 工作區檢查：規格、`.plugharbor/lifecycle.yml` 與 `.tmp/` 工作檔不算其他未提交變更（原本同一格寫「不 commit」又要求 commit）。
 - 經 `.agents/skills/` symlink 或複製安裝時，SKILL.md 開頭指向 harness-terms 的相對路徑改從實體路徑算（pi 依字面解成 `.agents/references/` 讀不到）；harness-terms 註明 plugin 根那列所有 harness 都適用、補 agy，並補 `Monitor`、`/rename` 對照。
 - spec 的下游 skill 名稱更正（沒有 `review` skill）；config.md 的 scale 說明改成「設定檔有這個鍵時才提示」。
+- 審查修正：`config.py` 遇到最上層點號鍵（如 `spec.dir: x`）改報格式錯誤（原本默默回預設 `docs/specs`，等於沒修）；spec Step 0 寫明巢狀格式、既有設定檔只加 `spec:` 區塊、舊鍵 `sdlc-docs-path` 優先；spec-check 通過後再改規格都要 +1 版號；implement 工作區把 `analysis/<feature>/` 算進規格；scout 範例路徑、impl-anchors、interview-prep 的模組目錄殘留清掉。
 
 **遷移**
 

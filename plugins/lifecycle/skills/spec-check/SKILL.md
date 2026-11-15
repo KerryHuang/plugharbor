@@ -42,7 +42,7 @@ argument-hint: "[--sample] [規格路徑] [原始碼範圍]"
 規格表頭有「來源｜舊系統移植」時，缺口照 `${CLAUDE_PLUGIN_ROOT}/references/legacy-parity.md` 的 spec-check 段判定（對齊、P-FIX、不處理）。
 
 結論：0 CRITICAL／BLOCKER 且 0 WARNING → ✅ 可直接開發；只有 WARNING → ⚠️ 需修正後開發；其餘 → ❌ 不可開發。
-✅ 時在規格表頭寫一列 `| 規格檢查 | ✅ YYYY-MM-DD（版本 x.y.z） |`（已有就更新；版本取表頭「版本」），這是 `lifecycle:implement` 判斷不重跑的依據；⚠️／❌ 不寫。
+✅ 時在規格表頭寫一列 `| 規格檢查 | ✅ YYYY-MM-DD（版本 x.y.z） |`（已有就更新；版本取表頭「版本」），這是 `lifecycle:implement` 判斷不重跑的依據；⚠️／❌ 不寫。通過後再改任何內容（含非 CR 的小改）都要把表頭版本 +1，否則 implement 會當成沒改過。
 結果以文字回報，不另落報告檔；修正後重跑同一張表；同一份規格連續第三輪仍不過就停下回報使用者。
 
 ## 錯誤處理

@@ -32,7 +32,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get scale      # 舊鍵：固定
 
 `get scale` 的 stderr 有「已在 lifecycle 3.0.0 移除」→ 照錯誤處理表，在最後回報的第一行轉告使用者（可刪掉設定檔的 `scale` 鍵），流程照常。
 
-`spec.dir` 沒設（設定檔沒有這個鍵）而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄 → 把該目錄寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`（沒有檔就建，格式見 config.md），回報第一行告知；之後 implement、spec-check 等都從同一個設定讀。已設 `spec.dir` 就以設定為準，不看專案規則。
+`spec.dir` 沒設而專案規則（AGENTS.md、`.claude/rules/`）指定了設計文件目錄 → 把該目錄寫進 `.plugharbor/lifecycle.yml` 的 `spec.dir`，回報第一行告知；之後 implement、spec-check 等都從同一個設定讀。有沒有設要讀設定檔判斷（`config.py` 沒設也會回預設值）；已設、或專案 CLAUDE.md 有舊鍵 `sdlc-docs-path`（config.py 會沿用）就照它，不看專案規則。寫法一律巢狀，沒有檔就建，既有檔只加這個區塊、其他鍵不動：
+
+```yaml
+spec:
+  dir: <目錄>
+```
 
 只要讀／查／改既有規格的某一章 → 「讀寫既有規格」；其餘走「寫規格」。
 `config.py` 退出碼 3（只有舊檔 `delivery-flow.yml`）→ 停下請使用者改名。

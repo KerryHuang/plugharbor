@@ -131,9 +131,9 @@ db:
 
 docs:
   existing_specs:
-    - path: {docs-root}/訂單/訂單管理/訂單管理_需求文件.md
+    - path: {spec.dir}/order-management.md
       sections: ["§3 業務流程", "§5.3 業務規則"]
-    - path: {docs-root}/訂單/訂單管理/訂單管理_系統分析文件.md
+    - path: {spec.dir}/order-import.md
       sections: ["§4 工作流分析", "§6 資料流分析"]
 
 evidence_gaps:
