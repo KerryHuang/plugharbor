@@ -123,5 +123,20 @@ class SkillContracts(unittest.TestCase):
         self.assertIn("升兩級", read("skills/spec-check/SKILL.md"))
 
 
+    def test_text_only_conversion_runs_before_env_preflight(self):
+        # Codex、S6、pi 都卡在：轉檔與 validate 是純文字，卻要先補環境與瀏覽器
+        s = read("skills/qa-verify/SKILL.md")
+        self.assertLess(s.index("先做 Step 1 的轉檔與 validate"), s.index("preflight.sh"))
+
+    def test_harness_terms_web_row_does_not_name_missing_gateway(self):
+        self.assertNotIn("經 `mcp` gateway", read("references/harness-terms.md"))
+
+    def test_dispatch_conventions_defer_to_skill_steps(self):
+        self.assertIn("以 skill 為準", read("references/dispatch-conventions.md"))
+
+    def test_dependency_check_handles_unprefixed_names(self):
+        self.assertIn("不帶前綴", read("references/shared-preludes.md"))
+
+
 if __name__ == "__main__":
     unittest.main()

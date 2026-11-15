@@ -19,6 +19,8 @@ description: Dev 完工後依驗收案例做實機 E2E 驗收——輸入驗收�
 
 ## Step 0：前置檢查（缺什麼停在那裡）
 
+規格模式與案例檔模式先做 Step 1 的轉檔與 validate（純文字，不需環境與瀏覽器），不過就停在那裡；過了再回來做本步。
+
 1. `bash <plugin>/skills/qa-verify/scripts/preflight.sh <ws>`；exit ≠ 0 → 照它印的補，補不了就停。
    缺 `qa.environments` 或 `.plugharbor/qa.local.md` → 依 `${CLAUDE_PLUGIN_ROOT}/references/harness-terms.md` 的提問方式問使用者（環境名／網址／可否寫入／帳號／密碼），經同意後代寫（格式見 `${CLAUDE_PLUGIN_ROOT}/references/config.md`「qa.environments」；密碼只寫進 `qa.local.md`，不回顯）。**寫入前**跑 `git check-ignore -q .plugharbor/qa.local.md`：未被忽略 → 先把該路徑追加到 `git rev-parse --git-path info/exclude` 印出的檔（本機不入版控，worktree 也適用；專案已有慣例要寫 `.gitignore` 則依專案），並告知使用者；非 git repo 則略過。
 2. `ToolSearch("select:mcp__chrome-devtools__navigate_page")` 必須有；缺 → 停，指向 `references/browser-modes.md`。唯讀 DB 查詢工具（專案有提供才有）選配：不可用 → 標記「DB 不可查」（fixtures 省略 `查證`，`依據` 仍必填），plan 有資料斷言時該槽會判「無法比對」。

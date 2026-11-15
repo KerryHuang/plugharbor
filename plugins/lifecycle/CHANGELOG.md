@@ -42,6 +42,7 @@
 - spec 的下游 skill 名稱更正（沒有 `review` skill）；config.md 的 scale 說明改成「設定檔有這個鍵時才提示」。
 - 審查修正：`config.py` 遇到最上層點號鍵（如 `spec.dir: x`）改報格式錯誤（原本默默回預設 `docs/specs`，等於沒修）；spec Step 0 寫明巢狀格式、既有設定檔只加 `spec:` 區塊、舊鍵 `sdlc-docs-path` 優先；spec-check 通過後再改規格都要 +1 版號；implement 工作區把 `analysis/<feature>/` 算進規格；scout 範例路徑、impl-anchors、interview-prep 的模組目錄殘留清掉。
 - S10 複驗修正：spec-check 與 implement 用短名找不到規格時再找 `*<feature>*.md`（檔名可有日期前綴）；spec-check 第 2 項寫明升兩級後跑 `validate.py acceptance`；implement 分支三列的先後寫清楚；config.md 記載 spec 會依專案規則寫入 `spec.dir`。
+- 第二輪 CLI 複驗修正：qa-verify 規格模式與案例檔模式先轉檔、validate，再做環境前置檢查（Codex、pi、S6 都卡在純文字轉檔前要先補環境）；harness-terms 網頁工具那列不再叫 Pi 走不存在的 `mcp` gateway；dispatch-conventions 註明 skill 明寫由主 session 做的步驟以 skill 為準；判斷依賴有沒有裝時 Pi 看不帶前綴的名稱。
 
 **遷移**
 

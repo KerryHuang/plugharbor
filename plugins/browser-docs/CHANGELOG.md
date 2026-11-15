@@ -6,7 +6,7 @@
 ## [0.3.5] - 2026-11-15
 
 - fix(references): `references/harness-terms.md` 的 pi 提問工具改為 `ask_user_question`（參數同 `AskUserQuestion`），沒有該工具或 `pi -p` 回 `no_ui` 時改純文字一次一題；lifecycle 副本同步。`pdf-converter` 的輸出位置改為「該功能規格所在目錄」，拿掉 FRD／SAD 與模組目錄的說法（lifecycle 3.0.0 已移除四份文件）。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。
-- fix(skills): 三個 skill 開頭指向 harness-terms 的相對路徑註明從實體路徑算（symlink 先 `realpath`、複製模式讀 `.plugharbor-root`）；harness-terms 註明 plugin 根那列所有 harness 都適用、補 agy，並補 `Monitor`、`/rename` 對照。lifecycle 副本同步。起因：同次 pi 試用經 `.agents/skills/` symlink 載入，讀 harness-terms 的相對路徑得到 ENOENT。
+- fix(skills): 三個 skill 開頭指向 harness-terms 的相對路徑註明從實體路徑算（symlink 先 `realpath`、複製模式讀 `.plugharbor-root`）；harness-terms 註明 plugin 根那列所有 harness 都適用、補 agy，並補 `Monitor`、`/rename` 對照；網頁工具那列不再叫 Pi 走不存在的 `mcp` gateway。lifecycle 副本同步。起因：同次 pi 試用經 `.agents/skills/` symlink 載入，讀 harness-terms 的相對路徑得到 ENOENT。
 
 ## [0.3.4] - 2026-11-10
 

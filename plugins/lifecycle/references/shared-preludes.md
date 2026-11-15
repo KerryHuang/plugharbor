@@ -62,7 +62,7 @@
 一律 `browser-docs:pdf-converter`，產出放功能 docs 目錄；沒裝見下節「可選依賴」。
 
 ## 可選依賴
-lifecycle 單獨安裝就能用；`superpowers`、`browser-docs`、`toolkit` 都是可選。標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有，派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
+lifecycle 單獨安裝就能用；`superpowers`、`browser-docs`、`toolkit` 都是可選。標註與換假資料工具已在本 plugin 的 `scripts/`、`references/`。判斷有沒有裝：可用 skill／agent 清單有 `<plugin>:<名稱>` 才算有（Pi 的名稱不帶前綴，看 `<名稱>`），派工回報找不到 subagent_type 或 skill 也視為沒裝。沒裝時照下表降級，並在回報一行告知「未安裝 <plugin>，已改用 …」，不另外發明近似做法：
 
 | 用到 | 哪裡 | 沒裝時 |
 |---|---|---|

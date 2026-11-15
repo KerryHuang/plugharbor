@@ -1,7 +1,7 @@
 # 派工慣例（全 plugin 共用）
 
 主 session 的職責是**統整、派工、思考、決策**；執行一律派 agent。
-本檔是全 plugin 的唯一權威，各 skill 引用不複製。
+本檔是全 plugin 的唯一權威，各 skill 引用不複製；skill 明寫由主 session 做的步驟（如 spec 的蒐證判斷、qa-verify 的規格轉檔）以 skill 為準。
 
 | 主 session 該做 | 派 agent 做 |
 |---|---|

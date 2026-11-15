@@ -37,7 +37,7 @@ Pi 經 claude-bridge 時模型會自稱 Claude Code，仍以本檔為準。
 |---|---|
 | `AskUserQuestion` | `ask_user_question`（`rpiv-ask-user-question` 擴充提供），參數同 `AskUserQuestion`。沒有這個工具，或沒有介面（`pi -p`）回 `no_ui` 時，改純文字一次一題。「推薦項置首標（推薦）」等規則照舊。 |
 | `Skill` | Pi 沒有 `Skill` 工具：叫用 `<plugin>:<skill>` 時，改讀該 skill 的 SKILL.md（Pi 的 skill 名稱不帶 plugin 前綴）照做。 |
-| `WebFetch`、`WebSearch` | Pi 沒有內建網頁工具：有對應 MCP server 就經 `mcp` gateway 呼叫，沒有就用 `bash` 跑 `curl`，或請使用者貼上內容。 |
+| `WebFetch`、`WebSearch` | Pi 沒有內建網頁工具：有對應 MCP server 就照下方〈MCP 工具〉的方式呼叫，沒有就用 `bash` 跑 `curl`，或請使用者貼上內容。 |
 | `TodoWrite`、`TaskCreate` | `todo`（`create`／`update`／`list`）。 |
 | `Monitor` | 用 `bash` 迴圈輪詢（`sleep` 後 `grep` 目標檔），`timeout` 給足；每輪只讀新增部分。 |
 | `ToolSearch` | `direct` 工具已直接宣告，看工具清單即可；其餘在 `codemode` 腳本裡用 `await searchTools("<工具名>")` 或 `await describeNamespace("mcp__<server>")` 確認存在；`select:a,b` 逐一確認。 |
