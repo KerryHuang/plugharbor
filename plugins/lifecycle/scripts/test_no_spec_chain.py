@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 REMOVED_SKILLS = ["spec-chain", "explore", "consolidate-docs", "write-doc", "dev-feedback"]
 BANNED = [r"lifecycle:(explore|spec-chain|consolidate-docs|write-doc|dev-feedback)\b",
           r"scale:\s*full", r"--stage\s+(frd|sad|bfs|ffs|index)",
-          r"\b(FRD|SAD|BFS|FFS)\b"]
+          r"\b(FRD|SAD|BFS|FFS)\b", r"PM→QA→Dev", r"樹下有 QA 票"]
 SCAN_DIRS = ["skills", "agents", "references", "templates"]
 EXTS = {".md", ".py", ".json"}
 SELF = Path(__file__).resolve()
@@ -55,6 +55,17 @@ class NoSpecChain(unittest.TestCase):
             if not any(t.stem in text for p, text in corpus.items() if p != t):
                 orphans.append(str(t.relative_to(ROOT)))
         self.assertEqual(orphans, [])
+
+    def test_spec_mode_cases_named_by_feature(self):
+        # 規格模式轉出的案例檔以功能命名，工作區才不會被下一個功能覆蓋
+        text = (ROOT / "skills/qa-verify/references/spec-to-acceptance.md").read_text(encoding="utf-8")
+        self.assertIn(".tmp/qa/<feature>.md", text)
+        self.assertNotIn("cases.md", text)
+
+    def test_analysis_is_per_feature(self):
+        # 勘察中間檔每個功能一份（只有 DB 結構事實全站共用），避免沿用別的功能的結論
+        for rel in ["references/pipeline.md", "references/shared-preludes-details.md", "references/shared-preludes.md"]:
+            self.assertIn("analysis/<feature>/", (ROOT / rel).read_text(encoding="utf-8"), rel)
 
     def test_spec_writer_agent_removed(self):
         self.assertFalse((ROOT / "agents" / "spec-writer.md").exists())

@@ -56,7 +56,7 @@ full 規格一律落 `{docs-root}/{模組}/{功能}/`（lean 不分模組，不�
 依 `graphify-integration.md` Query 區塊，同功能每 session 一次，未安裝靜默跳過。
 
 ## Step 0.8: 分析落檔與共用
-勘察一律落 `analysis/`（`db-analysis.yml`／`reuse-scan.yml`／`ui-survey.md`／`consultant-notes.md`／`_context.yml`），下游先讀只補缺。每筆記 `source`／`scanned_at`；否定結論標 `confirmed`／`not_found_by`。**`_context.yml` ≤5KB 純路徑指標，禁放分析內容**；**`db-analysis.yml` 首段 `_index:` 列 tables，下游 `grep -n '^  {TABLE}:'` 只讀該表段**。
+勘察一律落 `{spec.dir}/analysis/`：DB 結構事實 `db-analysis.yml` 全站共用，其餘（`reuse-scan.yml`／`ui-survey.md`／`consultant-notes.md`）每個功能一份放 `analysis/<feature>/`，下游先讀同功能的檔只補缺，不沿用別的功能的結論。每筆記 `source`／`scanned_at`；否定結論標 `confirmed`／`not_found_by`。**`db-analysis.yml` 首段 `_index:` 列 tables，下游 `grep -n '^  {TABLE}:'` 只讀該表段**。
 
 ## 顧問桌
 唯一定義在 `consultant-desk.md`。

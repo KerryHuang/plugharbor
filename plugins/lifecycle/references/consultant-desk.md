@@ -43,7 +43,7 @@ prompt: |
   evidence_bundle: {analysis/db-analysis.yml 與 reuse-scan.yml 的相關片段}
 ```
 
-結論即時併入當下的分析步驟，並**追加寫入** `analysis/consultant-notes.md`。
+結論即時併入當下的分析步驟，並**追加寫入** `analysis/<feature>/consultant-notes.md`。
 
 > **與開桌的關係**：觸發式諮詢已解決的點，開桌整份審時**不重問**——
 > 把已解結論一併給顧問，要求它只審「尚未觸及的面向」。
@@ -147,10 +147,10 @@ prompt: |
 | 備忘、延後清單 | 只落檔，不問使用者 |
 | Domain 重大風險 | 確認門明確告知，建議先解決 |
 
-顧問桌成果**必須落檔**至 `analysis/consultant-notes.md`（依 `shared-preludes.md` Step 0.8）：
+顧問桌成果**必須落檔**至 `analysis/<feature>/consultant-notes.md`（依 `shared-preludes.md` Step 0.8）：
 諮詢日期、編制、逐項結論與證據、未解爭點、已裁決項與理由。
-雙顧問討論另依 [advisor-discussion.md](advisor-discussion.md)「consultant-notes.md 追加格式」落檔，完整逐輪紀錄留在 `analysis/advisor-discussion/`。
-同時在該階段正式文件記一行「已諮詢 {顧問}／日期／結論見 analysis/consultant-notes.md」。
+雙顧問討論另依 [advisor-discussion.md](advisor-discussion.md)「consultant-notes.md 追加格式」落檔，完整逐輪紀錄留在 `analysis/<feature>/advisor-discussion/`。
+同時在該階段正式文件記一行「已諮詢 {顧問}／日期／結論見 analysis/<feature>/consultant-notes.md」。
 
 下游 skill **先讀這份檔**：已有結論的問題不重問顧問、不重問使用者；
 只有落檔內容未涵蓋的新問題才單獨補派，補完的結論**追加寫回同一份檔**。

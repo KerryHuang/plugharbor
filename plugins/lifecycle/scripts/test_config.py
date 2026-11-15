@@ -192,6 +192,16 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual((r.returncode, r.stdout.strip()), (0, "lean"))
             self.assertIn("已在 lifecycle 3.0.0 移除", r.stderr)
 
+    def test_scale_without_key_is_silent(self):
+        # 沒設過 scale（有設定檔沒這個鍵，或沒有設定檔）不提示，照樣回 lean
+        for cfg in ("ticket:\n  tool: github\n", None):
+            with tempfile.TemporaryDirectory() as t:
+                if cfg:
+                    write_cfg(t, cfg)
+                r = subprocess.run([sys.executable, str(CLI), "get", "scale"],
+                                   cwd=t, capture_output=True, text=True)
+                self.assertEqual((r.returncode, r.stdout.strip(), r.stderr), (0, "lean", ""))
+
     def test_defaults_without_scale(self):
         self.assertNotIn("scale", config.DEFAULTS)
 

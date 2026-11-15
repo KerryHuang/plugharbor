@@ -11,7 +11,7 @@ triage／ticket-create → spec → spec-check → implement → release → qa-
 ## 架構：主 session 統整派工，agent 落檔
 
 - **主 session** 只做統整、派工、決策與使用者互動；大量讀碼、查 DB、開瀏覽器交 agent。
-- 勘察類 agent（`scout`、`browser-surveyor`…）把證據落進 `analysis/`；顧問 `domain-advisor` 的時機見 `consultant-desk.md`。
+- 勘察類 agent（`scout`、`browser-surveyor`…）把證據落進 `{spec.dir}/analysis/<feature>/`（DB 結構事實全站共用一份）；顧問 `domain-advisor` 的時機見 `consultant-desk.md`。
 - 共通前置見 `shared-preludes.md`（常駐卡），派工慣例見 `dispatch-conventions.md`。
 
 ## 標準流程（新功能）
@@ -103,5 +103,6 @@ triage／ticket-create → spec → spec-check → implement → release → qa-
 {spec.dir}/
   <feature>.md          ← lifecycle:spec（kebab-case ASCII）
   analysis/             ← 勘察中間產物（非正式文件），見 shared-preludes.md Step 0.8
-    db-analysis.yml、reuse-scan.yml、ui-survey.md、consultant-notes.md
+    db-analysis.yml     ← DB 結構事實，全站共用
+    <feature>/          ← 每個功能一份：reuse-scan.yml、ui-survey.md、consultant-notes.md、advisor-discussion/
 ```

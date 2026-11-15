@@ -6,7 +6,7 @@
 
 1. **原樣轉**：§2.3 每條 `#### <id> <標題> [通道]` 升兩級成 `## <id> <標題> [通道]`，`##### 前置條件`／`##### 步驟`／`##### 預期` 升成 `###`；清單項照抄，不改寫、不補字。格式定義見 `acceptance-format.md`。
 2. **缺欄就停**：任一案缺 `步驟` 或 `預期`、id 不是 ASCII、預期仍是佔位符（`{…}`）→ 不轉，列出「案例 id：缺什麼」交使用者補規格（`lifecycle:spec --change`），不猜。
-3. **落檔**：寫到 `<ws>/.tmp/qa/<feature>/cases.md`（`<feature>` 為規格檔名去掉 `.md`），再以該路徑進 Step 1 的 `validate.py acceptance`。
+3. **落檔**：寫到 `<ws>/.tmp/qa/<feature>.md`（`<feature>` 為規格檔名去掉 `.md`），再以該路徑進 Step 1 的 `validate.py acceptance`；Step 1 的工作區因此以功能命名，不同功能互不覆蓋。
 
 ## §2.3 不是案例格式
 

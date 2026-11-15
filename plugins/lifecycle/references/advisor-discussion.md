@@ -15,7 +15,7 @@
 ## 目錄與檔案
 
 ```
-{功能目錄}/analysis/advisor-discussion/{YYYYMMDD}/
+{spec.dir}/analysis/<feature>/advisor-discussion/{YYYYMMDD}/
   _run.json            # 執行狀態，每輪更新（主線 context 被壓縮後先讀它）
   agenda.md            # 主持人整理後的議程（D-1～D-5）
   open-flow.md         # 開場：業務流程視角的爭點提案
@@ -25,7 +25,7 @@
   r{N}-to-data.md / r{N}-data.md
 ```
 
-顧問是唯讀 agent，**所有檔案都由主線寫**。結案後彙整進 `analysis/consultant-notes.md`（格式見本檔末），
+顧問是唯讀 agent，**所有檔案都由主線寫**。結案後彙整進 `analysis/<feature>/consultant-notes.md`（格式見本檔末），
 本目錄保留作為完整討論紀錄。
 
 `_run.json`：
@@ -113,5 +113,5 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對�
 ### 延後清單
 - …
 
-完整紀錄：`analysis/advisor-discussion/{YYYYMMDD}/`
+完整紀錄：`analysis/<feature>/advisor-discussion/{YYYYMMDD}/`
 ```

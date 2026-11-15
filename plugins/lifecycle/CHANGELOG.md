@@ -10,7 +10,7 @@
 
 - 移除 skill：`spec-chain`、`explore`、`consolidate-docs`、`write-doc`、`dev-feedback`；移除 agent `spec-writer`。
 - 移除四份文件規格鏈：`spec` 不再有 `--stage`，範本 `frd`／`sad`／`bfs`／`ffs`／`cr-*`／`examples/` 與 `skills/spec/references/{frd,sad,bfs,ffs,stages,index}` 刪除；`spec` 一律產一份 `<spec.dir>/<feature>.md`。
-- 移除設定 `scale`：`config.py get scale` 固定回 `lean`、stderr 提示已移除、退出碼 0（舊呼叫端不壞）。
+- 移除設定 `scale`：`config.py get scale` 固定回 `lean`、退出碼 0（舊呼叫端不壞）；設定檔仍有這個鍵時 stderr 提示已移除。
 - `spec-check` 移除 verify、readiness 模式與 `check-decision-propagation.py`；預設跑規格檢查表，`--sample` 保留。帶舊旗標時回一句「已移除」照預設跑。
 - `ticket-create` 拿掉 PM／SA／QA／Dev 角色子票：預設一張票，使用者要拆或功能清單該節已有父票時才建子票。
 - 刪除只服務規格鏈的共用 references：`chain-profile`、`boundary-dimensions`、`screen-spec-format`、`doc-boundaries`、`spec-dedup-and-budget`、`cr-update-flow`、`auto-verification-loop`、`upstream-workflow`、`response-structure-standards`、`handoff-protocol`、`decision-record`、`ffs8-to-acceptance`；刪完後沒人引用的 `ui-analysis-guide`、`program-code-inventory`、`sort-order-standards` 一併刪除。決策一律記在規格 §5 決策表。
@@ -18,8 +18,9 @@
 **改動**
 
 - `spec` 範本 §2.3 驗收標準改成 qa-verify 案例格式（`acceptance-format.md` 降兩級標題）；`spec-check` 第 2 項檢查它是否可測。
-- `qa-verify` 新增規格模式：輸入規格路徑時依 `skills/qa-verify/references/spec-to-acceptance.md` 把 §2.3 轉成 `.tmp/qa/<feature>/cases.md`，缺欄就停；§2.3 不是案例格式時擬草稿先給使用者確認。批次模式同步改讀 §2.3。
+- `qa-verify` 新增規格模式：輸入規格路徑時依 `skills/qa-verify/references/spec-to-acceptance.md` 把 §2.3 轉成 `.tmp/qa/<feature>.md`，缺欄就停；§2.3 不是案例格式時擬草稿先給使用者確認。批次模式同步改讀 §2.3；部署閘在根票沒有子票時改讀根票本身的完工留言。
 - `references/pipeline.md` 改寫成新流程；`consultant-desk.md`、`legacy-parity.md`、`shared-preludes*.md`、`domain-advisor`（刪 triage 模式）、`scout` 改成單份規格用法。
+- 勘察中間檔改為每個功能一份：`{spec.dir}/analysis/<feature>/`（reuse-scan、ui-survey、consultant-notes、advisor-discussion），只有 `analysis/db-analysis.yml` 全站共用；不再有 `_context.yml`（使用者 2026-11-15 裁決，避免沿用別的功能的結論）。
 - 新增守門測試 `scripts/test_no_spec_chain.py`：規格鏈字樣、已刪 skill、孤兒檔、`scale` 預設都不得回來。
 - 既有孤兒 `references/skill-design.md` 改由 plugin README「維護」一節引用。
 - `setup/install-project.sh` 裝 lifecycle 不再在 `settings.local.json` 停用 superpowers（`setup/tests/install-project.sh` 第 12 段改測兩種情境）。

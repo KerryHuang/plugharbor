@@ -123,13 +123,14 @@ docs 與程式碼同 repo 時略過。docs 在獨立 repo 時，開工前先 pul
 
 ## Step 0.8: 分析落檔與共用
 
+路徑相對 `{spec.dir}`：只有 DB 結構事實全站共用（`analysis/db-analysis.yml`），其餘每個功能一份，放 `analysis/<feature>/`（`<feature>` 同規格檔名），不讀別的功能的結論。
+
 | 產物 | 路徑 | 首個產出者 | 內容 |
 |------|------|-----------|------|
 | DB 結構事實 | `analysis/db-analysis.yml` | `spec`（蒐證步驟） | 欄位、型別、長度、可空、約束、FK、狀態欄語意、抽樣。**首段 `_index:` 列 tables 清單** |
-| 既有實作盤點 | `analysis/reuse-scan.yml` | `spec`（蒐證步驟） | 路由清單、Handler／Entity／Repository 對照、共用 API、跨模組引用點 |
-| 現有畫面勘察 | `analysis/ui-survey.md` | 最先做 UI 分析者 | URL、截圖、DOM 欄位清單、操作按鈕、攔截端點、操作記錄 |
-| 顧問桌結論 | `analysis/consultant-notes.md` | 開桌的 skill | 日期、編制、逐項結論與證據、未解爭點 |
-| 功能上下文 | `analysis/_context.yml` | 第一個產出者 | 功能名、模組、目錄、文件路徑、票號。**≤5KB 純指標，禁放分析內容**（膨脹到 19KB 被重複讀） |
+| 既有實作盤點 | `analysis/<feature>/reuse-scan.yml` | `spec`（蒐證步驟） | 路由清單、Handler／Entity／Repository 對照、共用 API、跨模組引用點 |
+| 現有畫面勘察 | `analysis/<feature>/ui-survey.md` | 最先做 UI 分析者 | URL、截圖、DOM 欄位清單、操作按鈕、攔截端點、操作記錄 |
+| 顧問桌結論 | `analysis/<feature>/consultant-notes.md` | 開桌的 skill | 日期、編制、逐項結論與證據、未解爭點 |
 | 實作錨點 | `analysis/impl-anchors/{規格檔名}.yml` | `spec-check --sample` | 規則編號 → 程式執行位置、各 repo 上次比對的 commit、無法斷言區塊。**只放指標**；規格正文不得出現這些類別／方法名 |
 
 讀寫協定：先讀對應檔命中即用；每筆記 `source`／`scanned_at`；缺項才補查並追加回同一檔；
