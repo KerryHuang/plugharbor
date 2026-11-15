@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.23.4] - 2026-11-15
+
+- fix(guards): 新增 `herdr-tab-create`（ask）與 `herdr-pane-run-agent`（deny）兩條 guard；`agent-dispatch` 補一行：替別的專案開不回報的長駐獨立 session 時也開新 tab，一樣用 `agent start` 帶模型參數。起因：2026-11-14～15 plugharbor 主 session 沒載入 agent-dispatch，兩次用 `herdr tab create`＋`herdr pane run <pane> claude` 開 session（重啟 Formwright 自動駕駛、lifecycle 3.0 試用），沒帶 model／effort、沒重排，也沒掛 worker 標記。
+
 ## [0.23.3] - 2026-11-15
 
 - fix(retrospective): pi 的提問工具名改為 `ask_user_question`。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。

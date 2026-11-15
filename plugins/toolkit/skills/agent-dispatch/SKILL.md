@@ -117,6 +117,7 @@ argument-hint: "[對象] <任務>"
    - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
    - 主控在無人值守時再加 `--env AGENT_DISPATCH_UNATTENDED=1`：worker 要用 AskUserQuestion 時會被擋下，改照「（推薦）」做，並把題目與選擇寫進結果檔的「主控裁決待確認」。
    - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`（`--env` 同上），取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
+   - 替別的專案開不回報的長駐獨立 session 也開新 tab（不占 6 個名額），一樣用 `agent start` 帶模型參數；任何情況都不用 `pane run` 起 CLI（guard 會擋）。
    - 起好後 `herdr pane rename <pane_id> <名稱>`。
    - 指定 agent 定義（claude／codex）：`agent start` 尾端的 `--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。
    - `agent start` 失敗：先 `herdr pane read <pane_id>` 留畫面，再關掉這個 pane，連同畫面摘要回報；`agent_not_ready` 多半是 cwd 問題。

@@ -43,6 +43,8 @@ claude plugin install toolkit@plugharbor
 
 - `git-add-all`（deny）：擋 `git add -A` / `.` / `--all`
 - `git-destructive`（ask）：force push、`reset --hard`、`clean -f`
+- `herdr-tab-create`（ask）：`herdr tab create`；只有第 7 個 worker 起或不回報的獨立 session 才開新 tab
+- `herdr-pane-run-agent`（deny）：`herdr pane run <pane> claude|codex|agy|pi`，改用 `herdr agent start` 帶模型參數
 
 ## retrospective
 

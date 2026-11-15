@@ -162,3 +162,31 @@ def test_plugin_guards_with_crlf_copy(tmp_path):
     e = {**make_env(tmp_path), "CLAUDE_PLUGIN_ROOT": str(fake_root)}
     assert run(e, "Bash", command="git add -A") == "deny"
     assert run(e, "Bash", command="git reset --hard") == "ask"
+
+
+@pytest.mark.parametrize("cmd", [
+    'herdr tab create --cwd /w/proj --label "x" --no-focus',
+    'OUT=$(herdr tab create --workspace wG --cwd /w/proj --label "lc3" --no-focus 2>&1); echo "$OUT"',
+    "cd /w && herdr tab create --cwd /w",
+])
+def test_herdr_tab_create_asks(env, cmd):
+    assert run(env, "Bash", command=cmd) == "ask"
+
+
+@pytest.mark.parametrize("cmd", [
+    'herdr pane run wG:pM6 claude "繼續自動駕駛"',
+    'herdr pane run wG:pM7 "claude --plugin-dir /w/plugins/lifecycle" >/dev/null 2>&1',
+    "herdr pane run $P codex -m gpt-5", "herdr pane run p1 'pi --model x'",
+])
+def test_herdr_pane_run_agent_denied(env, cmd):
+    assert run(env, "Bash", command=cmd) == "deny"
+
+
+@pytest.mark.parametrize("cmd", [
+    "herdr tab create --help", "herdr tab list", "herdr pane run p1 'npm test'",
+    "herdr pane split --current --direction right --cwd /w --no-focus",
+    "herdr agent start w1 --kind claude --pane p1 -- --model sonnet --effort medium",
+    "grep -n 'herdr tab create' SKILL.md",
+])
+def test_herdr_normal_commands_pass(env, cmd):
+    assert run(env, "Bash", command=cmd) is None
