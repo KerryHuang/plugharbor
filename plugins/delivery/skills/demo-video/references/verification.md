@@ -9,7 +9,7 @@
 | 影像軌長度 | `ffprobe stream=duration`（video 軌） | 與預期總長差超過 0.2 秒，或讀不到 |
 | 音軌長度 | 同上（audio 軌） | 同上，或與影像軌差超過 0.2 秒 |
 | 每段旁白有聲音 | 對 `timeline.json` 每段的時間區間跑 `ffmpeg -af volumedetect` | 區間內最大音量低於 −50 dB |
-| contact sheet | 開頭、每段中點、結尾各取一格，3 欄拼成 `verify/contact.jpg` | —（供人看） |
+| contact sheet | 開頭、每段操作完成時（doneT）、結尾各取一格，3 欄拼成 `verify/contact.jpg` | —（供人看） |
 
 **容器長度不是證據**：容器取最長那條軌，影像軌提早結束時容器仍是全長。
 

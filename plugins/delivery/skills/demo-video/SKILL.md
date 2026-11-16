@@ -19,7 +19,7 @@ argument-hint: "<影片名稱> <要示範的網址>"
 
 1. **Edge TTS 不是正式授權的 API。** 預設語音走 `uvx edge-tts`（聲音 `zh-TW-HsiaoChenNeural`），商用條款未確認。
    **影片要對外發布（客戶、公開網站、行銷）前，先查清楚授權，或在影片腳本用 `tts` 換成付費語音。**
-   授權狀態記在配方的 `tts.licensed` 並寫進 MP4 metadata；腳本自帶 `tts` 函式時一律記 `custom`、未確認，除非配方明確寫 `licensed: true`。
+   授權狀態記在配方的 `tts.licensed` 並寫進 MP4 metadata；腳本自帶 `tts` 函式時一律記 `custom`，只有配方寫 `tts: { provider: 'custom', licensed: true }` 才算已確認；用預設 edge 時，配方要寫 `tts: { provider: 'edge', licensed: true }`（自己確認過授權才寫）才算已確認，其餘都記未確認。
    另外旁白文字會送到外部服務，內容涉機密時一樣先換語音來源。
 2. **AI 聽不到聲音。** agent 只能量音量與看畫面；語音品質、發音、斷句、字幕與聲音對不對得上，
    **一定要由使用者試聽**。驗證做完的回報狀態是「⏳ 等使用者試聽」，**不是完工**。
@@ -81,7 +81,7 @@ cd <video 目錄>   # node_modules 所在處
 node "$ENGINE/demo-video.mjs" build <影片名稱>/video.mjs [--base <網址>]
 ```
 
-引擎依序做：起站 → 配音（有快取，旁白沒改不重配）→ 依**每段語音長度**錄操作（操作比語音長時印 `OVER`，該段要縮短操作或加長旁白）→
+引擎依序做：拿鎖（有配方時，同一支影片同時只能跑一個）→ 配音（有快取，旁白沒改不重配）→ 起站 → 依**每段語音長度**錄操作（操作比語音長時印 `OVER`，該段要縮短操作或加長旁白）→
 字幕（由旁白稿切句估時，不做語音辨識）→ 合成 → 驗證。成品：
 
 | 檔案 | 內容 |
@@ -92,7 +92,7 @@ node "$ENGINE/demo-video.mjs" build <影片名稱>/video.mjs [--base <網址>]
 | `out/timeline.json` | 每段實際起訖與操作完成時間、配音來源與授權（除錯用） |
 
 某段操作失敗（含 `expect` 未符合）時引擎會截圖到 `out/fail.png`、印網址、畫面文字與可互動元素後結束：照清單修選擇器，先用 `dry-run` 重跑。
-只想重跑驗證：`node "$ENGINE/demo-video.mjs" verify out`。
+只想重跑驗證：`node "$ENGINE/demo-video.mjs" verify <影片名稱>/out`。
 
 ### 7. 驗證（agent 必做，逐項回報）
 
@@ -112,5 +112,5 @@ node "$ENGINE/demo-video.mjs" build <影片名稱>/video.mjs [--base <網址>]
 
 ## 收尾
 
-- 引擎只關自己起的 server（用 PID，不用 `pkill`）；回報時列出 video 目錄中可清的暫存（`out/frames`、`out/caps`、`out/voice`、`.data`、`.tts-cache`、`node_modules`），不自行刪除。
+- 引擎只關自己起的 server（用 PID，不用 `pkill`）；回報時列出 video 目錄中可清的暫存（`out/frames`、`out/caps`、`out/voice`、`.data`、`.tts-cache`、`.build`、`node_modules`），不自行刪除。
 - 影片要對外發布 → 回到上面第 1 點：授權先確認。

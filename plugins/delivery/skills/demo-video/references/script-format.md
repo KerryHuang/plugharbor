@@ -65,8 +65,8 @@ export default {
 | `tts` | 否 | `{ provider: 'edge', licensed: false }`，授權狀態寫進 MP4 metadata（見下） |
 
 - 收尾：成功、失敗、Ctrl-C 都只關引擎自己起的程序（以 PID 或其 process group）。同一個 `video/` 同時只能跑一個引擎，第二個會印「已有一個 demo-video 在跑（pid <PID>）」後退出。
-- 配音授權：預設 provider 是 `edge`。腳本自帶 `tts` 函式時，provider 一律記 `custom`；只有配方明確寫 `tts: { provider: 'custom', licensed: true }` 才標成已確認。MP4 comment 為 `配音：<provider 顯示名> <voice>，商用授權<已確認|未確認>`，未確認時 build 結尾印「對外發布前要確認配音授權」。
-- 配音快取在 `video/.tts-cache/`（key 為文字、聲音、provider 的雜湊），旁白沒改就不重新配音。
+- 配音授權：預設 provider 是 `edge`。腳本自帶 `tts` 函式時，provider 一律記 `custom`；只有配方明確寫 `tts: { provider: 'custom', licensed: true }` 才標成已確認；腳本沒自帶 `tts`（用預設 edge）時，配方寫 `tts: { provider: 'edge', licensed: true }` 才標成已確認。MP4 comment 為 `配音：<provider 顯示名> <voice>，商用授權<已確認|未確認>`，未確認時 build 結尾印「對外發布前要確認配音授權」。
+- 配音快取在 `video/.tts-cache/`（給 `--base` 不用配方時放在 `video/<影片名稱>/.tts-cache/`，gitignore 用 `video/**/.tts-cache/`；key 為文字、聲音、provider 的雜湊），旁白沒改就不重新配音。
 
 ## 時間軸怎麼算
 
