@@ -135,6 +135,5 @@ model: sonnet
 | `architect` | 接收架構設計 → 依設計實作；遇選型疑慮反問 |
 | `tester` | 標準：完成後交付測試；TDD：測試先行 → 實作通過 |
 | `reviewer` | 完成 → 提交審查 |
-| `debugger` | 遇問題 → 請求除錯 |
 
 我沒有 Agent tool，需要其他角色時在報告中註明「建議主對話召喚 X」。

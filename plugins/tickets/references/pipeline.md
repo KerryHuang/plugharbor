@@ -20,16 +20,16 @@ triage／ticket-create → spec → spec-check → implement → release → qa-
 [ discovery:interview-prep ]（可選，需求還很零碎時）
      ↓
 [ lifecycle:spec ]           一份規格；需求模糊時開頭先問清楚（一次一題）
-     ↓                       §2.3 驗收案例＝qa-verify 的輸入
+     ↓                       「驗收」一節＝qa-verify 的輸入
 [ lifecycle:spec-check ]     實作前檢查：待澄清清零、驗收可測、引用的元件／表真的存在
      ↓
 [ tickets:ticket-create ]  尚未開票時（預設一張）
      ↓
-[ lifecycle:implement ]      分支 → 規格閘門 → 交給 superpowers（沒裝走退路）→ 收尾回填
+[ lifecycle:implement ]      分支 → 實作前檢查 → 交給 superpowers（沒裝走退路）→ 收尾回填
      ↓
 [ lifecycle:release ]        需要發版時：release branch、品質閘、merge、反合；hotfix
      ↓
-[ lifecycle:qa-verify ]      規格 §2.3 轉案例（spec-to-acceptance）後對實機驗收
+[ lifecycle:qa-verify ]      設計文件「驗收」轉案例（spec_to_cases.py）後對實機驗收
 ```
 
 `spec-check --sample`：對照實際程式碼驗規格覆蓋度（逆向補規格或懷疑規格過期時）。
@@ -68,11 +68,11 @@ triage／ticket-create → spec → spec-check → implement → release → qa-
 
 ## CR 流程（既有功能調整）
 
-`spec --change {ticket}`：in-place 修改受影響段落，取代不追加，版本號 +1 並記 §7 → `spec-check` → 同標準流程。
+`spec --change {ticket}`：in-place 修改受影響段落，取代不追加，並在文末 `## 變更紀錄` 加一行（舊範本為 §7，版本號 +1）→ `spec-check` → 同標準流程。
 
 ## 舊系統移植
 
-先用 `discovery:survey-existing-system` 勘察現役系統的現況，落成現況分析文件；再走 `spec`，撰寫時依 `legacy-parity.md` 對照舊行為（規格表頭標「來源｜舊系統移植」）。
+先用 `discovery:survey-existing-system` 勘察現役系統的現況，落成現況分析文件；再走 `spec`，撰寫時依 `legacy-parity.md` 對照舊行為（設計文件開頭行標「來源：舊系統移植」，舊範本為表頭「來源｜舊系統移植」）。
 
 ## 各 Skill 銜接點
 

@@ -128,4 +128,3 @@ commit 前走 `backend:unit-testing` 的 Step 5 價值複審剪枝（可選）�
 |-------|------|
 | `developer` | 標準：接收實作 → 撰寫測試；TDD：撰寫失敗測試 → 交付實作 |
 | `reviewer` | 提交測試 → 審查品質 |
-| `debugger` | 測試失敗 → 協助根因分析 |

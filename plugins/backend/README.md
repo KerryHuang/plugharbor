@@ -38,7 +38,7 @@ claude plugin install backend@plugharbor
 
 ## 與其他 plugin 的銜接（皆可選）
 
-- 派 agent 審查／選型／測試：`lifecycle:architect`、`lifecycle:developer`、`lifecycle:reviewer`、`lifecycle:tester`、`lifecycle:debugger`；沒裝 lifecycle 就用 general-purpose agent，prompt 帶角色說明。
+- 派 agent 審查／選型／測試：`lifecycle:architect`、`lifecycle:developer`、`lifecycle:reviewer`、`lifecycle:tester`；沒裝 lifecycle 就用 general-purpose agent，prompt 帶角色說明。
 - 慣例優先、TDD 循環：`workspace:convention-first`、`workspace:debugging`；沒裝就照專案既有程式與 Red-Green-Refactor 自行進行。
 
 ## License

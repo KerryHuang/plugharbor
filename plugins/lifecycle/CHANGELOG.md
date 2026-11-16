@@ -2,6 +2,38 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.1.0] - 2026-11-16
+
+起因：設計文件（`docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`）「起因」節指出規格鏈與 superpowers 的設計流程重工、LEARNINGS 與規格閘門實際沒人用、debugger 無 skill 引用；第三批「最後接」把規格改成設計文件格式並交 brainstorming，implement 收成薄入口。
+
+**改動**
+
+- `spec`、`spec-check`：設計文件改用新章節（起因、目標、限制、做法比較、決定、驗收、留給 builder，文末可選變更紀錄）與「驗收」一節（兩條路徑同格式）；規格交 `superpowers:brainstorming` 起草，沒裝走同格式退路；舊範本規格（§2.3、表頭來源列）讀端仍認。
+- `spec-check` 縮減：保留待澄清清零、驗收可測、引用元件存在、舊系統移植照 legacy-parity、`--sample`；移除決策表否決欄、邊界五面向等屬 brainstorming 的檢查；通過紀錄由表頭列改為開頭行下方的雜湊行（正文改一字必須重跑，只改紀錄行仍跳過）。
+- `qa-verify`：驗收轉案例改用腳本 `skills/qa-verify/scripts/spec_to_cases.py`（含測試，相容舊格式）；`spec-to-acceptance.md` 留規則說明與擬稿流程。
+- `implement`：收成薄入口（開分支、實作前檢查、交 superpowers、收尾回填）；退路改為與 superpowers 同格式的設計文件與計畫；新增 `skills/implement/references/plan-review.md` 計畫審查（跨家族短問答優先、同家全新 subagent、自審）；`after.md` 兩節重寫。
+- `templates/agents-md-section.md`：專案 AGENTS.md 的 lifecycle 段落，以 `<!-- plugharbor-lifecycle begin -->`／`<!-- plugharbor-lifecycle end -->` 標記；`install-project.sh --shared` 寫入並宣告 superpowers。
+- 移除 LEARNINGS（舊檔留著不讀，可刪）。
+- 移除 agent `debugger`（無 skill 引用）；`architect`、`developer`、`reviewer`、`tester` 同步移除指向它的引用；README 同步。
+- `references/` 共用副本（config、shared-preludes、shared-preludes-details、analysis-rigor、consultant-desk、legacy-parity）改讀新章節，舊章節以「（舊範本 §n）」括號別名保留。
+- `scripts/test_skill_contracts.py` 補對應契約測試。
+- `implement`、`fallback.md`、`plan-review.md` 寫明計畫與計畫審查不因改動小而省略、審查者不因計畫小而跳級（起因：第三批 e2e 兩條路徑都以「只有一個函式」跳過計畫或審查）。
+- `install-project.sh --shared`（`setup/` 不屬 plugin 版號，記在此）對使用者專案檔的寫入：
+  - `AGENTS.md`：只寫標記內的 lifecycle 段落，已有就更新；標記異常（只有一端、兩組、順序顛倒）拒寫並印 `FAIL:`，原檔不變。
+  - `CLAUDE.md`：沒引用 AGENTS.md 時補一行 `@AGENTS.md`；若 `CLAUDE.md` 是指向 AGENTS.md 的 symlink 則不動。
+  - `.claude/settings.json`：`enabledPlugins` 合併 `superpowers@claude-plugins-official`；已設 false 不動，壞檔或型別不符不動並印 `FAIL:`。
+  - local 模式不碰以上檔案。
+  - 寫入改原子（同目錄暫存檔寫完再 `os.replace`，沿用 symlink 指向的實體檔與原權限，失敗時原檔不變）；各檔讀寫的 OSError 轉成具名 `FAIL: <檔> <原因>` 並繼續處理其他檔；`CLAUDE.md` 的引用只認 fence 外的獨立行（含檔首 BOM）。
+- 既有計畫沿用：使用者直接走 superpowers 寫完計畫後說「開始實作」，`implement` 不重叫 writing-plans，只補 after.md 收尾 task 與計畫審查；AGENTS 段落補驗收最小完整案例與此接點。
+- `spec_to_cases.py` 找驗收一節的起點與終點都略過 fenced code 內的標題；`after.md` 先分流有無設計文件，轉檔非 0 退出碼一律停止，無功能清單就略過；計畫審查 reviewer 只回 stdout、由主控存檔；退路 after.md 只在自審後跑一次、計畫補 `For agentic workers` 表頭。
+
+**升級後要做的事**
+
+- user 層規則（`superpowers.md`）改了，重跑 `setup/install.sh` 才會更新本機那份。
+- 要啟用 AGENTS 段落的團隊專案：重跑 `setup/install-project.sh --shared <專案根> lifecycle`。
+- 舊範本規格照舊可讀；`LEARNINGS.md` 不再讀，可刪。
+- 舊規格表頭的 `| 規格檢查 |` 通過紀錄不再採用；升級後第一次 `implement` 會重跑一次實作前檢查，通過後寫入新的雜湊行。
+
 ## [4.0.0] - 2026-11-15
 
 起因：lifecycle 3.0.0 一包裝了票務、需求與會議、交付文件與開發主線，只要其中一塊的人也得整包安裝、整包載入 description；盤點使用紀錄也顯示各塊的使用者不同（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第二批「拆 plugin」）。lifecycle 收斂成開發主線，其餘拆成三個各自能單獨安裝的 plugin。

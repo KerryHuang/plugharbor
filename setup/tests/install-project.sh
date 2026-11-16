@@ -333,4 +333,188 @@ echo "$OUT" | grep -q '移除失效複本' || fail "(14e) 應印移除失效複�
 echo "$OUT" | grep -q '^NOTE: triage 已搬到 tickets' || fail "(14e) 應提示 triage 已搬到 tickets：$OUT"
 [ "$(cat "$P14e/.agents/skills/triage/.plugharbor-root")" = "$(native "$REPO_DIR/plugins/tickets")" ] || fail "(14e) triage 複本應改從 tickets 建：$OUT"
 
-echo "PASS: install-project.sh（14 組）"
+# ---------- 15) --shared lifecycle 專案層接點：AGENTS.md 段落、CLAUDE.md 引用、settings.json 宣告 superpowers ----------
+SEC="$REPO_DIR/plugins/lifecycle/templates/agents-md-section.md"
+BEGIN='<!-- plugharbor-lifecycle begin -->'; END='<!-- plugharbor-lifecycle end -->'
+SP='superpowers@claude-plugins-official'
+# (a) local 模式：不建 AGENTS.md／CLAUDE.md，settings.json 不含宣告
+P15a="$(newproj p15a)"
+run "$P15a" lifecycle >/dev/null || fail "(15a) exit 非 0"
+[ ! -e "$P15a/AGENTS.md" ] && [ ! -e "$P15a/CLAUDE.md" ] || fail "(15a) local 不該建 AGENTS.md／CLAUDE.md"
+if grep -qs "$SP" "$P15a/.claude/settings.json"; then fail "(15a) local 不該宣告 superpowers"; fi
+# (b) --shared、無 AGENTS.md → 建出且內容＝段落檔；重跑不變
+P15b="$(newproj p15b)"
+OUT="$(run --shared "$P15b" lifecycle)" || fail "(15b) exit 非 0：$OUT"
+cmp -s "$P15b/AGENTS.md" "$SEC" || fail "(15b) AGENTS.md 應＝段落檔"
+echo "$OUT" | grep -q '^OK:   AGENTS.md lifecycle 段落$' || fail "(15b) 應印 OK：$OUT"
+cp "$P15b/AGENTS.md" "$TMP/a-before"
+OUT="$(run --shared "$P15b" lifecycle)" || fail "(15b) 重跑 exit 非 0：$OUT"
+cmp -s "$P15b/AGENTS.md" "$TMP/a-before" || fail "(15b) 重跑 AGENTS.md 不該變"
+echo "$OUT" | grep -q '^UP-TO-DATE: AGENTS.md lifecycle 段落$' || fail "(15b) 重跑應印 UP-TO-DATE：$OUT"
+# (c) CRLF 使用者內容＋舊段落：標記外 bytes 不變，標記內換成段落檔（換行跟檔案）
+P15c="$(newproj p15c)"
+printf '# 專案\r\n前文\r\n%s\r\n舊內容\r\n%s\r\n後文\r\n' "$BEGIN" "$END" > "$P15c/AGENTS.md"
+run --shared "$P15c" lifecycle >/dev/null || fail "(15c) exit 非 0"
+python3 - "$P15c/AGENTS.md" "$SEC" <<'PYEOF' || fail "(15c) 標記外 bytes 應不變、標記內應＝段落檔"
+import sys
+a = open(sys.argv[1], "rb").read(); sec = open(sys.argv[2], "rb").read().rstrip(b"\r\n").replace(b"\n", b"\r\n")
+pre = "# 專案\r\n前文\r\n".encode(); post = "\r\n後文\r\n".encode()
+assert a == pre + sec + post, a
+PYEOF
+# 無標記：附檔尾、前空一行，原內容 bytes 不變
+P15c2="$(newproj p15c2)"
+printf '# 專案\n既有內容' > "$P15c2/AGENTS.md"
+run --shared "$P15c2" lifecycle >/dev/null || fail "(15c2) exit 非 0"
+python3 - "$P15c2/AGENTS.md" "$SEC" <<'PYEOF' || fail "(15c2) 應附檔尾且前空一行"
+import sys
+a = open(sys.argv[1], "rb").read(); sec = open(sys.argv[2], "rb").read()
+assert a == "# 專案\n既有內容".encode() + b"\n\n" + sec, a
+PYEOF
+# (d) CLAUDE.md 引用
+P15d="$(newproj p15d)"; printf '# 規則\n' > "$P15d/CLAUDE.md"
+run --shared "$P15d" lifecycle >/dev/null || fail "(15d) exit 非 0"
+[ "$(cat "$P15d/CLAUDE.md")" = "$(printf '# 規則\n%s' '@AGENTS.md')" ] || fail "(15d) 應補 @AGENTS.md：$(cat "$P15d/CLAUDE.md")"
+for ref in '@AGENTS.md' '@./AGENTS.md'; do
+  P15d2="$(newproj p15d2)"; printf '# 規則\n%s\n其他\n' "$ref" > "$P15d2/CLAUDE.md"; cp "$P15d2/CLAUDE.md" "$TMP/c-before"
+  run --shared "$P15d2" lifecycle >/dev/null || fail "(15d) exit 非 0"
+  cmp -s "$P15d2/CLAUDE.md" "$TMP/c-before" || fail "(15d) 已有 ${ref} 不該改"
+  rm -rf "$P15d2"
+done
+P15d3="$(newproj p15d3)"; run --shared "$P15d3" lifecycle >/dev/null || fail "(15d) exit 非 0"
+[ ! -e "$P15d3/CLAUDE.md" ] || fail "(15d) 無 CLAUDE.md 不該建"
+# (d2) CLAUDE.md 是指向 AGENTS.md 的 symlink：AGENTS.md 標記外不該被補 @AGENTS.md
+if [ "$CAN_LINK" -eq 1 ]; then
+  P15s="$(newproj p15s)"; printf '# 專案\n使用者內容\n' > "$P15s/AGENTS.md"; ln -s AGENTS.md "$P15s/CLAUDE.md"
+  run --shared "$P15s" lifecycle >/dev/null || fail "(15d2) exit 非 0"
+  run --shared "$P15s" lifecycle >/dev/null || fail "(15d2) 重跑 exit 非 0"
+  [ -L "$P15s/CLAUDE.md" ] || fail "(15d2) CLAUDE.md 應仍是 symlink"
+  python3 - "$P15s/AGENTS.md" "$SEC" <<'PYEOF' || fail "(15d2) AGENTS.md 標記外不該變、不該自我 import"
+import sys
+a = open(sys.argv[1], "rb").read(); sec = open(sys.argv[2], "rb").read()
+assert a == "# 專案\n使用者內容\n".encode() + b"\n" + sec, a
+assert b"@AGENTS.md" not in a.replace(sec, b""), a
+PYEOF
+  OUT="$(run --check --shared "$P15s" lifecycle || true)"
+  if echo "$OUT" | grep -q -E '^(MISSING|DIFF): CLAUDE.md'; then fail "(15d2) --check 不該報 CLAUDE.md 差異：$OUT"; fi
+else
+  echo "SKIP: 這台不能建 symlink，略過 15(d2)"
+fi
+# (e) settings.json
+P15e="$(newproj p15e)"; run --shared "$P15e" lifecycle >/dev/null || fail "(15e) exit 非 0"
+python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["enabledPlugins"][sys.argv[2]] is True' "$P15e/.claude/settings.json" "$SP" || fail "(15e) 無 settings.json 應建出含宣告"
+P15e2="$(newproj p15e2)"; mkdir -p "$P15e2/.claude"
+printf '{"permissions": {"allow": ["Bash(ls)"]}, "hooks": {"Stop": []}, "extraKnownMarketplaces": {"plugharbor": {}}, "enabledPlugins": {"lifecycle@plugharbor": true}}\n' > "$P15e2/.claude/settings.json"
+run --shared "$P15e2" lifecycle >/dev/null || fail "(15e) exit 非 0"
+python3 - "$P15e2/.claude/settings.json" "$SP" <<'PYEOF' || fail "(15e) 既有鍵應保留且加入宣告"
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d["permissions"] == {"allow": ["Bash(ls)"]} and d["hooks"] == {"Stop": []} and "plugharbor" in d["extraKnownMarketplaces"]
+assert d["enabledPlugins"] == {"lifecycle@plugharbor": True, sys.argv[2]: True}, d
+PYEOF
+P15e3="$(newproj p15e3)"; mkdir -p "$P15e3/.claude"
+printf '{"enabledPlugins": {"%s": false}}\n' "$SP" > "$P15e3/.claude/settings.json"; cp "$P15e3/.claude/settings.json" "$TMP/s-before"
+OUT="$(run --shared "$P15e3" lifecycle)" || fail "(15e) 已停用 exit 非 0：$OUT"
+cmp -s "$P15e3/.claude/settings.json" "$TMP/s-before" || fail "(15e) false 不該被改"
+echo "$OUT" | grep -q '^SKIP: superpowers 已在專案停用$' || fail "(15e) 應印 SKIP：$OUT"
+for bad in 'not json{' '{"enabledPlugins": []}' '[]'; do
+  P15e4="$(newproj p15e4)"; mkdir -p "$P15e4/.claude"; printf '%s\n' "$bad" > "$P15e4/.claude/settings.json"; cp "$P15e4/.claude/settings.json" "$TMP/s-before"
+  rc=0; OUT="$(run --shared "$P15e4" lifecycle)" || rc=$?
+  [ "$rc" -eq 1 ] || fail "(15e) 壞 settings（${bad}）應 exit 1，實際 ${rc}：$OUT"
+  echo "$OUT" | grep -q '^FAIL: ' || fail "(15e) 應印 FAIL：$OUT"
+  cmp -s "$P15e4/.claude/settings.json" "$TMP/s-before" || fail "(15e) 壞 settings 不該被改"
+  rm -rf "$P15e4"
+done
+# (f) --check --shared：三種缺漏
+chk() {  # $1=專案 $2=預期輸出 regex → 三檔不變、exit 3
+  local rc=0 OUT
+  cp -R "$1" "$TMP/chk-before"
+  OUT="$(run --check --shared "$1" lifecycle)" || rc=$?
+  [ "$rc" -eq 3 ] || fail "(15f) 應 exit 3，實際 ${rc}：$OUT"
+  echo "$OUT" | grep -q "$2" || fail "(15f) 應含 ${2}：$OUT"
+  diff -r "$1" "$TMP/chk-before" >/dev/null || fail "(15f) --check 不該改檔"
+  rm -rf "$TMP/chk-before"
+}
+decl() { mkdir -p "$1/.claude"; printf '{"enabledPlugins": {"%s": true}}\n' "$SP" > "$1/.claude/settings.json"; }
+P15f1="$(newproj p15f1)"; decl "$P15f1"; printf '@AGENTS.md\n' > "$P15f1/CLAUDE.md"
+chk "$P15f1" '^MISSING: AGENTS.md lifecycle 段落$'
+P15f1b="$(newproj p15f1b)"; decl "$P15f1b"; printf '%s\nold\n%s\n' "$BEGIN" "$END" > "$P15f1b/AGENTS.md"
+chk "$P15f1b" '^DIFF: AGENTS.md lifecycle 段落$'
+P15f2="$(newproj p15f2)"; decl "$P15f2"; cp "$SEC" "$P15f2/AGENTS.md"; printf '# x\n' > "$P15f2/CLAUDE.md"
+chk "$P15f2" '^MISSING: CLAUDE.md 引用 @AGENTS.md$'
+P15f3="$(newproj p15f3)"; cp "$SEC" "$P15f3/AGENTS.md"
+chk "$P15f3" '^MISSING: superpowers 宣告'
+# (g) --shared 只裝 ui-ux：全部不碰
+P15g="$(newproj p15g)"; printf '# x\n' > "$P15g/CLAUDE.md"
+run --shared "$P15g" ui-ux >/dev/null || fail "(15g) exit 非 0"
+[ ! -e "$P15g/AGENTS.md" ] || fail "(15g) 不該建 AGENTS.md"
+[ "$(cat "$P15g/CLAUDE.md")" = '# x' ] || fail "(15g) 不該補 CLAUDE 引用"
+if grep -qs "$SP" "$P15g/.claude/settings.json"; then fail "(15g) 不該宣告 superpowers"; fi
+# (h) 標記異常：原檔不變、FAIL、exit 1
+i=0
+for body in "$BEGIN\nx\n" "x\n$END\n" "$BEGIN\na\n$END\n$BEGIN\nb\n$END\n" "$END\nx\n$BEGIN\n"; do
+  i=$((i + 1)); P15h="$(newproj p15h$i)"; printf "$body" > "$P15h/AGENTS.md"; cp "$P15h/AGENTS.md" "$TMP/a-before"
+  rc=0; OUT="$(run --shared "$P15h" lifecycle)" || rc=$?
+  [ "$rc" -eq 1 ] || fail "(15h-$i) 應 exit 1，實際 ${rc}：$OUT"
+  echo "$OUT" | grep -q '^FAIL: AGENTS.md lifecycle 標記不成對$' || fail "(15h-$i) 應印 FAIL：$OUT"
+  cmp -s "$P15h/AGENTS.md" "$TMP/a-before" || fail "(15h-$i) 原檔不該變"
+done
+
+# (i) CLAUDE.md 引用只認 fence 外的獨立行；檔首 BOM 的有效引用也認
+P15i="$(newproj p15i)"; printf '# 規則\n```\n%s\n```\n' '@AGENTS.md' > "$P15i/CLAUDE.md"
+run --shared "$P15i" lifecycle >/dev/null || fail "(15i) exit 非 0"
+[ "$(tail -n 1 "$P15i/CLAUDE.md")" = '@AGENTS.md' ] && [ "$(wc -l < "$P15i/CLAUDE.md" | tr -d ' ')" -eq 5 ] || fail "(15i) 引用只在 fence 內，應補一行：$(cat "$P15i/CLAUDE.md")"
+P15i2="$(newproj p15i2)"; printf '\357\273\277%s\n其他\n' '@AGENTS.md' > "$P15i2/CLAUDE.md"; cp "$P15i2/CLAUDE.md" "$TMP/c-before"
+run --shared "$P15i2" lifecycle >/dev/null || fail "(15i) BOM exit 非 0"
+cmp -s "$P15i2/CLAUDE.md" "$TMP/c-before" || fail "(15i) BOM＋引用不該改"
+# (j) 原子寫入：symlink 不被換成一般檔、權限保留、不留暫存檔
+if [ "$CAN_LINK" -eq 1 ]; then
+  P15j="$(newproj p15j)"; printf '# 真檔\n' > "$P15j/real.md"; ln -s real.md "$P15j/AGENTS.md"
+  run --shared "$P15j" lifecycle >/dev/null || fail "(15j) exit 非 0"
+  [ -L "$P15j/AGENTS.md" ] || fail "(15j) AGENTS.md 應仍是 symlink"
+  grep -qF "$BEGIN" "$P15j/real.md" || fail "(15j) 段落應寫進 symlink 指向的實體檔"
+fi
+P15j2="$(newproj p15j2)"; printf '# 專案\n' > "$P15j2/AGENTS.md"; chmod 640 "$P15j2/AGENTS.md"
+run --shared "$P15j2" lifecycle >/dev/null || fail "(15j) exit 非 0"
+MODE="$(python3 -c 'import os,sys; print(oct(os.stat(sys.argv[1]).st_mode & 0o777))' "$P15j2/AGENTS.md")"
+[ "$MODE" = 0o640 ] || [ "$(uname -s | cut -c1-5)" = MINGW ] || fail "(15j) 應保留 640 權限，實際 ${MODE}"
+[ -z "$(ls -A "$P15j2" | grep '^\.ph-' || true)" ] || fail "(15j) 不該留暫存檔"
+# (k) 檔案讀寫失敗：具名 FAIL、exit 1、其他步驟照做、原檔不變
+if [ "$(id -u)" -ne 0 ]; then
+  P15k="$(newproj p15k)"; printf '# 唯讀\n' > "$P15k/AGENTS.md"; chmod 444 "$P15k/AGENTS.md"; cp "$P15k/AGENTS.md" "$TMP/a-before"
+  rc=0; OUT="$(run --shared "$P15k" lifecycle)" || rc=$?
+  [ "$rc" -eq 1 ] || fail "(15k) 唯讀 AGENTS.md 應 exit 1，實際 ${rc}：$OUT"
+  echo "$OUT" | grep -q '^FAIL: AGENTS.md ' || fail "(15k) 應印具名 FAIL：$OUT"
+  echo "$OUT" | grep -q 'Traceback' && fail "(15k) 不該有 traceback：$OUT"
+  cmp -s "$P15k/AGENTS.md" "$TMP/a-before" || fail "(15k) 原檔不該變"
+  grep -q "$SP" "$P15k/.claude/settings.json" || fail "(15k) AGENTS 失敗後 settings 步驟仍應執行"
+  chmod 644 "$P15k/AGENTS.md"
+fi
+# (l) 既有 settings.json 根不是物件：安靜視為沒登記，不印 traceback（project_has_mkt）
+P15l="$(newproj p15l)"; mkdir -p "$P15l/.claude"; printf '[]\n' > "$P15l/.claude/settings.json"
+OUT="$(run --shared "$P15l" lifecycle 2>&1 || true)"
+echo "$OUT" | grep -q 'Traceback' && fail "(15l) project_has_mkt 不該印 traceback：$OUT"
+
+# (m) fence 照 CommonMark：四個 backtick 包三個 backtick 的範例裡的 @AGENTS.md 不算引用；~~~ 不被 ``` 關閉
+P15m="$(newproj p15m)"; printf '# 規則\n````\n```\n%s\n```\n%s\n````\n' '@AGENTS.md' '@AGENTS.md' > "$P15m/CLAUDE.md"
+run --shared "$P15m" lifecycle >/dev/null || fail "(15m) exit 非 0"
+[ "$(tail -n 1 "$P15m/CLAUDE.md")" = '@AGENTS.md' ] && [ "$(wc -l < "$P15m/CLAUDE.md" | tr -d ' ')" -eq 8 ] || fail "(15m) 巢狀 fence 內的引用不算，應補一行：$(cat "$P15m/CLAUDE.md")"
+P15m2="$(newproj p15m2)"; printf '# 規則\n~~~\n```\n%s\n~~~\n' '@AGENTS.md' > "$P15m2/CLAUDE.md"
+run --shared "$P15m2" lifecycle >/dev/null || fail "(15m) exit 非 0"
+[ "$(tail -n 1 "$P15m2/CLAUDE.md")" = '@AGENTS.md' ] && [ "$(wc -l < "$P15m2/CLAUDE.md" | tr -d ' ')" -eq 6 ] || fail "(15m) ~~~ 不該被 \`\`\` 關閉，應補一行：$(cat "$P15m2/CLAUDE.md")"
+# (n) CLAUDE.md 與 AGENTS.md 是 hardlink：寫入就地進行，兩檔仍同 inode，標記外不變、不自我引用
+P15n="$(newproj p15n)"; printf '# 專案\n使用者內容\n' > "$P15n/AGENTS.md"
+if ln "$P15n/AGENTS.md" "$P15n/CLAUDE.md" 2>/dev/null; then
+  run --shared "$P15n" lifecycle >/dev/null || fail "(15n) exit 非 0"
+  run --shared "$P15n" lifecycle >/dev/null || fail "(15n) 重跑 exit 非 0"
+  [ "$P15n/AGENTS.md" -ef "$P15n/CLAUDE.md" ] || fail "(15n) hardlink 應保留"
+  python3 - "$P15n/AGENTS.md" "$SEC" <<'PYEOF' || fail "(15n) AGENTS.md 標記外不該變、不該自我 import"
+import sys
+a = open(sys.argv[1], "rb").read(); sec = open(sys.argv[2], "rb").read()
+assert a == "# 專案\n使用者內容\n".encode() + b"\n" + sec, a
+assert b"@AGENTS.md" not in a.replace(sec, b""), a
+PYEOF
+else
+  echo "SKIP: 這台不能建 hardlink，略過 15(n)"
+fi
+
+echo "PASS: install-project.sh（15 組）"

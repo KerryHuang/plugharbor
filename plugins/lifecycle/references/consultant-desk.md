@@ -150,7 +150,7 @@ prompt: |
 顧問桌成果**必須落檔**至 `analysis/<feature>/consultant-notes.md`（依 `shared-preludes.md` Step 0.8）：
 諮詢日期、編制、逐項結論與證據、未解爭點、已裁決項與理由。
 雙顧問討論另依 [advisor-discussion.md](advisor-discussion.md)「consultant-notes.md 追加格式」落檔，完整逐輪紀錄留在 `analysis/<feature>/advisor-discussion/`。
-同時在規格 §5 決策表該列的「拍板」欄記「已諮詢 {顧問}／日期／結論見 analysis/<feature>/consultant-notes.md」。
+同時在設計文件「決定」該條的「拍板」處記「已諮詢 {顧問}／日期／結論見 analysis/<feature>/consultant-notes.md」。
 
 下游 skill **先讀這份檔**：已有結論的問題不重問顧問、不重問使用者；
 只有落檔內容未涵蓋的新問題才單獨補派，補完的結論**追加寫回同一份檔**。

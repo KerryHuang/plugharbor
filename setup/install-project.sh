@@ -85,7 +85,7 @@ try:
     d = json.load(open(sys.argv[1], encoding="utf-8"))
 except Exception:
     sys.exit(1)
-sys.exit(0 if "plugharbor" in (d.get("extraKnownMarketplaces") or {}) else 1)
+sys.exit(0 if isinstance(d, dict) and "plugharbor" in (d.get("extraKnownMarketplaces") or {}) else 1)
 ' "$ROOT/.claude/settings.json"
 }
 
@@ -133,6 +133,21 @@ elif command -v claude >/dev/null 2>&1; then
   done
 else
   echo "SKIP: claude（未安裝）"
+fi
+
+# ---------- 專案層接點（--shared + lifecycle）：AGENTS.md 段落、CLAUDE.md 引用、宣告 superpowers ----------
+case " $PLUGINS " in *" lifecycle "*) HAS_LC=1 ;; *) HAS_LC=0 ;; esac
+if [ "$SHARED" -eq 1 ] && [ "$HAS_LC" -eq 1 ]; then
+  if [ -z "$PY" ]; then
+    echo "WARN: 找不到 python 3，略過 AGENTS.md／settings.json 接點"
+  else
+    mode=apply; [ "$CHECK" -eq 0 ] || mode=check
+    hout="$(PYTHONUTF8=1 "$PY" "$(ph_native_path "$REPO_DIR/setup/lib/project_hooks.py")" "$(ph_native_path "$ROOT")" \
+      "$(ph_native_path "$REPO_DIR/plugins/lifecycle/templates/agents-md-section.md")" "$mode" | tr -d '\r')" && rc=0 || rc=$?
+    [ -z "$hout" ] || echo "$hout"
+    DIFFS=$((DIFFS + $(printf '%s\n' "$hout" | grep -c -E '^(MISSING|DIFF):' || true)))
+    [ "$rc" -eq 0 ] || FAILS=$((FAILS + 1))
+  fi
 fi
 
 # ---------- pi：專案 .pi/settings.json 的 packages（絕對路徑，只限 local） ----------
