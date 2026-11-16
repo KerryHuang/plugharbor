@@ -56,7 +56,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 - [x] 第一批「先刪」（段 L1）：拿掉規格鏈與連帶 skill（spec-chain、explore、consolidate-docs、write-doc、dev-feedback）、agent、範本與 `scale`；install-project 不再停用 superpowers；qa-verify 改讀規格 §2.3 驗收案例；ticket-create 拿掉角色子票；勘察檔每個功能一份（使用者 2026-11-15 裁決；lifecycle 3.0.0，未 push） #35
 - [x] 第二批「再拆」（段 L2）：tickets、discovery、delivery 三個新 plugin，只搬不改行為；共用 agent 副本改名＋同步測試；有票務設定的專案安裝時自動補裝 tickets（lifecycle major） #7
-- [ ] 📋 第三批「最後接」（段 L3）：專案層 AGENTS.md 標準段落（`--shared` 寫入、含計畫審查與精簡驗收格式）、implement 薄入口＋同格式退路、spec-check 縮成實作前檢查、after.md 只留驗收對照與回填、user 層 superpowers.md 改寫 #36
+- [ ] 🚧 第三批「最後接」（段 L3）：專案層 AGENTS.md 標準段落（`--shared` 寫入、含計畫審查與精簡驗收格式）、implement 薄入口＋同格式退路、spec-check 縮成實作前檢查、after.md 只留驗收對照與回填、user 層 superpowers.md 改寫 #36
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估） #37
 
@@ -77,3 +77,14 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 完成 1／共 1。
 
 - [x] 只從 Claude Code 叫用，替四個 CLI 在專案層補裝：plugharbor → 網路純 skill → 自寫 AGENTS.md＋缺口 skill；設計見 `docs/superpowers/specs/2026-11-13-project-setup-design.md`（workspace 1.10.0；agy 載入未驗證） #43
+
+## delivery：demo-video 優化（2026-11-16 規劃）
+
+完成 0／共 4。
+
+第一次實戰（dynamic-fields-design 兩支影片）的摩擦集中在起站／重置、選擇器試錯、操作超時。設計見 `docs/superpowers/specs/2026-11-16-demo-video-optimization-design.md`。
+
+- [ ] 📋 錄影環境配方 `video/env.mjs`：引擎自動 reset、自選空埠、驗 PID 才算就緒、只關自己的程序；`env-check` 指令；預設目錄改 `video/` 進版控
+- [ ] 📋 `dry-run`（不配音不錄影、失敗印可互動元素）與配音快取；不做 `--from segN`（理由見設計 §2）
+- [ ] 📋 操作員 `a.upload`、`a.select`、`a.as`（換人）；每段 `expect`；contact sheet 改抓操作完成那一刻
+- [ ] 📋 審稿附語音估計與操作秒數表；回報分開寫成片長度與製作時間；配音授權寫進 MP4 metadata、專案層 `tts.licensed` 只問一次
