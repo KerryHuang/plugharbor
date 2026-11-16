@@ -75,7 +75,7 @@ export async function build(scriptPath, { out, base } = {}) {
     const p = await ctx.newPage()
     p.setDefaultTimeout(cfg.timeoutMs ?? 8000)
     await installCursor(p)
-    const a = createActor(p)
+    const a = createActor(p, { ui: recipe?.ui, login: recipe?.login, fileRoot: dirname(resolve(scriptPath)) })
 
     const cdp = await ctx.newCDPSession(p)
     const frames = []
@@ -206,10 +206,12 @@ export async function dryRun(scriptPath, { base, out } = {}) {
   const OUT = resolve(out ?? join(dirname(resolve(scriptPath)), 'out'))
   const stops = []
   let ok = false
+  let recipe = null
   try {
     let url = base ?? cfg.base
     if (envPath) {
-      const h = await startEnv(await loadEnv(envPath), { videoRoot: dirname(envPath), outDir: OUT, register: (f) => activeStops.add(f) })
+      recipe = await loadEnv(envPath)
+      const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register: (f) => activeStops.add(f) })
       stops.push(h.stop)
       url = h.url
     }
@@ -222,7 +224,7 @@ export async function dryRun(scriptPath, { base, out } = {}) {
     const p = await ctx.newPage()
     p.setDefaultTimeout(cfg.timeoutMs ?? 8000)
     await installCursor(p)
-    const a = createActor(p)
+    const a = createActor(p, { ui: recipe?.ui, login: recipe?.login, fileRoot: dirname(resolve(scriptPath)) })
     if (cfg.setup) await cfg.setup(p, a, url)
     else await p.goto(url)
     const r = await runSegments(cfg.segments, a, {
