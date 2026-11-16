@@ -17,15 +17,19 @@
 ## 選擇器與頁面
 
 7. **選擇器要精確**（作者）。寬鬆 regex 曾點到錯的按鈕（「新增」點到「新增條件」）；有些按鈕其實是連結，`getByRole('button')` 找不到。
-   用 `{ name: '新增', exact: true }`，必要時用 `locator('a')`、`getByRole('link')`。失敗時引擎會截圖 `out/fail.png`，印網址與畫面文字——**先看這兩樣再改**，不要憑感覺換選擇器重試。
-8. **有些 UI 框架的下拉選單是浮層**，選項不在原本欄位底下：先點開，再到浮層容器裡找選項文字。
+   用 `{ name: '新增', exact: true }`，必要時用 `locator('a')`、`getByRole('link')`。失敗時引擎會截圖 `out/fail.png`，印網址、畫面文字與可互動元素清單——**先看這些再改**，不要憑感覺換選擇器重試。
+8. **有些 UI 框架的下拉選單是浮層**，選項不在原本欄位底下：用 `a.select(欄位, 選項)`；容器不是 `listbox` 時在配方設 `ui.menu`。原生 `<select>` 不是浮層，用 `a.click` 加 `selectOption`。
+8a. **找不到元素**（引擎）。用 `dry-run` 跑：失敗時印「FAIL seg<i>」、網址、畫面文字與「可互動元素：」清單（按鈕、連結、欄位標籤、浮層選項），照清單改選擇器再重跑，不用另寫 probe 腳本。
+8b. **`@` 提及清單太長，目標在可視範圍外**（作者）。多打一個字縮小清單，讓目標出現在前幾項，再點。
 
 ## 起 server
 
-9. **應用程式的埠可能不受環境變數控制**。以 ASP.NET Core 為例，曾發生 `ASPNETCORE_URLS` 設了卻沒生效，影片錄到另一個程序的頁面。
+9. **應用程式的埠可能不受環境變數控制**（引擎已強制處理：自選空埠，就緒要求聽埠的程序屬於引擎自己起的；以下為背景）。以 ASP.NET Core 為例，曾發生 `ASPNETCORE_URLS` 設了卻沒生效，影片錄到另一個程序的頁面。
    **起 server 後先看實際在聽的埠**（`lsof -iTCP -sTCP:LISTEN -P | grep <程序>`），確認 `--base` 指到自己起的那個，再錄影。
    預設埠被占用時停下來，不要直接錄。
-10. 用**全新的本機資料庫**；起 server 的腳本記下 PID，收尾 `kill <PID>`，不用 `pkill`、不關別人的程序。範例：`examples/leave-request/run.sh`。
+10. 用**全新的本機資料庫**；起 server 的腳本記下 PID，收尾 `kill <PID>`，不用 `pkill`、不關別人的程序（引擎已強制處理：每次先跑配方 `reset`，只關自己起的程序；以下為背景）。範例：`examples/env.mjs`。
+11. **啟動器形式的 cmd 在 Windows 上判斷不了就緒**（作者）。POSIX 用 process group 認得 `npm run`、`dotnet run` 起的子程序；Windows 只比對 pid，`start.cmd` 要直接執行 server 本體（例如 `dotnet App.dll`），否則一直等到「server 未就緒」。
+12. **server 未就緒**。先看印出的 `out/server.log`；起得慢就調高 `start.readyTimeoutMs`。「已有一個 demo-video 在跑」表示另一個 build／dry-run 還活著，等它結束，不要刪 `video/.data/.lock`（死掉的程序留下的鎖，引擎會自己清）。
 
 ## 環境
 

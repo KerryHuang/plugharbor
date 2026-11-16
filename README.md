@@ -48,7 +48,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | [lifecycle](./plugins/lifecycle/README.md) | 4.0.0 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
 | [tickets](./plugins/tickets/README.md) | 1.0.0 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
 | [discovery](./plugins/discovery/README.md) | 1.0.0 | 需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型 |
-| [delivery](./plugins/delivery/README.md) | 1.0.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |
+| [delivery](./plugins/delivery/README.md) | 1.1.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |
 | [workspace](./plugins/workspace/README.md) | 1.17.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
 | [backend](./plugins/backend/README.md) | 1.0.3 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |

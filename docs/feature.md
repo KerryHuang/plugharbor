@@ -80,11 +80,11 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 ## delivery：demo-video 優化（2026-11-16 規劃）
 
-完成 0／共 4。
+完成 4／共 4。
 
 第一次實戰（dynamic-fields-design 兩支影片）的摩擦集中在起站／重置、選擇器試錯、操作超時。設計見 `docs/superpowers/specs/2026-11-16-demo-video-optimization-design.md`。
 
-- [ ] 📋 錄影環境配方 `video/env.mjs`：引擎自動 reset、自選空埠、驗 PID 才算就緒、只關自己的程序；`env-check` 指令；預設目錄改 `video/` 進版控
-- [ ] 📋 `dry-run`（不配音不錄影、失敗印可互動元素）與配音快取；不做 `--from segN`（理由見設計 §2）
-- [ ] 📋 操作員 `a.upload`、`a.select`、`a.as`（換人）；每段 `expect`；contact sheet 改抓操作完成那一刻
-- [ ] 📋 審稿附語音估計與操作秒數表；回報分開寫成片長度與製作時間；配音授權寫進 MP4 metadata、專案層 `tts.licensed` 只問一次
+- [x] 錄影環境配方 `video/env.mjs`：引擎自動 reset、自選空埠、驗 PID 才算就緒、只關自己的程序；`env-check` 指令；預設目錄改 `video/` 進版控
+- [x] `dry-run`（不配音不錄影、失敗印可互動元素）與配音快取；不做 `--from segN`（理由見設計 §2）
+- [x] 操作員 `a.upload`、`a.select`、`a.as`（換人）；每段 `expect`；contact sheet 改抓操作完成那一刻
+- [x] 審稿附語音估計與操作秒數表；回報分開寫成片長度與製作時間；配音授權寫進 MP4 metadata、專案層 `tts.licensed` 只問一次
