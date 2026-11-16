@@ -2,6 +2,10 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.24.1] - 2026-11-16
+
+- fix(auto-session-title)：建議標題只認行首（可帶縮排、引言、清單或粗體符號）的「建議 session 標題…：/rename」行，句中引用這個句型不再套用；測試補第 7 項。起因：2026-11-16 一個 session 說明這支 hook 時寫了「…「建議 session 標題：/rename …」，要等你下一次送出訊息…」，下一次送出時整段被當成標題，session 改名成「…」，要等你**下一次送出訊息**才會套用…」。
+
 ## [0.24.0] - 2026-11-15
 
 - feat(tower): 新增 `tower` skill 與 `skills/tower/scripts/tower.py`（航班登記表 takeoff／amend／beat／radar／override／landed／land-check／release），並新增三支 hook：`tower-context.py`（SessionStart 摘要在飛航班）、`tower-track.py`（PreToolUse／UserPromptSubmit 心跳、PostToolUse 記錄改動並提醒撞檔）、`tower-landing.py`（把東西落到預設分支前跑 land-check，超出範圍、撞檔、落後時擋下或詢問）。plugharbor 自用 `.plugharbor/tower.yml` 登記共用跑道；AGENTS.md「並行」條改成優先看 `tower.py radar`。起因：使用者實際遇過多 session 重工與衝突，未留文字紀錄（2026-11-15 裁決整套一次做完）。

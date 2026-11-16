@@ -72,4 +72,8 @@ transcript "u:x" "a:model 無法自己執行 /rename 這類內建指令"
 transcript "u:x" "a:$SUG" "u:下一題" "a:好的"
 [ -z "$(run)" ] || fail "套用了更早回合的建議"
 
+# 7) 句中引用建議句型（說明機制時）→ 不誤抓；行首的才算
+transcript "u:x" "a:hook 看到「建議 session 標題：/rename …」，要等下一次送出才套用"
+[ -z "$(run)" ] || fail "誤抓句中引用的建議句型"
+
 echo "auto-session-title: all passed"

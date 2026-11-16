@@ -14,7 +14,8 @@ import re
 import sys
 from pathlib import Path
 
-SUGGEST_RE = re.compile(r"建議[^\n]{0,10}session 標題[^\n]*?/rename\s+([^\n`]+)")
+# 只認行首（可帶縮排、引言、清單或粗體符號）的建議行；句中引用這個句型（如說明機制時）不算
+SUGGEST_RE = re.compile(r"^[ \t>*\-]*建議[^\n]{0,10}session 標題[^\n]*?/rename\s+([^\n`]+)", re.M)
 TAIL_BYTES = 256 * 1024
 MAX_TITLE = 80
 
