@@ -14,6 +14,7 @@ import { estimateVoiceSec } from './lib/estimate.mjs'
 import { findEnv, loadEnv, startEnv } from './lib/env.mjs'
 import { listInteractive } from './lib/inspect.mjs'
 import { buildCues, toSrt } from './lib/subtitles.mjs'
+import { withTtsCache } from './lib/tts-cache.mjs'
 import { formatScriptErrors, validateScript } from './lib/validate-script.mjs'
 import { assertSafeName, buildFilterGraph, checkStreams, compose, contactSheet, probeDuration, segmentVolume, sh } from './lib/media.mjs'
 
@@ -25,17 +26,22 @@ async function defaultTts(text, outFile, { voice }) {
   sh('uvx', ['edge-tts', '--voice', voice, '--text', text, '--write-media', outFile])
 }
 
-export async function build(scriptPath, { out = 'out', base } = {}) {
+const PROVIDER_NAMES = { edge: 'Edge TTS', custom: '自訂' }
+
+export async function build(scriptPath, { out, base } = {}) {
   const cfg = (await import(pathToFileURL(resolve(scriptPath)).href)).default
-  const errs = validateScript(cfg, { base })
+  const envPath = base || cfg?.base ? null : findEnv(scriptPath) // 給了 base 就完全不碰配方
+  const errs = validateScript(cfg, { base, hasEnv: !!envPath })
   if (errs.length) throw Object.assign(new Error(formatScriptErrors(errs)), { scriptInvalid: true })
+  const recipe = envPath ? await loadEnv(envPath) : null
   const name = assertSafeName(cfg.name ?? 'video')
-  const url = base ?? cfg.base
   const voice = cfg.voice ?? 'zh-TW-HsiaoChenNeural'
-  const tts = cfg.tts ?? defaultTts
+  const ttsInfo = { provider: recipe?.tts?.provider ?? (cfg.tts ? 'custom' : 'edge'), voice, licensed: recipe?.tts?.licensed === true }
+  const cacheDir = join(envPath ? dirname(envPath) : dirname(resolve(scriptPath)), '.tts-cache')
+  const tts = withTtsCache(cfg.tts ?? defaultTts, { dir: cacheDir, provider: ttsInfo.provider })
   const gapMs = cfg.gapMs ?? 450 // 語音檔尾端本來就帶約 1 秒靜音，段落間隔不要再加多
   const segments = cfg.segments
-  const OUT = resolve(out)
+  const OUT = resolve(out ?? join(dirname(resolve(scriptPath)), 'out'))
   for (const d of ['frames', 'voice', 'caps', 'verify']) rmSync(join(OUT, d), { recursive: true, force: true })
   for (const d of ['frames', 'voice', 'caps']) mkdirSync(join(OUT, d), { recursive: true })
 
@@ -46,7 +52,15 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
     s.dur = probeDuration(s.audio)
   }
 
-  // 2. 依語音長度錄操作
+  // 2. 依語音長度錄操作；有配方就先起站（每次 reset）
+  let url = base ?? cfg.base
+  let stopEnv = null
+  if (recipe) {
+    const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register: (f) => activeStops.add(f) })
+    stopEnv = h.stop
+    url = h.url
+  }
+  try {
   const { chromium } = loadPlaywright()
   // 與 ensure-tools.sh 一致：CHROME_PATH 有設就用它（任何 Chromium 系），否則用系統安裝的 Google Chrome
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, headless: true } : { channel: 'chrome', headless: true })
@@ -107,6 +121,7 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
 
     // 4. 字幕：旁白稿切句、估時；SRT 與燒進畫面的透明 PNG
     const starts = segments.map((s) => s.t0Ms / 1000 - start)
+    const doneTs = r.segs.map((g) => g.doneMs / 1000 - start)
     const cues = segments.flatMap((s, i) => buildCues(s.text, starts[i], s.dur))
     writeFileSync(join(OUT, `${name}.srt`), toSrt(cues))
     // ffmpeg 不一定有 libass／drawtext：字幕在瀏覽器渲染成透明 PNG 再 overlay
@@ -127,12 +142,16 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
       lastLabel: `v${cues.length}`,
       total,
       outFile: join(OUT, `${name}.mp4`),
+      metadata: { comment: `配音：${PROVIDER_NAMES[ttsInfo.provider] ?? ttsInfo.provider} ${voice}，商用授權${ttsInfo.licensed ? '已確認' : '未確認'}` },
     })
-    writeFileSync(join(OUT, 'timeline.json'), JSON.stringify({ name, total, segs: segments.map((s, i) => ({ t: starts[i], dur: s.dur, over: s.over, text: s.text })), cues }, null, 1))
+    writeFileSync(join(OUT, 'timeline.json'), JSON.stringify({ name, total, tts: ttsInfo, segs: segments.map((s, i) => ({ t: starts[i], doneT: doneTs[i], dur: s.dur, over: s.over, text: s.text })), cues }, null, 1))
     console.log(`frames ${frames.length} total ${total.toFixed(1)}s cues ${cues.length}`)
   } finally {
     activeStops.delete(closeBrowser)
     await closeBrowser()
+  }
+  } finally {
+    if (stopEnv) { activeStops.delete(stopEnv); await stopEnv().catch(() => {}) }
   }
   return verify(OUT)
 }
@@ -259,9 +278,9 @@ export function verify(outDir) {
 
   const sheet = join(OUT, 'verify', 'contact.jpg')
   mkdirSync(join(OUT, 'verify'), { recursive: true })
-  const times = [0.3, ...tl.segs.map((g) => g.t + g.dur / 2), tl.total - 0.5]
+  const times = [0.3, ...tl.segs.map((g) => g.doneT), tl.total - 0.5]
   contactSheet(mp4, times, sheet, join(OUT, 'verify', 'frames'))
-  console.log(`contact sheet：${sheet}（由 agent 開圖看過；每格依序為：開頭、各段中點、結尾）`)
+  console.log(`contact sheet：${sheet}（由 agent 開圖看過；每格依序為：開頭、各段操作完成時、結尾）`)
 
   if (problems.length) {
     console.log('機器檢查失敗：\n- ' + problems.join('\n- '))
@@ -269,6 +288,7 @@ export function verify(outDir) {
     return { ok: false, problems }
   }
   console.log('機器檢查通過。語音品質、發音、字幕對齊未驗證——需要人試聽，現在狀態是等使用者試聽，不是完工。')
+  if (tl.tts?.licensed !== true) console.log('對外發布前要確認配音授權')
   return { ok: true, problems }
 }
 
@@ -277,6 +297,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const opt = (k) => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined }
   if (cmd === 'build' && target) {
     await build(target, { out: opt('--out'), base: opt('--base') }).catch((e) => {
+      if (e.aborted) return // 信號處理器正在收尾並會以 130 結束
       if (!e.scriptInvalid) throw e
       console.error(e.message)
       process.exit(1)
