@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.1.0] - 2026-11-16
+
+起因：xiaoxiao 的 34 張票在 D1 補開時誤掛到 plugharbor 的看板 #1（違反票務雙軌設計「每個 repo 各建看板」），`reconcile.py` 只收本 repo 的票，兩邊對帳都是差異 0，沒人發現；之後用票號找看板項目時撞到同號的兩張票才暴露。
+
+- `ticket-ops/scripts/reconcile.py`：看板上有別的 repo 的 Issue 時，在報告加一行 ⚠️ 列出各 repo 張數（不計入差異、不影響退出碼）；新增純函式 `other_repo_issues()` 與測試。
+
 ## [1.0.1] - 2026-11-16
 
 起因：lifecycle 4.1.0 把設計文件改成新章節格式（設計見 `docs/superpowers/specs/2026-11-15-lifecycle-split-design.md`，第三批），本 plugin 的共用 references 副本跟著改讀新章節。

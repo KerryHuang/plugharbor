@@ -190,10 +190,21 @@ def board_from_items(data, repo, field):
             if (c := it.get("content") or {}).get("type") == "Issue" and c.get("repository") == repo}
 
 
+def other_repo_issues(data, repo):
+    """看板上別的 repo 的 Issue 數 {repo: 張數}；設計是一個 repo 一個看板，有就要提醒。"""
+    out = {}
+    for it in data.get("items", []):
+        c = it.get("content") or {}
+        if c.get("type") == "Issue" and c.get("repository") not in (None, repo):
+            out[c["repository"]] = out.get(c["repository"], 0) + 1
+    return out
+
+
 def fetch_board(proj, repo):
+    """回傳 (本 repo 的 {issue 號: 欄位值}, 別的 repo 的 {repo: 張數})。"""
     data = gh_json(["project", "item-list", str(proj["number"]), "--owner", proj["owner"],
                     "--format", "json", "--limit", str(LIMIT)])
-    return board_from_items(data, repo, proj.get("field", "Status"))
+    return board_from_items(data, repo, proj.get("field", "Status")), other_repo_issues(data, repo)
 
 
 def render(r, repo, notes):
@@ -234,8 +245,14 @@ def main(argv=None):
     if parents is None:
         notes.append("未比對 parent（issue 沒有 parent 欄位，也沒給 --parents-json）")
     proj = load_project_cfg()
-    board = {int(k): v for k, v in read(a.board_json).items()} if a.board_json else (
-        fetch_board(proj, a.repo) if proj else None)
+    board, others = None, {}
+    if a.board_json:
+        board = {int(k): v for k, v in read(a.board_json).items()}
+    elif proj:
+        board, others = fetch_board(proj, a.repo)
+    if others:
+        notes.append(f"⚠️ 看板 #{proj['number']} 上有別的 repo 的票（一個 repo 應一個看板，不計入差異）："
+                     + "、".join(f"{k} {v} 張" for k, v in sorted(others.items())))
     options = (proj or {}).get("options")
     if board is not None and not options:
         notes.append("未比對看板（缺 ticket.project.options）")

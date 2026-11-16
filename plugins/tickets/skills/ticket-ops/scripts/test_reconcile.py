@@ -143,6 +143,18 @@ class BoardFromItems(unittest.TestCase):
         self.assertEqual(rc.board_from_items(data, "o/r", "Status"), {5: "Todo"})
 
 
+    def test_other_repo_issues_counted_for_warning(self):
+        # 起因：xiaoxiao 的票誤掛在 plugharbor 看板，對帳只收本 repo、差異 0 看不出來
+        data = {"items": [
+            {"status": "Todo", "content": {"type": "Issue", "number": 5, "repository": "o/r"}},
+            {"status": "Done", "content": {"type": "Issue", "number": 5, "repository": "o/other"}},
+            {"status": "Done", "content": {"type": "Issue", "number": 7, "repository": "o/other"}},
+            {"status": "Done", "content": {"type": "PullRequest", "number": 6, "repository": "o/x"}},
+            {"status": "Todo", "content": {"type": "DraftIssue", "title": "草稿"}},
+        ]}
+        self.assertEqual(rc.other_repo_issues(data, "o/r"), {"o/other": 2})
+        self.assertEqual(rc.other_repo_issues({"items": []}, "o/r"), {})
+
 class ParentsFromIssues(unittest.TestCase):
     def test_reads_native_parent_field(self):
         iss = [dict(issue(3), parent={"number": 1}), dict(issue(1), parent=None), issue(9)]
