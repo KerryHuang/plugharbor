@@ -4,7 +4,7 @@ import { assertSafeName } from './media.mjs'
 const SEGMENT = "{ text: '一句旁白。', run: async (a) => { await a.pause(1000) } }"
 const isText = (v) => typeof v === 'string' && v.trim() !== ''
 
-export function validateScript(cfg, { base } = {}) {
+export function validateScript(cfg, { base, hasEnv } = {}) {
   if (cfg === null || typeof cfg !== 'object') {
     return [{ path: 'export default', message: '腳本沒有 export default 一個物件', example: `export default { base: 'http://127.0.0.1:5190/', segments: [${SEGMENT}] }` }]
   }
@@ -13,7 +13,7 @@ export function validateScript(cfg, { base } = {}) {
   if (cfg.name !== undefined) {
     try { assertSafeName(cfg.name) } catch (e) { add('name', e.message, "name: 'leave-request'") }
   }
-  if (!base && !cfg.base) add('base', '腳本沒有 base，也沒給 --base', "base: 'http://127.0.0.1:5190/'")
+  if (!base && !cfg.base && !hasEnv) add('base', '腳本沒有 base，沒給 --base，也找不到 video/env.mjs', "base: 'http://127.0.0.1:5190/'")
   if (cfg.viewport !== undefined && !(cfg.viewport?.width > 0 && cfg.viewport.width * 9 === cfg.viewport.height * 16)) {
     add('viewport', '必須是 16:9', 'viewport: { width: 1280, height: 720 }')
   }
@@ -27,6 +27,7 @@ export function validateScript(cfg, { base } = {}) {
   cfg.segments.forEach((s, i) => {
     if (!isText(s?.text)) add(`segments[${i}].text`, '缺少旁白文字', SEGMENT)
     if (typeof s?.run !== 'function') add(`segments[${i}].run`, '必須是函式', SEGMENT)
+    if (s?.expect !== undefined && !isText(s.expect) && typeof s.expect !== 'function') add(`segments[${i}].expect`, '必須是非空字串或函式', "expect: '已送出'")
   })
   return errs
 }

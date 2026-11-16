@@ -66,10 +66,10 @@ export function buildFilterGraph({ total, starts, cues }) {
   return g
 }
 
-export function compose({ framesTxt, audios, capPngs, filter, lastLabel, total, outFile }) {
+export function compose({ framesTxt, audios, capPngs, filter, lastLabel, total, outFile, metadata = {} }) {
   const args = ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', framesTxt]
   audios.forEach((f) => args.push('-i', f))
   capPngs.forEach((f) => args.push('-i', f))
-  args.push('-filter_complex', filter, '-map', `[${lastLabel}]`, '-map', '[a]', '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', '-t', total.toFixed(2), outFile)
+  args.push('-filter_complex', filter, '-map', `[${lastLabel}]`, '-map', '[a]', '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', ...Object.entries(metadata).flatMap(([k, v]) => ['-metadata', `${k}=${v}`]), '-t', total.toFixed(2), outFile)
   sh('ffmpeg', args)
 }

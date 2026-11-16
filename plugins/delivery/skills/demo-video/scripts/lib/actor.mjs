@@ -1,5 +1,7 @@
 // 操作員：把「點、輸入、移動」放慢並加上游標與點擊漣漪，錄影畫面沒有真實游標，觀眾才跟得上。
 
+import { resolve } from 'node:path'
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 export async function installCursor(page) {
@@ -23,7 +25,7 @@ export async function nudgeCursor(page) {
   await sleep(700)
 }
 
-export function createActor(page, { moveMs = 560, typeDelay = 85 } = {}) {
+export function createActor(page, { moveMs = 560, typeDelay = 85, ui, login, fileRoot = process.cwd() } = {}) {
   const a = {
     p: page,
     pause: sleep,
@@ -58,6 +60,27 @@ export function createActor(page, { moveMs = 560, typeDelay = 85 } = {}) {
     // 逐字輸入，觀眾看得到打字過程
     async type(loc, text) { await a.click(loc); await loc.pressSequentially(text, { delay: typeDelay }); await sleep(200) },
     async fill(loc, v) { await a.click(loc); await loc.fill(v); await sleep(300) },
+    // 先等 file chooser 再點按鈕；相對路徑以影片目錄為準
+    async upload(button, file) {
+      // 兩者要一起等：click 失敗時 waitForEvent 才不會變成沒人接的 rejection
+      const [chooser] = await Promise.all([page.waitForEvent('filechooser'), a.click(button)])
+      await chooser.setFiles(resolve(fileRoot, file))
+      await sleep(300)
+    },
+    // 點開下拉後，在最後一個浮層容器（ui.menu，預設 [role=listbox]）裡點選項
+    async select(label, option) {
+      await a.click(typeof label === 'string' ? page.getByLabel(label) : label)
+      const menu = page.locator(ui?.menu ?? '[role=listbox]').last()
+      await a.click(menu.getByText(option, { exact: true }))
+    },
+    // 換使用者：配方的 login 設好身分後重載；path 相對於目前 origin
+    async as(userId, path) {
+      if (!login) throw new Error('配方沒有 login，不能用 a.as')
+      await login(page, userId)
+      if (path) await page.goto(new URL(path, page.url()).href)
+      else await page.reload()
+      await sleep(300)
+    },
   }
   return a
 }

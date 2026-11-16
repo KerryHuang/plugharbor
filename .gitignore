@@ -23,3 +23,8 @@ __pycache__/
 
 # 專案暫存（計畫、一次性產物），見 workspace:tmp-scratch
 .tmp/
+
+# demo-video 範例執行時的產物
+plugins/delivery/skills/demo-video/examples/.data/
+plugins/delivery/skills/demo-video/examples/.tts-cache/
+plugins/delivery/skills/demo-video/examples/**/out/

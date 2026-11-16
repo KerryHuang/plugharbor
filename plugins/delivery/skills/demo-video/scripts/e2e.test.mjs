@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
 import { createServer } from 'node:http'
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -85,6 +85,12 @@ test('靜止的最後一段：影像軌與音軌長度一致，且畫面內容�
     assert.deepEqual(s.problems, [], `影像 ${s.video} 音軌 ${s.audio} 預期 ${total}`)
     assert.ok(Math.abs(s.video - s.audio) <= 0.2)
     assert.match(r.log, /等使用者試聽/)
+    // --base 完全不碰配方
+    assert.ok(!r.log.includes('reset 完成') && !r.log.includes('就緒：'), r.log)
+    // doneT：每段操作完成的時間點，不早於該段起點
+    const tl0 = JSON.parse(readFileSync(join(out, 'timeline.json'), 'utf8'))
+    for (const g of tl0.segs) assert.ok(g.t <= g.doneT, `t ${g.t} doneT ${g.doneT}`)
+    assert.ok(existsSync(join(out, 'verify', 'contact.jpg')))
 
     // 畫面內容：不能只有長度對。操作前（白頁）、操作後（綠頁）要明顯不同；片尾靜止段仍有畫面，且與操作後一致、不是黑畫面
     const tl = JSON.parse(readFileSync(join(out, 'timeline.json'), 'utf8'))
@@ -98,4 +104,118 @@ test('靜止的最後一段：影像軌與音軌長度一致，且畫面內容�
   } finally {
     server.close()
   }
+})
+
+const ENV = (tts) => `import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+export default {
+  build() {},
+  reset({ dataDir }) {
+    mkdirSync(dataDir, { recursive: true })
+    writeFileSync(join(dataDir, 'count'), '0')
+    appendFileSync(join(dataDir, 'resets.log'), 'reset\\n')
+  },
+  ${tts}
+  start: { cmd: [process.execPath, new URL('./app.js', import.meta.url).pathname.replace(/^\\/([A-Za-z]:)/, '$1')], portEnv: 'PORT', readyPath: '/ready' },
+}
+`
+const APP = `const page = ${JSON.stringify(PAGE)}
+require('http').createServer((q, r) => { if (q.url === '/ready') { r.end('ok'); return } r.setHeader('content-type', 'text/html; charset=utf-8'); r.end(page) }).listen(Number(process.env.PORT), '127.0.0.1')
+`
+// 假 TTS 跑在引擎的子程序裡，呼叫次數寫進檔案
+const RECIPE_VIDEO = (countFile) => `
+import { appendFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+export default {
+  name: 'rec',
+  tts: async (text, outFile) => {
+    appendFileSync(${JSON.stringify(countFile)}, 'x\\n')
+    execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=' + Math.max(2, text.length * 0.3), '-c:a', 'libmp3lame', outFile])
+  },
+  segments: [
+    { text: '先在事由欄位輸入文字，再按送出。', run: async (a) => { await a.type(a.p.getByLabel('事由'), '家庭'); await a.click(a.p.getByRole('button', { name: '送出' })) } },
+    { text: '送出之後標題會改變。', run: async (a) => { await a.pause(100) } },
+  ],
+}
+`
+const runBuild = (args) => new Promise((resolve) => {
+  const c = spawn(process.execPath, [ENGINE, 'build', ...args], { cwd: process.cwd() })
+  let log = ''
+  c.stdout.on('data', (d) => { log += d }); c.stderr.on('data', (d) => { log += d })
+  c.on('close', (code) => resolve({ code, log }))
+})
+const lineCount = (f) => (existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter(Boolean).length : 0)
+
+test('配方模式：每次重置、快取、授權標記', { timeout: 300000 }, async (t) => {
+  const reason = skipReason()
+  if (reason) {
+    if (process.env.DEMO_VIDEO_E2E_REQUIRED === '1') assert.fail(`DEMO_VIDEO_E2E_REQUIRED=1，但缺依賴：${reason}`)
+    return t.skip(reason)
+  }
+  const root = mkdtempSync(join(tmpdir(), 'dv-recipe-'))
+  mkdirSync(join(root, 'v'))
+  writeFileSync(join(root, 'env.mjs'), ENV(''))
+  writeFileSync(join(root, 'app.js'), APP)
+  const script = join(root, 'v', 'video.mjs')
+  const counter = join(root, 'tts-count')
+  const src = RECIPE_VIDEO(counter)
+  writeFileSync(script, src)
+  const out = join(root, 'v', 'out')
+  const mp4 = join(out, 'rec.mp4')
+  const probeComment = () => spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'csv=p=0', mp4], { encoding: 'utf8' }).stdout
+
+  // 1. 首次
+  let r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
+  assert.equal(lineCount(counter), 2, r.log)
+  assert.ok(r.log.includes('reset 完成'), r.log)
+
+  // 2. 旁白不變：不再配音，但仍重置（AC-8、AC-3）
+  r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
+  assert.equal(lineCount(counter), 2, '旁白沒改，不該再呼叫 TTS')
+  assert.equal(lineCount(join(root, '.data', 'resets.log')), 2)
+
+  // 3. 改第 1 段一個字：只多 1 次
+  writeFileSync(script, src.replace('先在事由', '先在事因'))
+  r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
+  assert.equal(lineCount(counter), 3, r.log)
+
+  // 4. 授權標記（AC-13）
+  const comment = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'csv=p=0', mp4], { encoding: 'utf8' }).stdout
+  assert.ok(comment.includes('商用授權未確認') && comment.includes('自訂'), comment)
+  assert.equal(r.log.trim().split('\n').at(-1), '對外發布前要確認配音授權', r.log)
+
+  // 6. contact sheet 格數 = 段數 + 2（AC-14）
+  assert.equal(readdirSync(join(out, 'verify', 'frames')).length, 2 + 2)
+
+  // 配方宣告 edge／licensed:true，但腳本自帶 tts：不採用配方授權
+  writeFileSync(join(root, 'env.mjs'), ENV("tts: { provider: 'edge', licensed: true },"))
+  r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
+  assert.equal(r.log.trim().split('\n').at(-1), '對外發布前要確認配音授權', r.log)
+  assert.ok(probeComment().includes('商用授權未確認'))
+
+  // 5. 配方宣告 custom／licensed:true：採用
+  writeFileSync(join(root, 'env.mjs'), ENV("tts: { provider: 'custom', licensed: true },"))
+  r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
+  assert.ok(!r.log.includes('對外發布前要確認配音授權'), r.log)
+  const comment2 = probeComment()
+  assert.ok(comment2.includes('商用授權已確認') && comment2.includes('自訂'), comment2)
+
+  // 舊 timeline（沒有 doneT）重跑 verify 不能拋錯
+  const tlFile = join(out, 'timeline.json')
+  const tl = JSON.parse(readFileSync(tlFile, 'utf8'))
+  for (const g of tl.segs) delete g.doneT
+  writeFileSync(tlFile, JSON.stringify(tl))
+  const v = await new Promise((resolve) => {
+    const c = spawn(process.execPath, [ENGINE, 'verify', out], { cwd: process.cwd() })
+    let log = ''
+    c.stdout.on('data', (d) => { log += d }); c.stderr.on('data', (d) => { log += d })
+    c.on('close', (code) => resolve({ code, log }))
+  })
+  assert.equal(v.code, 0, v.log)
+  assert.ok(!v.log.includes('TypeError'), v.log)
 })

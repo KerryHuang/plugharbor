@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 // demo-video 引擎。
 //   node demo-video.mjs build  <video.mjs> [--out <dir>] [--base <url>]   配音 → 錄影 → 字幕 → 合成 → 驗證
+//   node demo-video.mjs dry-run <video.mjs> [--out <dir>] [--base <url>]  不配音不錄影，只驗操作能跑完
 //   node demo-video.mjs verify <out-dir>                                  只重跑驗證
+//   node demo-video.mjs env-check <video.mjs|video 目錄>                   只起站、等就緒、收站
 // 需在裝有 playwright-core 的工作目錄下執行。腳本格式見 references/script-format.md。
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { loadPlaywright } from './lib/deps.mjs'
 import { createActor, installCursor, nudgeCursor } from './lib/actor.mjs'
+import { estimateVoiceSec } from './lib/estimate.mjs'
+import { acquireLock, findEnv, loadEnv, startEnv } from './lib/env.mjs'
+import { listInteractive } from './lib/inspect.mjs'
 import { buildCues, toSrt } from './lib/subtitles.mjs'
+import { withTtsCache } from './lib/tts-cache.mjs'
 import { formatScriptErrors, validateScript } from './lib/validate-script.mjs'
 import { assertSafeName, buildFilterGraph, checkStreams, compose, contactSheet, probeDuration, segmentVolume, sh } from './lib/media.mjs'
 
@@ -20,17 +26,32 @@ async function defaultTts(text, outFile, { voice }) {
   sh('uvx', ['edge-tts', '--voice', voice, '--text', text, '--write-media', outFile])
 }
 
-export async function build(scriptPath, { out = 'out', base } = {}) {
+const PROVIDER_NAMES = { edge: 'Edge TTS', custom: '自訂' }
+
+export async function build(scriptPath, { out, base } = {}) {
   const cfg = (await import(pathToFileURL(resolve(scriptPath)).href)).default
-  const errs = validateScript(cfg, { base })
+  const envPath = base || cfg?.base ? null : findEnv(scriptPath) // 給了 base 就完全不碰配方
+  const errs = validateScript(cfg, { base, hasEnv: !!envPath })
   if (errs.length) throw Object.assign(new Error(formatScriptErrors(errs)), { scriptInvalid: true })
+  const recipe = envPath ? await loadEnv(envPath) : null
+  // 鎖要在碰 OUT 與配音之前拿：同一支影片同時 build，第二個直接被拒，不能先刪掉第一個正在錄的 frames
+  const lock = envPath ? acquireLock(join(dirname(envPath), '.data')) : null
+  const dropLock = () => { activeStops.delete(lockStop); lock?.() }
+  const lockStop = async () => lock?.()
+  if (lock) activeStops.add(lockStop)
+  try {
   const name = assertSafeName(cfg.name ?? 'video')
-  const url = base ?? cfg.base
   const voice = cfg.voice ?? 'zh-TW-HsiaoChenNeural'
-  const tts = cfg.tts ?? defaultTts
+  // 腳本自帶 tts 一律記 custom；授權只有配方也宣告 custom 時才採用，避免標記宣稱沒用到的語音來源
+  const rt = recipe?.tts
+  const ttsInfo = cfg.tts
+    ? { provider: 'custom', voice, licensed: rt?.provider === 'custom' && rt.licensed === true }
+    : { provider: rt?.provider ?? 'edge', voice, licensed: rt?.licensed === true }
+  const cacheDir = join(envPath ? dirname(envPath) : dirname(resolve(scriptPath)), '.tts-cache')
+  const tts = withTtsCache(cfg.tts ?? defaultTts, { dir: cacheDir, provider: ttsInfo.provider })
   const gapMs = cfg.gapMs ?? 450 // 語音檔尾端本來就帶約 1 秒靜音，段落間隔不要再加多
   const segments = cfg.segments
-  const OUT = resolve(out)
+  const OUT = resolve(out ?? join(dirname(resolve(scriptPath)), 'out'))
   for (const d of ['frames', 'voice', 'caps', 'verify']) rmSync(join(OUT, d), { recursive: true, force: true })
   for (const d of ['frames', 'voice', 'caps']) mkdirSync(join(OUT, d), { recursive: true })
 
@@ -41,24 +62,35 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
     s.dur = probeDuration(s.audio)
   }
 
-  // 2. 依語音長度錄操作
+  // 2. 依語音長度錄操作；有配方就先起站（每次 reset）
+  let url = base ?? cfg.base
+  let stopEnv = null
+  if (recipe) {
+    const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register, lock })
+    stopEnv = h.stop
+    url = h.url
+  }
+  try {
   const { chromium } = loadPlaywright()
   // 與 ensure-tools.sh 一致：CHROME_PATH 有設就用它（任何 Chromium 系），否則用系統安裝的 Google Chrome
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, headless: true } : { channel: 'chrome', headless: true })
+  const closeBrowser = () => browser.close().catch(() => {})
+  activeStops.add(closeBrowser) // Ctrl+C 時由信號處理器收掉 browser
   try {
     const ctx = await browser.newContext({ viewport: cfg.viewport ?? { width: 1280, height: 720 }, deviceScaleFactor: 1.5, locale: cfg.locale ?? 'zh-TW' })
     const p = await ctx.newPage()
     p.setDefaultTimeout(cfg.timeoutMs ?? 8000)
     await installCursor(p)
-    const a = createActor(p)
+    const a = createActor(p, { ui: recipe?.ui, login: recipe?.login, fileRoot: dirname(resolve(scriptPath)) })
 
     const cdp = await ctx.newCDPSession(p)
     const frames = []
+    let frameErr = null // listener 裡拋錯不能變成 unhandled rejection；記下來，段落跑完後讓 build 失敗
     cdp.on('Page.screencastFrame', async ({ data, metadata, sessionId }) => {
       const rel = `frames/${String(frames.length).padStart(6, '0')}.jpg` // 清單一律用相對於清單檔的 / 路徑，Windows 與含引號的 OUT 都不受影響
       const f = join(OUT, rel)
       frames.push({ rel, t: metadata.timestamp })
-      writeFileSync(f, Buffer.from(data, 'base64'))
+      try { writeFileSync(f, Buffer.from(data, 'base64')) } catch (e) { frameErr ??= e }
       cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {})
     })
     if (cfg.setup) await cfg.setup(p, a, url)
@@ -67,25 +99,21 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
     await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 })
     await nudgeCursor(p)
 
-    for (const [i, s] of segments.entries()) {
-      const t0 = Date.now()
-      s.t0Ms = t0 // 時間軸以實際錄影為準：音訊與字幕都用這個時間
-      try {
-        await s.run(a)
-      } catch (e) {
-        // 失敗時留下證據再結束：截圖、網址、畫面文字
-        await p.screenshot({ path: join(OUT, 'fail.png') }).catch(() => {})
-        console.log(`FAIL seg${i} ${p.url()}\n${String(e.message).slice(0, 300)}`)
-        console.log('畫面文字：' + (await p.locator('body').innerText().catch(() => '')).slice(0, 400).replace(/\n/g, ' | '))
-        console.log(`截圖：${join(OUT, 'fail.png')}`)
-        process.exitCode = 1
-        return null
-      }
-      const used = Date.now() - t0
-      const need = s.dur * 1000 + gapMs
-      s.over = used > need
-      console.log(`seg${i} voice ${s.dur.toFixed(1)}s actions ${(used / 1000).toFixed(1)}s${s.over ? ' OVER' : ''}`)
-      if (used < need) await sleep(need - used)
+    const r = await runSegments(segments, a, {
+      page: p,
+      outDir: OUT,
+      waitFor: async (i, used) => {
+        const s = segments[i]
+        const need = s.dur * 1000 + gapMs
+        s.over = used > need
+        console.log(`seg${i} voice ${s.dur.toFixed(1)}s actions ${(used / 1000).toFixed(1)}s${s.over ? ' OVER' : ''}`)
+        if (used < need) await sleep(need - used)
+      },
+    })
+    if (frameErr) throw new Error(`寫入影格失敗：${frameErr.message}`)
+    if (!r.ok) {
+      process.exitCode = 1
+      return null
     }
     await sleep(800)
     await cdp.send('Page.stopScreencast')
@@ -105,6 +133,7 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
 
     // 4. 字幕：旁白稿切句、估時；SRT 與燒進畫面的透明 PNG
     const starts = segments.map((s) => s.t0Ms / 1000 - start)
+    const doneTs = r.segs.map((g) => g.doneMs / 1000 - start)
     const cues = segments.flatMap((s, i) => buildCues(s.text, starts[i], s.dur))
     writeFileSync(join(OUT, `${name}.srt`), toSrt(cues))
     // ffmpeg 不一定有 libass／drawtext：字幕在瀏覽器渲染成透明 PNG 再 overlay
@@ -125,13 +154,135 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
       lastLabel: `v${cues.length}`,
       total,
       outFile: join(OUT, `${name}.mp4`),
+      metadata: { comment: `配音：${PROVIDER_NAMES[ttsInfo.provider] ?? ttsInfo.provider} ${voice}，商用授權${ttsInfo.licensed ? '已確認' : '未確認'}` },
     })
-    writeFileSync(join(OUT, 'timeline.json'), JSON.stringify({ name, total, segs: segments.map((s, i) => ({ t: starts[i], dur: s.dur, over: s.over, text: s.text })), cues }, null, 1))
+    writeFileSync(join(OUT, 'timeline.json'), JSON.stringify({ name, total, tts: ttsInfo, segs: segments.map((s, i) => ({ t: starts[i], doneT: doneTs[i], dur: s.dur, over: s.over, text: s.text })), cues }, null, 1))
     console.log(`frames ${frames.length} total ${total.toFixed(1)}s cues ${cues.length}`)
   } finally {
-    await browser.close()
+    activeStops.delete(closeBrowser)
+    await closeBrowser()
+  }
+  } finally {
+    if (stopEnv) { activeStops.delete(stopEnv); await stopEnv().catch(() => {}) }
   }
   return verify(OUT)
+  } finally { dropLock() }
+}
+
+// 收尾登記：stop 給信號處理器（非同步），killSync 給 process 'exit'（同步，崩潰時也會跑）
+const activeKills = new Set()
+const register = (stop, killSync) => { activeStops.add(stop); if (killSync) activeKills.add(killSync) }
+
+// 起站中的收尾函式；SIGINT／SIGTERM 時逐一呼叫
+export const activeStops = new Set()
+
+// 逐段執行操作；每段做完檢查 expect，失敗時留證據（截圖、畫面文字、可互動元素）並回傳 ok:false。
+// waitFor(i, usedMs)：build 用它補足語音長度，dry-run 傳不等待的 no-op。
+export async function runSegments(segments, a, { page, outDir, waitFor }) {
+  const segs = []
+  for (const [i, s] of segments.entries()) {
+    const t0 = Date.now()
+    s.t0Ms = t0 // 時間軸以實際錄影為準：音訊與字幕都用這個時間
+    try {
+      await s.run(a)
+      if (s.expect !== undefined) {
+        const loc = typeof s.expect === 'function' ? s.expect(a) : page.getByText(s.expect).first()
+        await loc.waitFor({ timeout: 3000 }).catch(() => {
+          throw new Error(`expect 未符合：${typeof s.expect === 'function' ? '函式回傳的元素沒有出現' : s.expect}`)
+        })
+      }
+    } catch (e) {
+      // 失敗時留下證據再結束：截圖、網址、畫面文字、可互動元素
+      mkdirSync(outDir, { recursive: true })
+      await page.screenshot({ path: join(outDir, 'fail.png') }).catch(() => {})
+      console.log(`FAIL seg${i} ${page.url()}\n${String(e.message).slice(0, 300)}`)
+      console.log('畫面文字：' + (await page.locator('body').innerText().catch(() => '')).slice(0, 400).replace(/\n/g, ' | '))
+      console.log('可互動元素：')
+      for (const n of await listInteractive(page)) console.log(n)
+      console.log(`截圖：${join(outDir, 'fail.png')}`)
+      return { ok: false, segs }
+    }
+    const doneMs = Date.now()
+    const usedMs = doneMs - t0
+    segs.push({ usedMs, doneMs })
+    await waitFor(i, usedMs)
+  }
+  return { ok: true, segs }
+}
+
+// 不配音、不錄影：只驗腳本的操作能跑完。out 只放 fail.png 與 server.log。
+export async function dryRun(scriptPath, { base, out } = {}) {
+  const cfg = (await import(pathToFileURL(resolve(scriptPath)).href)).default
+  const envPath = base || cfg?.base ? null : findEnv(scriptPath) // 給了 base 就完全不碰配方
+  const errs = validateScript(cfg, { base, hasEnv: !!envPath })
+  if (errs.length) throw Object.assign(new Error(formatScriptErrors(errs)), { scriptInvalid: true })
+  const OUT = resolve(out ?? join(dirname(resolve(scriptPath)), 'out'))
+  const stops = []
+  let ok = false
+  let recipe = null
+  let lock = null
+  try {
+    let url = base ?? cfg.base
+    if (envPath) {
+      recipe = await loadEnv(envPath)
+      lock = acquireLock(join(dirname(envPath), '.data'))
+      const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register, lock })
+      stops.push(h.stop)
+      url = h.url
+    }
+    const { chromium } = loadPlaywright()
+    const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, headless: true } : { channel: 'chrome', headless: true })
+    const closeBrowser = () => browser.close().catch(() => {})
+    activeStops.add(closeBrowser)
+    stops.unshift(closeBrowser)
+    const ctx = await browser.newContext({ viewport: cfg.viewport ?? { width: 1280, height: 720 }, deviceScaleFactor: 1.5, locale: cfg.locale ?? 'zh-TW' })
+    const p = await ctx.newPage()
+    p.setDefaultTimeout(cfg.timeoutMs ?? 8000)
+    await installCursor(p)
+    const a = createActor(p, { ui: recipe?.ui, login: recipe?.login, fileRoot: dirname(resolve(scriptPath)) })
+    if (cfg.setup) await cfg.setup(p, a, url)
+    else await p.goto(url)
+    const r = await runSegments(cfg.segments, a, {
+      page: p,
+      outDir: OUT,
+      waitFor: async (i, usedMs) => {
+        const x = estimateVoiceSec(cfg.segments[i].text)
+        const y = Math.round(usedMs / 100) / 10
+        console.log(`seg${i} 語音估計 ${x.toFixed(1)}s 操作 ${y.toFixed(1)}s${y > x ? ' ⚠️' : ''}`)
+      },
+    })
+    ok = r.ok
+  } finally {
+    for (const f of stops) { activeStops.delete(f); await f().catch(() => {}) }
+    lock?.()
+  }
+  return { ok }
+}
+
+// 只起站、等就緒、收站，用來單獨驗環境配方
+export async function envCheck(videoRootOrScript) {
+  const p = resolve(videoRootOrScript)
+  const isDir = statSync(p).isDirectory()
+  const envPath = isDir ? (existsSync(join(p, 'env.mjs')) ? join(p, 'env.mjs') : null) : findEnv(p)
+  if (!envPath) throw Object.assign(new Error(`找不到 video/env.mjs（錄影環境配方）：${p}`), { scriptInvalid: true })
+  const videoRoot = dirname(envPath)
+  const recipe = await loadEnv(envPath)
+  const lock = acquireLock(join(videoRoot, '.data'))
+  try {
+    const h = await startEnv(recipe, { videoRoot, outDir: join(videoRoot, '.data', 'env-check'), register, lock })
+    await h.stop()
+  } finally { lock() }
+  console.log('env-check 通過')
+}
+
+// 崩潰保險：detached 的 server 不會收到終端的信號，uncaught exception／unhandled rejection 時由 exit 同步收掉
+process.on('exit', () => { for (const k of activeKills) k() })
+
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, async () => {
+    await Promise.allSettled([...activeStops].map((f) => f()))
+    process.exit(130)
+  })
 }
 
 // 驗證：影像軌／音軌長度分別檢查、每段旁白區間量音量、contact sheet。回傳 { ok }。
@@ -155,9 +306,9 @@ export function verify(outDir) {
 
   const sheet = join(OUT, 'verify', 'contact.jpg')
   mkdirSync(join(OUT, 'verify'), { recursive: true })
-  const times = [0.3, ...tl.segs.map((g) => g.t + g.dur / 2), tl.total - 0.5]
+  const times = [0.3, ...tl.segs.map((g) => g.doneT ?? g.t + g.dur / 2), tl.total - 0.5]
   contactSheet(mp4, times, sheet, join(OUT, 'verify', 'frames'))
-  console.log(`contact sheet：${sheet}（由 agent 開圖看過；每格依序為：開頭、各段中點、結尾）`)
+  console.log(`contact sheet：${sheet}（由 agent 開圖看過；每格依序為：開頭、各段操作完成時、結尾）`)
 
   if (problems.length) {
     console.log('機器檢查失敗：\n- ' + problems.join('\n- '))
@@ -165,6 +316,7 @@ export function verify(outDir) {
     return { ok: false, problems }
   }
   console.log('機器檢查通過。語音品質、發音、字幕對齊未驗證——需要人試聽，現在狀態是等使用者試聽，不是完工。')
+  if (tl.tts?.licensed !== true) console.log('對外發布前要確認配音授權')
   return { ok: true, problems }
 }
 
@@ -173,11 +325,27 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const opt = (k) => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : undefined }
   if (cmd === 'build' && target) {
     await build(target, { out: opt('--out'), base: opt('--base') }).catch((e) => {
+      if (e.aborted) return // 信號處理器正在收尾並會以 130 結束
+      if (!e.scriptInvalid) throw e
+      console.error(e.message)
+      process.exit(1)
+    })
+  }
+  else if (cmd === 'dry-run' && target) {
+    await dryRun(target, { out: opt('--out'), base: opt('--base') }).then((r) => { if (!r.ok) process.exitCode = 1 }).catch((e) => {
+      if (e.aborted) return // 信號處理器正在收尾並會以 130 結束
       if (!e.scriptInvalid) throw e
       console.error(e.message)
       process.exit(1)
     })
   }
   else if (cmd === 'verify' && target) verify(target)
-  else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | verify <out-dir>'); process.exit(2) }
+  else if (cmd === 'env-check' && target) {
+    await envCheck(target).catch((e) => {
+      if (e.aborted) return // 信號處理器正在收尾並會以 130 結束
+      console.error(e.message)
+      process.exit(1)
+    })
+  }
+  else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | dry-run <video.mjs> [--out dir] [--base url] | verify <out-dir> | env-check <video.mjs|dir>'); process.exit(2) }
 }

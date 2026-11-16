@@ -1,7 +1,7 @@
 #!/bin/bash
 # 確認 demo-video 需要的工具都就緒，缺的協助安裝（Node 依賴只裝在指定的工作目錄，不做全域安裝）。
-#   ./ensure-tools.sh --dir <工作目錄>          檢查並安裝
-#   ./ensure-tools.sh --dir <工作目錄> --check  只檢查不安裝
+#   ./ensure-tools.sh --dir <video 目錄>          檢查並安裝
+#   ./ensure-tools.sh --dir <video 目錄> --check  只檢查不安裝
 CHECK_ONLY=0; DIR=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -61,6 +61,32 @@ else
     (cd "$DIR" && npm install --silent playwright-core) \
       && say "playwright-core" "✅ 已安裝" || MISSING=1
   else MISSING=1; fi
+fi
+
+# 6) gitignore —— --dir 在 git repo 裡時，確認產物與暫存目錄已被忽略；只提示，不改檔、不算 MISSING
+if [ -z "$DIR" ]; then
+  say "gitignore" "⚠ 沒給 --dir，略過"
+else
+  ANC="$DIR"; REST=""
+  while [ ! -d "$ANC" ] && [ "$ANC" != "." ] && [ "$ANC" != "/" ]; do
+    REST="$(basename "$ANC")${REST:+/$REST}"; ANC="$(dirname "$ANC")"
+  done
+  TOP=$(git -C "$ANC" rev-parse --show-toplevel 2>/dev/null)
+  if [ -z "$TOP" ]; then
+    say "gitignore" "⚠ 不在 git repo，略過"
+  else
+    REL="$(git -C "$ANC" rev-parse --show-prefix)${REST}"; REL="${REL%/}"
+    P="${REL:+$REL/}"
+    NEED=""
+    add() { git -C "$TOP" check-ignore -q --no-index "$1" || NEED="$NEED   $2"$'\n'; }
+    add "${P}x/out/a.mp4" "${P}**/out/"
+    add "${P}.data/x" "${P}.data/"
+    add "${P}x/.tts-cache/a" "${P}**/.tts-cache/"
+    add "${P}.build/x" "${P}.build/"
+    add "${P}node_modules/x" "${P}node_modules/"
+    if [ -z "$NEED" ]; then say "gitignore" "✅"
+    else say "gitignore" "⚠ 請在 .gitignore 補上："; printf "%s" "$NEED"; fi
+  fi
 fi
 
 echo
