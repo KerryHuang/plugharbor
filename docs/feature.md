@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 24／共 33（另有 1 項決定不做）；進行中 2、已規劃 1、構想 6；待確認 0 項。更新於 2026-11-16。
+總計：完成 24／共 35（另有 1 項決定不做）；進行中 2、已規劃 2、構想 7；待確認 0 項。更新於 2026-11-16。
 
 ## workspace：unattended（自動駕駛） #8
 
@@ -80,7 +80,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 ## delivery：demo-video 優化（2026-11-16 規劃）
 
-完成 4／共 4。
+完成 4／共 6。
 
 第一次實戰（dynamic-fields-design 兩支影片）的摩擦集中在起站／重置、選擇器試錯、操作超時。設計見 `docs/superpowers/specs/2026-11-16-demo-video-optimization-design.md`。
 
@@ -88,3 +88,5 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 - [x] `dry-run`（不配音不錄影、失敗印可互動元素）與配音快取；不做 `--from segN`（理由見設計 §2）
 - [x] 操作員 `a.upload`、`a.select`、`a.as`（換人）；每段 `expect`；contact sheet 改抓操作完成那一刻
 - [x] 審稿附語音估計與操作秒數表；回報分開寫成片長度與製作時間；配音授權寫進 MP4 metadata、專案層 `tts.licensed` 只問一次
+- [ ] 📋 實機回歸：在 formwright 用新版重做 design-by-tasks（規格 §5.2，待使用者跑與試聽）
+- [ ] 💡 1.1.x 小修：killSync 結束後從 activeKills 移除；build 的鎖延到 verify 後才放；授權文案與「配方宣告 custom 但腳本沒自帶 tts」的標記對齊；frameErr／SIGHUP 補測試；缺 `ps` 時給明確訊息
