@@ -35,9 +35,9 @@ For each SKILL.md, check:
 |-------|------|----------|
 | Frontmatter has `name` | Required | CRITICAL |
 | Frontmatter has `description` | Required | CRITICAL |
-| Line count < 300 | Skill conventions rule | WARNING |
+| Line count ≤ 300 | AGENTS.md 慣例（validate.py 會擋） | WARNING |
 | Directory name is kebab-case | Naming convention | WARNING |
-| References in `references/` subdirectory | Skill conventions rule | INFO |
+| References in `references/` subdirectory | AGENTS.md 慣例 | INFO |
 | No hardcoded absolute paths | Portability | WARNING |
 
 ### 3. Cross-Plugin Analysis

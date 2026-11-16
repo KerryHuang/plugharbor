@@ -40,6 +40,7 @@ plugins/<name>/
   skills/
   agents/
   README.md
+  CHANGELOG.md   # 最上方 `## [0.1.0] - yyyy-mm-dd`，validate.py 缺檔即報錯
 ```
 
 ### 4. Generate plugin.json
@@ -82,6 +83,7 @@ Add row to the plugin table in root `README.md`:
 - [ ] `plugins/<name>/.claude-plugin/plugin.json` exists with name, version, description, author, license
 - [ ] `.claude-plugin/marketplace.json` contains new plugin entry
 - [ ] `README.md` plugin table includes new row
-- [ ] All three versions match (`0.1.0`)
+- [ ] `plugins/<name>/CHANGELOG.md` exists with a `## [0.1.0]` entry
+- [ ] `python3 scripts/ci/validate.py` passes
 
 Report: "Plugin `<name>` v0.1.0 已建立。"

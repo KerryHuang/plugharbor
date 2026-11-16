@@ -28,7 +28,6 @@ Read `.claude-plugin/marketplace.json` for plugin list with versions.
 For each plugin, discover:
 - Skills: `plugins/<name>/skills/*/SKILL.md`
 - Agents: `plugins/<name>/agents/*.md`
-- Rules: `plugins/<name>/rules/*.md`
 
 ### 3. Display Index
 
@@ -44,9 +43,6 @@ For each plugin, discover:
 **Agents:**
 - <agent-name>
 
-**Rules:**
-- <rule-name>
-
 ---
 (repeat for each plugin)
 ```
@@ -58,5 +54,5 @@ If user provided a search query, filter the index to show only matching plugins 
 ### 5. Summary Stats
 
 ```
-Total: N plugins, N skills, N agents, N rules
+Total: N plugins, N skills, N agents
 ```

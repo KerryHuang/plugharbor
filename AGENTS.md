@@ -11,7 +11,7 @@
 - SKILL.md 300 行以內，實作邏輯放 `references/` 或 `scripts/`。
 - 要讓 pi 載入的 plugin 需有 `package.json`（`pi.skills`）。
 - 專案指示只寫本檔；`CLAUDE.md` 只放一行 `@AGENTS.md`（有 `CLAUDE.*` 檔時 Claude Code 不自動讀本檔），不放副本。
-- 細則見 `.claude/rules/`（plugin-structure、skill-conventions、version-consistency）。
+- 細則見 `.claude/rules/plugin-structure.md`。
 
 ## 改動原則
 

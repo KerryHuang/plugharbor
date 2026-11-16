@@ -29,12 +29,12 @@ $ARGUMENTS
 使用 WebFetch 抓取 Claude Code 官方文件：
 
 ```
-https://docs.anthropic.com/en/docs/claude-code/plugins
-https://docs.anthropic.com/en/docs/claude-code/skills
+https://code.claude.com/docs/en/plugins
+https://code.claude.com/docs/en/skills
 ```
 
 若無法存取，使用 WebSearch 搜尋：
-- `"Claude Code plugin" specification site:docs.anthropic.com`
+- `"Claude Code plugin" specification site:code.claude.com`
 - `"Claude Code plugin" marketplace schema`
 - `"Claude Code SKILL.md" format`
 
@@ -52,7 +52,7 @@ https://docs.anthropic.com/en/docs/claude-code/skills
 | 檢查項 | 方式 |
 |--------|------|
 | plugin.json | 讀取並解析所有欄位 |
-| marketplace.json | 讀取並解析所有欄位 |
+| marketplace.json | 讀 repo 根 `.claude-plugin/marketplace.json` 中本 plugin 的條目 |
 | skills/ 目錄 | 列出所有 SKILL.md，解析 frontmatter |
 | agents/ 目錄 | 列出所有 agent 定義 |
 | references/ 目錄 | 列出所有參考文件 |
@@ -80,7 +80,7 @@ https://docs.anthropic.com/en/docs/claude-code/skills
 | frontmatter 必填欄位齊全 | CRITICAL | name, description |
 | 有無官方新增的 frontmatter 欄位 | WARNING | 如新 trigger 語法 |
 | 有無廢棄的 frontmatter 欄位 | WARNING | 舊欄位可能不再支援 |
-| SKILL.md 行數合理（<500 行） | INFO | 過長影響載入 |
+| SKILL.md 不超過 300 行 | WARNING | AGENTS.md 慣例，validate.py 超過即報錯 |
 | references/ 引用路徑正確 | CRITICAL | 引用的路徑存在於 plugin 內 |
 
 #### 3.3 目錄結構檢查
@@ -89,7 +89,7 @@ https://docs.anthropic.com/en/docs/claude-code/skills
 |--------|------|------|
 | 官方支援但本 plugin 未使用的目錄 | INFO | 如 hooks/, outputStyles/ |
 | 本 plugin 使用但官方不支援的目錄 | WARNING | references/, templates/ 是自訂 |
-| .claude-plugin/ 位置正確 | CRITICAL | 只含 plugin.json + marketplace.json |
+| .claude-plugin/ 位置正確 | CRITICAL | plugin 內只含 plugin.json；marketplace.json 只在 repo 根的 `.claude-plugin/` |
 
 #### 3.4 內容品質檢查
 
@@ -173,6 +173,8 @@ https://docs.anthropic.com/en/docs/claude-code/skills
 | 情況 | 版本建議 |
 |------|---------|
 | 僅 INFO | 不需更新 |
-| 有 WARNING 修復 | patch（如 1.0.0 → 1.0.1） |
-| 有 CRITICAL 修復 | minor（如 1.0.0 → 1.1.0） |
-| 官方 breaking change | major（如 1.0.0 → 2.0.0） |
+| 修復（WARNING 或 CRITICAL） | patch |
+| 新增功能 | minor |
+| 介面不相容（改名、拆分、移除） | major |
+
+級距以 `AGENTS.md`「版號同步」為準。
