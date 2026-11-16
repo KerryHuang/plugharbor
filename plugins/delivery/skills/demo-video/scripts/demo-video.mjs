@@ -2,12 +2,14 @@
 // demo-video 引擎。
 //   node demo-video.mjs build  <video.mjs> [--out <dir>] [--base <url>]   配音 → 錄影 → 字幕 → 合成 → 驗證
 //   node demo-video.mjs verify <out-dir>                                  只重跑驗證
+//   node demo-video.mjs env-check <video.mjs|video 目錄>                   只起站、等就緒、收站
 // 需在裝有 playwright-core 的工作目錄下執行。腳本格式見 references/script-format.md。
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { loadPlaywright } from './lib/deps.mjs'
 import { createActor, installCursor, nudgeCursor } from './lib/actor.mjs'
+import { findEnv, loadEnv, startEnv } from './lib/env.mjs'
 import { buildCues, toSrt } from './lib/subtitles.mjs'
 import { formatScriptErrors, validateScript } from './lib/validate-script.mjs'
 import { assertSafeName, buildFilterGraph, checkStreams, compose, contactSheet, probeDuration, segmentVolume, sh } from './lib/media.mjs'
@@ -134,6 +136,29 @@ export async function build(scriptPath, { out = 'out', base } = {}) {
   return verify(OUT)
 }
 
+// 起站中的收尾函式；SIGINT／SIGTERM 時逐一呼叫
+export const activeStops = new Set()
+
+// 只起站、等就緒、收站，用來單獨驗環境配方
+export async function envCheck(videoRootOrScript) {
+  const p = resolve(videoRootOrScript)
+  const isDir = statSync(p).isDirectory()
+  const envPath = isDir ? (existsSync(join(p, 'env.mjs')) ? join(p, 'env.mjs') : null) : findEnv(p)
+  if (!envPath) throw Object.assign(new Error(`找不到 video/env.mjs（錄影環境配方）：${p}`), { scriptInvalid: true })
+  const videoRoot = dirname(envPath)
+  const recipe = await loadEnv(envPath)
+  const h = await startEnv(recipe, { videoRoot, outDir: join(videoRoot, '.data', 'env-check'), register: (f) => activeStops.add(f) })
+  await h.stop()
+  console.log('env-check 通過')
+}
+
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  process.on(sig, async () => {
+    await Promise.allSettled([...activeStops].map((f) => f()))
+    process.exit(130)
+  })
+}
+
 // 驗證：影像軌／音軌長度分別檢查、每段旁白區間量音量、contact sheet。回傳 { ok }。
 export function verify(outDir) {
   const OUT = resolve(outDir)
@@ -179,5 +204,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     })
   }
   else if (cmd === 'verify' && target) verify(target)
-  else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | verify <out-dir>'); process.exit(2) }
+  else if (cmd === 'env-check' && target) {
+    await envCheck(target).catch((e) => { console.error(e.message); process.exit(1) })
+  }
+  else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | verify <out-dir> | env-check <video.mjs|dir>'); process.exit(2) }
 }
