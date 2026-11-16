@@ -2,7 +2,7 @@ id = "plugharbor.sidebar"
 name = "Sidebar"
 version = "0.1.0"
 min_herdr_version = "0.9.3"
-description = "側欄依狀態替 tab／workspace 名稱上色、各狀態計數，並把子智慧體掛在 launcher 底下排成樹"
+description = "側欄依狀態替 tab／workspace 名稱上色、各狀態計數，把子智慧體掛在 launcher 底下排成樹，預設名稱的 tab 跟著 session 標題改名"
 platforms = ["macos", "linux", "windows"]
 
 # 每個入口拆兩條：macOS 的 herdr server 由 brew service 啟動，PATH 只有 /usr/bin:/bin:/usr/sbin:/sbin，

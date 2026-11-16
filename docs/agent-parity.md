@@ -31,7 +31,7 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `guard.py`（分層 guard） | ✅ PreToolUse | 部分：`tool-policy.mjs`（PreToolUse `^Bash$`）只擋直接 git 命令與常見 `sh -c`，涵蓋 `git add -A`、force push 等；不讀 `guards/*.md`，也不管 Write／Edit | 無：adapter 只替 agy 註冊 Stop | 無：pi 沒有 hook 機制 |
 | `agent-model-guard.py` | ✅ PreToolUse `Agent` | 無：Codex 的 subagent 沿用 runtime 預設模型，沒有 `sonnet`／`opus` 參數可檢查 | 無：未接 agy 的 hook（adapter 只註冊 Stop） | 無：pi 沒有 hook 機制 |
 | `ask-question-guard.py` | ✅ PreToolUse `AskUserQuestion` | 無：Codex 沒有 `AskUserQuestion`，提問規則改寫在 `AGENTS.md` | 無：同左，規則靠 `plugharbor-root.md` | 無：規則靠 `APPEND_SYSTEM.md` |
-| `auto-session-title.py` | ✅ UserPromptSubmit | 無：Codex 用自己的 session 標題，可 `/rename`；不為產標題背景啟動 Claude，也不寫 Codex 內部 session DB | 無：未接 agy 的 hook（adapter 只註冊 Stop） | 無：沒有 hook；`setup/herdr/pi/session-title-prompt.md` 只是命名用提示詞，不是 hook |
+| `auto-session-title.py` | ✅ UserPromptSubmit | 無：Codex 用自己的 session 標題，可 `/rename`；不為產標題背景啟動 Claude，也不寫 Codex 內部 session DB | 無：未接 agy 的 hook（adapter 只註冊 Stop） | 無：沒有 hook；`setup/herdr/pi/session-title-prompt.md` 只是命名用提示詞，不是 hook。各 CLI 的 terminal title 在 herdr 內會由 sidebar plugin 同步到預設名稱的 tab |
 | `feedback-capture.py` | ✅ UserPromptSubmit | 無：回饋佇列只在 Claude 收集；未接 Codex 的 UserPromptSubmit | 無 | 無 |
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
 | `herdr-env-context.py` | ✅ SessionStart | 無：adapter 未移植；照 dispatch 規則自行查 `HERDR_ENV` | 無 | 無：pi 沒有 hook 機制 |

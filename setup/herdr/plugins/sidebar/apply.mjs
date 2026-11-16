@@ -32,6 +32,29 @@ const tabs = list(['tab', 'list']).tabs
 const label = Object.fromEntries(tabs.map(t => [t.tab_id, t.label]))
 const agents = list(['agent', 'list']).agents
 
+// tab 名稱跟著 session 標題走：取 tab 內第一個 agent 的 terminal title（Claude 的 ai-title／hook 套用的建議標題、pi 的 setTitle）。
+// 只改 herdr 預設的純數字名稱，或上次由這裡取的名稱（記在 pane token auto_tab）；手動取的名稱不動。
+// 截到 12 格（6 個全形字），完整標題在側欄第二行。
+const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/u
+const cells = ch => (WIDE.test(ch) ? 2 : 1)
+const clip = (s, max = 12) => {
+  if ([...s].reduce((w, ch) => w + cells(ch), 0) <= max) return s
+  let w = 0, out = ''
+  for (const ch of s) { if ((w += cells(ch)) > max - 1) break; out += ch }
+  return `${out}…`
+}
+for (const [tabId, group] of Map.groupBy(agents, a => a.tab_id)) {
+  const title = (group[0].terminal_title_stripped ?? '').trim()
+  if (!title || title === 'Claude Code' || title.toLowerCase() === (group[0].agent ?? '').toLowerCase()) continue
+  const cur = label[tabId] ?? ''
+  const auto = /^\d+$/.test(cur) || group.some(a => (a.tokens ?? {}).auto_tab === cur)
+  const name = clip(title)
+  if (!auto || name === cur) continue
+  run(['tab', 'rename', tabId, name])
+  run(['pane', 'report-metadata', group[0].pane_id, '--source', 'plugharbor-sidebar', '--token', `auto_tab=${name}`])
+  label[tabId] = name
+}
+
 // 樹：root 依 herdr 原本的 workspace／tab／pane 順序編號，子節點在 parent 鍵後面接 .NNN，字串排序即樹的前序。
 // 側欄會把其他 machine 的 agent 併進同一份清單、照各自回報的 order 排，兩台編號會撞（Mac 的 000.001.001 夾進
 // Windows 的 parent 與子節點之間），所以最前面加主機名，每台自成一段
