@@ -58,7 +58,7 @@
   - `estimate.test.mjs`：
     - `estimateVoiceSec('這是一段剛好二十個字的測試旁白內容喔喔喔') === 5`（AC-5）
     - `estimateVoiceSec('一、二。') === 1.4`：標點不計，只算 2 字，2 ÷ 5 + 1 = 1.4。
-    - `estimateVoiceSec('Edge TTS 3') === 2.4`：字母與數字共 7 個，7 ÷ 5 + 1 = 2.4。
+    - `estimateVoiceSec('Edge TTS 3') === 2.6`：字母與數字共 8 個，8 ÷ 5 + 1 = 2.6。
   - `tts-cache.test.mjs`，用寫檔的 stub tts 並計數：
     - 第一次 `{hit:false}`、stub 呼叫 1 次。
     - 同文字第二次 `{hit:true}`、stub 仍是 1 次。
