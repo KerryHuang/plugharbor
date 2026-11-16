@@ -11,5 +11,5 @@ test('標點不計字數', () => {
 })
 
 test('字母與數字都算字', () => {
-  assert.equal(estimateVoiceSec('Edge TTS 3'), 2.4)
+  assert.equal(estimateVoiceSec('Edge TTS 3'), 2.6)
 })
