@@ -162,6 +162,7 @@ test('配方模式：每次重置、快取、授權標記', { timeout: 300000 },
   writeFileSync(script, src)
   const out = join(root, 'v', 'out')
   const mp4 = join(out, 'rec.mp4')
+  const probeComment = () => spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'csv=p=0', mp4], { encoding: 'utf8' }).stdout
 
   // 1. 首次
   let r = await runBuild([script])
@@ -183,17 +184,38 @@ test('配方模式：每次重置、快取、授權標記', { timeout: 300000 },
 
   // 4. 授權標記（AC-13）
   const comment = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'csv=p=0', mp4], { encoding: 'utf8' }).stdout
-  assert.ok(comment.includes('商用授權未確認'), comment)
+  assert.ok(comment.includes('商用授權未確認') && comment.includes('自訂'), comment)
   assert.equal(r.log.trim().split('\n').at(-1), '對外發布前要確認配音授權', r.log)
 
   // 6. contact sheet 格數 = 段數 + 2（AC-14）
   assert.equal(readdirSync(join(out, 'verify', 'frames')).length, 2 + 2)
 
-  // 5. 授權已確認：不再提醒
+  // 配方宣告 edge／licensed:true，但腳本自帶 tts：不採用配方授權
   writeFileSync(join(root, 'env.mjs'), ENV("tts: { provider: 'edge', licensed: true },"))
   r = await runBuild([script])
   assert.equal(r.code, 0, r.log)
+  assert.equal(r.log.trim().split('\n').at(-1), '對外發布前要確認配音授權', r.log)
+  assert.ok(probeComment().includes('商用授權未確認'))
+
+  // 5. 配方宣告 custom／licensed:true：採用
+  writeFileSync(join(root, 'env.mjs'), ENV("tts: { provider: 'custom', licensed: true },"))
+  r = await runBuild([script])
+  assert.equal(r.code, 0, r.log)
   assert.ok(!r.log.includes('對外發布前要確認配音授權'), r.log)
-  const comment2 = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format_tags=comment', '-of', 'csv=p=0', mp4], { encoding: 'utf8' }).stdout
-  assert.ok(comment2.includes('商用授權已確認'), comment2)
+  const comment2 = probeComment()
+  assert.ok(comment2.includes('商用授權已確認') && comment2.includes('自訂'), comment2)
+
+  // 舊 timeline（沒有 doneT）重跑 verify 不能拋錯
+  const tlFile = join(out, 'timeline.json')
+  const tl = JSON.parse(readFileSync(tlFile, 'utf8'))
+  for (const g of tl.segs) delete g.doneT
+  writeFileSync(tlFile, JSON.stringify(tl))
+  const v = await new Promise((resolve) => {
+    const c = spawn(process.execPath, [ENGINE, 'verify', out], { cwd: process.cwd() })
+    let log = ''
+    c.stdout.on('data', (d) => { log += d }); c.stderr.on('data', (d) => { log += d })
+    c.on('close', (code) => resolve({ code, log }))
+  })
+  assert.equal(v.code, 0, v.log)
+  assert.ok(!v.log.includes('TypeError'), v.log)
 })

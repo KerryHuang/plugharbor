@@ -36,7 +36,11 @@ export async function build(scriptPath, { out, base } = {}) {
   const recipe = envPath ? await loadEnv(envPath) : null
   const name = assertSafeName(cfg.name ?? 'video')
   const voice = cfg.voice ?? 'zh-TW-HsiaoChenNeural'
-  const ttsInfo = { provider: recipe?.tts?.provider ?? (cfg.tts ? 'custom' : 'edge'), voice, licensed: recipe?.tts?.licensed === true }
+  // 腳本自帶 tts 一律記 custom；授權只有配方也宣告 custom 時才採用，避免標記宣稱沒用到的語音來源
+  const rt = recipe?.tts
+  const ttsInfo = cfg.tts
+    ? { provider: 'custom', voice, licensed: rt?.provider === 'custom' && rt.licensed === true }
+    : { provider: rt?.provider ?? 'edge', voice, licensed: rt?.licensed === true }
   const cacheDir = join(envPath ? dirname(envPath) : dirname(resolve(scriptPath)), '.tts-cache')
   const tts = withTtsCache(cfg.tts ?? defaultTts, { dir: cacheDir, provider: ttsInfo.provider })
   const gapMs = cfg.gapMs ?? 450 // 語音檔尾端本來就帶約 1 秒靜音，段落間隔不要再加多
@@ -278,7 +282,7 @@ export function verify(outDir) {
 
   const sheet = join(OUT, 'verify', 'contact.jpg')
   mkdirSync(join(OUT, 'verify'), { recursive: true })
-  const times = [0.3, ...tl.segs.map((g) => g.doneT), tl.total - 0.5]
+  const times = [0.3, ...tl.segs.map((g) => g.doneT ?? g.t + g.dur / 2), tl.total - 0.5]
   contactSheet(mp4, times, sheet, join(OUT, 'verify', 'frames'))
   console.log(`contact sheet：${sheet}（由 agent 開圖看過；每格依序為：開頭、各段操作完成時、結尾）`)
 
