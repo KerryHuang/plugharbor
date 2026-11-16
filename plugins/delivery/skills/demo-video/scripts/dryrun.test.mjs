@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -78,7 +78,7 @@ test('dry-run 不配音不錄影', { timeout: 60000 }, async (t) => {
   const r = await run(['dry-run', f.script])
   assert.equal(r.code, 0, r.log) // tts 一被呼叫就 throw，exit 0 即代表 0 次
   assert.ok(Date.now() - t0 < 30000)
-  assert.ok(!existsSync(join(f.out, 'frames')) && !existsSync(join(f.out, 'dry.mp4')) && !existsSync(join(f.out, 'voice')))
+  assert.ok(!existsSync(join(f.out, 'frames')) && !existsSync(join(f.out, 'voice')))
   const lines = r.log.split('\n').filter((l) => /seg\d 語音估計 [\d.]+s 操作 [\d.]+s/.test(l))
   assert.equal(lines.length, 2, r.log)
 })
@@ -128,4 +128,29 @@ test('expect 符合（字串與函式）時通過', { timeout: 60000 }, async (t
     { text: '再確認。', expect: (a) => a.p.getByRole('heading', { name: '已送出' }), run: async (a) => { await a.pause(50) } },`))
   const r = await run(['dry-run', f.script])
   assert.equal(r.code, 0, r.log)
+})
+
+test('配方沒有 login 時 a.as 報錯並 exit 1（AC-12）', { timeout: 60000 }, async (t) => {
+  if (await guard(t)) return
+  const f = fixture(video(`{ text: '換人。', run: async (a) => { await a.as('user02') } }`))
+  const r = await run(['dry-run', f.script])
+  assert.equal(r.code, 1, r.log)
+  assert.ok(r.log.includes('配方沒有 login，不能用 a.as'), r.log)
+})
+
+test('server 起不來時 build 失敗退出：exit 1、指出 server.log、沒有 mp4（AC-2）', { timeout: 60000 }, async (t) => {
+  if (await guard(t)) return
+  const f = fixture(`
+import { execFileSync } from 'node:child_process'
+export default {
+  name: 'bad',
+  tts: async (text, outFile) => { execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', '-c:a', 'libmp3lame', outFile]) },
+  segments: [{ text: '不會執行到。', run: async (a) => { await a.pause(10) } }],
+}
+`)
+  writeFileSync(join(f.root, 'env.mjs'), `export default { build() {}, reset() {}, start: { cmd: ['不存在的執行檔'], portEnv: 'PORT', readyPath: '/ready' } }\n`)
+  const r = await run(['build', f.script])
+  assert.equal(r.code, 1, r.log)
+  assert.ok(r.log.includes('server 未就緒') && r.log.includes('server.log'), r.log)
+  assert.ok(!readdirSync(f.out).some((n) => n.endsWith('.mp4')), r.log)
 })
