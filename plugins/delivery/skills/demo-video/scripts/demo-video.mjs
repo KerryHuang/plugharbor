@@ -205,7 +205,11 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   }
   else if (cmd === 'verify' && target) verify(target)
   else if (cmd === 'env-check' && target) {
-    await envCheck(target).catch((e) => { console.error(e.message); process.exit(1) })
+    await envCheck(target).catch((e) => {
+      if (e.aborted) return // 信號處理器正在收尾並會以 130 結束
+      console.error(e.message)
+      process.exit(1)
+    })
   }
   else { console.error('用法：demo-video.mjs build <video.mjs> [--out dir] [--base url] | verify <out-dir> | env-check <video.mjs|dir>'); process.exit(2) }
 }

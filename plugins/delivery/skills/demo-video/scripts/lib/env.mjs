@@ -34,24 +34,32 @@ const tryListen = (port) => new Promise((res) => {
 })
 
 export async function findFreePort(preferred) {
-  if (preferred) { const p = await tryListen(preferred); if (p) return p }
+  if (preferred && !listenerPids(preferred).length) { const p = await tryListen(preferred); if (p) return p }
   return tryListen(0)
 }
 
-export function listenerPid(port) {
+export function listenerPids(port) {
   try {
     if (process.platform === 'win32') {
+      const pids = []
       for (const line of sh('netstat', ['-ano']).split(/\r?\n/)) {
         const f = line.trim().split(/\s+/)
-        if (f[0] === 'TCP' && f[3] === 'LISTENING' && f[1].endsWith(`:${port}`)) return Number(f[4])
+        if (f[0] === 'TCP' && f[3] === 'LISTENING' && f[1].endsWith(`:${port}`)) pids.push(Number(f[4]))
       }
-      return null
+      return pids
     }
     const out = spawnSync('lsof', ['-t', `-iTCP:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' }).stdout
-    const pid = Number(out.split('\n')[0])
-    return pid > 0 ? pid : null
-  } catch { return null }
+    return out.split('\n').map(Number).filter((n) => n > 0)
+  } catch { return [] }
 }
+
+export const listenerPid = (port) => listenerPids(port)[0] ?? null
+
+const pgidOf = (pid) => Number(spawnSync('ps', ['-o', 'pgid=', '-p', String(pid)], { encoding: 'utf8' }).stdout.trim())
+
+// 監聽者屬於我們起的程序：POSIX 看 process group（啟動器形式的 cmd 也成立），win32 看 pid
+const ownsListener = (port, childPid) =>
+  listenerPids(port).some((p) => (process.platform === 'win32' ? p === childPid : p === childPid || pgidOf(p) === childPid))
 
 const isAlive = (pid) => { try { process.kill(pid, 0); return true } catch (e) { return e.code === 'EPERM' } }
 
@@ -82,18 +90,28 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
   let child = null
   let exited = null
   let stopped = false
-  const stop = async () => {
-    if (stopped) return
+  let stopping = null
+  const groupAlive = () => { try { process.kill(-child.pid, 0); return true } catch { return false } }
+  const posix = process.platform !== 'win32'
+  const waitGone = async (ms) => {
+    const end = Date.now() + ms
+    while (Date.now() < end && (posix ? groupAlive() : !exited)) await sleep(50)
+    return posix ? !groupAlive() : !!exited
+  }
+  const stop = () => {
     stopped = true
-    if (child && !exited) {
-      const done = new Promise((r) => child.once('exit', r))
-      child.kill()
-      if ((await Promise.race([done, sleep(5000).then(() => 'timeout')])) === 'timeout') {
-        child.kill('SIGKILL')
-        await Promise.race([done, sleep(2000)])
-      }
-    }
-    release()
+    stopping ??= (async () => {
+      try {
+        if (child?.pid && (posix ? groupAlive() : !exited)) {
+          if (posix) process.kill(-child.pid, 'SIGTERM'); else child.kill()
+          if (!(await waitGone(5000))) {
+            if (posix) { try { process.kill(-child.pid, 'SIGKILL') } catch {} } else child.kill('SIGKILL')
+            await waitGone(2000)
+          }
+        }
+      } finally { release() }
+    })()
+    return stopping
   }
   register?.(stop)
   const step = async (name, fn) => {
@@ -106,14 +124,14 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
     const env = { ...process.env, ...start.env, [start.portEnv]: String(port) }
     await step('reset', () => recipe.reset({ dataDir, sh, env }))
     log('reset 完成')
-    if (stopped) throw new Error('已中止')
+    if (stopped) throw Object.assign(new Error('已中止'), { aborted: true })
 
     mkdirSync(outDir, { recursive: true })
     const logFile = join(outDir, 'server.log')
     const [cmd, ...args] = Array.isArray(start.cmd) ? start.cmd : start.cmd.trim().split(/\s+/)
     const fd = openSync(logFile, 'w')
     try {
-      child = spawn(cmd, args, { cwd: resolve(videoRoot, start.cwd ?? '.'), env, stdio: ['ignore', fd, fd], windowsHide: true })
+      child = spawn(cmd, args, { cwd: resolve(videoRoot, start.cwd ?? '.'), env, stdio: ['ignore', fd, fd], windowsHide: true, detached: process.platform !== 'win32' })
     } finally { closeSync(fd) }
     child.on('error', (e) => { exited = e })
     child.on('exit', (code) => { exited ??= { code } })
@@ -121,12 +139,13 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
     const deadline = Date.now() + (start.readyTimeoutMs ?? 60000)
     const url = `http://127.0.0.1:${port}`
     while (!stopped && !exited && Date.now() < deadline) {
-      if (child.pid && listenerPid(port) === child.pid && (await ping(url + start.readyPath))) {
+      if (child.pid && ownsListener(port, child.pid) && (await ping(url + start.readyPath))) {
         log(`就緒：pid ${child.pid}，埠 ${port}`)
         return { url, pid: child.pid, stop }
       }
       await sleep(250)
     }
+    if (stopped) throw Object.assign(new Error('已中止'), { aborted: true })
     throw new Error(`server 未就緒（log：${logFile}）`)
   } catch (e) {
     await stop()

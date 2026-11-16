@@ -122,3 +122,40 @@ test('SIGINT 會收掉 server', async () => {
   assert.equal(await code, 130)
   assert.equal(alive(Number(readFileSync(pidFile, 'utf8'))), false)
 })
+
+test('SIGTERM 後延遲才結束的 server：SIGINT 仍是 130、子程序與鎖都收乾淨', async () => {
+  const root = tmp()
+  const pidFile = join(root, 'app.pid')
+  const app = `require('fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));process.on('SIGTERM',()=>setTimeout(()=>process.exit(0),1000));setTimeout(()=>{${APP}},20000)`
+  writeFileSync(join(root, 'env.mjs'), `export default { build(){}, reset(){}, start: { cmd: [process.execPath, '-e', ${JSON.stringify(app)}], portEnv: 'PORT', readyPath: '/ready' } }`)
+  const p = spawn(process.execPath, [CLI, 'env-check', root], { stdio: ['ignore', 'pipe', 'pipe'] })
+  let out = ''
+  p.stdout.on('data', (d) => { out += d })
+  for (let i = 0; i < 100 && !(out.includes('reset 完成') && existsSync(pidFile) && readFileSync(pidFile, 'utf8')); i++) await new Promise((r) => setTimeout(r, 100))
+  const code = new Promise((r) => p.on('exit', r))
+  p.kill('SIGINT')
+  assert.equal(await code, 130)
+  assert.equal(alive(Number(readFileSync(pidFile, 'utf8'))), false)
+  assert.equal(existsSync(join(root, '.data', '.lock')), false)
+})
+
+test('啟動器形式的 cmd：孫程序 listen 也能就緒，stop 後孫程序消失', { skip: process.platform === 'win32' }, async () => {
+  const { root, opts } = ctx()
+  const gpFile = join(root, 'gp.pid')
+  const launcher = `const c=require('child_process').spawn(process.execPath,['-e',${JSON.stringify(APP)}],{stdio:'ignore'});require('fs').writeFileSync(${JSON.stringify(gpFile)},String(c.pid));setInterval(()=>{},1000)`
+  const h = await startEnv(recipe({ cmd: [process.execPath, '-e', launcher] }), opts)
+  const gp = Number(readFileSync(gpFile, 'utf8'))
+  assert.equal(alive(gp), true)
+  await h.stop()
+  assert.equal(alive(gp), false)
+})
+
+test('偏好埠被 0.0.0.0 上的別人占用時改用空埠', async () => {
+  const { logs, opts } = ctx()
+  const mine = await listen(0, '0.0.0.0')
+  const P = mine.address().port
+  const h = await startEnv(recipe({ port: P, cmd: [process.execPath, '-e', APP] }), opts)
+  try {
+    assert.notEqual(Number(logs.join('\n').match(/埠 (\d+)/)[1]), P)
+  } finally { await h.stop(); mine.close() }
+})
