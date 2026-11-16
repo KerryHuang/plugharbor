@@ -48,6 +48,22 @@ test('a.upload：點按鈕觸發 file chooser，相對路徑以 fileRoot 為準�
   })
 })
 
+test('a.upload：按鈕不存在時 reject，且沒有 unhandledRejection（C1）', { skip }, async () => {
+  const seen = []
+  const onUnhandled = (e) => seen.push(e)
+  process.on('unhandledRejection', onUnhandled)
+  try {
+    await withPage(async (page) => {
+      await page.setContent('<body><p>沒有按鈕</p></body>')
+      page.setDefaultTimeout(800)
+      const a = createActor(page, { moveMs: 10, fileRoot: tmpdir() })
+      await assert.rejects(a.upload(page.locator('#不存在'), 'x.png'))
+      await new Promise((r) => setTimeout(r, 1500)) // 等 filechooser 的逾時也發生
+    })
+  } finally { process.off('unhandledRejection', onUnhandled) }
+  assert.equal(seen.length, 0, String(seen[0]))
+})
+
 test('a.select：字串 label 開浮層並點選項（AC-10）', { skip }, async () => {
   await withPage(async (page) => {
     await page.setContent(SELECT_HTML)

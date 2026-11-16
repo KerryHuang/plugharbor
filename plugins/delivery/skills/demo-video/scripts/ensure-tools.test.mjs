@@ -19,12 +19,12 @@ test('gitignore 缺項時提示相對 repo 根的模式，且不改 .gitignore',
   const root = repo('*.log\n')
   const out = run(join(root, 'video'))
   assert.match(out, /gitignore\s+⚠ 請在 \.gitignore 補上：/)
-  for (const p of ['video/**/out/', 'video/.data/', 'video/.tts-cache/', 'video/node_modules/']) assert.ok(out.includes(p), p)
+  for (const p of ['video/**/out/', 'video/.data/', 'video/**/.tts-cache/', 'video/.build/', 'video/node_modules/']) assert.ok(out.includes(p), p)
   assert.equal(readFileSync(join(root, '.gitignore'), 'utf8'), '*.log\n')
 })
 
 test('gitignore 補齊後不再提示', () => {
-  const root = repo('video/**/out/\nvideo/.data/\nvideo/.tts-cache/\nvideo/node_modules/\n')
+  const root = repo('video/**/out/\nvideo/.data/\nvideo/**/.tts-cache/\nvideo/.build/\nvideo/node_modules/\n')
   assert.doesNotMatch(run(join(root, 'video')), /請在 \.gitignore 補上/)
 })
 

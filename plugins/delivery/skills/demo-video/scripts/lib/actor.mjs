@@ -62,9 +62,9 @@ export function createActor(page, { moveMs = 560, typeDelay = 85, ui, login, fil
     async fill(loc, v) { await a.click(loc); await loc.fill(v); await sleep(300) },
     // 先等 file chooser 再點按鈕；相對路徑以影片目錄為準
     async upload(button, file) {
-      const chooser = page.waitForEvent('filechooser')
-      await a.click(button)
-      await (await chooser).setFiles(resolve(fileRoot, file))
+      // 兩者要一起等：click 失敗時 waitForEvent 才不會變成沒人接的 rejection
+      const [chooser] = await Promise.all([page.waitForEvent('filechooser'), a.click(button)])
+      await chooser.setFiles(resolve(fileRoot, file))
       await sleep(300)
     },
     // 點開下拉後，在最後一個浮層容器（ui.menu，預設 [role=listbox]）裡點選項

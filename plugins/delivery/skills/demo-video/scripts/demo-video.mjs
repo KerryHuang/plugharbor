@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url'
 import { loadPlaywright } from './lib/deps.mjs'
 import { createActor, installCursor, nudgeCursor } from './lib/actor.mjs'
 import { estimateVoiceSec } from './lib/estimate.mjs'
-import { findEnv, loadEnv, startEnv } from './lib/env.mjs'
+import { acquireLock, findEnv, loadEnv, startEnv } from './lib/env.mjs'
 import { listInteractive } from './lib/inspect.mjs'
 import { buildCues, toSrt } from './lib/subtitles.mjs'
 import { withTtsCache } from './lib/tts-cache.mjs'
@@ -34,6 +34,12 @@ export async function build(scriptPath, { out, base } = {}) {
   const errs = validateScript(cfg, { base, hasEnv: !!envPath })
   if (errs.length) throw Object.assign(new Error(formatScriptErrors(errs)), { scriptInvalid: true })
   const recipe = envPath ? await loadEnv(envPath) : null
+  // 鎖要在碰 OUT 與配音之前拿：同一支影片同時 build，第二個直接被拒，不能先刪掉第一個正在錄的 frames
+  const lock = envPath ? acquireLock(join(dirname(envPath), '.data')) : null
+  const dropLock = () => { activeStops.delete(lockStop); lock?.() }
+  const lockStop = async () => lock?.()
+  if (lock) activeStops.add(lockStop)
+  try {
   const name = assertSafeName(cfg.name ?? 'video')
   const voice = cfg.voice ?? 'zh-TW-HsiaoChenNeural'
   // 腳本自帶 tts 一律記 custom；授權只有配方也宣告 custom 時才採用，避免標記宣稱沒用到的語音來源
@@ -60,7 +66,7 @@ export async function build(scriptPath, { out, base } = {}) {
   let url = base ?? cfg.base
   let stopEnv = null
   if (recipe) {
-    const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register: (f) => activeStops.add(f) })
+    const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register, lock })
     stopEnv = h.stop
     url = h.url
   }
@@ -79,11 +85,12 @@ export async function build(scriptPath, { out, base } = {}) {
 
     const cdp = await ctx.newCDPSession(p)
     const frames = []
+    let frameErr = null // listener 裡拋錯不能變成 unhandled rejection；記下來，段落跑完後讓 build 失敗
     cdp.on('Page.screencastFrame', async ({ data, metadata, sessionId }) => {
       const rel = `frames/${String(frames.length).padStart(6, '0')}.jpg` // 清單一律用相對於清單檔的 / 路徑，Windows 與含引號的 OUT 都不受影響
       const f = join(OUT, rel)
       frames.push({ rel, t: metadata.timestamp })
-      writeFileSync(f, Buffer.from(data, 'base64'))
+      try { writeFileSync(f, Buffer.from(data, 'base64')) } catch (e) { frameErr ??= e }
       cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {})
     })
     if (cfg.setup) await cfg.setup(p, a, url)
@@ -103,6 +110,7 @@ export async function build(scriptPath, { out, base } = {}) {
         if (used < need) await sleep(need - used)
       },
     })
+    if (frameErr) throw new Error(`寫入影格失敗：${frameErr.message}`)
     if (!r.ok) {
       process.exitCode = 1
       return null
@@ -158,7 +166,12 @@ export async function build(scriptPath, { out, base } = {}) {
     if (stopEnv) { activeStops.delete(stopEnv); await stopEnv().catch(() => {}) }
   }
   return verify(OUT)
+  } finally { dropLock() }
 }
+
+// 收尾登記：stop 給信號處理器（非同步），killSync 給 process 'exit'（同步，崩潰時也會跑）
+const activeKills = new Set()
+const register = (stop, killSync) => { activeStops.add(stop); if (killSync) activeKills.add(killSync) }
 
 // 起站中的收尾函式；SIGINT／SIGTERM 時逐一呼叫
 export const activeStops = new Set()
@@ -207,11 +220,13 @@ export async function dryRun(scriptPath, { base, out } = {}) {
   const stops = []
   let ok = false
   let recipe = null
+  let lock = null
   try {
     let url = base ?? cfg.base
     if (envPath) {
       recipe = await loadEnv(envPath)
-      const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register: (f) => activeStops.add(f) })
+      lock = acquireLock(join(dirname(envPath), '.data'))
+      const h = await startEnv(recipe, { videoRoot: dirname(envPath), outDir: OUT, register, lock })
       stops.push(h.stop)
       url = h.url
     }
@@ -239,6 +254,7 @@ export async function dryRun(scriptPath, { base, out } = {}) {
     ok = r.ok
   } finally {
     for (const f of stops) { activeStops.delete(f); await f().catch(() => {}) }
+    lock?.()
   }
   return { ok }
 }
@@ -251,12 +267,18 @@ export async function envCheck(videoRootOrScript) {
   if (!envPath) throw Object.assign(new Error(`找不到 video/env.mjs（錄影環境配方）：${p}`), { scriptInvalid: true })
   const videoRoot = dirname(envPath)
   const recipe = await loadEnv(envPath)
-  const h = await startEnv(recipe, { videoRoot, outDir: join(videoRoot, '.data', 'env-check'), register: (f) => activeStops.add(f) })
-  await h.stop()
+  const lock = acquireLock(join(videoRoot, '.data'))
+  try {
+    const h = await startEnv(recipe, { videoRoot, outDir: join(videoRoot, '.data', 'env-check'), register, lock })
+    await h.stop()
+  } finally { lock() }
   console.log('env-check 通過')
 }
 
-for (const sig of ['SIGINT', 'SIGTERM']) {
+// 崩潰保險：detached 的 server 不會收到終端的信號，uncaught exception／unhandled rejection 時由 exit 同步收掉
+process.on('exit', () => { for (const k of activeKills) k() })
+
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
   process.on(sig, async () => {
     await Promise.allSettled([...activeStops].map((f) => f()))
     process.exit(130)

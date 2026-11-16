@@ -81,7 +81,8 @@ else
     add() { git -C "$TOP" check-ignore -q --no-index "$1" || NEED="$NEED   $2"$'\n'; }
     add "${P}x/out/a.mp4" "${P}**/out/"
     add "${P}.data/x" "${P}.data/"
-    add "${P}.tts-cache/x" "${P}.tts-cache/"
+    add "${P}x/.tts-cache/a" "${P}**/.tts-cache/"
+    add "${P}.build/x" "${P}.build/"
     add "${P}node_modules/x" "${P}node_modules/"
     if [ -z "$NEED" ]; then say "gitignore" "✅"
     else say "gitignore" "⚠ 請在 .gitignore 補上："; printf "%s" "$NEED"; fi

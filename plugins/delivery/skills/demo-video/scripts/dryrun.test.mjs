@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,7 +29,8 @@ const ENV = `export default {
   start: { cmd: [process.execPath, new URL('./app.js', import.meta.url).pathname.replace(/^\\/([A-Za-z]:)/, '$1')], portEnv: 'PORT', readyPath: '/ready' },
 }
 `
-const APP = `const page = ${JSON.stringify(PAGE)}
+const APP = `require('fs').writeFileSync(__dirname + '/server.pid', String(process.pid))
+const page = ${JSON.stringify(PAGE)}
 require('http').createServer((q, r) => { if (q.url === '/ready') { r.end('ok'); return } r.setHeader('content-type', 'text/html; charset=utf-8'); r.end(page) }).listen(Number(process.env.PORT), '127.0.0.1')
 `
 
@@ -153,4 +154,48 @@ export default {
   assert.equal(r.code, 1, r.log)
   assert.ok(r.log.includes('server 未就緒') && r.log.includes('server.log'), r.log)
   assert.ok(!readdirSync(f.out).some((n) => n.endsWith('.mp4')), r.log)
+})
+
+const alive = (pid) => { try { process.kill(pid, 0); return true } catch (e) { return e.code !== 'ESRCH' } }
+const serverPid = (f) => Number(readFileSync(join(f.root, 'server.pid'), 'utf8'))
+const waitFor = async (cond, ms = 5000) => { for (let i = 0; i < ms / 50 && !cond(); i++) await new Promise((r) => setTimeout(r, 50)) }
+
+test('a.upload 指到不存在的按鈕：FAIL seg、exit 1、鎖與 server 都收乾淨（C1）', { timeout: 60000 }, async (t) => {
+  if (await guard(t)) return
+  const f = fixture(video(`{ text: '上傳檔案。', run: async (a) => { await a.upload(a.p.getByRole('button', { name: '不存在的按鈕' }), 'x.png') } }`, 'timeoutMs: 1000,'))
+  const r = await run(['dry-run', f.script])
+  assert.equal(r.code, 1, r.log)
+  assert.ok(r.log.includes('FAIL seg'), r.log)
+  assert.ok(existsSync(join(f.out, 'fail.png')))
+  assert.equal(existsSync(join(f.root, '.data', '.lock')), false)
+  assert.equal(alive(serverPid(f)), false)
+})
+
+test('引擎遇到 uncaught exception 也不留孤兒 server 與鎖檔（I1）', { timeout: 60000, skip: process.platform === 'win32' }, async (t) => {
+  if (await guard(t)) return
+  const f = fixture(video(`{ text: '會炸掉。', run: async (a) => { setTimeout(() => { throw new Error('boom') }, 200); await a.pause(5000) } }`))
+  const r = await run(['dry-run', f.script])
+  assert.notEqual(r.code, 0, r.log)
+  assert.ok(r.log.includes('boom'), r.log)
+  await waitFor(() => !alive(serverPid(f)))
+  assert.equal(alive(serverPid(f)), false)
+  assert.equal(existsSync(join(f.root, '.data', '.lock')), false)
+})
+
+test('同一支影片同時 build：第二個立刻被拒，且不動第一個的 out（I2）', { timeout: 60000 }, async (t) => {
+  if (await guard(t)) return
+  const f = fixture(video(`{ text: '慢一點。', run: async (a) => { await a.pause(4000) } }`))
+  mkdirSync(join(f.out, 'frames'), { recursive: true })
+  const sentinel = join(f.out, 'frames', 'sentinel')
+  writeFileSync(sentinel, 'x')
+  const first = run(['dry-run', f.script])
+  await waitFor(() => existsSync(join(f.root, '.data', '.lock')))
+  const t0 = Date.now()
+  const second = await run(['build', f.script])
+  assert.equal(second.code, 1, second.log)
+  assert.match(second.log, /已有一個 demo-video 在跑（pid \d+）/)
+  assert.ok(Date.now() - t0 < 3500, '第二個應立刻失敗')
+  assert.ok(existsSync(sentinel), '第一個的 out 不該被第二個清掉')
+  assert.equal((await first).code, 0)
+  assert.equal(existsSync(join(f.root, '.data', '.lock')), false)
 })

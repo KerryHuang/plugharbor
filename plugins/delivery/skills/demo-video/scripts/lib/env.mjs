@@ -39,17 +39,18 @@ export async function findFreePort(preferred) {
 }
 
 export function listenerPids(port) {
+  if (process.platform !== 'win32') {
+    const r = spawnSync('lsof', ['-t', `-iTCP:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' })
+    if (r.error?.code === 'ENOENT') throw new Error('需要 lsof 才能判斷監聽者（請安裝 lsof）')
+    return String(r.stdout ?? '').split('\n').map(Number).filter((n) => n > 0)
+  }
   try {
-    if (process.platform === 'win32') {
-      const pids = []
-      for (const line of sh('netstat', ['-ano']).split(/\r?\n/)) {
-        const f = line.trim().split(/\s+/)
-        if (f[0] === 'TCP' && f[3] === 'LISTENING' && f[1].endsWith(`:${port}`)) pids.push(Number(f[4]))
-      }
-      return pids
+    const pids = []
+    for (const line of sh('netstat', ['-ano']).split(/\r?\n/)) {
+      const f = line.trim().split(/\s+/)
+      if (f[0] === 'TCP' && f[3] === 'LISTENING' && f[1].endsWith(`:${port}`)) pids.push(Number(f[4]))
     }
-    const out = spawnSync('lsof', ['-t', `-iTCP:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' }).stdout
-    return out.split('\n').map(Number).filter((n) => n > 0)
+    return pids
   } catch { return [] }
 }
 
@@ -69,7 +70,8 @@ export function acquireLock(dataDir) {
   for (let i = 0; i < 2; i++) {
     try {
       writeFileSync(file, String(process.pid), { flag: 'wx' })
-      return () => rmSync(file, { force: true })
+      // 只刪 pid 是自己的鎖；可重複呼叫、同步
+      return () => { try { if (readFileSync(file, 'utf8') === String(process.pid)) rmSync(file, { force: true }) } catch {} }
     } catch (e) {
       if (e.code !== 'EEXIST') throw e
       const pid = Number(readFileSync(file, 'utf8'))
@@ -84,9 +86,10 @@ async function ping(url) {
   try { return (await fetch(url, { signal: AbortSignal.timeout(2000) })).ok } catch { return false }
 }
 
-export async function startEnv(recipe, { videoRoot, outDir, log = console.log, register } = {}) {
+// lock：呼叫端已先拿好的鎖（acquireLock 的回傳值），有傳就不再自己拿；stop／killSync 都會釋放它
+export async function startEnv(recipe, { videoRoot, outDir, log = console.log, register, lock } = {}) {
   const dataDir = join(videoRoot, '.data')
-  const release = acquireLock(dataDir)
+  const release = lock ?? acquireLock(dataDir)
   let child = null
   let exited = null
   let stopped = false
@@ -98,12 +101,17 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
     while (Date.now() < end && (posix ? groupAlive() : !exited)) await sleep(50)
     return posix ? !groupAlive() : !!exited
   }
+  // 同步收尾，給 process.on('exit') 用：行程崩潰時 detached 的 server 不會跟著死
+  const killSync = () => {
+    try { if (child?.pid) { if (posix) process.kill(-child.pid, 'SIGTERM'); else process.kill(child.pid) } } catch {}
+    release()
+  }
   const stop = () => {
     stopped = true
     stopping ??= (async () => {
       try {
         if (child?.pid && (posix ? groupAlive() : !exited)) {
-          if (posix) process.kill(-child.pid, 'SIGTERM'); else child.kill()
+          if (posix) { try { process.kill(-child.pid, 'SIGTERM') } catch {} } else child.kill()
           if (!(await waitGone(5000))) {
             if (posix) { try { process.kill(-child.pid, 'SIGKILL') } catch {} } else child.kill('SIGKILL')
             await waitGone(2000)
@@ -113,7 +121,7 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
     })()
     return stopping
   }
-  register?.(stop)
+  register?.(stop, killSync)
   const step = async (name, fn) => {
     try { return await fn() } catch (e) { throw new Error(`配方 ${name} 失敗：${e.message}`) }
   }
@@ -141,7 +149,7 @@ export async function startEnv(recipe, { videoRoot, outDir, log = console.log, r
     while (!stopped && !exited && Date.now() < deadline) {
       if (child.pid && ownsListener(port, child.pid) && (await ping(url + start.readyPath))) {
         log(`就緒：pid ${child.pid}，埠 ${port}`)
-        return { url, pid: child.pid, stop }
+        return { url, pid: child.pid, stop, killSync }
       }
       await sleep(250)
     }

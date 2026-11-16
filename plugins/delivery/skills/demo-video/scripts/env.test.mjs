@@ -6,7 +6,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { findEnv, loadEnv, startEnv } from './lib/env.mjs'
+import { findEnv, listenerPids, loadEnv, startEnv } from './lib/env.mjs'
+const ENV_URL = new URL('./lib/env.mjs', import.meta.url).href
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), 'demo-video.mjs')
 const APP = `require('http').createServer((q,r)=>{r.statusCode=q.url==='/ready'?200:404;r.end('ok')}).listen(Number(process.env.PORT),'127.0.0.1')`
@@ -158,4 +159,29 @@ test('偏好埠被 0.0.0.0 上的別人占用時改用空埠', async () => {
   try {
     assert.notEqual(Number(logs.join('\n').match(/埠 (\d+)/)[1]), P)
   } finally { await h.stop(); mine.close() }
+})
+
+test('沒有 lsof 時 listenerPids 直接拋明確訊息（I4）', { skip: process.platform === 'win32' }, async () => {
+  const emptyBin = tmp()
+  const code = `import { listenerPids } from ${JSON.stringify(ENV_URL)}; try { listenerPids(8080); console.log('NO-THROW') } catch (e) { console.log('ERR:' + e.message) }`
+  const out = await new Promise((res) => {
+    const c = spawn(process.execPath, ['--input-type=module', '-e', code], { env: { PATH: emptyBin } })
+    let o = ''; c.stdout.on('data', (d) => { o += d }); c.on('close', () => res(o))
+  })
+  assert.match(out, /ERR:需要 lsof 才能判斷監聽者（請安裝 lsof）/)
+})
+
+test('killSync：行程 exit 時同步收掉 server 並刪鎖檔（I1）', { skip: process.platform === 'win32' }, async () => {
+  const { root } = ctx()
+  const pidFile = join(root, 'server.pid')
+  const serverCode = `require('fs').writeFileSync(${JSON.stringify(pidFile)},String(process.pid));` + APP
+  const code = `import { startEnv } from ${JSON.stringify(ENV_URL)}
+const r = { build() {}, reset() {}, start: { portEnv: 'PORT', readyPath: '/ready', cmd: [process.execPath, '-e', ${JSON.stringify(serverCode)}] } }
+const h = await startEnv(r, { videoRoot: ${JSON.stringify(root)}, outDir: ${JSON.stringify(join(root, 'out'))}, log() {} })
+process.on('exit', h.killSync)
+process.exit(1)`
+  const exit = await new Promise((res) => spawn(process.execPath, ['--input-type=module', '-e', code]).on('close', res))
+  assert.equal(exit, 1)
+  assert.equal(alive(Number(readFileSync(pidFile, 'utf8'))), false)
+  assert.equal(existsSync(join(root, '.data', '.lock')), false)
 })
