@@ -32,18 +32,17 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 
 | Skill | 用途 |
 |-------|------|
-| `implement` | 照規格實作的入口：讀經驗、開分支、規格閘門，再交給 superpowers 規劃與執行（沒裝走極簡退路），計畫最後一步做規格比對與寫經驗 |
+| `implement` | 照設計文件實作的入口：開分支、實作前檢查，再交給 superpowers 規劃與執行（沒裝走同格式退路），計畫審查後開工，最後一步對照驗收與回填 |
 | `qa-verify` | Dev 完工後依驗收案例做實機 E2E 驗收 |
 | `release` | 分關卡發版：release branch、品質閘、merge 回 main、反合 develop；含線上急修（hotfix） |
-| `spec` | 寫功能規格：產一份 `<spec.dir>/<feature>.md`（§2.3 為可直接驗收的案例）；`--change` 走 CR |
+| `spec` | 寫功能規格：產一份 `<spec.dir>/<feature>.md`（`## 驗收` 為可直接驗收的案例）；`--change` 就地更新既有設計文件並記變更紀錄 |
 | `spec-check` | 實作前檢查規格：待澄清清零、驗收案例可測、引用的元件與資料表真的存在；`--sample` 覆蓋度取樣 |
 
-## Agents（11）
+## Agents（10）
 
 | Agent | 用途 |
 |-------|------|
 | `architect` | 架構顧問（不綁技術棧） |
-| `debugger` | 錯誤診斷與品質分析專家（不綁技術棧） |
 | `developer` | 功能開發專家（不綁技術棧） |
 | `domain-advisor` | 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性 |
 | `qa-fixture` | QA 前置資料：判定環境可寫性，逐條解析前置條件並備妥資料；另可查核資料斷言 |

@@ -36,7 +36,6 @@ model: opus
 | 寫實作程式碼 | `developer` |
 | 寫測試 | `tester` |
 | 程式碼 review（細節層級） | `reviewer` |
-| 偵錯／找根因 | `debugger` |
 
 **原則**：給單一方案就丟出去＝失職。任何建議必須附 trade-off 與適用條件。
 
@@ -263,7 +262,7 @@ model: opus
 | 需求收到 | 跑 Thinking Framework，產 ADR | — |
 | ADR 確認後 | 提供介面契約、模組邊界 | `developer` 實作 |
 | 實作完成後 | — | `reviewer` code review |
-| 上線後出問題 | 判斷是否架構問題 | 架構問題→我；程式 bug→`debugger` |
+| 上線後出問題 | 判斷是否架構問題 | 架構問題→我；程式 bug→主對話診斷 |
 
 > 我**沒有 Agent tool**，無法直接 spawn 其他 agent。「交給誰」＝在報告中註明「建議主對話召喚 X」，由主對話接力。
 
