@@ -58,3 +58,19 @@ test('build 遇到壞腳本：列全部錯誤、exit 1、不動輸出目錄、�
   assert.doesNotMatch(r.stderr, /\n\s+at /)
   assert.ok(existsSync(join(out, 'voice', 'keep.mp3')), '驗證失敗時不該清輸出目錄')
 })
+
+test('有配方（hasEnv）時 base 可省略', () => {
+  const cfg = ok()
+  delete cfg.base
+  assert.deepEqual(paths(cfg, { hasEnv: true }), [])
+  const [e] = validateScript(cfg)
+  assert.equal(e.message, '腳本沒有 base，沒給 --base，也找不到 video/env.mjs')
+})
+
+test('expect 只能是非空字串或函式', () => {
+  const seg = (expect) => ({ ...ok(), segments: [{ text: '好', run: async () => {}, expect }] })
+  assert.deepEqual(paths(seg(3)), ['segments[0].expect'])
+  assert.deepEqual(paths(seg('')), ['segments[0].expect'])
+  assert.deepEqual(paths(seg('已送出')), [])
+  assert.deepEqual(paths(seg(() => {})), [])
+})
