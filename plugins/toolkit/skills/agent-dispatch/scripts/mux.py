@@ -279,6 +279,9 @@ class HcBackend:
                 args += ["--timeout", str(timeout)]
         code, out, err = self.hc(*args, "--", ident, text, strip_id=True)
         sent = parse_json(out)
+        if code == 9:  # hc 拒絕打字：agent 停在對話框或權限確認（status blocked），打字會回答它
+            return {"status": "blocked", "raw": sent if sent is not None else (err or out).strip(),
+                    "hint": "worker 停在對話框或提示；先 read 畫面：只是提示、輸入框已就緒就隔幾秒重送同一則，否則請使用者用 attach-hint 進去處理"}
         if guarded and (code == 10 or (isinstance(sent, dict) and sent.get("started") is False)):
             return {"status": "blocked", "raw": sent if sent is not None else (err or out).strip(),
                     "hint": "worker 尚未就緒，可能停在啟動對話框；先 read 畫面，請使用者用 attach-hint 進去處理"}

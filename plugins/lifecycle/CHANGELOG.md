@@ -10,6 +10,7 @@
 - 新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（與 toolkit `agent-dispatch` 的正本位元組相同，登記在 repo 的 shared-copies 清單）。herdr TUI 與 Herdr.app（hc）都能開顧問，顧問 pane 會排進主 session 旁；`mux.py` 與版面腳本都在本 plugin 內；版面不依賴 toolkit，hc 下讀顧問 transcript（`mux.py session`）需 toolkit 的 SessionStart hook，沒有就改走 subagent 模式。
 - fix(mux)（最終審查）：`mux.py` 副本同步更新（見 toolkit 0.25.0）；`session` 在 hc 讀不到時回 `{"session":null,"hint":…}`，顧問 `advisor-discussion.md` 的「隔幾秒再取」改為最多重試 3 次，仍為 null 且帶 hint（hc 下缺 toolkit 的 SessionStart hook）就改走 subagent 模式；`app_layout.py` 刪除沒有呼叫端的 `relayout` 子指令。
 - fix（實機驗收）：`app_layout.py` 副本同步（見 toolkit 0.25.0：spawn 後立刻放置會回 `no running terminal`，改為重試）。
+- fix（實機驗收）：`mux.py` 副本同步（見 toolkit 0.25.0：hc send exit 9 改回 blocked）。
 
 ## [4.1.0] - 2026-11-16
 

@@ -362,6 +362,17 @@ class TestHc(MuxCase):
                 self.assertIn("尚未就緒", r["hint"])
                 self.assertEqual(len([c for c in self.calls() if c.startswith("hc send")]), n + 1)
 
+    def test_send_agent_blocked_exit9_is_blocked(self):
+        # 實機（agy）：status 為 blocked 時 hc send 以 exit 9 拒絕打字；應回 blocked 而不是 backend_error，任何 turn 皆然
+        err = '{"error":{"hint":"typing would answer its dialog; read its screen","code":"blocked"}}'
+        for turn in (0, 3):
+            with self.subTest(turn=turn):
+                self.resp("hc", "get", '{"address":"t1","state":"live","turn":%d}' % turn)
+                self.resp("hc", "send", "", rc=9, err=err)
+                r = self.ok(["send", "t1", "--text", "hi", "--wait"], HC_ENV)
+                self.assertEqual(r["status"], "blocked")
+                self.assertIn("read", r["hint"])
+
     def test_send_not_started_is_blocked(self):
         self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
         self.resp("hc", "send", '{"started":false}')
