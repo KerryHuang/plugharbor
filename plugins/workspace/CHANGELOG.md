@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.18.0] - 2026-11-17
+
+- feat(unattended): `skills/unattended/scripts/self-rotate.sh` 改經 `mux.py`（新增同目錄複本，與 toolkit `agent-dispatch` 的正本位元組相同）取自己的終端、等閒置、送 `/clear`／`/reload-plugins`／接回訊息、驗 session id 與畫面，herdr TUI 與 Herdr.app（hc）都能換新；不在兩者終端內就退出，hc 的 core 沒跑時不呼叫 hc。重試、逾時、log 格式不變；腳本與 toolkit handoff 的副本保持一致，`tests/self-rotate.sh` 兩種後端各跑一組情境。起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
+
 ## [1.17.0] - 2026-11-15
 
 - feat(unattended): 可選接入 `toolkit:tower`（session 塔台），有裝才適用、沒裝照舊。`skills/unattended/SKILL.md` 單元流程加開工 `takeoff --mode unattended --goal "<單元目標>" --segment <段號>`、合併前 `land-check`（10 → override 補理由、11 → 帳本記「空檔：等航班 <id> 落地」、12 → rebase 重跑閘門）、清 worktree 前 `release`（只在確定單元已完成、要清 worktree 時才 release，保留 worktree 的未完成單元不 release）；回來報告加「塔台紀錄」節（來源 `log.jsonl` 帳本期間事件）。`skills/unattended/references/autopilot.md` 排線用 `radar --json` 排除他班持有或檔案交集的段、換新 session 沿用原航班不重新 takeoff。起因：使用者實際遇過多 session 重工與衝突，未留文字紀錄（2026-11-15 裁決整套一次做完）。

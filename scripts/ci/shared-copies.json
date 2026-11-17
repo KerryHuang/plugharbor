@@ -12,6 +12,10 @@
   },
   "groups": [
     [
+      "plugins/toolkit/skills/agent-dispatch/scripts/mux.py",
+      "plugins/workspace/skills/unattended/scripts/mux.py"
+    ],
+    [
       "plugins/lifecycle/references/harness-terms.md",
       "plugins/browser-docs/references/harness-terms.md",
       "plugins/tickets/references/harness-terms.md",

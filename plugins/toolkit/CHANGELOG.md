@@ -8,6 +8,7 @@
 - feat(agent-dispatch)：新增 `skills/agent-dispatch/scripts/app_layout.py`（`place`／`relayout`，測試 `tests/app_layout.sh`），`mux.py spawn` 在 Herdr.app 視窗開著時把 hc worker 放進主 session 所在 tab：第 1 個從主 pane 往右切，之後只切最新的 worker pane（輪流 down／right），主 pane 不再被切、始終不小於任一格；第 7 個起 `terminal.keep --terminal <t>` 不帶 place（開新 tab，tab 內只有 worker），不重排；`place` 以 flock（`${XDG_STATE_HOME:-~/.local/state}/plugharbor/app-layout.lock`）序列化 ls→focus→keep→還原 focus，避免並行派工時 focus 互相覆蓋。app 沒有指定比例的指令，只能對半切，所以版型與 TUI 的 `PLANS` 不同。放完把 focus 還給主 pane。視窗沒開或主 pane 不在視窗內，worker 照跑、回 `visible:false`。`window` 判斷改為只有 `herdr-app status` exit 2 且訊息含 `no Herdr window` 才算沒開，其他失敗回 `{"error":"window_error"}`（`env` 與 `spawn` 皆然，`spawn` 在 `hc run` 之前判斷）。
 - 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。本分支的後續改動（文件、hook、self-rotate）併在同一版。
 - feat(hooks)：`herdr-env-context.py` 在 `HC_TERMINAL_ID` 存在時，把 SessionStart 輸入的 `session_id` 寫到 `${XDG_STATE_HOME:-~/.local/state}/plugharbor/hc-sessions/<HC_TERMINAL_ID>`（`/clear` 會覆寫）；讀不到 stdin 或 JSON 壞掉時略過記錄，原輸出與 exit 0 不變。`mux.py session` 的 hc 分支改為 `hc get` 取 address 再讀此檔，沒有檔回 `null`。
+- feat(handoff)：`skills/handoff/scripts/self-rotate.sh` 改經 `mux.py`（找不到同目錄複本時用 `agent-dispatch/scripts/mux.py`），herdr TUI 與 Herdr.app（hc）都能換新；與 workspace unattended 的副本保持一致，`tests/self-rotate.sh` 兩種後端各跑一組情境（hc 版另驗 send 時環境沒有 `HC_TERMINAL_ID`、core 沒跑不呼叫 hc）。
 
 ## [0.24.1] - 2026-11-16
 
