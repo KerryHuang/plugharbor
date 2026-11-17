@@ -188,7 +188,7 @@
   - compact-context：只有 `HC_TERMINAL_ID` → 指向 handoff skill
   - `dispatch.test.mjs`：`detectEnv({HC_TERMINAL_ID:'t1'}, {ghostty:true})` → `'herdr'`
   - `agent-mesh.test.mjs`：`scrubEnv` 移除 `HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET`、`HC_SCOPE`
-  - `test_mux_parity.py`：對同一組環境樣本（只 hc、只 herdr、兩者、皆無、`HERDR_ENV=1` 無 pane id），hook 判斷與 `mux.detect_backend(...) != "none"` 結果一致；`POLLUTED_VARS` ⊇ `scrubEnv` 清單中的 `HERDR_*`／`HC_*` 項（以 regex 讀 clis.mjs 原始碼比對）
+  - `test_mux_parity.py`：對同一組環境樣本（只 hc、只 herdr、兩者、皆無、`HERDR_ENV=1` 無 pane id），hook 判斷與 `mux.detect_backend(...) != "none"` 結果一致；`POLLUTED_VARS` ⊇ `scrubEnv` 清單中的 `HERDR_*` 項（`HC_*` 不在 `POLLUTED_VARS`：那是 hc 給 worker 的身分，Ruling G）（以 regex 讀 clis.mjs 原始碼比對）
   - notification.sh：shell 測試，`HC_TERMINAL_ID=t1` 時 exit 0 且不呼叫通知指令（stub `osascript`／`terminal-notifier`）
 - [ ] **Step 2：跑測試確認失敗**：`python -m pytest plugins/toolkit/hooks/tests -v`、`node --test plugins/toolkit/skills/agent-dispatch/dispatch.test.mjs plugins/toolkit/skills/agent-mesh-check/agent-mesh.test.mjs`
 - [ ] **Step 3：實作**
