@@ -62,6 +62,11 @@
 - Create: `plugins/toolkit/skills/agent-dispatch/scripts/mux.py`（正本；spec 寫 `plugins/toolkit/scripts/`，改放 skill 的 scripts 以符合 repo 慣例，hook 以 `${CLAUDE_PLUGIN_ROOT}/skills/agent-dispatch/scripts/mux.py` 引用）
 - Test: `plugins/toolkit/skills/agent-dispatch/scripts/test_mux.py`
 
+**Spike 修正（Task 0，見 `docs/superpowers/specs/2026-11-17-herdr-core-mux-spike.md`，以筆記為準）：**
+- `core_running()`：以 Unix socket connect 判斷（socket 路徑取自 core.lock，細節見筆記）；`MUX_CORE_SOCKET` 環境變數覆寫路徑供測試。
+- hc `spawn`：`hc run` 的 argv 由 core 的 PATH 解析，CLI 名稱先 `shutil.which` 解成絕對路徑（找不到 → `{"error":"cli_not_found"}` exit 1）；加測試 `test_spawn_hc_resolves_absolute_cli`。
+- 狀態映射：hc 輪次結束為 `done` 且維持不回 idle；`send --wait`／`wait` 的成功結束狀態 `done` 與 `idle` 都視為輪次結束（輸出照原值映射，不改寫）。
+
 **Interfaces:**
 - Produces（CLI，stdout 為 JSON，`read` 例外為純文字）：
   - `mux.py env` → `{"backend":"hc"|"herdr"|"none","self":str|null,"window":bool}`
@@ -132,6 +137,8 @@
 - Modify: `mux.py`（hc `spawn` 視窗開著時呼叫 `app_layout.py`）
 - Test: `plugins/toolkit/skills/agent-dispatch/tests/app_layout.sh`（比照 `tests/herdr_layout.sh` 的 stub 手法，stub `herdr-app`）、`test_mux.py`
 
+**Spike 修正：** app 沒有指定比例的指令，`terminal.open` 沒有 `--target`。版面改為：第 1 個 worker 從主 pane 往右切（主 pane 佔左半）；之後的 worker 只切右半的 worker pane（輪流 down／right），主 pane 永遠不再被切，因此始終 ≥ 任一 worker。放置用 `hc run --bg --name …` 後 `herdr-app do pane.focus`＋`terminal.keep --terminal <tN> --place right|down`（指令細節見筆記）。`hc kill` 後格子自動消失，`close` 不需 `pane.close`。測試的「6 個 worker」改驗：主 pane 只被切一次、其餘切法的目標都不是主 pane。
+
 **Interfaces:**
 - Consumes：Task 0 第 6、7、9 項結論；`herdr_layout.py` 的 `PLANS` 與 `MAX_WORKERS = 6`（import 或複製常數，擇一並在檔頭註明）。
 - Produces：`app_layout.py place --main <主 pane> --terminal <hc 位址>` → `{"pane":str,"visible":true}`；`app_layout.py relayout --main <主 pane>`；第 7 個起 `tab.new --name <worker>`。
@@ -193,6 +200,8 @@
 ### Task 6: 補狀態回報（缺 OSC 7501 的 CLI）
 
 **範圍依 Task 0 第 2 項結果**；claude 若已有狀態則不做。每個缺狀態的 CLI 一個子項，同一個任務內完成。
+
+**Spike 結果：四種 CLI（claude、codex、agy、pi）在 app 內都原生回報 OSC 7501，本任務取消**（Ruling D）；Task 7 的 herdr-long-task.md hc 小節記一行「四種 CLI 原生回報狀態，codex 需 `--no-daemon`」。
 
 **Files（每個缺的 CLI）：**
 - Create: `setup/herdr-core/<cli>/…`（整合檔，形式依該 CLI 擴充點：Claude Code hook 腳本、pi extension `.ts`、codex `notify` 腳本、agy 對應機制）
