@@ -28,6 +28,11 @@ elif args[:2] == ["do", "pane.focus"]:
     st = json.load(open(state_f, encoding="utf-8"))
     st["focus"] = opt("--pane"); save(); print('{"ok":true}')
 elif args[:2] == ["do", "terminal.keep"]:
+    nr = os.environ.get("STUB_NOT_RUNNING")  # 模擬 hc run 剛回傳、app 還沒看到該終端
+    left = int(open(nr).read() or 0) if nr else 0
+    if left > 0:
+        open(nr, "w").write(str(left - 1))
+        print(json.dumps({"error": 'no running terminal "%s"' % opt("--terminal")}, indent=2)); sys.exit(1)
     with open(os.environ["STUB_LOG"], "a", encoding="utf-8") as f:
         f.write("keep-target %s %s\n" % (opt("--terminal"), st["focus"]))
     if "--place" not in args:  # 不帶 place：開新 tab，tab 內只有 worker
@@ -125,6 +130,13 @@ targets=$(grep '^keep-target' "$TMP/log" | awk '{print $3}')
 [ "$(echo "$targets" | sort -u | wc -l | tr -d ' ')" -eq 2 ]; check "並行：兩次 keep 目標不同" $?
 [ "$(echo "$targets" | grep -c '^p1$')" -eq 1 ]; check "並行：主 pane 只被切一次" $?
 [ "$(area p1)" -ge "$(area p2)" ] && [ "$(area p1)" -ge "$(area p3)" ]; check "並行：主 pane 面積 >= 任一 worker" $?
+
+# 剛 spawn 的終端 app 還沒看到（no running terminal）：重試後放好
+reset
+echo 2 > "$TMP/nr"
+out="$(STUB_NOT_RUNNING="$TMP/nr" placew 1 || true)"
+echo "$out" | grep -q '"visible": true' && r=0 || r=1; check "app 尚未看到終端：重試後 visible true" $r
+[ "$(grep -c '^do terminal.keep' "$TMP/log")" -eq 3 ] && r=0 || r=1; check "app 尚未看到終端：keep 共呼叫 3 次" $r
 
 # ls 找不到主 pane：回 layout_failed，exit 非 0
 reset

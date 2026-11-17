@@ -19,7 +19,7 @@
 ls→focus→keep→還原 focus 是臨界區，用 flock 序列化（並行派工時 focus 是全域狀態，不鎖會切到錯的 pane）。
 鎖檔：${XDG_STATE_HOME:-~/.local/state}/plugharbor/app-layout.lock。
 """
-import argparse, fcntl, json, os, subprocess, sys
+import argparse, fcntl, json, os, subprocess, sys, time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -28,6 +28,7 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8")
 
 MAX_WORKERS = 6  # 同 herdr_layout.py
+KEEP_RETRIES = 10  # 實機：spawn 後立刻 keep 會回 no running terminal
 
 
 class LayoutError(Exception):
@@ -45,6 +46,18 @@ def app(*args):
         return json.loads(r.stdout)
     except json.JSONDecodeError:
         raise LayoutError(f"herdr-app {' '.join(args)} 非 JSON 輸出：{r.stdout.strip()[:200]}")
+
+
+def keep(*args):
+    """terminal.keep；hc run 剛回傳時 app 可能還沒看到該終端（no running terminal），短暫重試。"""
+    for _ in range(KEEP_RETRIES - 1):
+        try:
+            return app("do", "terminal.keep", *args)
+        except LayoutError as e:
+            if "no running terminal" not in str(e):
+                raise
+            time.sleep(0.3)
+    return app("do", "terminal.keep", *args)
 
 
 def find_key(data, key):
@@ -105,14 +118,14 @@ def place(main, terminal):
         try:
             if n >= MAX_WORKERS:
                 # 不帶 --place：開新 tab，tab 內只有這個 worker
-                kept = app("do", "terminal.keep", "--terminal", terminal)
+                kept = keep("--terminal", terminal)
             else:
                 if n == 0:
                     target, direction = main, "right"
                 else:
                     target, direction = workers[-1].get("pane"), ("down" if n % 2 else "right")
                 app("do", "pane.focus", "--pane", target)
-                kept = app("do", "terminal.keep", "--terminal", terminal, "--place", direction)
+                kept = keep("--terminal", terminal, "--place", direction)
         finally:
             restore_focus(main)
     result = {"pane": find_key(kept, "pane"), "visible": True}
