@@ -34,7 +34,7 @@ class MuxCase(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp(prefix="mx"))
         self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
-        for name in ("hc", "herdr", "herdr-app", "claude", "codex", "herdr_layout.py"):
+        for name in ("hc", "herdr", "herdr-app", "claude", "codex", "herdr_layout.py", "app_layout.py"):
             (self.dir / name).write_text(STUB, encoding="utf-8")
             (self.dir / name).chmod(0o755)
         self.sock = None
@@ -68,6 +68,9 @@ class MuxCase(unittest.TestCase):
     def calls(self):
         f = self.dir / "calls.log"
         return f.read_text(encoding="utf-8").splitlines() if f.exists() else []
+
+    def hc_run(self):
+        return next(c for c in self.calls() if c.startswith("hc run")).split()
 
     def argv_log(self):
         f = self.dir / "argv.log"
@@ -151,6 +154,14 @@ class TestEnv(MuxCase):
         self.resp("herdr-app", "status", "", rc=2, err="no Herdr window")
         self.assertFalse(self.ok(["env"], HC_ENV)["window"])
 
+    def test_env_window_error_is_not_no_window(self):
+        # 只有 exit 2 且訊息含 no Herdr window 才算沒開；其他失敗不能當成沒開
+        for rc, err in ((1, "boom"), (2, "path must be shorter than SUN_LEN"), (2, "")):
+            with self.subTest(rc=rc):
+                self.resp("herdr-app", "status", "", rc=rc, err=err)
+                code, out, _ = self.mux(["env"], HC_ENV)
+                self.assertEqual((code, json.loads(out)["error"]), (1, "window_error"))
+
     def test_env_hc_core_down_no_hc_call(self):
         r = self.ok(["env"], HC_ENV, core=False)
         self.assertEqual(r, {"backend": "hc", "self": "t1", "window": False})
@@ -174,6 +185,55 @@ class TestEnv(MuxCase):
 
 
 class TestHc(MuxCase):
+    LS = json.dumps({"spaces": [{"tabs": [{"tab": "tb1", "terminals": [
+        {"terminal": "t1", "pane": "p1"}, {"terminal": "t5", "pane": "p5", "name": "w0"}]}]}]})
+
+    def layout_env(self):
+        return {**HC_ENV, "MUX_APP_LAYOUT_CMD": str(self.dir / "app_layout.py")}
+
+    def spawn_args(self):
+        return ["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp", "--", "--model", "m"]
+
+    def test_spawn_with_window_places_next_to_main(self):
+        self.resp("hc", "run", '{"address":"t7"}')
+        self.resp("herdr-app", "ls", self.LS)
+        self.resp("app_layout.py", "place", '{"pane":"p7","visible":true}')
+        r = self.ok(self.spawn_args(), self.layout_env())
+        self.assertEqual(r, {"id": "t7", "visible": True, "pane": "p7"})
+        self.assertIn("app_layout.py place --main p1 --terminal t7 --name w1", self.calls())
+        calls = self.calls()
+        self.assertLess(calls.index("herdr-app status"), [i for i, c in enumerate(calls) if c.startswith("hc run")][0])
+
+    def test_spawn_without_window_stays_hidden(self):
+        self.resp("herdr-app", "status", "", rc=2, err="herdr-app: no Herdr window at x/herdr-app.sock")
+        self.resp("hc", "run", '{"address":"t7"}')
+        r = self.ok(self.spawn_args(), self.layout_env())
+        self.assertEqual(r, {"id": "t7", "visible": False})
+        self.assertFalse([c for c in self.calls() if c.startswith("app_layout.py")])
+        self.assertFalse([c for c in self.calls() if c.startswith("herdr-app ls")])
+
+    def test_spawn_window_error_does_not_start_worker(self):
+        self.resp("herdr-app", "status", "", rc=1, err="boom")
+        code, out, _ = self.mux(self.spawn_args(), self.layout_env())
+        self.assertEqual((code, json.loads(out)["error"]), (1, "window_error"))
+        self.assertFalse([c for c in self.calls() if c.startswith("hc run")])
+
+    def test_spawn_main_pane_not_in_window_stays_hidden(self):
+        self.resp("hc", "run", '{"address":"t7"}')
+        self.resp("herdr-app", "ls", '{"spaces":[]}')
+        r = self.ok(self.spawn_args(), self.layout_env())
+        self.assertEqual(r, {"id": "t7", "visible": False})
+        self.assertFalse([c for c in self.calls() if c.startswith("app_layout.py")])
+
+    def test_spawn_layout_failure_keeps_worker_hidden(self):
+        self.resp("hc", "run", '{"address":"t7"}')
+        self.resp("herdr-app", "ls", self.LS)
+        self.resp("app_layout.py", "place", '{"error":"layout_failed","hint":"x"}', rc=1)
+        code, out, err = self.mux(self.spawn_args(), self.layout_env())
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out), {"id": "t7", "visible": False})
+        self.assertIn("版面", err)
+
     def test_send_strips_hc_terminal_id(self):
         self.resp("hc", "send", '{"started":true}')
         self.ok(["send", "t2", "--text", "hi"], HC_ENV)
@@ -184,7 +244,7 @@ class TestHc(MuxCase):
         r = self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp", "--env", "A=1",
                      "--", "--model", "m"], HC_ENV)
         self.assertEqual(r, {"id": "t7", "visible": False})
-        argv = self.calls()[0].split()
+        argv = self.hc_run()
         self.assertEqual(argv[:2], ["hc", "run"])
         for flag in ("--bg", "--no-notify"):
             self.assertIn(flag, argv)
@@ -203,7 +263,7 @@ class TestHc(MuxCase):
     def test_spawn_hc_resolves_absolute_cli(self):
         self.resp("hc", "run", '{"address":"t7"}')
         self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp", "--", "--model", "m"], HC_ENV)
-        argv = self.calls()[0].split()
+        argv = self.hc_run()
         self.assertIn(str(self.dir / "claude"), argv)
         self.assertNotIn("claude", argv)  # 不能是裸名稱
 
@@ -217,7 +277,7 @@ class TestHc(MuxCase):
     def test_spawn_codex_adds_no_daemon(self):
         self.resp("hc", "run", '{"address":"t7"}')
         self.ok(["spawn", "--name", "w1", "--kind", "codex", "--cwd", "/tmp", "--", "-m", "x"], HC_ENV)
-        argv = self.calls()[0].split()
+        argv = self.hc_run()
         i = argv.index(str(self.dir / "codex"))
         self.assertEqual(argv[i + 1:], ["--no-daemon", "-m", "x"])
 

@@ -3,13 +3,14 @@
 
 用法：mux.py <動作> ...，stdout 為 JSON（read 例外，輸出畫面純文字）。
   env                                  → {"backend":"hc|herdr|none","self":…,"window":bool}
-  spawn --name N --kind K --cwd D [--env K=V]... -- <CLI 參數>   → {"id":…,"visible":bool}
+  spawn --name N --kind K --cwd D [--env K=V]... -- <CLI 參數>   → {"id":…,"visible":bool[,"pane":…]}
   send ID (--text T | --file F) [--wait] [--timeout 秒]          → {"status":S,"raw":…}
   wait ID [--timeout 秒]                                          → {"status":S,"raw":…}
   read ID [--lines N] | alive ID | session ID | close ID | attach-hint ID
 S：done|idle|working|blocked|error|timeout|gone（兩邊的原始值在這裡映射，原樣放 raw）。
 錯誤：stdout 印 {"error":kind,"hint":…}；exit 2 用法、3 core_not_running、4 no_backend、1 其他。
-環境變數：MUX_BACKEND 強制後端；MUX_CORE_SOCKET 覆寫 core socket 路徑；MUX_LAYOUT_CMD 取代版面腳本（測試用）。
+環境變數：MUX_BACKEND 強制後端；MUX_CORE_SOCKET 覆寫 core socket 路徑；
+MUX_LAYOUT_CMD 取代 TUI 版面腳本、MUX_APP_LAYOUT_CMD 取代 app 版面腳本（測試用）。
 
 core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷。
 """
@@ -155,6 +156,19 @@ def parse_json(text):
         return None
 
 
+def window_open(env):
+    """Herdr.app 視窗開著嗎。只有 `herdr-app status` exit 2 且訊息含 no Herdr window 才算沒開（spike 第 9 項）；
+    其他失敗（路徑過長、app 掛了…）回 window_error，不當成沒開。找不到 herdr-app 視為沒開。"""
+    if not shutil.which("herdr-app", path=env.get("PATH")):
+        return False
+    code, out, err = run(["herdr-app", "status"], env=env)
+    if code == 0:
+        return True
+    if code == 2 and "no Herdr window" in (err or out):
+        return False
+    raise MuxError("window_error", f"herdr-app status 失敗（exit {code}）：{(err or out).strip()[:300]}")
+
+
 def fail_from(what, code, out, err):
     raise MuxError("backend_error", f"{what} 失敗（exit {code}）：{(err or out).strip()[:300]}")
 
@@ -183,6 +197,7 @@ class HcBackend:
         if not cli:
             # hc run 的 argv 由 core 的 PATH 解析，不是呼叫者的；core 的 PATH 常缺 ~/.bun/bin 之類
             raise MuxError("cli_not_found", f"PATH 找不到 {kind}")
+        window = window_open(self.env)  # 先判斷：window_error 時不留下沒人看得到的 worker
         argv = ["run", "--json", "--bg", "--no-notify", "--name", name, "--cwd", cwd,
                 *clean_env_prefix(env_pairs), cli]
         if kind == "codex":
@@ -192,8 +207,40 @@ class HcBackend:
         ident = find_key(data, "address") if data is not None else None
         if code != 0 or not ident:
             fail_from("hc run", code, out, err)
-        # 視窗放置由 Task 3 補；現在一律背景（無 herdr.* label）
-        return {"id": ident, "visible": False}
+        pane = self._place(ident, name) if window else None
+        return {"id": ident, "visible": True, "pane": pane} if pane else {"id": ident, "visible": False}
+
+    def _main_pane(self):
+        """用自己的 HC_TERMINAL_ID 在 herdr-app ls 找主 session 的 pane id；不在視窗內回 None。"""
+        me = self.env.get("HC_TERMINAL_ID")
+        code, out, err = run(["herdr-app", "ls"], env=self.env)
+        data = parse_json(out) if code == 0 else None
+        stack = [data]
+        while stack and me:
+            cur = stack.pop(0)
+            if isinstance(cur, dict):
+                if cur.get("terminal") == me and cur.get("pane"):
+                    return cur["pane"]
+                stack.extend(cur.values())
+            elif isinstance(cur, list):
+                stack.extend(cur)
+        return None
+
+    def _place(self, ident, name):
+        """把已在背景跑的 worker 放進主 session 所在 tab；任何一步失敗都回 None（worker 照跑，visible:false）。"""
+        main = self._main_pane()
+        if not main:
+            return None
+        cmd = os.environ.get("MUX_APP_LAYOUT_CMD")
+        argv = shlex.split(cmd) if cmd else [sys.executable, str(Path(__file__).with_name("app_layout.py"))]
+        if not (cmd or Path(argv[1]).exists()):
+            return None
+        code, out, err = run([*argv, "place", "--main", main, "--terminal", ident, "--name", name], env=self.env)
+        data = parse_json(out)
+        if code != 0 or not isinstance(data, dict) or not data.get("pane"):
+            print(f"mux: 版面放置失敗（worker 仍在背景執行）：{(err or out).strip()[:200]}", file=sys.stderr)
+            return None
+        return data["pane"]
 
     def _status(self, code, out, err, what):
         data = parse_json(out)
@@ -393,9 +440,7 @@ def get_backend(env):
 
 def cmd_env(env):
     name = resolve_backend(env)
-    window = False
-    if name == "hc" and core_running():
-        window = run(["herdr-app", "status"], env=env)[0] == 0 if shutil.which("herdr-app", path=env.get("PATH")) else False
+    window = window_open(env) if name == "hc" and core_running() else False
     me = {"hc": env.get("HC_TERMINAL_ID"), "herdr": env.get("HERDR_PANE_ID")}.get(name)
     return {"backend": name, "self": me, "window": window}
 
