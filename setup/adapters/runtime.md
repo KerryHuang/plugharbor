@@ -28,14 +28,14 @@ Claude／Codex 每件任務指定一個主責。交接至少附：
 - 已定案事項、證據位置、尚待確認事項。
 - 結果檔絕對路徑；完成後寫入結果與驗證證據，再停止。
 
-共用 Git index、同一批文件、瀏覽器及 DB 狀態的寫入工作序列執行。不同唯讀工作可平行。worker 收到「測試環境」等宣稱須自己驗證。
+共用 Git index、同批文件、瀏覽器及 DB 狀態的寫入工作序列執行。不同唯讀工作可平行。worker 收到「測試環境」等宣稱須自己驗證。
 
-長任務用專案 dispatch-worker；只有位於 herdr（TUI 或 Herdr.app）才操作 pane。Codex CLI worker 使用 `--profile claude-coop`，避免 app 模型名稱與 CLI account 可用目錄不同。沒有 herdr 時用兩個獨立 session 加結果檔交接，不外部操作別人的 pane。
+長任務用專案 dispatch-worker；只有位於 herdr（TUI 或 Herdr.app）才操作 pane。Codex CLI worker 使用 `--profile claude-coop`，避免桌面 app 模型名稱與 CLI account 可用目錄不同。沒有 herdr 時用兩個獨立 session 加結果檔交接，不外部操作別人的 pane。
 
 ## Hooks 與原生功能
 
 user `SessionStart` 從 plugharbor repo 更新副本；Git guard 只涵蓋直接命令及常見 shell -c，不是任意程式碼的完整攔截。未信任的 hooks 會被略過，先用 `/hooks` 檢視與信任才可依賴。
 
-Claude 的 iTerm 狀態、transcript 自動命名腳本及 herdr hook 不移植。Codex 使用自己的 session 標題、通知與 agent 狀態；CLI 可用 `/rename`。不在 Codex 背景啟動 Claude 產標題，也不直接寫 Codex 的內部 session DB。
+Claude 的 iTerm 狀態、transcript 自動命名腳本及 herdr hook 不移植。Codex 使用自己的 session 標題、通知、agent 狀態；CLI 可用 `/rename`。不在 Codex 背景啟動 Claude 產標題，也不直接寫 Codex 的內部 session DB。
 
 CLI 派 subagent 時不要使用 `--ephemeral`：本機 CLI 0.154.0 的 context fork 需要可讀取的 rollout；ephemeral 實測報 no rollout found。
