@@ -62,6 +62,7 @@ argument-hint: "[對象] <任務>"
 - 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
 - 只有 `reviewer` 正常回傳 JSON 且 `crossFamily` 是 `false` 才算湊不到別家。腳本報錯、印出用法或輸出不是 JSON 是**工具故障**：用 Base directory 的腳本重試一次；仍失敗才同家審查，回報寫「工具故障，退回同家審查」並附錯誤訊息，不能寫成湊不到別家。
 - 審查用短問答（`--to <查到的審查者> --model … --effort high`），把 diff 寫進 prompt 檔。prompt 從 `references/review-prompt.md` 的範本開始寫。
+- 審查 prompt 要給明確範圍（要讀的檔）與時限。逾時（124）不要原樣重送：先縮範圍或降一級 effort 再試一次，仍逾時就退回同家審查，回報寫「codex 逾時，退回同家審查」（codex 以外照實寫 CLI 名）。
 - 封鎖到期後同一家又因沒額度失敗：用 `route.mjs block <cli> <到期時間>` 手動延長封鎖，並在回報裡寫明。
 
 ## 5. 長任務：依環境選一層

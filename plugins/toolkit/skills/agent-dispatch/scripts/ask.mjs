@@ -62,7 +62,7 @@ async function main(argv) {
   }
 
   // 參數擋不住寫檔的 CLI（agy）只能靠指示；四家一律加，行為一致。
-  const guarded = `唯讀任務：不要建立、修改或刪除任何檔案，不要執行有副作用的指令；只讀取與回答。\n\n${prompt}`
+  const guarded = `唯讀任務：不要建立、修改或刪除任何檔案，不要執行有副作用的指令；只讀取與回答；結果直接在回覆中交付（不能寫檔，呼叫端會存檔）。\n\n${prompt}`
   for (let i = 0; i < list.length; i++) {
     const c = { ...list[i], ...(o.model && { model: o.model }), ...(o.effort && { effort: o.effort }) }
     const bin = resolveBin(c.cli)
@@ -90,7 +90,7 @@ async function main(argv) {
       writeFileSync(out, r.out)
       process.stdout.write(`${summarize(last, 16000, 4000, out)}\n\n（執行紀錄 ${r.out.length} 字元，見 ${out}）\n`)
     } else {
-      if (r.out.length > 16000) writeFileSync(out, r.out)
+      if (r.out.length > 16000 || r.timedOut) writeFileSync(out, r.out)
       process.stdout.write(summarize(r.out, 16000, 4000, out))
     }
     if (r.timedOut) { console.error(`\n[ask] ${c.cli} 超過 ${o.timeout} 秒，已中斷`); return 124 }
