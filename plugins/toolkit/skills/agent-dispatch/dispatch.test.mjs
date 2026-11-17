@@ -190,6 +190,8 @@ function shimDir() {
     writeShim(f, `
 const mode = process.env['SHIM_${name.toUpperCase()}']
 if (mode === 'quota') { console.log('Error: usage limit reached, try again in 2 hours'); process.exit(1) }
+if (mode === 'stall') { console.log('plan: reading files'); setTimeout(() => {}, 30000); return }
+if (mode === 'chatty') { let n = 0; const t = setInterval(() => { console.log('tick ' + (++n)); if (n === 5) { clearInterval(t) } }, 300); return }
 if (mode === 'long') { process.stdout.write('y'.repeat(20000)); process.exit(0) }
 if (mode === 'log') {  // codex exec：stderr 是整段執行紀錄，-o 指定的檔只放最後答案
   const i = process.argv.indexOf('-o')
@@ -632,4 +634,17 @@ test('fmt 印本地時間並標時區（UTC 不標會被誤讀成本地）', () 
   } finally {
     if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz
   }
+})
+
+test('ask：--idle-timeout 連續無輸出 → exit 124、輸出存 .out.md、不改派', () => {
+  const r = ask(['--to', 'codex', '--idle-timeout', '1', '--timeout', '20'], { SHIM_CODEX: 'stall' })
+  assert.equal(r.status, 124, r.stderr)
+  assert.match(r.stderr, /codex 連續 1 秒無輸出，判定卡住，已中斷/)
+  assert.match(readFileSync(`${r.prompt}.out.md`, 'utf8'), /plan: reading files/)
+})
+
+test('ask：持續有輸出不觸發 --idle-timeout', () => {
+  const r = ask(['--to', 'codex', '--idle-timeout', '1', '--timeout', '20'], { SHIM_CODEX: 'chatty' })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /tick 5/)
 })

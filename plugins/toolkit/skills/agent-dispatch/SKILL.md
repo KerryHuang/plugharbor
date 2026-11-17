@@ -41,13 +41,13 @@ argument-hint: "[對象] <任務>"
 2. 執行：
 
    ```bash
-   node "${CLAUDE_SKILL_DIR}/scripts/ask.mjs" (--to <cli> | --type <類型>) [--model <m>] [--effort <e>] [--timeout 600] [--cwd <目錄>] <prompt 檔>
+   node "${CLAUDE_SKILL_DIR}/scripts/ask.mjs" (--to <cli> | --type <類型>) [--model <m>] [--effort <e>] [--timeout 600] [--idle-timeout 480] [--cwd <目錄>] <prompt 檔>
    ```
 
 3. 判讀：
    - 第一行是「交給誰、用哪級、理由」，之後是對方的輸出。
    - 輸出超過 16000 字元時，全文寫進 `<prompt 檔>.out.md`，畫面只有前 4000 字元和檔案位置。需要細節再讀檔，不要整份讀進 context。
-   - exit code：124 逾時、127 沒安裝、2 用法錯誤、75 所有候選都不能用（stderr 有最早解封時間）。
+   - exit code：124 逾時（含連續 `--idle-timeout` 秒無輸出判定卡住，預設 480，0 關閉；推理很久的任務可調大）、127 沒安裝、2 用法錯誤、75 所有候選都不能用（stderr 有最早解封時間）。
    - 額度用盡時腳本會自己封鎖那一家並改派下一家，stderr 會印「改派 X」，回報時一併說明。
 4. 轉述時寫明是哪個 CLI 說的，不要把它的結論包裝成你自己的；它說錯的地方要指出來。
 
@@ -62,7 +62,7 @@ argument-hint: "[對象] <任務>"
 - 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
 - 只有 `reviewer` 正常回傳 JSON 且 `crossFamily` 是 `false` 才算湊不到別家。腳本報錯、印出用法或輸出不是 JSON 是**工具故障**：用 Base directory 的腳本重試一次；仍失敗才同家審查，回報寫「工具故障，退回同家審查」並附錯誤訊息，不能寫成湊不到別家。
 - 審查用短問答（`--to <查到的審查者> --model … --effort high`），把 diff 寫進 prompt 檔。prompt 從 `references/review-prompt.md` 的範本開始寫。
-- 審查 prompt 要給明確範圍（要讀的檔）與時限。逾時（124）不要原樣重送：先縮範圍或降一級 effort 再試一次，仍逾時就退回同家審查，回報寫「codex 逾時，退回同家審查」（codex 以外照實寫 CLI 名）。
+- 審查 prompt 要給明確範圍（要讀的檔）與時限。逾時（124）不要原樣重送：先縮範圍或降一級 effort 再試一次，卡住（無輸出逾時）同樣適用；仍逾時就退回同家審查，回報寫「codex 逾時，退回同家審查」（codex 以外照實寫 CLI 名）。
 - 封鎖到期後同一家又因沒額度失敗：用 `route.mjs block <cli> <到期時間>` 手動延長封鎖，並在回報裡寫明。
 
 ## 5. 長任務：依環境選一層

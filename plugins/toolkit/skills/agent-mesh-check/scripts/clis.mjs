@@ -137,7 +137,8 @@ function track(pid) {
 
 // 逾時：殺整個程序樹（POSIX 用 detached 開新程序群組、殺 -pid；Windows 用 taskkill /T /F），
 // 孫程序握著 stdout 時 close 會一直等，所以殺完最多再等 2 秒就直接回。
-export function run(bin, args, { cwd, timeoutMs = 180_000, env = process.env, platform = process.platform } = {}) {
+// idleMs > 0：stdout／stderr 連續這麼久沒有新位元組就中斷，回傳 timedOut＋idle（推理期間本來就安靜的 CLI 要給保守值）
+export function run(bin, args, { cwd, timeoutMs = 180_000, idleMs = 0, env = process.env, platform = process.platform } = {}) {
   return new Promise(done => {
     const t0 = Date.now()
     const viaCmd = /\.cmd$/i.test(bin)
@@ -156,7 +157,7 @@ export function run(bin, args, { cwd, timeoutMs = 180_000, env = process.env, pl
         : spawn(bin, args, { cwd, env, windowsHide: true, detached })
     if (detached && child.pid) track(child.pid)
     const chunks = []
-    let timedOut = false, ended = false, grace = null
+    let timedOut = false, idle = false, ended = false, grace = null, idleTimer = null
     const killTree = () => {
       try {
         if (platform === 'win32') spawn('taskkill', ['/T', '/F', '/PID', String(child.pid)], { stdio: 'ignore', windowsHide: true })
@@ -168,17 +169,24 @@ export function run(bin, args, { cwd, timeoutMs = 180_000, env = process.env, pl
       killTree()
       grace = setTimeout(() => finish(null), 2000)
     }, timeoutMs)
-    child.stdout.on('data', c => chunks.push(c))
-    child.stderr.on('data', c => chunks.push(c))
+    const onIdle = () => {
+      idle = true; timedOut = true
+      killTree()
+      grace = setTimeout(() => finish(null), 2000)
+    }
+    const bump = () => { if (idleMs > 0 && !timedOut) { clearTimeout(idleTimer); idleTimer = setTimeout(onIdle, idleMs) } }
+    bump()
+    child.stdout.on('data', c => { chunks.push(c); bump() })
+    child.stderr.on('data', c => { chunks.push(c); bump() })
     child.stdin.on('error', () => {})
     child.stdin.end('')
     const finish = code => {
       if (ended) return
       ended = true
       live.delete(child.pid)
-      clearTimeout(timer); clearTimeout(grace)
+      clearTimeout(timer); clearTimeout(grace); clearTimeout(idleTimer)
       child.stdout.destroy(); child.stderr.destroy()
-      done({ code, out: Buffer.concat(chunks).toString('utf8'), ms: Date.now() - t0, timedOut })
+      done({ code, out: Buffer.concat(chunks).toString('utf8'), ms: Date.now() - t0, timedOut, idle })
     }
     child.on('error', e => { chunks.push(Buffer.from(String(e.message))); finish(null) })
     child.on('close', finish)

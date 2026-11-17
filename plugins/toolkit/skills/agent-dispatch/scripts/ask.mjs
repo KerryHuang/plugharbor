@@ -2,7 +2,7 @@
 // 派工短問答：把 prompt 檔交給另一個 agent CLI 以唯讀模式跑一輪。
 // 對象：--to 指定，或 --type／--tier 查 ../references/routing.json 依序挑；額度用盡就封鎖該家、改派下一家。
 // 第一行固定印「[ask] 交給 <cli>（<模型>／<等級>），理由：…」；輸出超過 16000 字元時全文寫進結果檔，只印摘要。
-// exit：目標 CLI 的 exit code；逾時 124；PATH 上找不到 127；用法錯誤 2；所有候選都不能用 75。
+// exit：目標 CLI 的 exit code；逾時（含無輸出逾時）124；PATH 上找不到 127；用法錯誤 2；所有候選都不能用 75。
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -12,7 +12,7 @@ import { statePath as meshStatePath } from '../../agent-mesh-check/scripts/mesh.
 import { loadRouting, statePath, readState, blockCli, readMesh, candidates } from './route.mjs'
 
 const usage = `用法：node ask.mjs (--to <${CLIS.join('|')}> | --type <類型> | --tier <top|standard|cheap>)
-  [--model <模型>] [--effort <low|medium|high|xhigh|max>] [--timeout <秒，預設 600>] [--cwd <目錄>]
+  [--model <模型>] [--effort <low|medium|high|xhigh|max>] [--timeout <秒，預設 600>] [--idle-timeout <秒，預設 480，0 關閉>] [--cwd <目錄>]
   [--out <結果檔，預設 <prompt 檔>.out.md>] [--state <狀態檔>] [--mesh <agent-mesh last.json>] <prompt 檔>`
 
 // 本地時間並標時區：只印 UTC 又不標，主控曾把 08:41（台北 16:41）誤讀成本地時間、以為封鎖已過
@@ -29,13 +29,13 @@ export function summarize(text, limit = 16000, head = 4000, file) {
 }
 
 async function main(argv) {
-  const o = { timeout: 600, cwd: process.cwd() }
+  const o = { timeout: 600, idleTimeout: 480, cwd: process.cwd() }
   let file = null
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--help' || a === '-h') { console.log(usage); return 0 }
     const key = { '--to': 'to', '--type': 'type', '--tier': 'tier', '--model': 'model', '--effort': 'effort',
-      '--timeout': 'timeout', '--cwd': 'cwd', '--out': 'out', '--state': 'state', '--mesh': 'mesh' }[a]
+      '--timeout': 'timeout', '--idle-timeout': 'idleTimeout', '--cwd': 'cwd', '--out': 'out', '--state': 'state', '--mesh': 'mesh' }[a]
     if (key) o[key] = argv[++i]
     else if (!file) file = a
     else { console.error(usage); return 2 }
@@ -43,6 +43,8 @@ async function main(argv) {
   if (!file || (o.to ? !CLIS.includes(o.to) : !(o.type || o.tier))) { console.error(usage); return 2 }
   o.timeout = Number(o.timeout)
   if (!(Number.isFinite(o.timeout) && o.timeout > 0)) { console.error(`--timeout 要是正數（秒）\n${usage}`); return 2 }
+  o.idleTimeout = Number(o.idleTimeout)
+  if (!(Number.isFinite(o.idleTimeout) && o.idleTimeout >= 0)) { console.error(`--idle-timeout 要是 0 或正數（秒）\n${usage}`); return 2 }
   if (o.to && !resolveBin(o.to)) { console.error(`${o.to} 不在 PATH 上（未安裝？）`); return 127 }
   let prompt
   try { prompt = readFileSync(file, 'utf8') } catch (e) { console.error(`讀不到 prompt 檔：${e.message}`); return 2 }
@@ -73,7 +75,7 @@ async function main(argv) {
     }
     const tmp = c.cli === 'codex' ? mkdtempSync(join(tmpdir(), 'ask-')) : null
     const lastFile = tmp && join(tmp, 'last.md')
-    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, { ...c, lastFile }), { cwd: o.cwd, timeoutMs: o.timeout * 1000, env: scrubEnv(process.env) })
+    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, { ...c, lastFile }), { cwd: o.cwd, timeoutMs: o.timeout * 1000, idleMs: o.idleTimeout * 1000, env: scrubEnv(process.env) })
     let last = ''
     if (tmp) { try { last = readFileSync(lastFile, 'utf8').trim() } catch {} rmSync(tmp, { recursive: true, force: true }) }
     const q = r.code !== 0 && !r.timedOut ? quotaInfo(r.out) : null
@@ -93,7 +95,10 @@ async function main(argv) {
       if (r.out.length > 16000 || r.timedOut) writeFileSync(out, r.out)
       process.stdout.write(summarize(r.out, 16000, 4000, out))
     }
-    if (r.timedOut) { console.error(`\n[ask] ${c.cli} 超過 ${o.timeout} 秒，已中斷`); return 124 }
+    if (r.timedOut) {
+      console.error(r.idle ? `\n[ask] ${c.cli} 連續 ${o.idleTimeout} 秒無輸出，判定卡住，已中斷` : `\n[ask] ${c.cli} 超過 ${o.timeout} 秒，已中斷`)
+      return 124
+    }
     return r.code ?? 1
   }
   const blocks = Object.values(readState(stateFile).blocks).map(b => b.until).filter(t => t > Date.now())
