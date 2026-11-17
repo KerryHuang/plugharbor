@@ -3,9 +3,10 @@
 # macOS: afplay + osascript / Linux: paplay|aplay + notify-send / Windows(Git Bash): PowerShell toast
 # 契約：純通知用途，任何失敗都不得影響主流程——永遠 exit 0。
 
-# 在 herdr pane 裡由 herdr 自己的 toast 接手（herdr config 的 [ui.toast]）：
+# 在 herdr pane（TUI）或 Herdr.app 終端（HC_TERMINAL_ID）裡由 herdr 自己的 toast 接手（herdr config 的 [ui.toast]）：
 # 它只在 blocked／done 通知、略過目前看著的 tab、狀態維持過 delay 才響；這裡每輪 Stop 都響會重複又太吵。
-[[ "$HERDR_ENV" == "1" ]] && exit 0
+[[ -n "$HC_TERMINAL_ID" ]] && exit 0
+[[ "$HERDR_ENV" == "1" && -n "$HERDR_PANE_ID" ]] && exit 0
 
 # 不在 herdr 裡也比照同一套：只通知「等你回應」與「真正完成」。
 # hook 輸入是 stdin 的 JSON；用 grep 比對，不依賴 jq（Windows Git Bash 不一定有）。

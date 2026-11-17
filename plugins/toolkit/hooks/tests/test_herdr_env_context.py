@@ -10,11 +10,17 @@ from pathlib import Path
 HOOK = Path(__file__).resolve().parents[1] / "herdr-env-context.py"
 
 
-def run(herdr_env):
-    env = {k: v for k, v in os.environ.items() if k != "HERDR_ENV"}
+CLEAN = ("HERDR_ENV", "HERDR_PANE_ID", "HC_TERMINAL_ID")
+
+
+def run(herdr_env, pane="w:p1", extra=None):
+    env = {k: v for k, v in os.environ.items() if k not in CLEAN}
     if herdr_env is not None:
         env["HERDR_ENV"] = herdr_env
-    return subprocess.run([sys.executable, str(HOOK)], env=env, capture_output=True, timeout=10)
+    if pane:
+        env["HERDR_PANE_ID"] = pane
+    env.update(extra or {})
+    return subprocess.run([sys.executable, str(HOOK)], env=env, input=b"", capture_output=True, timeout=10)
 
 
 def run_hc(state, stdin, terminal="t5"):
@@ -30,6 +36,23 @@ class HerdrEnvContext(unittest.TestCase):
         output = json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]
         self.assertEqual(output["hookEventName"], "SessionStart")
         self.assertIn("herdr", output["additionalContext"])
+
+    def test_injects_with_only_hc_terminal_id(self):
+        p = run(None, pane=None, extra={"HC_TERMINAL_ID": "t1"})
+        ctx = json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("herdr", ctx)
+
+    def test_message_not_tied_to_var_name_and_not_longer(self):
+        p = run("1")
+        ctx = json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]["additionalContext"]
+        self.assertNotIn("HERDR_ENV=1", ctx)
+        old = ("[toolkit] 本 session 在 herdr 內（HERDR_ENV=1），不必再檢查能否開 pane，也不必向使用者提這件事。"
+               "這只代表「能開」；該不該開仍照派工判準，長任務照判準表開 pane。")
+        self.assertLessEqual(len(ctx), len(old))
+
+    def test_silent_when_herdr_env_without_pane_id(self):
+        p = run("1", pane=None)
+        self.assertEqual(p.stdout, b"")
 
     def test_silent_outside_herdr(self):
         for value in (None, "", "0"):
@@ -67,7 +90,7 @@ class HerdrEnvContext(unittest.TestCase):
                 self.assertEqual(p.returncode, 0)
             self.assertFalse((Path(d) / "plugharbor").exists())
             env = {k: v for k, v in os.environ.items() if k != "XDG_STATE_HOME"}
-            env.update({"HERDR_ENV": "1", "HC_TERMINAL_ID": "t5", "XDG_STATE_HOME": d})
+            env.update({"HC_TERMINAL_ID": "t5", "XDG_STATE_HOME": d})
             p = subprocess.run([sys.executable, str(HOOK)], env=env, input=b"garbage", capture_output=True, timeout=10)
             self.assertIn("herdr", json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]["additionalContext"])
 

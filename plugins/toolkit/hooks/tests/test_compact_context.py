@@ -17,7 +17,7 @@ class CompactContext(unittest.TestCase):
         self.assertEqual(output["hookEventName"], "SessionStart")
         self.assertIn("語言", output["additionalContext"])
 
-    def run_with(self, loaded, installed, herdr=False):
+    def run_with(self, loaded, installed, herdr=False, hc=False):
         """loaded：本 session 載入的 toolkit 版本（CLAUDE_PLUGIN_ROOT）；installed：installed_plugins.json 記的版本。"""
         import os, tempfile
         home = tempfile.mkdtemp()
@@ -26,9 +26,12 @@ class CompactContext(unittest.TestCase):
         if installed is not None:
             (reg / "installed_plugins.json").write_text(json.dumps({"version": 2, "plugins": {
                 "toolkit@plugharbor": [{"scope": "user", "version": installed}]}}), encoding="utf-8")
-        env = {k: v for k, v in os.environ.items() if k != "HERDR_ENV"}
+        env = {k: v for k, v in os.environ.items() if k not in ("HERDR_ENV", "HERDR_PANE_ID", "HC_TERMINAL_ID")}
         if herdr:
             env["HERDR_ENV"] = "1"
+            env["HERDR_PANE_ID"] = "w:p1"
+        if hc:
+            env["HC_TERMINAL_ID"] = "t1"
         env = {**env, "HOME": home, "USERPROFILE": home,
                "CLAUDE_PLUGIN_ROOT": str(Path(home, ".claude", "plugins", "cache", "plugharbor", "toolkit", loaded))}
         p = subprocess.run([sys.executable, str(HOOK)], capture_output=True, timeout=10, env=env)
@@ -51,6 +54,10 @@ class CompactContext(unittest.TestCase):
         self.assertIn(str(Path("toolkit", "0.23.0", "skills", "handoff", "SKILL.md")), ctx)
         self.assertIn("AskUserQuestion", ctx)
         self.assertIn("任務已完成就不換", ctx)
+
+    def test_handoff_note_with_only_hc_terminal_id_points_to_skill(self):
+        ctx = self.run_with("0.23.0", "0.23.0", hc=True)
+        self.assertIn("SKILL.md", ctx)
 
     def test_handoff_note_outside_herdr_suggests_command(self):
         ctx = self.run_with("0.23.0", "0.23.0")

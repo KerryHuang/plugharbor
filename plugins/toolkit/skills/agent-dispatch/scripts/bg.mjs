@@ -20,7 +20,7 @@ const writeJson = (f, v) => writeFileSync(f, JSON.stringify(v, null, 2) + '\n')
 
 // 能力偵測：herdr → Ghostty 分割（spike 結論見 references/background-worker.md）→ 背景
 export function detectEnv(env = process.env, { ghostty = false } = {}) {
-  if (env.HERDR_ENV === '1') return 'herdr'
+  if (env.HC_TERMINAL_ID || (env.HERDR_ENV === '1' && env.HERDR_PANE_ID)) return 'herdr'
   if (ghostty) return 'ghostty'
   return 'background'
 }
