@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.26.1] - 2026-11-17
+
+- fix(tower)：`--paths` 改為 `action="extend"`，takeoff 與 amend 重複給旗標時合併（amend 仍是整份取代）；`match()` 對不含 `*` 的路徑視為目錄前綴（`a/b`、`a/b/` 涵蓋其下全部），`_in_scope`、重疊判斷與共用跑道比對一併生效。SKILL.md 補一句用法。測試 `test_tower.py` 新增 3 項。
+- 起因：自動駕駛起飛時下 `--paths backend/src --paths backend/tests`，航班只留下後者；落地 land-check 回 10，把兩個目錄下所有檔都判成超出範圍，只好 override。
+
 ## [0.26.0] - 2026-11-17
 
 - feat(hooks)：新增 PostToolUse hook `send-retry-hint.py`（matcher `SendMessage`，測試 `hooks/tests/test_send_retry_hint.py`）：回報「No agent named …」時注入提示，要發送方用 ListAgents 找同一個 ref 的目前名稱重送一次，仍失敗才照原指示寫 undelivered。送不到時觸發的是 PostToolUse（`tool_response.success=false`），不是 PostToolUseFailure（`claude -p` 實測）。`agent-dispatch` SKILL 步驟 1「送不到…不重試」改寫成同義的重送一次。

@@ -289,6 +289,30 @@ class TowerTest(unittest.TestCase):
         self.assertFalse(tower.match("a/b/c.py", "a/*"))
         self.assertTrue(tower.match("a/c.py", "a/*.py"))
 
+    def test_match_dir_prefix(self):
+        self.assertTrue(tower.match("backend/tests/a.py", "backend/tests"))
+        self.assertTrue(tower.match("backend/tests/a.py", "backend/tests/"))
+        self.assertTrue(tower.match("backend/tests", "backend/tests/"))
+        self.assertFalse(tower.match("backend/tests2/a.py", "backend/tests"))
+        self.assertTrue(tower._in_scope("backend/src/x/y.py", ["backend/src"]))
+        self.assertTrue(tower._path_hits("backend/src", "backend/src/x.py"))
+        self.assertTrue(tower._path_hits("backend/src/x.py", "backend/src"))
+
+    def test_dir_vs_file_overlap(self):
+        self.fake(self.B, touched=["backend/src/x.py"])
+        out = self.take(paths=("backend/src",))
+        self.assertEqual(out["overlaps"][0]["kind"], "path")
+
+    def test_repeated_paths_flag_accumulates(self):
+        r = self.run_cli(self.repo, "takeoff", "--goal", "g", "--paths", "backend/src",
+                         "--paths", "backend/tests")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fid = json.loads(r.stdout)["id"]
+        self.assertEqual(self.flight(fid)["paths"], ["backend/src", "backend/tests"])
+        r = self.run_cli(self.repo, "amend", "--paths", "a.py", "--paths", "b.py")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.flight(fid)["paths"], ["a.py", "b.py"])
+
     def test_warns_stale_in_progress_feature(self):
         (self.repo / "docs").mkdir()
         (self.repo / "docs" / "feature.md").write_text(

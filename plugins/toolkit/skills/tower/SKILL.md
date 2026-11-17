@@ -25,7 +25,7 @@ tower.py takeoff --goal "<一句話目標>" --paths <預計會改的路徑或 gl
 ```
 
 - 有對應的段號、功能名、票號就一定帶；重疊判斷先比這三項，再比 `--paths`。
-- `--paths` 寫預計範圍，寧可略寬；範圍外的改動落地時會被 land-check 擋（退出碼 10）。
+- `--paths` 寫預計範圍，寧可略寬；可重複給，目錄代表其下全部；範圍外的改動落地時會被 land-check 擋（退出碼 10）。
 - 無人值守執行時加 `--mode unattended`。
 - 此 worktree 已有航班時退出碼 2，stdout 印既有航班 id；沿用它，不重複登記。
 - 輸出 JSON：`id`、`overlaps`（與他班的重疊）、`warnings`（如 feature.md 標 🚧 卻沒有活航班）。

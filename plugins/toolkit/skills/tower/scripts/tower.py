@@ -195,6 +195,9 @@ def _glob_re(glob):
 
 
 def match(path, glob):
+    if "*" not in glob:
+        d = glob.rstrip("/")
+        return path == d or path.startswith(d + "/")
     return re.fullmatch(_glob_re(glob), path) is not None
 
 
@@ -584,7 +587,7 @@ def build_parser():
 
     p = add("takeoff", cmd_takeoff, with_id=False)
     p.add_argument("--goal", required=True)
-    p.add_argument("--paths", nargs="+", required=True)
+    p.add_argument("--paths", action="extend", nargs="+", required=True)
     p.add_argument("--segment")
     p.add_argument("--feature")
     p.add_argument("--ticket")
@@ -593,7 +596,7 @@ def build_parser():
     p.add_argument("--cli", default="claude")
     p = add("amend", cmd_amend)
     p.add_argument("--goal")
-    p.add_argument("--paths", nargs="+")
+    p.add_argument("--paths", action="extend", nargs="+")
     p = add("beat", cmd_beat)
     p.add_argument("--touched", nargs="+")
     p = add("radar", cmd_radar, with_id=False)
