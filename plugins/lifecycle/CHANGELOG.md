@@ -7,7 +7,7 @@
 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
 
 - `references/advisor-discussion.md`、`consultant-desk.md`、`shared-preludes.md`：雙顧問 pane 模式改用 `scripts/mux.py`（`env`／`spawn`／`send --file --wait`／`session`／`read`／`alive`／`close`／`attach-hint`），判斷「在不在 herdr」改成 `mux.py env` 的 `backend` 不是 `none`，`_run.json` 的 `pane_id` 改 `id`；`scripts/advisor_last_reply.py` 說明改指 `mux.py`。
-- 新增 `scripts/mux.py`（與 toolkit `agent-dispatch` 的正本位元組相同，登記在 repo 的 shared-copies 清單）。herdr TUI 與 Herdr.app（hc）都能開顧問；沒有 toolkit 時 `mux.py` 照用，但版面腳本不在，worker 不會被排進主 session 旁。
+- 新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（與 toolkit `agent-dispatch` 的正本位元組相同，登記在 repo 的 shared-copies 清單）。herdr TUI 與 Herdr.app（hc）都能開顧問，顧問 pane 會排進主 session 旁；`mux.py` 與版面腳本都在本 plugin 內，不依賴 toolkit。
 
 ## [4.1.0] - 2026-11-16
 

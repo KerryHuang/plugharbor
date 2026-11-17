@@ -68,7 +68,7 @@
 |---|---|---|
 | `browser-docs:browser-surveyor`、`live-drive` | spec 蒐證步驟的畫面勘察 | 跳過勘察，標「未取得畫面證據」續行，改依既有規格與程式碼推導 |
 | `browser-docs:pdf-converter` | PDF 轉 Word／Excel | 停下告知需安裝 browser-docs，或請使用者提供可編輯原檔；仍不土法手轉 |
-| `toolkit:agent-dispatch` | 顧問討論的 herdr／Herdr.app pane 模式 | 同「不在 herdr」（`mux.py env` 的 `backend` 是 `none`）：顧問討論改 subagent 模式 |
+| `toolkit:agent-dispatch` | 顧問討論的 herdr／Herdr.app pane 模式的補充說明（`mux.py` 與版面腳本已隨本 plugin） | 照 `advisor-discussion.md` 做；只有不在 herdr 內（`mux.py env` 的 `backend` 是 `none`）才改 subagent 模式 |
 | `superpowers:writing-plans` | implement 的規劃到收尾 | 照 `lifecycle:implement` 的極簡退路，並建議安裝 superpowers |
 | `tickets:ticket-ops` 等票務 skill | implement 收尾同步票、qa-verify 開缺陷票、spec 回寫票、operation-manual 當場開票 | 只更新清單，把要開或要改的票列給使用者，不呼叫票務工具，並建議安裝 tickets（設定有 `ticket:` 區塊時，重跑 `setup/install-project.sh <專案根> lifecycle` 會自動補裝） |
 | `lifecycle:spec`、`spec-check`、`implement` | triage、survey-existing-system、ticket-reply、ticket-create 建議下一步 | 只給建議與要點（規格、驗證、實作），只印出建議的指令，不叫用 |

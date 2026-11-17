@@ -46,7 +46,7 @@ subagent 模式把 `id`／`session` 換成 `agent_id`。
 
 ## pane 模式（預設）
 
-前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`mux.py env` 的 `backend` 不是 `none`、cwd 檢查）；沒裝 toolkit、`backend` 是 `none` 或回 `core_not_running` → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
+前置判定：`mux.py env` 的 `backend` 不是 `none`，且 cwd（專案根）已被 claude 信任；`backend` 是 `none` 或 `mux.py` 回 `core_not_running` → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。`mux.py` 與版面腳本都在本 plugin 的 `scripts/`，不必裝 toolkit；下面提到的 `toolkit:agent-dispatch` 長任務步驟只是補充說明，沒裝就照本檔做。cwd 一律專案根。
 
 以下 `mux.py` 指 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mux.py`；stdout 是 JSON（`read` 例外輸出純文字），失敗時是 `{"error":kind,"hint":…}`。
 
