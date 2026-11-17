@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.19.0] - 2026-11-17
+
+- feat(unattended)：自動駕駛與無人值守改成「省計畫、整段一次審查、審查不跑測試、修正回原實作者」。`skills/unattended/SKILL.md` 第 2 節單元流程：設計夠細（介面、權限、錯誤行為、驗收案例）就不另寫實作計畫、不審計畫，整段交一個實作者；審查、閘門、合併以一次交付為單位；實作者本機只跑新增／修改與直接受影響的測試加 typecheck／build，安全網交 CI；審查者從 diff 出發、不跑測試；修正續派原實作者，同一問題反覆誤解才換人；一次審查一輪修正是目標、不是上限，安全類 🔴 修完再審。授權範圍改為「授權 repo 清單」取代「其他 repo 一律不動」；回來報告「刻意沒做」改為「處置結果」。新增 `skills/unattended/references/speed-rules.md`：空檔來源擴大（待辦檔近期可開工區、roadmap 近期段的前置、審查缺陷、flaky／CI 紀錄、文件落差；依賴分階段、事件觸發重排、帳本固定格式、何時寧可等）、兩條交付線＋工具線、即時修正（插單）規則、工具 repo 的發版與採用分開（單元邊界切版、核對實際載入版本、`/reload-plugins` 不當證據、交接記錄版本）、CI 證據沿用條件、試行三段的量測項目。`skills/unattended/references/autopilot.md` 排線改為兩條交付線＋工具線，交接記帳加 plugin 版本；`skills/unattended/references/project-config.md` 加「授權 repo」「待辦檔」「單元流程」範本。frontmatter description 不變。起因：某專案一段約 2200 行的後端工作在自動駕駛下花了約 5 小時：一段切 3 個子單元，每個都走計畫、計畫審查、實作、審查、修正、CI 全套（審查 3 次、CI 5 次）；設計已很細仍另寫約 780 行計畫再審；實作者本機反覆跑安全網測試（一輪卡 28 分鐘）；審查者自己跑測試（一次 33 分鐘）；等待期間多次記「空檔：無」，因為候選只認 roadmap 段、下一段依賴這段就判定無事可做；同一 worktree 不並行；工作中發現的範圍外缺陷（權限洩漏）只寫進報告「刻意沒做」；「其他 repo 一律不動」讓工具本身的問題無法當場修。使用者已逐項裁決。
+
 ## [1.18.0] - 2026-11-17
 
 - feat(unattended): `skills/unattended/scripts/self-rotate.sh` 改經 `mux.py`（新增同目錄複本，與 toolkit `agent-dispatch` 的正本位元組相同）取自己的終端、等閒置、送 `/clear`／`/reload-plugins`／接回訊息、驗 session id 與畫面，herdr TUI 與 Herdr.app（hc）都能換新；不在兩者終端內就退出，hc 的 core 沒跑時不呼叫 hc。重試、逾時、log 格式不變；腳本與 toolkit handoff 的副本保持一致，`tests/self-rotate.sh` 兩種後端各跑一組情境。起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
