@@ -120,7 +120,7 @@ argument-hint: "[對象] <任務>"
    - 任何情況都不用 `hc run` 或 `pane run` 起 CLI（guard 會擋），一律走 `spawn`。
    - 替別的專案開不回報的長駐獨立 session：`mux.py` 沒有開新 tab 的動作；TUI 做法見 reference「TUI 專屬」，Herdr.app 內請使用者自己開。
    - `spawn` 失敗：herdr 後端會先留畫面再關掉 pane（`spawn_failed`，hint 帶畫面摘要），連同 hint 回報，多半是 cwd 問題；`cli_not_found` 是呼叫者 PATH 找不到該 CLI。
-   - Herdr.app 內各 CLI 啟動時可能先跳對話框（信任資料夾、外部檔案 import、hook 審核），此時 `status` 是 null（不是 `blocked`），`send` 的 Enter 會選到預設項。所以剛起的 worker（turn 0）`mux.py send` 會自動加 `--if idle`：status 不是 idle 就不送，回 `{"status":"blocked","hint":…}`，不重試。收到時先 `mux.py read <id> --lines 30` 看畫面；有對話框就不替使用者按信任，告訴使用者用 `mux.py attach-hint <id>` 的 hint 進去處理，處理完再送。
+   - Herdr.app 內各 CLI 啟動時可能先跳對話框（信任資料夾、外部檔案 import、hook 審核），此時 `status` 是 null（不是 `blocked`），`send` 的 Enter 會選到預設項。所以剛起的 worker（turn 0）`mux.py send` 會先等就緒（至多 60 秒）再自動加 `--if idle`：status 仍不是 idle 就不送，回 `{"status":"blocked","hint":…}`，不重試。收到時先 `mux.py read <id> --lines 30` 看畫面；有對話框就不替使用者按信任，告訴使用者用 `mux.py attach-hint <id>` 的 hint 進去處理，處理完再送；畫面已是就緒輸入框、沒有對話框時，隔幾秒再送同一則。
 3. 送出 prompt，放在背景等待：
 
    ```bash

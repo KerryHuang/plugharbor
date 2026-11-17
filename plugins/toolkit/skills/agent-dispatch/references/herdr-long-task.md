@@ -19,7 +19,7 @@ SKILL.md 第 6 節的補充。派工一律走 `scripts/mux.py`，同一組動作
 - `S`：`done|idle|working|blocked|error|timeout|gone`；`done` 與 `idle` 都是「這一輪結束」（hc 的 `done` 會停著不回 `idle`）。兩邊的原始回傳放 `raw`。
 - 錯誤：stdout 印 `{"error":kind,"hint":…}`。exit 2 用法錯誤、3 `core_not_running`、4 `no_backend`、1 其他（`cli_not_found`、`window_error`、`spawn_failed`、`backend_error`…）。
 - `session` 在 hc 下由 toolkit 的 SessionStart hook 記錄，只有 claude worker 有值，codex／agy／pi 回 `null`；沒裝 toolkit 時一律 `null` 並帶 `hint`（不是時序問題，重取沒用）。
-- hc 的 `send`：worker 剛起（turn 0）會加 `--if idle`，status 不是 idle 就不送，回 `{"status":"blocked","hint":…}`；`wait`／`send --wait` 的 `ended:false` 映成 `timeout`（`reason` 在輸出上層，`message` 表示被訊息打斷而非逾時），已結束且沒有狀態映成 `gone`。
+- hc 的 `send`：worker 剛起（turn 0）會先 `hc wait`（至多 60 秒）再加 `--if idle`，status 不是 idle 就不送，回 `{"status":"blocked","hint":…}`；`wait`／`send --wait` 的 `ended:false` 映成 `timeout`（`reason` 在輸出上層，`message` 表示被訊息打斷而非逾時），已結束且沒有狀態映成 `gone`。
 - `spawn` 在 hc 下以 `hc run --bg` 起 CLI（已加 `--no-notify`、清掉繼承的污染環境變數、CLI 先解成絕對路徑、codex 自動帶 `--no-daemon`），視窗開著時放進主 session 旁；`send` 時不讓 hc 把訊息包成 `<hc from …>`。
 
 ## TUI 專屬：安裝與升級

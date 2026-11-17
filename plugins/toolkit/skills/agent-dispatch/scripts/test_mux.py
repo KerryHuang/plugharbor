@@ -312,12 +312,42 @@ class TestHc(MuxCase):
         self.assertEqual(r["status"], "done")
         self.assertIn("hc send --json --if idle --wait --timeout 30 -- t1 hi", self.calls())
 
+    def test_send_turn0_waits_for_idle_before_send(self):
+        # spawn 剛回傳時 status 還是 null：先 hc wait（預設 60 秒），再 send --if idle
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "wait", '{"ended":true,"reason":"status","status":"idle","turn":0}')
+        self.resp("hc", "send", '{"started":true}')
+        self.ok(["send", "t1", "--text", "hi"], HC_ENV)
+        hc = [c for c in self.calls() if c.startswith("hc ")]
+        self.assertEqual(hc, ["hc get --json t1", "hc wait --json --timeout 60 t1", "hc send --json --if idle -- t1 hi"])
+
+    def test_send_turn0_wait_timeout_is_min_of_arg_and_60(self):
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "send", '{"started":true,"status":"done","wait":{"ended":true,"status":"done"}}')
+        for arg, want in (("30", "30"), ("540", "60")):
+            with self.subTest(arg=arg):
+                self.ok(["send", "t1", "--text", "hi", "--wait", "--timeout", arg], HC_ENV)
+                self.assertIn(f"hc wait --json --timeout {want} t1", self.calls())
+
+    def test_send_turn0_wait_timeout_then_mismatch_is_blocked(self):
+        # 對話框情境：status 一直是 null，wait 逾時，send --if idle 仍被呼叫一次且 mismatch → blocked
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "wait", '{"ended":false,"reason":"timeout","status":null}', rc=1)
+        self.resp("hc", "send", "", rc=10, err="status_mismatch")
+        r = self.ok(["send", "t1", "--text", "hi"], HC_ENV)
+        self.assertEqual(r["status"], "blocked")
+        calls = self.calls()
+        self.assertEqual(len([c for c in calls if c.startswith("hc send")]), 1)
+        self.assertLess(calls.index("hc wait --json --timeout 60 t1"),
+                        [i for i, c in enumerate(calls) if c.startswith("hc send")][0])
+
     def test_send_turn_positive_has_no_if(self):
         self.resp("hc", "get", '{"address":"t1","state":"live","turn":2}')
         self.resp("hc", "send", '{"started":true}')
         self.ok(["send", "t1", "--text", "hi"], HC_ENV)
         self.assertIn("hc send --json -- t1 hi", self.calls())
         self.assertNotIn("--if", self.argv_log())
+        self.assertFalse([c for c in self.calls() if c.startswith("hc wait")])
 
     def test_send_status_mismatch_is_blocked(self):
         # 啟動對話框期間 status 是 null：--if idle 不成立，hc 以 exit 10 拒絕；不重試、回 blocked 與處置提示

@@ -8,7 +8,7 @@
   wait ID [--timeout 秒]                                          → {"status":S,"raw":…}
   read ID [--lines N] | alive ID | session ID | close ID | attach-hint ID
   session：hc 讀不到 session id 時回 {"session":null,"hint":…}（hc 需 toolkit 的 SessionStart hook 記錄）。
-  send（hc、worker 剛起 turn 0）：加 --if idle；status 不是 idle 時回 {"status":"blocked","hint":…}，不重試。
+  send（hc、worker 剛起 turn 0）：先 hc wait（至多 60 秒）再加 --if idle；status 仍不是 idle 時回 {"status":"blocked","hint":…}，不重試。
 S：done|idle|working|blocked|error|timeout|gone（兩邊的原始值在這裡映射，原樣放 raw）。
 錯誤：stdout 印 {"error":kind,"hint":…}；exit 2 用法、3 core_not_running、4 no_backend、1 其他。
 環境變數：MUX_BACKEND 強制後端；MUX_CORE_SOCKET 覆寫 core socket 路徑；
@@ -270,6 +270,8 @@ class HcBackend:
         _, info = self.get(ident)
         guarded = isinstance(info, dict) and info.get("turn") == 0
         if guarded:
+            # spawn 剛回傳時 status 仍是 null（約 1 秒後才變 idle）：先等到就緒，逾時就照 --if idle 讓 hc 判斷
+            self.hc("wait", "--json", "--timeout", str(min(timeout, 60) if timeout else 60), ident)
             args += ["--if", "idle"]
         if wait:
             args.append("--wait")
