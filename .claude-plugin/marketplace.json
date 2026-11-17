@@ -11,7 +11,7 @@
       "name": "lifecycle",
       "source": "./plugins/lifecycle",
       "description": "開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin",
-      "version": "4.2.1",
+      "version": "4.2.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -47,7 +47,7 @@
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
-      "version": "1.19.0",
+      "version": "1.19.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -101,7 +101,7 @@
       "name": "toolkit",
       "source": "./plugins/toolkit",
       "description": "通用 hooks 與分層 guard——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截",
-      "version": "0.26.1",
+      "version": "0.26.2",
       "author": {
         "name": "KerryHuang"
       }

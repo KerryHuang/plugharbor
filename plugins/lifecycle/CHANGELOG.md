@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.2.2] - 2026-11-17
+
+起因：自動駕駛一段約 2200 行後端工作花約 5 小時（設計已很細仍另寫計畫再審、每個子單元走全套審查與 CI）；跨家族審查指出 1.19.0 的免計畫與續派原實作者規則沒有接通其他流程。
+
+- fix(implement)：`skills/implement/SKILL.md` 第 3 節接通免計畫分流：免計畫時不叫 writing-plans、不跑計畫審查，直接把設計路徑交實作者，實作與審查完成後主控自己讀 `after.md`，驗收以設計的驗收案例為準；`skills/implement/references/fallback.md` 加步驟 0（免計畫）；`skills/implement/references/after.md` 說明免計畫時設計文件路徑由主控傳入、不查計畫的 Spec 欄。frontmatter description 不變。
+
 ## [4.2.1] - 2026-11-17
 
 起因：某專案一段約 2200 行的後端工作在自動駕駛下花約 5 小時，其中設計已很細仍另寫約 780 行計畫再審；`workspace` 1.19.0 的單元流程改為設計夠細就不另寫計畫。

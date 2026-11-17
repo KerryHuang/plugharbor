@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.26.2] - 2026-11-17
+
+起因：自動駕駛一段約 2200 行後端工作花約 5 小時（設計已很細仍另寫計畫再審、每個子單元走全套審查與 CI）；跨家族審查指出 1.19.0 的免計畫與續派原實作者規則沒有接通其他流程。
+
+- docs(agent-dispatch)：`skills/agent-dispatch/SKILL.md` 第 6 節收工步驟加例外：無人值守或自動駕駛的實作者要等審查與修正（續派原實作者），保留到該段修正完成才關，並在帳本記 worker id／session；與 `workspace` 1.19.1 的資源規則同步。frontmatter description 不變。
+
 ## [0.26.1] - 2026-11-17
 
 - fix(tower)：`--paths` 改為 `action="extend"`，takeoff 與 amend 重複給旗標時合併（amend 仍是整份取代）；`match()` 對不含 `*` 的路徑視為目錄前綴（`a/b`、`a/b/` 涵蓋其下全部），`_in_scope`、重疊判斷與共用跑道比對一併生效。SKILL.md 補一句用法。測試 `test_tower.py` 新增 3 項。

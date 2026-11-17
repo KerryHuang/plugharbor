@@ -55,9 +55,11 @@ git branch --show-current && git status --short
 
 計畫與計畫審查不因改動小而省略；只有使用者明說不寫計畫才跳過，回報標「未寫計畫」。例外：設計文件已涵蓋介面、權限、錯誤行為、驗收案例時，可不另寫計畫、不審計畫（無人值守與自動駕駛照 `workspace:unattended` 的 `speed-rules.md`），回報標「設計夠細、未另寫計畫」。
 
+**免計畫**：不叫 writing-plans、不跑 `plan-review.md`，直接把設計文件路徑交給實作者（subagent 或 `superpowers:subagent-driven-development`／`executing-plans`，以設計的驗收案例當完成標準）；實作與審查都完成後，主控自己讀 `references/after.md` 照做（設計文件路徑由主控傳入，不查計畫的 Spec 欄），驗收對照以設計的驗收案例為準。沒裝 superpowers 時照 `references/fallback.md` 的免計畫段。
+
 **既有計畫**：`docs/superpowers/plans/` 下已有 **Spec** 欄指向本設計文件的計畫（使用者直接走 superpowers 寫完）→ 不重叫 writing-plans，只補：最後一個 task 是 after.md（沒有就加，路徑寫實際絕對路徑）；找不到 `.tmp/implement/<feature>/plan-review-*.md` 就照 `plan-review.md` 審；然後交執行。
 
-沒有既有計畫時，可用 skill 清單裡有 `superpowers:writing-plans` → 叫用它，輸入設計文件路徑，並明確要求：
+沒有既有計畫、且不適用免計畫時，可用 skill 清單裡有 `superpowers:writing-plans` → 叫用它，輸入設計文件路徑，並明確要求：
 
 > 計畫的 **Spec** 欄寫設計文件路徑。最後一個 task 是後段：照 `<plugin 根>/skills/implement/references/after.md` 做。計畫存好、自審後，先照 `<plugin 根>/skills/implement/references/plan-review.md` 審，必修修完再做 Execution Handoff（請使用者看的是審過的版本）。
 

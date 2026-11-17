@@ -1,6 +1,6 @@
 # 後段：對照驗收與回填
 
-計畫的最後一個 task 讀本檔照做（superpowers 路徑與退路都一樣）。前面的 task 都完成、測試全綠才開始。設計文件路徑看計畫的 **Spec** 欄；`spec.dir` 跑 `python3 <plugin 根>/scripts/config.py get spec.dir`（plugin 根＝本檔所在目錄往上三層 `../../../`）。工作檔放 `.tmp/implement/<feature>/`（不進 git；`<feature>` 只用 ASCII kebab-case）。
+計畫的最後一個 task 讀本檔照做（superpowers 路徑與退路都一樣）；**免計畫**時沒有最後一個 task，實作與審查完成後由主控直接讀本檔照做，設計文件路徑由主控傳入，驗收以設計的驗收案例為準。前面的 task 都完成、測試全綠才開始。設計文件路徑看計畫的 **Spec** 欄（免計畫則看主控傳入的路徑）；`spec.dir` 跑 `python3 <plugin 根>/scripts/config.py get spec.dir`（plugin 根＝本檔所在目錄往上三層 `../../../`）。工作檔放 `.tmp/implement/<feature>/`（不進 git；`<feature>` 只用 ASCII kebab-case）。
 
 ## 1. 對照驗收
 

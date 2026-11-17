@@ -142,7 +142,7 @@ argument-hint: "[對象] <任務>"
    | `error` | 看 `raw`：TUI 含 `protocol_mismatch` 時不重派，worker 多半還活著，請使用者在 worker 都 idle 時重啟 server（reference「TUI 專屬：安裝與升級」）；其他照 `raw` 回報 |
 
    claude worker 回到 idle、結果還沒到、context 已超過 250K：由你發動中途交接，步驟見 reference 與第 8 節。正在 working 或 blocked 時不插話。
-5. 收工：讀完結果檔就 `mux.py close <id>`，不留著待命（留著的 worker 會自己找事做）。只關自己在第 2 步開的 worker，不用「清單上沒別人」推論安全，也不要關整個 workspace／space（會連使用者與你一起關）。TUI 專屬：關完再跑一次 `python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID"` 重排（Herdr.app 的格子 close 後自動消失，不需重排）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
+5. 收工：讀完結果檔就 `mux.py close <id>`，不留著待命（留著的 worker 會自己找事做）。例外：無人值守或自動駕駛的實作者要等審查與修正（續派原實作者），保留到該段修正完成才關，並在帳本記 worker id／session。只關自己在第 2 步開的 worker，不用「清單上沒別人」推論安全，也不要關整個 workspace／space（會連使用者與你一起關）。TUI 專屬：關完再跑一次 `python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID"` 重排（Herdr.app 的格子 close 後自動消失，不需重排）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
 
 ## 7. 額度
 

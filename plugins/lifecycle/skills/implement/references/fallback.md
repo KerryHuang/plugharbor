@@ -2,7 +2,8 @@
 
 可用 skill 清單沒有 `superpowers:writing-plans` 時照本檔做，取代「規劃 → 執行 → 審查 → 收尾」；SKILL.md 前段與 `after.md` 照跑。計畫格式與 superpowers 相同，之後裝了可無縫接手。
 
-1. **寫計畫**（不因改動小而省略；使用者明說不寫才跳過，回報標「未寫計畫」）：存 `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`（進版控；專案沒這個目錄先問使用者）。`.tmp/` 沒在 `.gitignore` 就提醒一次、推薦加，不自行改。表頭與 task 骨架：
+0. **免計畫**：設計文件已涵蓋介面、權限、錯誤行為、驗收案例（或使用者明說不寫計畫）時跳過步驟 1、2：主控照設計文件逐項實作並自審（步驟 3 的做法不變，完成標準是設計的驗收案例），再做步驟 4、5；步驟 5 照 `after.md`，設計文件路徑由主控自己帶入。回報標「設計夠細、未另寫計畫」或「未寫計畫」。
+1. **寫計畫**（不因改動小而省略；免計畫的條件見步驟 0）：存 `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`（進版控；專案沒這個目錄先問使用者）。`.tmp/` 沒在 `.gitignore` 就提醒一次、推薦加，不自行改。表頭與 task 骨架：
 
    ````markdown
    # [功能名] Implementation Plan
