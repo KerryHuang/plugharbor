@@ -22,9 +22,15 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8")
 
 # core 以呼叫者環境啟動時會把這些帶進每個 hc 終端；worker 不能繼承（會蓋掉主 session 的回報、
-# CLAUDE_CODE_CHILD_SESSION 還會讓 transcript 不落檔）。不含 HC_*：那是 hc 替 worker 自己設的身分。
-# 拋棄式 CLI（ask.mjs）要濾的完整清單在 clis.mjs scrubEnv，另含 HC_*。
-POLLUTED_VARS = ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "HERDR_ENV", "HERDR_PANE_ID")
+# CLAUDE_CODE_CHILD_SESSION 還會讓 transcript 不落檔、HERDR_SOCKET_PATH 會讓 pi 向 TUI socket 回報）。
+# 清單與 clis.mjs scrubEnv 的 CLAUDE_CODE_* 已知名稱及 HERDR_* 對齊。
+# 不含 HC_*：那是 hc 替 worker 自己設的身分，unset 會讓 worker 內的 hc 失效（拋棄式 CLI 不經 hc，由 scrubEnv 另濾）。
+POLLUTED_VARS = (
+    "CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_CODE_EXECPATH", "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_BRIDGE_SESSION_ID", "CLAUDE_CODE_SESSION_ATTENDED",
+    "HERDR_ENV", "HERDR_PANE_ID", "HERDR_SOCKET_PATH", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID",
+)
 
 STATES = ("done", "idle", "working", "blocked", "error", "timeout", "gone")
 KINDS = ("claude", "codex", "agy", "pi")

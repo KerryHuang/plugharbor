@@ -108,11 +108,12 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(mux.detect_backend({"MUX_BACKEND": "herdr"}), "herdr")
 
     def test_clean_env_prefix(self):
-        self.assertEqual(
-            mux.clean_env_prefix({"A": "1", "B": "x y"}),
-            ["env", "-u", "CLAUDECODE", "-u", "CLAUDE_CODE_CHILD_SESSION", "-u", "HERDR_ENV",
-             "-u", "HERDR_PANE_ID", "A=1", "B=x y"])
-        self.assertIn("CLAUDECODE", mux.POLLUTED_VARS)
+        want = ["env"] + [x for v in mux.POLLUTED_VARS for x in ("-u", v)] + ["A=1", "B=x y"]
+        self.assertEqual(mux.clean_env_prefix({"A": "1", "B": "x y"}), want)
+        for v in ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_ENTRYPOINT", "HERDR_ENV",
+                  "HERDR_PANE_ID", "HERDR_SOCKET_PATH", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID"):
+            self.assertIn(v, mux.POLLUTED_VARS)
+        self.assertFalse([v for v in mux.POLLUTED_VARS if v.startswith("HC_")])
 
 
 class TestCore(MuxCase):
@@ -190,11 +191,14 @@ class TestHc(MuxCase):
         self.assertEqual(argv[argv.index("--name") + 1], "w1")
         self.assertFalse([a for a in argv if a.startswith("herdr.")])
         i = argv.index("env")
-        self.assertEqual(argv[i:i + 9], ["env", "-u", "CLAUDECODE", "-u", "CLAUDE_CODE_CHILD_SESSION",
-                                         "-u", "HERDR_ENV", "-u", "HERDR_PANE_ID"])
-        self.assertEqual(argv[i + 9], "A=1")
-        self.assertTrue(argv[i + 10].endswith("/claude"))
-        self.assertEqual(argv[i + 11:], ["--model", "m"])
+        j = argv.index("A=1")
+        self.assertEqual(argv[i + 1:j], [x for v in mux.POLLUTED_VARS for x in ("-u", v)])
+        for v in ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_ENTRYPOINT", "HERDR_ENV",
+                  "HERDR_PANE_ID", "HERDR_SOCKET_PATH"):
+            self.assertIn(v, argv[i:j])
+        self.assertFalse([a for a in argv if a.startswith("HC_")])
+        self.assertTrue(argv[j + 1].endswith("/claude"))
+        self.assertEqual(argv[j + 2:], ["--model", "m"])
 
     def test_spawn_hc_resolves_absolute_cli(self):
         self.resp("hc", "run", '{"address":"t7"}')
