@@ -33,8 +33,8 @@
 ```json
 {
   "mode": "pane",
-  "flow": {"pane_id": "wD:p7", "session": "<agent_session.value>"},
-  "data": {"pane_id": "wD:p8", "session": "<agent_session.value>"},
+  "flow": {"id": "<spawn 回傳的 id>", "session": "<mux.py session 的值>"},
+  "data": {"id": "<spawn 回傳的 id>", "session": "<mux.py session 的值>"},
   "round": 2,
   "open_issues": ["D-2", "D-4"],
   "closed": {"D-1": "共識", "D-3": "證據裁決"},
@@ -42,41 +42,42 @@
 }
 ```
 
-subagent 模式把 `pane_id`／`session` 換成 `agent_id`。
+subagent 模式把 `id`／`session` 換成 `agent_id`。
 
 ## pane 模式（預設）
 
-前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`HERDR_ENV=1`、cwd 檢查）；沒裝 toolkit 或不成立 → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
+前置判定依 `toolkit:agent-dispatch` 長任務第 0 步（`mux.py env` 的 `backend` 不是 `none`、cwd 檢查）；沒裝 toolkit、`backend` 是 `none` 或回 `core_not_running` → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。cwd 一律專案根。
 
-開 pane 與起顧問：
+以下 `mux.py` 指 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mux.py`；stdout 是 JSON（`read` 例外輸出純文字），失敗時是 `{"error":kind,"hint":…}`。
+
+起顧問（版面由 `spawn` 處理；回傳的 `id` 寫進 `_run.json`，之後所有動作都用它）：
 
 ```bash
-herdr pane split --current --direction right --cwd "<專案根>" --no-focus      # → flow pane_id
-herdr agent start advisor-flow --kind claude --pane <flow pane_id> -- --agent discovery:discovery-domain-advisor
-herdr pane split <flow pane_id> --direction down --cwd "<專案根>" --no-focus   # → data pane_id
-herdr agent start advisor-data --kind claude --pane <data pane_id> -- --agent discovery:discovery-domain-advisor
-herdr agent list                                             # 取兩者的 agent_session.value 寫進 _run.json
+mux.py spawn --name advisor-flow --kind claude --cwd "<專案根>" -- --agent discovery:discovery-domain-advisor   # → flow id
+mux.py spawn --name advisor-data --kind claude --cwd "<專案根>" -- --agent discovery:discovery-domain-advisor   # → data id
+mux.py session <id>                                                                                       # 兩者各取 session 寫進 _run.json
 ```
 
-- pane_id 讀法與孤兒 pane 處理依 `toolkit:agent-dispatch` 長任務第 2 步。
+- `id` 與 `visible:false`、`spawn_failed` 等處理依 `toolkit:agent-dispatch` 長任務第 2 步。
 - `--agent lifecycle:…` 會套用該 agent 的工具白名單與 model（顧問沒有 `AskUserQuestion`、沒有寫檔工具），不會自己停下來等人。
 - 每一則送題的開頭都寫 `lens:`，不只寫在開場——顧問 context 被壓縮後仍知道自己是哪個視角。
+- `session` 回 `null`（剛起、SessionStart 記錄還沒寫入）：`mux.py read <id>` 確認顧問已起來，隔幾秒再取，不用猜。
 
 送題與取回應：
 
 ```bash
-herdr agent prompt <pane_id> "$(cat <絕對路徑>/r2-to-flow.md)" --wait --timeout 540000   # run_in_background: true
+mux.py send <id> --file <絕對路徑>/r2-to-flow.md --wait --timeout 540   # run_in_background: true
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對路徑>/r2-flow.md
 ```
 
-- 送題寫檔依 `toolkit:agent-dispatch` 長任務第 1 步（**不含結果檔**：顧問以 `--agent` 起、沒有寫檔工具），等待依第 3 步（`--wait` 不加 `--until`）。
+- 送題寫檔依 `toolkit:agent-dispatch` 長任務第 1 步（**不含結果檔**：顧問以 `--agent` 起、沒有寫檔工具），等待依第 3 步（`--timeout` 要搭 `--wait`，回傳 `status`）。
   完成判準是 `advisor_last_reply.py` exit 0 且取到文字，不是結果檔。
 - 同一輪兩位顧問的送題互不相依時，在同一則訊息平行送出；爭點進入循序回應（見 consultant-desk 第 3 步）時，先送 A、取回 A 的回應，再連同它送 B。
-- 開發中要用工作區未發布的 agent 定義：`agent start` 的參數加 `--plugin-dir <plugins/lifecycle 的絕對路徑>`。
-- `advisor_last_reply.py` exit 1（找不到 transcript／最後一輪沒有文字）→ 不可當成「沒意見」，先 `herdr agent read` 看狀態。
-- 每輪轉話前 `herdr agent read <pane_id>` 看使用者有沒有直接在 pane 插話；有就把那段併進下一輪的送題，並在回應檔註記「使用者插話」。
+- 開發中要用工作區未發布的 agent 定義：`spawn` 的 `--` 後面加 `--plugin-dir <plugins/lifecycle 的絕對路徑>`。
+- `advisor_last_reply.py` exit 1（找不到 transcript／最後一輪沒有文字）→ 不可當成「沒意見」，先 `mux.py read <id>` 看狀態。
+- 每輪轉話前 `mux.py read <id> --lines 40` 看使用者有沒有直接在 pane 插話；有就把那段併進下一輪的送題，並在回應檔註記「使用者插話」。
 
-## subagent 模式（無 herdr 時）
+## subagent 模式（沒有 herdr／Herdr.app 時）
 
 - 開場：同一則訊息平行派兩個 `discovery:discovery-domain-advisor`（`mode: discuss-open`，一個 `lens: business-flow`、一個 `lens: data-boundary`），把回傳的 agentId 寫進 `_run.json`。
 - 每輪：`SendMessage` 給該 agentId（`mode: discuss-reply`，附 `lens`），回傳文字由主線落檔成 `r{N}-*.md`。
@@ -86,15 +87,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/advisor_last_reply.py <session> > <絕對�
 
 | 情境 | 處置 |
 |------|------|
-| `--wait` 逾時，或顧問停在畫面上等輸入 | 依 `toolkit:agent-dispatch` 長任務第 4 步：逾時不重送不關 pane；等輸入就提醒使用者 attach，不代答 |
-| 顧問 pane 不見了 | 重開 pane 起同一個 agent，送題附上 `lens` 與它先前所有 `open-*.md`／`r*-*.md`，輪數不重算 |
+| `send --wait` 回 `timeout`，或顧問停在畫面上等輸入（`blocked`） | 依 `toolkit:agent-dispatch` 長任務第 4 步：逾時不重送不關 pane；等輸入就提醒使用者用 `mux.py attach-hint <id>` 給的指令接手，不代答 |
+| 顧問 pane 不見了（`mux.py alive <id>` 回 `false`、`status` 是 `gone`） | 重開 pane 起同一個 agent，送題附上 `lens` 與它先前所有 `open-*.md`／`r*-*.md`，輪數不重算 |
 | subagent 續接失敗 | 重派，prompt 附上 `lens` 與它先前所有回應檔 |
 | 主線 context 被壓縮 | 先讀 `_run.json` 與最後一輪的檔案再續，不重問已結案爭點 |
 
 ## 收尾
 
 1. 所有爭點結案、交使用者的題目都答完並寫回 `consultant-notes.md` 之後，才關顧問。
-2. pane 模式依 `toolkit:agent-dispatch` 長任務第 5 步逐個關顧問 pane。
+2. pane 模式逐個 `mux.py close <id>` 關顧問 pane（TUI 另需重排，見 `toolkit:agent-dispatch` 長任務第 5 步）。
 3. `_run.json` 標 `"finished": true`。
 
 ## consultant-notes.md 追加格式

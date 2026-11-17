@@ -26,7 +26,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 
 ## 可選依賴
 
-建議搭配 superpowers（`implement` 把規劃、執行、審查、收尾交給它）。`superpowers`、`tickets`（票務）、`discovery`（會議記錄）、`browser-docs`（畫面勘察、PDF 轉檔）、`toolkit`（herdr pane 派工）沒裝時照 `references/shared-preludes.md`「可選依賴」降級。
+建議搭配 superpowers（`implement` 把規劃、執行、審查、收尾交給它）。`superpowers`、`tickets`（票務）、`discovery`（會議記錄）、`browser-docs`（畫面勘察、PDF 轉檔）、`toolkit`（herdr／Herdr.app pane 派工；本 plugin 附 `scripts/mux.py` 轉接腳本）沒裝時照 `references/shared-preludes.md`「可選依賴」降級。
 
 ## Skills（5）
 

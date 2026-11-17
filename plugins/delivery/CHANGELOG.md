@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.2.0] - 2026-11-17
+
+起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
+
+- 同上：`references/advisor-discussion.md`、`consultant-desk.md`、`shared-preludes.md`、`scripts/advisor_last_reply.py` 從 lifecycle 4.2.0 的同名檔依對照表同步（只差 agent 名稱）；新增 `scripts/mux.py`（與 toolkit `agent-dispatch` 正本位元組相同）。
+
 ## [1.1.0] - 2026-11-16
 
 起因：demo-video 第一次實戰（兩支影片）的摩擦集中在起站與重置、選擇器試錯、操作超時三處。設計見 `docs/superpowers/specs/2026-11-16-demo-video-optimization-design.md`。

@@ -78,8 +78,8 @@ prompt: |
 兩個視角各自提出爭點後**交叉審、輪流回應對方**，主線當主持人：轉話、控輪數、判結局，不參與立場。
 指令、檔案格式、pane 操作與異常處理見 [advisor-discussion.md](advisor-discussion.md)。
 
-**執行方式：預設開 herdr pane**（兩位顧問開在主線右側，使用者隨時看得到分析與討論、也能直接在 pane 插話）；
-沒有 herdr 或主線不在 herdr pane 裡 → 退回 subagent（`Agent`＋`SendMessage` 續接），並告知使用者紀錄位置。
+**執行方式：預設開 pane**（herdr 或 Herdr.app，兩位顧問開在主線旁，使用者隨時看得到分析與討論、也能直接在 pane 插話）；
+沒有 herdr／Herdr.app、或 `mux.py env` 的 `backend` 是 `none` → 退回 subagent（`Agent`＋`SendMessage` 續接），並告知使用者紀錄位置。
 
 1. **開場**（兩位平行，`mode: discuss-open`，各帶自己的 `lens`）：各自讀證據，交出爭點提案，每人最多 5 個、依影響排序，其餘列備忘。
 2. **整理議程**（主持人）：合併重複；兩方立場已一致的直接結案為「共識」；其餘進討論，**總數上限 5**（D-1～D-5）。

@@ -13,7 +13,11 @@
   "groups": [
     [
       "plugins/toolkit/skills/agent-dispatch/scripts/mux.py",
-      "plugins/workspace/skills/unattended/scripts/mux.py"
+      "plugins/workspace/skills/unattended/scripts/mux.py",
+      "plugins/lifecycle/scripts/mux.py",
+      "plugins/tickets/scripts/mux.py",
+      "plugins/discovery/scripts/mux.py",
+      "plugins/delivery/scripts/mux.py"
     ],
     [
       "plugins/lifecycle/references/harness-terms.md",

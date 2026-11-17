@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """印出某個 session 最後一輪的完整回覆文字（雙顧問討論，pane 模式用）。
 
-顧問是唯讀 agent、不能寫檔；`herdr agent prompt --wait` 只回狀態不回內容，
-`herdr agent read` 回的是終端畫面、會被捲動與折行截斷。transcript 才是完整內容，
+顧問是唯讀 agent、不能寫檔；`mux.py send --wait` 只回狀態不回內容，
+`mux.py read` 回的是終端畫面、會被捲動與折行截斷。transcript 才是完整內容，
 主線用本腳本取出後自行落檔成每輪回應檔。
 
 「最後一輪」＝最後一則使用者輸入（不含工具結果）之後，所有 assistant 文字區塊依序串接。
 找不到 transcript、或最後一輪沒有任何文字 → exit 1 並說明原因，不印空字串
 （空輸出長得像「顧問沒意見」，會被當成共識）。
 
-用法：advisor_last_reply.py <sessionId 或其前綴>
+用法：advisor_last_reply.py <sessionId 或其前綴>（sessionId 取自 `mux.py session <id>`）
 """
 import glob
 import json
@@ -68,7 +68,7 @@ def last_reply(path):
 
 def main(argv):
     if len(argv) != 1:
-        print("用法：advisor_last_reply.py <sessionId 或其前綴>", file=sys.stderr)
+        print("用法：advisor_last_reply.py <sessionId 或其前綴>（sessionId 取自 `mux.py session <id>`）", file=sys.stderr)
         return 2
     try:
         path = find_transcript(argv[0])
