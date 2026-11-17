@@ -207,7 +207,7 @@ class HcBackend:
         ident = find_key(data, "address") if data is not None else None
         if code != 0 or not ident:
             fail_from("hc run", code, out, err)
-        pane = self._place(ident, name) if window else None
+        pane = self._place(ident) if window else None
         return {"id": ident, "visible": True, "pane": pane} if pane else {"id": ident, "visible": False}
 
     def _main_pane(self):
@@ -226,7 +226,7 @@ class HcBackend:
                 stack.extend(cur)
         return None
 
-    def _place(self, ident, name):
+    def _place(self, ident):
         """把已在背景跑的 worker 放進主 session 所在 tab；任何一步失敗都回 None（worker 照跑，visible:false）。"""
         main = self._main_pane()
         if not main:
@@ -235,7 +235,7 @@ class HcBackend:
         argv = shlex.split(cmd) if cmd else [sys.executable, str(Path(__file__).with_name("app_layout.py"))]
         if not (cmd or Path(argv[1]).exists()):
             return None
-        code, out, err = run([*argv, "place", "--main", main, "--terminal", ident, "--name", name], env=self.env)
+        code, out, err = run([*argv, "place", "--main", main, "--terminal", ident], env=self.env)
         data = parse_json(out)
         if code != 0 or not isinstance(data, dict) or not data.get("pane"):
             print(f"mux: 版面放置失敗（worker 仍在背景執行）：{(err or out).strip()[:200]}", file=sys.stderr)

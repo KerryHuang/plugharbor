@@ -200,7 +200,7 @@ class TestHc(MuxCase):
         self.resp("app_layout.py", "place", '{"pane":"p7","visible":true}')
         r = self.ok(self.spawn_args(), self.layout_env())
         self.assertEqual(r, {"id": "t7", "visible": True, "pane": "p7"})
-        self.assertIn("app_layout.py place --main p1 --terminal t7 --name w1", self.calls())
+        self.assertIn("app_layout.py place --main p1 --terminal t7", self.calls())
         calls = self.calls()
         self.assertLess(calls.index("herdr-app status"), [i for i, c in enumerate(calls) if c.startswith("hc run")][0])
 
