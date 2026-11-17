@@ -93,4 +93,4 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 ## toolkit：派工層支援 Herdr.app（2026-11-17 規劃） #53
 
-- [ ] 🚧 共用轉接腳本 `mux.py` 同時支援 Herdr.app（hc）與 herdr TUI：worker 切在主 session 旁、四種 CLI 缺狀態回報就補、setup 與 user 層規則一併改（使用者 2026-11-17 裁決；設計 `docs/superpowers/specs/2026-11-17-herdr-core-mux-design.md`、計畫 `docs/superpowers/plans/2026-11-17-herdr-core-mux.md`）（實作完成、待實機驗收） #54
+- [x] 共用轉接腳本 `mux.py` 同時支援 Herdr.app（hc）與 herdr TUI：worker 切在主 session 旁、四種 CLI 缺狀態回報就補、setup 與 user 層規則一併改（使用者 2026-11-17 裁決；設計 `docs/superpowers/specs/2026-11-17-herdr-core-mux-design.md`、計畫 `docs/superpowers/plans/2026-11-17-herdr-core-mux.md`）（2026-11-17 Herdr.app 五情境與 TUI 回歸實機驗收通過） #54
