@@ -64,7 +64,7 @@
 
 ## 換新 session
 
-收尾 commit 進了主線、累積報告與下一步排線寫好後，在 herdr 內（`HERDR_ENV=1`）就換新 session 再開下一段：下一段拿到乾淨的 context 與已安裝的最新版 plugin。不在 herdr 內就不換，直接接下一段。
+收尾 commit 進了主線、累積報告與下一步排線寫好後，在 herdr 或 Herdr.app 內（`python3 ${CLAUDE_PLUGIN_ROOT}/skills/unattended/scripts/mux.py env` 的 `backend` 不是 `none`）就換新 session 再開下一段：下一段拿到乾淨的 context 與已安裝的最新版 plugin。`backend` 是 `none` 就不換，直接接下一段。
 
 - **前提**：沒有還在跑的 subagent、背景工作或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一段收尾再試。
 - **先記帳**：帳本寫 `換新：<段> 收尾後`，加上這段試過但排除的方向、下一步的第一個動作（具體到檔案或指令）；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。帳本就是交接檔，不另跑 `/handoff`。

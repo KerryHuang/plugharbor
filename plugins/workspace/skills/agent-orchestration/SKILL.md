@@ -154,7 +154,7 @@ description: 適用於多階段 agent chain（≥2 個 agent 接力）、需要�
 
 ## 6. 與外部 plugin 的優先順序
 
-裝了 superpowers 時，方法類（規劃、執行、審查、除錯、TDD）以它為準；`superpowers:dispatching-parallel-agents` 管「能不能平行」。本 skill 管 chain 接力、output file 交棒、清理；herdr pane 與跨 CLI 派工用 `toolkit:agent-dispatch`（可選）。沒裝 superpowers 就照本檔與 §0。
+裝了 superpowers 時，方法類（規劃、執行、審查、除錯、TDD）以它為準；`superpowers:dispatching-parallel-agents` 管「能不能平行」。本 skill 管 chain 接力、output file 交棒、清理；herdr／Herdr.app 的 pane（`mux.py`）與跨 CLI 派工用 `toolkit:agent-dispatch`（可選）。沒裝 superpowers 就照本檔與 §0。
 
 ## 7. 長流程心跳 / sub-agent 健康偵測
 

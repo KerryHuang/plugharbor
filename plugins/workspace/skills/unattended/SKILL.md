@@ -60,7 +60,7 @@ description: Use when 使用者說「無人值守」「自動駕駛」「照 roa
 - 同一個 worktree 裡有人在改檔時不跑閘門；要並行就讓另一方用另一個 worktree。
 - 兩件工作共用同一批檔案、schema 遷移、build 產物或瀏覽器就不並行：前一件合併後，下一件才開始實作。只共用 CPU 的可以並行實作，但重測試不同時跑：一律用 `sh <本 skill 的 Base directory>/scripts/test-lock.sh <測試指令>` 包起來，派出去的 prompt 也照抄。專案的具體清單寫在專案設定。
 - worker 交回、讀完結果檔就關它的 pane，不留著待命。
-- 開 herdr pane worker 時帶 `--env AGENT_DISPATCH_UNATTENDED=1`（有裝 toolkit 時，worker 的提問會被擋下、改照推薦做）；worker 代做的決定收進回來報告的「主控裁決待確認」。不寫自動回答提問的程式；仍卡住就記進報告。
+- 用 `toolkit:agent-dispatch` 的 `mux.py spawn` 開 worker 時帶 `--env AGENT_DISPATCH_UNATTENDED=1`（有裝 toolkit 時，worker 的提問會被擋下、改照推薦做）；worker 代做的決定收進回來報告的「主控裁決待確認」。不寫自動回答提問的程式；仍卡住就記進報告。
 
 ## 4. 停下條件（只有這些）
 
