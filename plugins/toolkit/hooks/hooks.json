@@ -240,6 +240,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" send-retry-hint.py",
+            "timeout": 5
+          }
+        ]
       }
     ]
   }

@@ -23,6 +23,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
   - id: M-20261109-03
     source: commit f5a71de
     layer: workspace
@@ -33,6 +34,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
   - id: M-20261109-04
     source: commit 609fd19
     layer: toolkit
@@ -43,6 +45,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
   - id: M-20261109-05
     source: commit 68c6b88
     layer: lifecycle
@@ -53,6 +56,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
   - id: M-20261113-01
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -61,7 +65,8 @@ metrics:
     due: {date: "2026-11-27"}
     if_not: 檢查 Stop hook 是否被 stop_hook_active 放行掉、或英文段判準太嚴；再考慮 PreToolUse 在工具呼叫前即時提醒
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期；期間無漂英文訊號，20261113135638-17b9d7 是誤擋（壓縮前舊英文），已由 2e47aaf 修"}
   - id: M-20261113-02
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -69,5 +74,24 @@ metrics:
     criterion: 0.21.1 發版後，佇列出現「信任檢查判 missing 但實際由上層繼承」或「worker 卡在信任對話框」的筆數＝0
     due: {date: "2026-11-27"}
     if_not: 改成先試 agent start、失敗才請使用者處理
+    status: open
+    checks:
+      - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期"}
+  - id: M-20261117-01
+    source: 20261117-reply-address/report.md
+    layer: toolkit
+    metric: 改名導致 SendMessage 回報送不到
+    criterion: hook 發版後，transcript 中 No agent named '<名稱> [ref]' 失敗之後的 2 次呼叫內，改用同 ref 的新名稱重送成功的比例 ≥ 80%，且佇列沒有「位址錯了／改名」的使用者糾正
+    due: {date: "2026-12-08"}
+    if_not: 查 hook 是否觸發；不觸發就改在 mux.py spawn 產生的 prompt 內帶固定重送步驟
+    status: open
+    checks: []
+  - id: M-20261117-02
+    source: 20261117-reply-address/report.md
+    layer: toolkit
+    metric: 拋棄式 CLI 繼承 AGENT_DISPATCH_*
+    criterion: 2026-11-17 之後，佇列出現 dispatch-stop-guard 誤逼子程序寫派工結果檔的 friction 筆數＝0
+    due: {date: "2026-12-08"}
+    if_not: 補 agent-dispatch SKILL.md:104 濾除清單，或讓 dispatch-stop-guard 比對 pane id
     status: open
     checks: []

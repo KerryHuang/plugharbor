@@ -104,7 +104,7 @@ argument-hint: "[對象] <任務>"
    - 在 herdr 或 Herdr.app 的終端裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*`、`HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET`、`HC_SCOPE`，否則會蓋掉真正主 session 的回報（`ask.mjs` 已自動濾）。
    - TUI 專屬：**不要在 Claude Code 內啟 herdr server**，`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。
    - 對象是 claude 時，cwd 必須已受信任（本身或任一上層通過信任對話框），否則 worker 卡在對話框沒人能答。檢查腳本見 reference；不通過就請使用者先在該目錄開一次 Claude Code。
-1. 在專案的暫存區開一個工作目錄，把 prompt 寫成檔案（內容照第 5 節共用規則）。**你是 Claude Code、對象是 claude 時**，先用 `ListAgents` 取得自己的位址寫進 prompt，要它寫完結果檔**之後**用 `SendMessage` 回報一句話加結果檔路徑；要用 AskUserQuestion 問人之前，也先發一則「在問：{一句話}」。送不到就在工作區寫 `undelivered` 檔，不重試。
+1. 在專案的暫存區開一個工作目錄，把 prompt 寫成檔案（內容照第 5 節共用規則）。**你是 Claude Code、對象是 claude 時**，先用 `ListAgents` 取得自己的位址寫進 prompt，要它寫完結果檔**之後**用 `SendMessage` 回報一句話加結果檔路徑；要用 AskUserQuestion 問人之前，也先發一則「在問：{一句話}」。送不到就用 ListAgents 找同一個 ref 的目前名稱重送一次，仍失敗才在工作區寫 `undelivered` 檔。
 2. 開 worker 並起對方的 CLI（版面由 `spawn` 處理）。回傳的 `id` 就是之後所有動作的 `<id>`，不要自己推算：
 
    ```bash

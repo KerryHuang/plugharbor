@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.26.0] - 2026-11-17
+
+- feat(hooks)：新增 PostToolUse hook `send-retry-hint.py`（matcher `SendMessage`，測試 `hooks/tests/test_send_retry_hint.py`）：回報「No agent named …」時注入提示，要發送方用 ListAgents 找同一個 ref 的目前名稱重送一次，仍失敗才照原指示寫 undelivered。送不到時觸發的是 PostToolUse（`tool_response.success=false`），不是 PostToolUseFailure（`claude -p` 實測）。`agent-dispatch` SKILL 步驟 1「送不到…不重試」改寫成同義的重送一次。
+- 起因：送達比對的是名稱；收件方派工後改名就送不到。11-01～11-17 共 5 起（含 2026-11-17 self-rotate 接手回報失敗），10-21 派工批次 61 次；SKILL 既有的「先用 ListAgents 取位址」擋不住（`docs/retrospective/20261117-reply-address/`）。
+
 ## [0.25.0] - 2026-11-17
 
 - feat(agent-dispatch)：新增 `skills/agent-dispatch/scripts/mux.py`（與 `test_mux.py`），把派工需要的動作（env、spawn、send、wait、read、alive、session、close、attach-hint）收斂成一支轉接腳本，後端為 Herdr.app（`hc`）或 herdr TUI；狀態統一映射成 `done|idle|working|blocked|error|timeout|gone`。核心行為：兩組環境變數同時存在時看誰的終端是最近祖先；core 沒跑（直接連 socket 判斷，不經 hc）時回 `core_not_running` 且不呼叫任何 hc；`hc send` 前移除 `HC_TERMINAL_ID` 以免訊息被包成 `<hc from>`；`hc run` 的 CLI 先解成絕對路徑（core 的 PATH 不同）、加 `--no-notify`、以 `env -u …` 前綴清掉繼承的污染變數；`done` 與 `idle` 都視為輪次結束。本版只含腳本與測試，skill 文件、hook、self-rotate 尚未改用它。
