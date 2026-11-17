@@ -43,7 +43,7 @@ claude plugin install toolkit@plugharbor
 
 - `git-add-all`（deny）：擋 `git add -A` / `.` / `--all`
 - `git-destructive`（ask）：force push、`reset --hard`、`clean -f`
-- `herdr-tab-create`（ask）：`herdr tab create`；只有第 7 個 worker 起（`mux.py spawn` 會自己處理）或不回報的獨立 session 才開新 tab
+- `herdr-tab-create`（ask）：`herdr tab create`；手動開新 tab 只留給不回報的獨立 session（第 7 個 worker 起由 `mux.py spawn` 自己開新 tab，不經此 guard）
 - `herdr-pane-run-agent`（deny）：`herdr pane run <pane> claude|codex|agy|pi`，改用 `mux.py spawn` 帶模型參數
 - `hc-run-agent`（deny）：`hc run … claude|codex|agy|pi`，改用 `mux.py spawn`（漏帶 model／effort、版面與父子紀錄）
 

@@ -46,7 +46,7 @@ subagent 模式把 `id`／`session` 換成 `agent_id`。
 
 ## pane 模式（預設）
 
-前置判定：`mux.py env` 的 `backend` 不是 `none`，且 cwd（專案根）已被 claude 信任；`backend` 是 `none` 或 `mux.py` 回 `core_not_running` → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。`mux.py` 與版面腳本都在本 plugin 的 `scripts/`，不必裝 toolkit；下面提到的 `toolkit:agent-dispatch` 長任務步驟只是補充說明，沒裝就照本檔做。cwd 一律專案根。
+前置判定：`mux.py env` 的 `backend` 不是 `none`，且 cwd（專案根）已被 claude 信任；`backend` 是 `none` 或 `mux.py` 回 `core_not_running` → 走 subagent 模式，並告訴使用者「本次無 pane，紀錄在 advisor-discussion/」。`mux.py` 與版面腳本都在本 plugin 的 `scripts/`，開 pane 不必裝 toolkit（hc 下取顧問 session id 需 toolkit 的 SessionStart hook，見下）；下面提到的 `toolkit:agent-dispatch` 長任務步驟只是補充說明，沒裝就照本檔做。cwd 一律專案根。
 
 以下 `mux.py` 指 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/mux.py`；stdout 是 JSON（`read` 例外輸出純文字），失敗時是 `{"error":kind,"hint":…}`。
 
@@ -61,7 +61,7 @@ mux.py session <id>                                                             
 - `id` 與 `visible:false`、`spawn_failed` 等處理依 `toolkit:agent-dispatch` 長任務第 2 步。
 - `--agent lifecycle:…` 會套用該 agent 的工具白名單與 model（顧問沒有 `AskUserQuestion`、沒有寫檔工具），不會自己停下來等人。
 - 每一則送題的開頭都寫 `lens:`，不只寫在開場——顧問 context 被壓縮後仍知道自己是哪個視角。
-- `session` 回 `null`（剛起、SessionStart 記錄還沒寫入）：`mux.py read <id>` 確認顧問已起來，隔幾秒再取，不用猜。
+- `session` 回 `null`：先 `mux.py read <id>` 確認顧問已起來，隔幾秒重取，最多 3 次，不用猜。仍為 `null` 且回傳帶 `hint`（hc 下沒裝 toolkit 的 SessionStart hook，讀不到顧問 transcript）→ 關掉已開的顧問 pane，改走 subagent 模式，並告訴使用者原因。
 
 送題與取回應：
 

@@ -6,6 +6,7 @@
 
 - feat(unattended): `skills/unattended/scripts/self-rotate.sh` 改經 `mux.py`（新增同目錄複本，與 toolkit `agent-dispatch` 的正本位元組相同）取自己的終端、等閒置、送 `/clear`／`/reload-plugins`／接回訊息、驗 session id 與畫面，herdr TUI 與 Herdr.app（hc）都能換新；不在兩者終端內就退出，hc 的 core 沒跑時不呼叫 hc。重試、逾時、log 格式不變；腳本與 toolkit handoff 的副本保持一致，`tests/self-rotate.sh` 兩種後端各跑一組情境。起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
 - docs(unattended)：`skills/unattended/SKILL.md`、`skills/unattended/references/autopilot.md`、`skills/agent-orchestration/SKILL.md` 改指 `mux.py`：換新 session 的判斷由「`HERDR_ENV=1`」改成 `skills/unattended/scripts/mux.py env` 的 `backend` 不是 `none`，開 worker 用 `toolkit:agent-dispatch` 的 `mux.py spawn`（`--env AGENT_DISPATCH_UNATTENDED=1`）。frontmatter description 不變。
+- fix(unattended)（最終審查）：`self-rotate.sh` 判斷 `/clear` 生效改為「session id 非空且與換之前不同」，讀不到（空字串）不算成功；`mux.py` 副本同步更新；`skills/unattended/references/autopilot.md` 註明 hc 下換新需 toolkit 的 SessionStart hook 記錄 session id，沒裝就不換、照 handoff 的手動路徑。
 
 ## [1.17.0] - 2026-11-15
 

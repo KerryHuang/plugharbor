@@ -4,8 +4,7 @@
 用法：
   app_layout.py place --main <主 pane> --terminal <hc 位址>
     → {"pane":str,"visible":true[,"tab":str]}；失敗 {"error":"layout_failed","hint":…} exit 1。
-  app_layout.py relayout --main <主 pane>
-    → {"main":str,"workers":N}。app 的格子在 hc kill 後自動消失，不需重排；只回報現況。
+  app 的格子在 hc kill 後自動消失，不需重排，所以沒有 relayout。
 
 版型（Ruling F，spike 筆記第 6 項：app 沒有指定比例的指令，只能對半切）：
   第 1 個 worker 從主 pane 往右切；之後只切「最新的 worker pane」（輪流 down／right）；
@@ -122,23 +121,15 @@ def place(main, terminal):
     return result
 
 
-def relayout(main):
-    terms = terminals_of_tab(app("ls"), main)
-    if terms is None:
-        raise LayoutError(f"ls 找不到主 pane {main}")
-    return {"main": main, "workers": len([t for t in terms if t.get("pane") != main])}
-
-
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("place")
     p.add_argument("--main", required=True)
     p.add_argument("--terminal", required=True)
-    sub.add_parser("relayout").add_argument("--main", required=True)
     a = ap.parse_args()
     try:
-        result = place(a.main, a.terminal) if a.cmd == "place" else relayout(a.main)
+        result = place(a.main, a.terminal)
     except LayoutError as e:
         print(json.dumps({"error": "layout_failed", "hint": str(e)}, ensure_ascii=False))
         return 1

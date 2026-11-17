@@ -7,7 +7,8 @@
 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
 
 - `references/advisor-discussion.md`、`consultant-desk.md`、`shared-preludes.md`：雙顧問 pane 模式改用 `scripts/mux.py`（`env`／`spawn`／`send --file --wait`／`session`／`read`／`alive`／`close`／`attach-hint`），判斷「在不在 herdr」改成 `mux.py env` 的 `backend` 不是 `none`，`_run.json` 的 `pane_id` 改 `id`；`scripts/advisor_last_reply.py` 說明改指 `mux.py`。
-- 新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（與 toolkit `agent-dispatch` 的正本位元組相同，登記在 repo 的 shared-copies 清單）。herdr TUI 與 Herdr.app（hc）都能開顧問，顧問 pane 會排進主 session 旁；`mux.py` 與版面腳本都在本 plugin 內，不依賴 toolkit。
+- 新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（與 toolkit `agent-dispatch` 的正本位元組相同，登記在 repo 的 shared-copies 清單）。herdr TUI 與 Herdr.app（hc）都能開顧問，顧問 pane 會排進主 session 旁；`mux.py` 與版面腳本都在本 plugin 內；版面不依賴 toolkit，hc 下讀顧問 transcript（`mux.py session`）需 toolkit 的 SessionStart hook，沒有就改走 subagent 模式。
+- fix(mux)（最終審查）：`mux.py` 副本同步更新（見 toolkit 0.25.0）；`session` 在 hc 讀不到時回 `{"session":null,"hint":…}`，顧問 `advisor-discussion.md` 的「隔幾秒再取」改為最多重試 3 次，仍為 null 且帶 hint（hc 下缺 toolkit 的 SessionStart hook）就改走 subagent 模式；`app_layout.py` 刪除沒有呼叫端的 `relayout` 子指令。
 
 ## [4.1.0] - 2026-11-16
 

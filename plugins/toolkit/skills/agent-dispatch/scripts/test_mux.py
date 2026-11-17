@@ -154,13 +154,14 @@ class TestEnv(MuxCase):
         self.resp("herdr-app", "status", "", rc=2, err="no Herdr window")
         self.assertFalse(self.ok(["env"], HC_ENV)["window"])
 
-    def test_env_window_error_is_not_no_window(self):
-        # 只有 exit 2 且訊息含 no Herdr window 才算沒開；其他失敗不能當成沒開
+    def test_env_window_error_does_not_fail_env(self):
+        # 只有 exit 2 且訊息含 no Herdr window 才算沒開；其他失敗不當成沒開，但 env 本身不失敗（回 window_error 欄位）
         for rc, err in ((1, "boom"), (2, "path must be shorter than SUN_LEN"), (2, "")):
             with self.subTest(rc=rc):
                 self.resp("herdr-app", "status", "", rc=rc, err=err)
-                code, out, _ = self.mux(["env"], HC_ENV)
-                self.assertEqual((code, json.loads(out)["error"]), (1, "window_error"))
+                r = self.ok(["env"], HC_ENV)
+                self.assertEqual((r["backend"], r["self"], r["window"]), ("hc", "t1", False))
+                self.assertIn(f"exit {rc}", r["window_error"])
 
     def test_env_hc_core_down_no_hc_call(self):
         r = self.ok(["env"], HC_ENV, core=False)
@@ -297,6 +298,55 @@ class TestHc(MuxCase):
         self.resp("hc", "wait", '{"ended":false,"reason":"timeout","status":"working"}')
         self.assertEqual(self.ok(["wait", "t1", "--timeout", "5"], HC_ENV)["status"], "timeout")
 
+    def test_send_turn0_adds_if_idle(self):
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "send", '{"started":true}')
+        self.ok(["send", "t1", "--text", "hi"], HC_ENV)
+        self.assertIn("hc send --json --if idle -- t1 hi", self.calls())
+        self.assertIn("hc get --json t1", self.calls())
+
+    def test_send_wait_turn0_adds_if_idle(self):
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "send", '{"started":true,"status":"done","wait":{"ended":true,"status":"done"}}')
+        r = self.ok(["send", "t1", "--text", "hi", "--wait", "--timeout", "30"], HC_ENV)
+        self.assertEqual(r["status"], "done")
+        self.assertIn("hc send --json --if idle --wait --timeout 30 -- t1 hi", self.calls())
+
+    def test_send_turn_positive_has_no_if(self):
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":2}')
+        self.resp("hc", "send", '{"started":true}')
+        self.ok(["send", "t1", "--text", "hi"], HC_ENV)
+        self.assertIn("hc send --json -- t1 hi", self.calls())
+        self.assertNotIn("--if", self.argv_log())
+
+    def test_send_status_mismatch_is_blocked(self):
+        # 啟動對話框期間 status 是 null：--if idle 不成立，hc 以 exit 10 拒絕；不重試、回 blocked 與處置提示
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        for wait in (False, True):
+            with self.subTest(wait=wait):
+                self.resp("hc", "send", "", rc=10, err="status_mismatch")
+                n = len([c for c in self.calls() if c.startswith("hc send")])
+                args = ["send", "t1", "--text", "hi"] + (["--wait"] if wait else [])
+                r = self.ok(args, HC_ENV)
+                self.assertEqual(r["status"], "blocked")
+                self.assertIn("尚未就緒", r["hint"])
+                self.assertEqual(len([c for c in self.calls() if c.startswith("hc send")]), n + 1)
+
+    def test_send_not_started_is_blocked(self):
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0}')
+        self.resp("hc", "send", '{"started":false}')
+        r = self.ok(["send", "t1", "--text", "hi"], HC_ENV)
+        self.assertEqual(r["status"], "blocked")
+
+    def test_wait_ended_without_status_is_gone(self):
+        self.resp("hc", "wait", '{"ended":true,"reason":"killed","status":null}')
+        self.assertEqual(self.ok(["wait", "t1"], HC_ENV)["status"], "gone")
+
+    def test_wait_message_reason_is_timeout_with_reason(self):
+        self.resp("hc", "wait", '{"ended":false,"reason":"message","status":"working"}')
+        r = self.ok(["wait", "t1"], HC_ENV)
+        self.assertEqual((r["status"], r["reason"]), ("timeout", "message"))
+
     def test_send_file_reads_content(self):
         text = "echo `date` $(whoami)\n\"quoted\" 第二行"
         f = self.dir / "prompt.txt"
@@ -324,7 +374,7 @@ class TestHc(MuxCase):
         self.resp("hc", "get", "", rc=1, err="no such terminal")
         self.assertEqual(self.ok(["alive", "t1"], HC_ENV), {"alive": False})
 
-        self.assertEqual(self.ok(["session", "t1"], HC_ENV), {"session": None})
+        self.assertEqual(self.ok(["session", "t1"], HC_ENV)["session"], None)
 
         n = len(self.calls())
         self.assertEqual(self.ok(["close", "t1"], HC_ENV), {"closed": True})
@@ -336,13 +386,13 @@ class TestHc(MuxCase):
         (state / "plugharbor" / "hc-sessions" / "t7").write_text("sess-abc\n", encoding="utf-8")
         self.resp("hc", "get", '{"address":"t7","state":"live"}')
         r = self.ok(["session", "w1"], {**HC_ENV, "XDG_STATE_HOME": str(state)})
-        self.assertEqual(r, {"session": "sess-abc"})
+        self.assertEqual(r, {"session": "sess-abc"})  # 讀得到時不帶 hint
         self.assertIn("hc get --json w1", self.calls())
 
     def test_session_hc_missing_returns_null(self):
         self.resp("hc", "get", '{"address":"t7","state":"live"}')
         r = self.ok(["session", "w1"], {**HC_ENV, "XDG_STATE_HOME": str(self.dir / "state")})
-        self.assertEqual(r, {"session": None})
+        self.assertEqual(r, {"session": None, "hint": "hc 下需 toolkit 的 SessionStart hook 記錄 session id"})
 
     def test_attach_hint(self):
         self.assertIn("hc attach t1", self.ok(["attach-hint", "t1"], HC_ENV)["hint"])
@@ -353,16 +403,41 @@ class TestHerdr(MuxCase):
         super().setUp()
         self.layout = {"MUX_LAYOUT_CMD": str(self.dir / "herdr_layout.py")}
 
+    @staticmethod
+    def layout_json(n):
+        panes = [{"pane_id": "main1"}] + [{"pane_id": f"w{i}"} for i in range(n)]
+        return json.dumps({"result": {"layout": {"panes": panes}}})
+
     def test_spawn_herdr_sequence(self):
+        self.resp("herdr", "pane.layout", self.layout_json(5))
         self.resp("herdr", "pane.split", '{"result":{"pane":{"pane_id":"p9"}}}')
         r = self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp", "--env", "A=1",
                      "--", "--model", "m"], {**HERDR_ENV, **self.layout})
         self.assertEqual(r, {"id": "p9", "visible": True})
-        want = ["herdr pane split --current --direction right --cwd /tmp --no-focus --env A=1",
+        want = ["herdr pane layout --pane main1",
+                "herdr pane split --current --direction right --cwd /tmp --no-focus --env A=1",
                 "herdr_layout.py --main main1",
                 "herdr agent start w1 --kind claude --pane p9 -- --model m",
                 "herdr pane rename p9 w1"]
         self.assertEqual(self.calls(), want)
+
+    def test_spawn_herdr_seventh_worker_opens_new_tab(self):
+        # 主 tab 已有 6 個 worker：開新 tab（不切 pane、不跑版面腳本），主 session 不被切小
+        self.resp("herdr", "pane.layout", self.layout_json(6))
+        self.resp("herdr", "tab.create", '{"result":{"tab":{"tab_id":"tb2"},"root_pane":{"pane_id":"p20"}}}')
+        r = self.ok(["spawn", "--name", "w7", "--kind", "claude", "--cwd", "/tmp", "--env", "A=1",
+                     "--", "--model", "m"], {**HERDR_ENV, **self.layout})
+        self.assertEqual(r, {"id": "p20", "visible": True})
+        calls = self.calls()
+        self.assertIn("herdr tab create --cwd /tmp --label w7 --no-focus --env A=1", calls)
+        self.assertIn("herdr agent start w7 --kind claude --pane p20 -- --model m", calls)
+        self.assertFalse([c for c in calls if c.startswith("herdr pane split") or c.startswith("herdr_layout")])
+
+    def test_spawn_herdr_sixth_worker_still_splits(self):
+        self.resp("herdr", "pane.layout", self.layout_json(5))
+        self.resp("herdr", "pane.split", '{"result":{"pane":{"pane_id":"p9"}}}')
+        self.ok(["spawn", "--name", "w6", "--kind", "claude", "--cwd", "/tmp"], {**HERDR_ENV, **self.layout})
+        self.assertFalse([c for c in self.calls() if c.startswith("herdr tab create")])
 
     def test_spawn_herdr_start_failure_cleans_up(self):
         self.resp("herdr", "pane.split", '{"result":{"pane":{"pane_id":"p9"}}}')

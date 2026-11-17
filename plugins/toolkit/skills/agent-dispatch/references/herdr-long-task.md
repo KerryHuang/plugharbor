@@ -6,19 +6,20 @@ SKILL.md 第 6 節的補充。派工一律走 `scripts/mux.py`，同一組動作
 
 | 動作 | 回傳 |
 |---|---|
-| `env` | `{"backend":"hc\|herdr\|none","self":…,"window":bool}`；`window` 只在 hc 有意義（Herdr.app 視窗開著） |
+| `env` | `{"backend":"hc\|herdr\|none","self":…,"window":bool}`；`window` 只在 hc 有意義（Herdr.app 視窗開著）；判斷不出來時 `window:false` 並多一個 `window_error` |
 | `spawn --name N --kind <claude\|codex\|agy\|pi> --cwd D [--env K=V]… -- <CLI 參數>` | `{"id":…,"visible":bool[,"pane":…]}` |
 | `send <id> (--text T \| --file F) [--wait] [--timeout 秒]` | `{"status":S,"raw":…}` |
 | `wait <id> [--timeout 秒]` | `{"status":S,"raw":…}` |
 | `read <id> [--lines N]` | 畫面純文字（非 JSON） |
 | `alive <id>` | `{"alive":bool}` |
-| `session <id>` | `{"session":"<id>"\|null}`，給 `advisor_last_reply.py`、`worker_ctx.py` 用 |
+| `session <id>` | `{"session":"<id>"\|null[,"hint":…]}`，給 `advisor_last_reply.py`、`worker_ctx.py` 用 |
 | `close <id>` | `{"closed":true}` |
 | `attach-hint <id>` | `{"hint":"<請使用者貼的接手指令>"}` |
 
 - `S`：`done|idle|working|blocked|error|timeout|gone`；`done` 與 `idle` 都是「這一輪結束」（hc 的 `done` 會停著不回 `idle`）。兩邊的原始回傳放 `raw`。
 - 錯誤：stdout 印 `{"error":kind,"hint":…}`。exit 2 用法錯誤、3 `core_not_running`、4 `no_backend`、1 其他（`cli_not_found`、`window_error`、`spawn_failed`、`backend_error`…）。
-- `session` 在 hc 下由 SessionStart hook 記錄，只有 claude worker 有值，codex／agy／pi 回 `null`。
+- `session` 在 hc 下由 toolkit 的 SessionStart hook 記錄，只有 claude worker 有值，codex／agy／pi 回 `null`；沒裝 toolkit 時一律 `null` 並帶 `hint`（不是時序問題，重取沒用）。
+- hc 的 `send`：worker 剛起（turn 0）會加 `--if idle`，status 不是 idle 就不送，回 `{"status":"blocked","hint":…}`；`wait`／`send --wait` 的 `ended:false` 映成 `timeout`（`reason` 在輸出上層，`message` 表示被訊息打斷而非逾時），已結束且沒有狀態映成 `gone`。
 - `spawn` 在 hc 下以 `hc run --bg` 起 CLI（已加 `--no-notify`、清掉繼承的污染環境變數、CLI 先解成絕對路徑、codex 自動帶 `--no-daemon`），視窗開著時放進主 session 旁；`send` 時不讓 hc 把訊息包成 `<hc from …>`。
 
 ## TUI 專屬：安裝與升級
@@ -28,6 +29,7 @@ SKILL.md 第 6 節的補充。派工一律走 `scripts/mux.py`，同一組動作
 - macOS：`brew install herdr`、`brew services start herdr`。Windows：`powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 | iex"`，從使用者自己的終端機跑 `herdr server &`。
 - `herdr integration install claude`；只有在 herdr pane 裡啟動的 Claude 才被追蹤，主 session 不會出現在 `herdr agent list`。
 - `herdr status` 確認 server 在跑。
+- 第 7 個 worker 起：`spawn` 先用 `herdr pane layout` 數主 tab 的 worker，已滿 6 個就自己 `herdr tab create --cwd … --label <名稱> --no-focus` 開新 tab、在其 `root_pane` 起 CLI，不切主 session、不跑 `herdr_layout.py`。
 - 替別的專案開不回報的長駐獨立 session（不占 6 個 worker 名額）：`herdr tab create --cwd "<cwd>" --label <短名>`，取 `result.root_pane.pane_id`，再 `herdr agent start <名稱> --kind <claude|codex|agy|pi> --pane <pane_id> -- <模型參數>`；不用 `workspace create`（使用者看不到），不用 `pane run` 起 CLI（guard 會擋）。
 - 收工重排：`mux.py close` 之後跑 `python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID"`（`spawn` 開 worker 時已自動重排，關閉時沒有）。
 
@@ -83,7 +85,7 @@ H=<結果檔絕對路徑>; Q='<當前題目的 header 或題號>'
 MUX='python3 <scripts/mux.py 絕對路徑>'  # 即上面的 mux.py
 while true; do
   [ -f "$H" ] && { echo RESULT; exit 0; }
-  $MUX read <id> --lines 24 | grep -q "$Q" || { echo CHANGED; exit 0; }
+  $MUX read <id> | tail -24 | grep -q "$Q" || { echo CHANGED; exit 0; }
   $MUX alive <id> | grep -q '"alive": true' || { echo WORKER_GONE; exit 0; }
   sleep 10
 done

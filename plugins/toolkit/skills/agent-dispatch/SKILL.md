@@ -111,15 +111,16 @@ argument-hint: "[對象] <任務>"
    mux.py spawn --name <唯一名稱> --kind <claude|codex|agy|pi> --cwd "<cwd>" --env AGENT_DISPATCH_RESULT="<結果檔>" --env AGENT_DISPATCH_INTERACTIVE=1 -- <模型參數>
    ```
 
+   - hc 的終端名稱（`--name`）只能 1-32 字、`a-z 0-9 - _`。
    - `<模型參數>` 一定要帶（查表或使用者指定的模型與等級），寫法見 `../agent-mesh-check/references/cli-notes.md`：claude `--model <m> --effort <e>`、codex `-m <m> -c model_reasoning_effort=<e>`、agy `--model <id>`、pi `--model <provider>/<id>:<thinking>`。
-   - `spawn` 負責開 pane、放進主 session 旁（主 session 最大、同 tab 最多 6 個 worker、第 7 個起開新 tab）、起 CLI、命名；不手動切 pane、不 `pane resize`、不跑 `herdr_layout.py`。回 `visible:false` 見上面前置。
+   - `spawn` 負責開 pane、放進主 session 旁（主 session 最大、同 tab 最多 6 個 worker；主 tab 已有 6 個時第 7 個起 `spawn` 自己開新 tab，TUI 不再切主 session、不跑版面腳本）、起 CLI、命名；不手動切 pane、不 `pane resize`、不跑 `herdr_layout.py`。回 `visible:false` 見上面前置。
    - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
    - 主控在無人值守時再加 `--env AGENT_DISPATCH_UNATTENDED=1`：worker 要用 AskUserQuestion 時會被擋下，改照「（推薦）」做，並把題目與選擇寫進結果檔的「主控裁決待確認」。
    - 指定 agent 定義（claude／codex）：`--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。
    - 任何情況都不用 `hc run` 或 `pane run` 起 CLI（guard 會擋），一律走 `spawn`。
    - 替別的專案開不回報的長駐獨立 session：`mux.py` 沒有開新 tab 的動作；TUI 做法見 reference「TUI 專屬」，Herdr.app 內請使用者自己開。
    - `spawn` 失敗：herdr 後端會先留畫面再關掉 pane（`spawn_failed`，hint 帶畫面摘要），連同 hint 回報，多半是 cwd 問題；`cli_not_found` 是呼叫者 PATH 找不到該 CLI。
-   - Herdr.app 內各 CLI 啟動時可能先跳對話框（信任資料夾、外部檔案 import、hook 審核），此時 `status` 常仍是空的。送 prompt 前先 `mux.py read <id> --lines 30` 看畫面；有對話框就不替使用者按信任，告訴使用者用 `mux.py attach-hint <id>` 的 hint 進去處理。
+   - Herdr.app 內各 CLI 啟動時可能先跳對話框（信任資料夾、外部檔案 import、hook 審核），此時 `status` 是 null（不是 `blocked`），`send` 的 Enter 會選到預設項。所以剛起的 worker（turn 0）`mux.py send` 會自動加 `--if idle`：status 不是 idle 就不送，回 `{"status":"blocked","hint":…}`，不重試。收到時先 `mux.py read <id> --lines 30` 看畫面；有對話框就不替使用者按信任，告訴使用者用 `mux.py attach-hint <id>` 的 hint 進去處理，處理完再送。
 3. 送出 prompt，放在背景等待：
 
    ```bash

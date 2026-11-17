@@ -133,11 +133,4 @@ PATH="$TMP:/usr/bin:/bin" "$PY" "$SCRIPT" place --main pX --terminal t1 > "$TMP/
 set -e
 [ "$rc" -ne 0 ] && grep -q layout_failed "$TMP/out.x"; check "找不到主 pane：layout_failed" $?
 
-# relayout：只回報現況，不動版面
-reset
-for i in 1 2 3; do placew "$i" > /dev/null; done
-: > "$TMP/log"
-PATH="$TMP:/usr/bin:/bin" "$PY" "$SCRIPT" relayout --main p1 | grep -q '"workers": 3'; check "relayout：回報 3 個 worker" $?
-! grep -q 'do ' "$TMP/log"; check "relayout：不改動版面" $?
-
 exit $fail

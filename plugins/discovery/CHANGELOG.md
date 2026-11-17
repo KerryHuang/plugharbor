@@ -6,7 +6,8 @@
 
 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
 
-- 同上：`references/advisor-discussion.md`、`consultant-desk.md`、`shared-preludes.md`、`scripts/advisor_last_reply.py` 從 lifecycle 4.2.0 的同名檔依對照表同步（只差 agent 名稱）；新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（版面腳本，與 toolkit `agent-dispatch` 正本位元組相同；顧問 pane 排進主 session 旁，不依賴 toolkit）。
+- 同上：`references/advisor-discussion.md`、`consultant-desk.md`、`shared-preludes.md`、`scripts/advisor_last_reply.py` 從 lifecycle 4.2.0 的同名檔依對照表同步（只差 agent 名稱）；新增 `scripts/mux.py`、`scripts/app_layout.py`、`scripts/herdr_layout.py`（版面腳本，與 toolkit `agent-dispatch` 正本位元組相同；顧問 pane 排進主 session 旁；版面不依賴 toolkit，hc 下讀顧問 transcript 需 toolkit 的 SessionStart hook，沒有就改走 subagent 模式）。
+- 同上（最終審查）：同步 lifecycle 4.2.0 的 `advisor-discussion.md` 修正（`session` 為 null 最多重試 3 次，缺 hook 改走 subagent 模式）與 `mux.py`、`app_layout.py` 副本更新。
 
 ## [1.0.1] - 2026-11-16
 
