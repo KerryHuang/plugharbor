@@ -24,8 +24,11 @@ def record_session_id():
         base = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
         d = os.path.join(base, "plugharbor", "hc-sessions")
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, term), "w", encoding="utf-8") as f:
+        final = os.path.join(d, term)
+        tmp = f"{final}.{os.getpid()}.tmp"  # 先寫暫存檔再換名：讀的人不會看到寫一半的空檔
+        with open(tmp, "w", encoding="utf-8") as f:
             f.write(sid.strip() + "\n")
+        os.replace(tmp, final)
     except Exception:
         pass
 

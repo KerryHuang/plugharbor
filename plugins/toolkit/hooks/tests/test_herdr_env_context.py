@@ -83,6 +83,32 @@ class HerdrEnvContext(unittest.TestCase):
             f = Path(d) / "plugharbor" / "hc-sessions" / "t5"
             self.assertEqual(f.read_text(encoding="utf-8").strip(), "def")
 
+    def test_record_is_atomic_replace(self):
+        # 先寫暫存檔再 os.replace：self-rotate 輪詢讀檔時不會讀到寫一半的空檔
+        import importlib.util
+        from unittest import mock
+        spec = importlib.util.spec_from_file_location("herdr_env_context", HOOK)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        calls = []
+        real = os.replace
+        with tempfile.TemporaryDirectory() as d:
+            def spy(src, dst):
+                calls.append((src, dst))
+                return real(src, dst)
+            env = {"HC_TERMINAL_ID": "t5", "XDG_STATE_HOME": d}
+            stdin = mock.Mock()
+            stdin.buffer.read.return_value = b'{"session_id":"abc"}'
+            with mock.patch.dict(os.environ, env), mock.patch.object(mod.sys, "stdin", stdin), \
+                    mock.patch.object(mod.os, "replace", spy):
+                mod.record_session_id()
+            final = Path(d) / "plugharbor" / "hc-sessions" / "t5"
+            self.assertEqual([c[1] for c in calls], [str(final)])
+            self.assertNotEqual(calls[0][0], str(final))
+            self.assertEqual(os.path.dirname(calls[0][0]), str(final.parent))
+            self.assertEqual(final.read_text(encoding="utf-8").strip(), "abc")
+            self.assertEqual([x.name for x in final.parent.iterdir()], ["t5"])  # 沒留暫存檔
+
     def test_bad_stdin_keeps_output_and_exit_zero(self):
         with tempfile.TemporaryDirectory() as d:
             for stdin in (b"", b"not json", b'{"session_id":3}', b"[]"):

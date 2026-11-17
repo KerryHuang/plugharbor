@@ -38,8 +38,8 @@ send() {
 sleep "$D"
 wait_idle 1800 || fail "等不到閒置"
 OLD="$(sid)"
-# /clear 會換 session id；畫面上可能還留著上一輪的 /clear，不拿畫面判斷
-send /clear '[ "$(sid)" != "$OLD" ]'
+# /clear 會換 session id；畫面上可能還留著上一輪的 /clear，不拿畫面判斷。讀不到（空）不算換了
+send /clear 'S="$(sid)"; [ -n "$S" ] && [ "$S" != "$OLD" ]'
 send /reload-plugins 'screen | grep -q Reloaded'
 wait_idle 60 || :
 # 長句在畫面上會折行，只比對前 10 個字（perl 按字元切，不切壞中文）

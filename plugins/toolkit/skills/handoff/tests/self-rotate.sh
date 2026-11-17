@@ -8,11 +8,13 @@ TMP="$(mktemp -d)"
 trap 'kill "${CPID:-}" 2>/dev/null || true; rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/bin" "$TMP/state/plugharbor/hc-sessions"
 # 共用的「畫面／session」模擬：STUB_MODE = swallow（預設，/clear 後吞一個指令）｜fold（長句折行）｜noclear（/clear 無效）
+# ｜blank（/clear 沒換 id，但之後讀 session id 暫時回空）
 cat > "$TMP/lib.sh" <<'LIB'
 S="$STUB_DIR"; M="${STUB_MODE:-swallow}"
 deliver() {
   echo "$1" >> "$S/sent"
   [ "$M" = noclear ] && return 0
+  if [ "$M" = blank ]; then [ "$1" = /clear ] && { touch "$S/blank"; rm -f "$SIDFILE"; }; return 0; fi
   if [ "$1" = /clear ]; then
     echo s1 > "$SIDFILE"; : > "$S/screen"
     [ "$M" = swallow ] && touch "$S/swallow"
@@ -29,7 +31,7 @@ cat > "$TMP/bin/herdr" <<'STUB'
 echo "herdr $*" >> "$S/calls"
 case "$1 $2" in
   "agent wait") echo '{"agent_status":"idle"}' ;;
-  "agent get")  echo "{\"agent_session\":{\"value\":\"$(cat "$SIDFILE" 2>/dev/null || echo s0)\"}}" ;;
+  "agent get")  if [ -e "$S/blank" ]; then echo '{}'; else echo "{\"agent_session\":{\"value\":\"$(cat "$SIDFILE" 2>/dev/null || echo s0)\"}}"; fi ;;
   "agent read") cat "$S/screen" 2>/dev/null || true ;;
   "agent prompt") deliver "$4" ;;
 esac
@@ -59,7 +61,7 @@ check() { if [ "$2" -eq 0 ]; then echo "PASS $1"; else echo "FAIL $1"; fail=1; f
 # rot BACKEND MODE 訊息 → 以對應後端的環境執行 self-rotate.sh
 rot() {
   local backend="$1" mode="$2"; shift 2
-  rm -f "$TMP/sent" "$TMP/log" "$TMP/calls" "$TMP/sendenv" "$TMP/swallow"
+  rm -f "$TMP/sent" "$TMP/log" "$TMP/calls" "$TMP/sendenv" "$TMP/swallow" "$TMP/blank"
   echo "❯ /clear" > "$TMP/screen"
   if [ "$backend" = hc ]; then
     SIDFILE="$TMP/state/plugharbor/hc-sessions/t3"
@@ -97,6 +99,11 @@ for B in herdr hc; do
   reset_sid $B; rot $B noclear x "$TMP/log" || true
   check "$B /clear 失敗就停" "$(! grep -q reload "$TMP/sent"; echo $?)"
   check "$B log 記失敗" "$(grep -q '失敗：/clear' "$TMP/log"; echo $?)"
+
+  # 情境 3b：session id 暫時讀不到（空字串）不算 /clear 成功
+  reset_sid $B; rot $B blank x "$TMP/log" || true
+  check "$B sid 讀空不算 /clear 成功" "$(! grep -q reload "$TMP/sent"; echo $?)"
+  check "$B sid 讀空時 log 記失敗" "$(grep -q '失敗：/clear' "$TMP/log"; echo $?)"
 done
 
 # 情境 4：hc 的 core 沒跑 → 不得呼叫任何 hc
