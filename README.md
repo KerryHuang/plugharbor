@@ -1,9 +1,9 @@
 # plugharbor
 
-所有 AI 工作模式的唯一來源：14 個 plugin（工作流、職責＋技術棧附錄、hooks、guard、reviewer、寫作、研究、UI 規範）加上 user 層設定（`setup/`），
-同一份內容由 Claude Code、Codex、pi、agy 共用。Claude Code 直接走 marketplace，其他三個由 `setup/install.sh` 註冊與同步。
+公開的 Claude Code plugin marketplace，也是 Claude Code、Codex、pi、agy 共用的 AI 工作模式唯一來源：plugin 加上 user 層設定（`setup/`）。
+只要 Claude Code 的 plugin 就走 marketplace；要 user 層設定或用其他 CLI，跑 `setup/install.sh`（各 CLI 差異見 [docs/agent-parity.md](./docs/agent-parity.md)）。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘 10 個是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 

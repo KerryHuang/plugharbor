@@ -1,0 +1,10 @@
+{
+ "mode": "pane",
+ "flow": {"pane_id": "t2b", "session": "a70deb79-fdee-4fa5-871e-1110c98ea388"},
+ "data": {"pane_id": "t2c", "session": "99fb3239-8d4a-4a74-8aec-79953e38d27b"},
+ "round": 1,
+ "open_issues": [],
+ "closed": {"D-1": "共識", "D-2": "共識", "D-3": "共識", "D-4": "交使用者→保留名單", "D-5": "共識"},
+ "asked_user": ["D-4"],
+ "finished": true
+}

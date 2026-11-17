@@ -9,7 +9,7 @@
 ## plugin 分層
 
 - **user 層**（`lib.sh` 的 `PH_USER_PLUGINS`：toolkit、research、browser-docs、workspace）：install.sh 裝進四個 CLI。`PLUGHARBOR_PLUGINS` 可覆寫要裝哪些。
-- **專案層**（其餘 7 個）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
+- **專案層**（其餘的 plugin）：install.sh 發現它們裝在 user 層會自動移除（`PLUGHARBOR_PLUGINS` 明確指定的除外；`--check` 只報 `STALE:`），改用：
 
   ```bash
   setup/install-project.sh [--shared] [--no-claude] [--check] <專案根> <plugin…>
