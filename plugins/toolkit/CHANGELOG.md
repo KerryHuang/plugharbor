@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.25.0] - 2026-11-17
+
+- feat(agent-dispatch)：新增 `skills/agent-dispatch/scripts/mux.py`（與 `test_mux.py`），把派工需要的動作（env、spawn、send、wait、read、alive、session、close、attach-hint）收斂成一支轉接腳本，後端為 Herdr.app（`hc`）或 herdr TUI；狀態統一映射成 `done|idle|working|blocked|error|timeout|gone`。核心行為：兩組環境變數同時存在時看誰的終端是最近祖先；core 沒跑（直接連 socket 判斷，不經 hc）時回 `core_not_running` 且不呼叫任何 hc；`hc send` 前移除 `HC_TERMINAL_ID` 以免訊息被包成 `<hc from>`；`hc run` 的 CLI 先解成絕對路徑（core 的 PATH 不同）、加 `--no-notify`、以 `env -u …` 前綴清掉繼承的污染變數；`done` 與 `idle` 都視為輪次結束。本版只含腳本與測試，skill 文件、hook、self-rotate 尚未改用它（hc 的 `session` 先回 null，視窗放置尚未做，hc spawn 一律背景 `visible:false`）。
+- 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。本分支的後續改動（文件、hook、self-rotate）併在同一版。
+
 ## [0.24.1] - 2026-11-16
 
 - fix(auto-session-title)：建議標題只認行首（可帶縮排、引言、清單或粗體符號）的「建議 session 標題…：/rename」行，句中引用這個句型不再套用；測試補第 7 項。起因：2026-11-16 一個 session 說明這支 hook 時寫了「…「建議 session 標題：/rename …」，要等你下一次送出訊息…」，下一次送出時整段被當成標題，session 改名成「…」，要等你**下一次送出訊息**才會套用…」。

@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+"""派工用的終端多工轉接：同一組動作，後端是 Herdr.app（hc）或 herdr TUI。
+
+用法：mux.py <動作> ...，stdout 為 JSON（read 例外，輸出畫面純文字）。
+  env                                  → {"backend":"hc|herdr|none","self":…,"window":bool}
+  spawn --name N --kind K --cwd D [--env K=V]... -- <CLI 參數>   → {"id":…,"visible":bool}
+  send ID (--text T | --file F) [--wait] [--timeout 秒]          → {"status":S,"raw":…}
+  wait ID [--timeout 秒]                                          → {"status":S,"raw":…}
+  read ID [--lines N] | alive ID | session ID | close ID | attach-hint ID
+S：done|idle|working|blocked|error|timeout|gone（兩邊的原始值在這裡映射，原樣放 raw）。
+錯誤：stdout 印 {"error":kind,"hint":…}；exit 2 用法、3 core_not_running、4 no_backend、1 其他。
+環境變數：MUX_BACKEND 強制後端；MUX_CORE_SOCKET 覆寫 core socket 路徑；MUX_LAYOUT_CMD 取代版面腳本（測試用）。
+
+core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷。
+"""
+import argparse, json, os, shlex, shutil, socket, subprocess, sys
+from pathlib import Path
+
+# Windows 預設 cp950：印中文會亂碼。腳本自己處理，不靠呼叫端設 PYTHONUTF8。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
+
+# core 以呼叫者環境啟動時會把這些帶進每個 hc 終端；worker 不能繼承（會蓋掉主 session 的回報、
+# CLAUDE_CODE_CHILD_SESSION 還會讓 transcript 不落檔）。不含 HC_*：那是 hc 替 worker 自己設的身分。
+# 拋棄式 CLI（ask.mjs）要濾的完整清單在 clis.mjs scrubEnv，另含 HC_*。
+POLLUTED_VARS = ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "HERDR_ENV", "HERDR_PANE_ID")
+
+STATES = ("done", "idle", "working", "blocked", "error", "timeout", "gone")
+KINDS = ("claude", "codex", "agy", "pi")
+EXIT_CODES = {"core_not_running": 3, "no_backend": 4}
+
+
+class MuxError(Exception):
+    def __init__(self, kind, hint="", code=None):
+        super().__init__(kind)
+        self.kind, self.hint = kind, hint
+        self.code = code or EXIT_CODES.get(kind, 1)
+
+
+# ---------- 偵測 ----------
+
+def detect_backend(env, ancestors=None, hc_pid=None, herdr_pid=None):
+    forced = env.get("MUX_BACKEND")
+    if forced in ("hc", "herdr", "none"):
+        return forced
+    has_hc = bool(env.get("HC_TERMINAL_ID"))
+    has_herdr = env.get("HERDR_ENV") == "1" and bool(env.get("HERDR_PANE_ID"))
+    if has_hc and not has_herdr:
+        return "hc"
+    if has_herdr and not has_hc:
+        return "herdr"
+    if not has_hc:
+        return "none"
+    # 兩組都在：離自己最近的祖先終端勝出，查不到就 hc
+    chain = list(ancestors or [])
+    pos = lambda pid: chain.index(pid) if pid is not None and pid in chain else None
+    h, d = pos(hc_pid), pos(herdr_pid)
+    if h is not None and d is not None:
+        return "herdr" if d < h else "hc"
+    if d is not None:
+        return "herdr"
+    if h is not None:
+        return "hc"
+    if chain and hc_pid is not None and herdr_pid is None:
+        return "herdr"  # 知道 hc 終端的程序卻不是自己的祖先：自己不在 hc 終端內
+    return "hc"
+
+
+def socket_path(env=None):
+    env = os.environ if env is None else env
+    if env.get("MUX_CORE_SOCKET"):
+        return env["MUX_CORE_SOCKET"]
+    if env.get("HC_SOCKET"):
+        return env["HC_SOCKET"]
+    state = env.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
+    return str(Path(state) / "herdr-core" / (env.get("HC_SESSION") or "default") / "default.sock")
+
+
+def core_running():
+    """以 connect 成功為準；檔案存在不算（stale socket 會 ConnectionRefused）。"""
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(2)
+    try:
+        s.connect(socket_path())
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
+def clean_env_prefix(extra):
+    out = ["env"]
+    for v in POLLUTED_VARS:
+        out += ["-u", v]
+    return out + [f"{k}={v}" for k, v in extra.items()]
+
+
+def process_ancestors():
+    chain, pid = [], os.getppid()
+    while pid and pid > 1 and len(chain) < 64:
+        chain.append(pid)
+        r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True)
+        try:
+            pid = int(r.stdout.strip())
+        except ValueError:
+            break
+    return chain
+
+
+def find_key(data, *keys):
+    """遞迴找第一個 key（依 keys 順序優先）；hc／herdr 的 JSON 層級不固定。"""
+    for key in keys:
+        stack = [data]
+        while stack:
+            cur = stack.pop(0)
+            if isinstance(cur, dict):
+                if key in cur:
+                    return cur[key]
+                stack.extend(cur.values())
+            elif isinstance(cur, list):
+                stack.extend(cur)
+    return None
+
+
+def to_status(value):
+    if isinstance(value, dict):
+        value = value.get("state") or value.get("status")
+    if value in ("done", "idle", "working", "blocked", "error", "timeout", "gone"):
+        return value
+    if value in ("finished", "exited", "killed"):
+        return "gone"
+    return "error"
+
+
+def run(argv, env=None):
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", env=env)
+    except FileNotFoundError:
+        raise MuxError("command_not_found", f"找不到 {argv[0]}")
+    return r.returncode, r.stdout, r.stderr
+
+
+def parse_json(text):
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def fail_from(what, code, out, err):
+    raise MuxError("backend_error", f"{what} 失敗（exit {code}）：{(err or out).strip()[:300]}")
+
+
+# ---------- hc ----------
+
+class HcBackend:
+    name = "hc"
+
+    def __init__(self, env):
+        self.env = env
+
+    def hc(self, *args, strip_id=False):
+        env = dict(self.env)
+        if strip_id:
+            # 不讓 hc 把訊息包成 <hc from=…>：hc 以呼叫端身分決定是否包裝
+            env.pop("HC_TERMINAL_ID", None)
+        return run(["hc", *args], env=env)
+
+    def get(self, ident):
+        code, out, err = self.hc("get", "--json", ident)
+        return code, parse_json(out)
+
+    def spawn(self, name, kind, cwd, env_pairs, cli_args):
+        cli = shutil.which(kind, path=self.env.get("PATH"))
+        if not cli:
+            # hc run 的 argv 由 core 的 PATH 解析，不是呼叫者的；core 的 PATH 常缺 ~/.bun/bin 之類
+            raise MuxError("cli_not_found", f"PATH 找不到 {kind}")
+        argv = ["run", "--json", "--bg", "--no-notify", "--name", name, "--cwd", cwd,
+                *clean_env_prefix(env_pairs), cli]
+        if kind == "codex":
+            argv.append("--no-daemon")
+        code, out, err = self.hc(*argv, *cli_args)
+        data = parse_json(out)
+        ident = find_key(data, "address") if data is not None else None
+        if code != 0 or not ident:
+            fail_from("hc run", code, out, err)
+        # 視窗放置由 Task 3 補；現在一律背景（無 herdr.* label）
+        return {"id": ident, "visible": False}
+
+    def _status(self, code, out, err, what):
+        data = parse_json(out)
+        if data is None:
+            fail_from(what, code, out, err)
+        wait = data.get("wait") if isinstance(data, dict) else None
+        info = wait if isinstance(wait, dict) else data
+        if isinstance(info, dict) and info.get("ended") is False:
+            return {"status": "timeout", "raw": data}
+        status = info.get("status") if isinstance(info, dict) else None
+        if status is None and isinstance(data, dict):
+            status = data.get("status")
+        return {"status": to_status(status), "raw": data}
+
+    def send(self, ident, text, wait, timeout):
+        args = ["send", "--json"]
+        if wait:
+            args.append("--wait")
+            if timeout:
+                args += ["--timeout", str(timeout)]
+        code, out, err = self.hc(*args, "--", ident, text, strip_id=True)
+        if not wait:
+            data = parse_json(out)
+            if code != 0 or data is None:
+                fail_from("hc send", code, out, err)
+            return {"status": "working", "raw": data}
+        return self._status(code, out, err, "hc send --wait")
+
+    def wait(self, ident, timeout):
+        args = ["wait", "--json"]
+        if timeout:
+            args += ["--timeout", str(timeout)]
+        return self._status(*self.hc(*args, ident), "hc wait")
+
+    def read(self, ident, lines):
+        args = ["read", ident]
+        if lines is not None:
+            args += ["--lines", str(lines)]
+        code, out, err = self.hc(*args)
+        if code != 0:
+            fail_from("hc read", code, out, err)
+        return out
+
+    def alive(self, ident):
+        code, data = self.get(ident)
+        return code == 0 and isinstance(data, dict) and find_key(data, "state") == "live"
+
+    def session(self, ident):
+        return None  # Task 2
+
+    def close(self, ident):
+        code, out, err = self.hc("kill", ident)
+        if code != 0:
+            fail_from("hc kill", code, out, err)
+        self.hc("rm", ident)  # 只移除紀錄，視窗格 kill 後就消失；rm 失敗不影響收工
+        return True
+
+    def attach_hint(self, ident):
+        return f"hc attach {ident}（或在 Herdr.app 內點該格）"
+
+
+# ---------- herdr ----------
+
+class HerdrBackend:
+    name = "herdr"
+
+    def __init__(self, env):
+        self.env = env
+
+    def herdr(self, *args):
+        return run(["herdr", *args], env=self.env)
+
+    def spawn(self, name, kind, cwd, env_pairs, cli_args):
+        split = ["pane", "split", "--current", "--direction", "right", "--cwd", cwd, "--no-focus"]
+        for k, v in env_pairs.items():
+            split += ["--env", f"{k}={v}"]
+        code, out, err = self.herdr(*split)
+        data = parse_json(out)
+        pane = find_key(data, "pane_id") if data is not None else None
+        if code != 0 or not pane:
+            fail_from("herdr pane split", code, out, err)
+        self._layout()
+        code, out, err = self.herdr("agent", "start", name, "--kind", kind, "--pane", pane, "--", *cli_args)
+        if code != 0:
+            screen = self.herdr("pane", "read", pane)[1].strip()[-300:]
+            self.herdr("pane", "close", pane)
+            raise MuxError("spawn_failed", f"herdr agent start 失敗：{(err or out).strip()[:200]}；畫面：{screen}")
+        self.herdr("pane", "rename", pane, name)
+        return {"id": pane, "visible": True}
+
+    def _layout(self):
+        cmd = os.environ.get("MUX_LAYOUT_CMD")
+        argv = shlex.split(cmd) if cmd else [sys.executable, str(Path(__file__).with_name("herdr_layout.py"))]
+        main = self.env.get("HERDR_PANE_ID")
+        if not main or not (cmd or Path(argv[1]).exists()):
+            return
+        code, out, err = run([*argv, "--main", main], env=self.env)
+        if code != 0:
+            print(f"mux: 版面重排失敗（不影響 worker）：{(err or out).strip()[:200]}", file=sys.stderr)
+
+    def _status(self, code, out, err, what):
+        data = parse_json(out)
+        if code != 0:
+            e = parse_json(err) or parse_json(out) or {}
+            raw = e.get("error", e) if isinstance(e, dict) else e
+            blob = json.dumps(raw).lower()
+            if "timeout" in blob:
+                return {"status": "timeout", "raw": e}
+            if "not_found" in blob:
+                return {"status": "gone", "raw": e}
+            if "agent_blocked" in blob:
+                return {"status": "blocked", "raw": e}
+            return {"status": "error", "raw": e or (err or out).strip()}
+        if data is None:
+            fail_from(what, code, out, err)
+        return {"status": to_status(find_key(data, "agent_status", "status", "state")), "raw": data}
+
+    def send(self, ident, text, wait, timeout):
+        args = ["agent", "prompt", ident, text]
+        if wait:
+            args.append("--wait")
+            if timeout:
+                args += ["--timeout", str(int(timeout) * 1000)]
+        code, out, err = self.herdr(*args)
+        if not wait:
+            if code != 0:
+                return self._status(code, out, err, "herdr agent prompt")
+            return {"status": "working", "raw": parse_json(out)}
+        return self._status(code, out, err, "herdr agent prompt --wait")
+
+    def wait(self, ident, timeout):
+        args = ["agent", "wait", ident]
+        if timeout:
+            args += ["--timeout", str(int(timeout) * 1000)]
+        return self._status(*self.herdr(*args), "herdr agent wait")
+
+    def read(self, ident, lines):
+        args = ["agent", "read", ident]
+        if lines is not None:
+            args += ["--lines", str(lines)]
+        code, out, err = self.herdr(*args)
+        if code != 0:
+            fail_from("herdr agent read", code, out, err)
+        return out
+
+    def alive(self, ident):
+        return self.herdr("agent", "get", ident)[0] == 0
+
+    def session(self, ident):
+        code, out, err = self.herdr("agent", "get", ident)
+        data = parse_json(out) if code == 0 else None
+        sess = find_key(data, "agent_session") if data is not None else None
+        return sess.get("value") if isinstance(sess, dict) else None
+
+    def close(self, ident):
+        code, out, err = self.herdr("pane", "close", ident)
+        if code != 0:
+            fail_from("herdr pane close", code, out, err)
+        return True
+
+    def attach_hint(self, ident):
+        return f"herdr agent attach {ident}"
+
+
+# ---------- CLI ----------
+
+def resolve_backend(env):
+    both = bool(env.get("HC_TERMINAL_ID")) and env.get("HERDR_ENV") == "1" and bool(env.get("HERDR_PANE_ID"))
+    if not both or env.get("MUX_BACKEND"):
+        return detect_backend(env)
+    hc_pid = None
+    if core_running():
+        code, out, _ = run(["hc", "get", "--json", env["HC_TERMINAL_ID"]], env=env)
+        pid = find_key(parse_json(out), "pid") if code == 0 else None
+        hc_pid = pid if isinstance(pid, int) else None
+    return detect_backend(env, process_ancestors(), hc_pid, None)
+
+
+def get_backend(env):
+    name = resolve_backend(env)
+    if name == "none":
+        raise MuxError("no_backend", "不在 herdr 或 Herdr.app 的終端內")
+    if name == "hc" and not core_running():
+        raise MuxError("core_not_running", "從 Dock 開 Herdr.app")
+    return HcBackend(env) if name == "hc" else HerdrBackend(env)
+
+
+def cmd_env(env):
+    name = resolve_backend(env)
+    window = False
+    if name == "hc" and core_running():
+        window = run(["herdr-app", "status"], env=env)[0] == 0 if shutil.which("herdr-app", path=env.get("PATH")) else False
+    me = {"hc": env.get("HC_TERMINAL_ID"), "herdr": env.get("HERDR_PANE_ID")}.get(name)
+    return {"backend": name, "self": me, "window": window}
+
+
+def parse_args(argv):
+    p = argparse.ArgumentParser(prog="mux.py", description=__doc__.split("\n")[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("env")
+    s = sub.add_parser("spawn")
+    s.add_argument("--name", required=True)
+    s.add_argument("--kind", required=True, choices=KINDS)
+    s.add_argument("--cwd", required=True)
+    s.add_argument("--env", action="append", default=[], metavar="K=V")
+    s = sub.add_parser("send")
+    s.add_argument("id")
+    g = s.add_mutually_exclusive_group(required=True)
+    g.add_argument("--text")
+    g.add_argument("--file")
+    s.add_argument("--wait", action="store_true")
+    s.add_argument("--timeout", type=int)
+    s = sub.add_parser("wait")
+    s.add_argument("id")
+    s.add_argument("--timeout", type=int)
+    s = sub.add_parser("read")
+    s.add_argument("id")
+    s.add_argument("--lines", type=int)
+    for n in ("alive", "session", "close", "attach-hint"):
+        sub.add_parser(n).add_argument("id")
+    rest = []
+    if "--" in argv:  # 「--」之後整段是 CLI 參數，不給 argparse 看
+        i = argv.index("--")
+        argv, rest = argv[:i], argv[i + 1:]
+    args = p.parse_args(argv)
+    args.cli_args = rest
+    return args
+
+
+def dispatch(args, env):
+    if args.cmd == "env":
+        return cmd_env(env)
+    b = get_backend(env)
+    if args.cmd == "spawn":
+        pairs = {}
+        for item in args.env:
+            if "=" not in item:
+                raise MuxError("usage", f"--env 要 K=V：{item}", code=2)
+            k, v = item.split("=", 1)
+            pairs[k] = v
+        return b.spawn(args.name, args.kind, args.cwd, pairs, args.cli_args)
+    if args.cmd == "send":
+        text = args.text if args.text is not None else Path(args.file).read_text(encoding="utf-8")
+        return b.send(args.id, text, args.wait, args.timeout)
+    if args.cmd == "wait":
+        return b.wait(args.id, args.timeout)
+    if args.cmd == "read":
+        return b.read(args.id, args.lines)
+    if args.cmd == "alive":
+        return {"alive": b.alive(args.id)}
+    if args.cmd == "session":
+        return {"session": b.session(args.id)}
+    if args.cmd == "close":
+        return {"closed": b.close(args.id)}
+    return {"hint": b.attach_hint(args.id)}
+
+
+def main(argv=None):
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+    try:
+        result = dispatch(args, dict(os.environ))
+    except MuxError as e:
+        print(json.dumps({"error": e.kind, "hint": e.hint}, ensure_ascii=False))
+        return e.code
+    except OSError as e:
+        print(json.dumps({"error": "io_error", "hint": str(e)}, ensure_ascii=False))
+        return 1
+    if args.cmd == "read":
+        sys.stdout.write(result)
+    else:
+        print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
