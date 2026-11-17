@@ -6,6 +6,7 @@
 
 - feat(agent-dispatch)：新增 `skills/agent-dispatch/scripts/mux.py`（與 `test_mux.py`），把派工需要的動作（env、spawn、send、wait、read、alive、session、close、attach-hint）收斂成一支轉接腳本，後端為 Herdr.app（`hc`）或 herdr TUI；狀態統一映射成 `done|idle|working|blocked|error|timeout|gone`。核心行為：兩組環境變數同時存在時看誰的終端是最近祖先；core 沒跑（直接連 socket 判斷，不經 hc）時回 `core_not_running` 且不呼叫任何 hc；`hc send` 前移除 `HC_TERMINAL_ID` 以免訊息被包成 `<hc from>`；`hc run` 的 CLI 先解成絕對路徑（core 的 PATH 不同）、加 `--no-notify`、以 `env -u …` 前綴清掉繼承的污染變數；`done` 與 `idle` 都視為輪次結束。本版只含腳本與測試，skill 文件、hook、self-rotate 尚未改用它（hc 的 `session` 先回 null，視窗放置尚未做，hc spawn 一律背景 `visible:false`）。
 - 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。本分支的後續改動（文件、hook、self-rotate）併在同一版。
+- feat(hooks)：`herdr-env-context.py` 在 `HC_TERMINAL_ID` 存在時，把 SessionStart 輸入的 `session_id` 寫到 `${XDG_STATE_HOME:-~/.local/state}/plugharbor/hc-sessions/<HC_TERMINAL_ID>`（`/clear` 會覆寫）；讀不到 stdin 或 JSON 壞掉時略過記錄，原輸出與 exit 0 不變。`mux.py session` 的 hc 分支改為 `hc get` 取 address 再讀此檔，沒有檔回 `null`。
 
 ## [0.24.1] - 2026-11-16
 

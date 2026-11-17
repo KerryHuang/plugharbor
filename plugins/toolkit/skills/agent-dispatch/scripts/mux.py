@@ -242,7 +242,17 @@ class HcBackend:
         return code == 0 and isinstance(data, dict) and find_key(data, "state") == "live"
 
     def session(self, ident):
-        return None  # Task 2
+        # hc 不提供 agent session id；由 toolkit 的 SessionStart hook 記在 hc-sessions/<terminal id>
+        code, data = self.get(ident)
+        addr = find_key(data, "address") if code == 0 and data is not None else None
+        if not addr or "/" in addr or addr.startswith("."):
+            return None
+        base = self.env.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
+        try:
+            text = Path(base, "plugharbor", "hc-sessions", addr).read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+        return text or None
 
     def close(self, ident):
         code, out, err = self.hc("kill", ident)

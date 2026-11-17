@@ -270,6 +270,20 @@ class TestHc(MuxCase):
         self.assertEqual(self.ok(["close", "t1"], HC_ENV), {"closed": True})
         self.assertEqual(self.calls()[n:], ["hc kill t1", "hc rm t1"])
 
+    def test_session_hc_reads_file(self):
+        state = self.dir / "state"
+        (state / "plugharbor" / "hc-sessions").mkdir(parents=True)
+        (state / "plugharbor" / "hc-sessions" / "t7").write_text("sess-abc\n", encoding="utf-8")
+        self.resp("hc", "get", '{"address":"t7","state":"live"}')
+        r = self.ok(["session", "w1"], {**HC_ENV, "XDG_STATE_HOME": str(state)})
+        self.assertEqual(r, {"session": "sess-abc"})
+        self.assertIn("hc get --json w1", self.calls())
+
+    def test_session_hc_missing_returns_null(self):
+        self.resp("hc", "get", '{"address":"t7","state":"live"}')
+        r = self.ok(["session", "w1"], {**HC_ENV, "XDG_STATE_HOME": str(self.dir / "state")})
+        self.assertEqual(r, {"session": None})
+
     def test_attach_hint(self):
         self.assertIn("hc attach t1", self.ok(["attach-hint", "t1"], HC_ENV)["hint"])
 
