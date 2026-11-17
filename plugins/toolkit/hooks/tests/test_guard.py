@@ -190,3 +190,24 @@ def test_herdr_pane_run_agent_denied(env, cmd):
 ])
 def test_herdr_normal_commands_pass(env, cmd):
     assert run(env, "Bash", command=cmd) is None
+
+
+@pytest.mark.parametrize("cmd", [
+    "hc run --bg claude --model sonnet",
+    "hc run --bg --name w1 --cwd /w codex --no-daemon",
+    "cd /w && hc run --bg --no-notify --name x --cwd /w pi --model p/m:low",
+    "hc run --bg --name w2 'agy' -i task",
+    "hc run --bg --name w3 env -u CLAUDECODE FOO=1 claude --model haiku",
+])
+def test_hc_run_agent_denied(env, cmd):
+    assert run(env, "Bash", command=cmd) == "deny"
+
+
+@pytest.mark.parametrize("cmd", [
+    "hc run 'npm test'", "hc run --bg --name build --cwd /w/pi npm test",
+    "hc run --bg --name pi-task npm test",
+    "grep 'hc run claude' SKILL.md", "hc ls --all", "hc send t1 'claude'",
+    "python3 mux.py spawn --name w --kind claude --cwd /w -- --model sonnet",
+])
+def test_hc_normal_commands_pass(env, cmd):
+    assert run(env, "Bash", command=cmd) is None
