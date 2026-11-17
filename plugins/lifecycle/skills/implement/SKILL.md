@@ -53,7 +53,7 @@ git branch --show-current && git status --short
 
 ## 3. 交給規劃與執行
 
-計畫與計畫審查不因改動小而省略；只有使用者明說不寫計畫才跳過，回報標「未寫計畫」。
+計畫與計畫審查不因改動小而省略；只有使用者明說不寫計畫才跳過，回報標「未寫計畫」。例外：設計文件已涵蓋介面、權限、錯誤行為、驗收案例時，可不另寫計畫、不審計畫（無人值守與自動駕駛照 `workspace:unattended` 的 `speed-rules.md`），回報標「設計夠細、未另寫計畫」。
 
 **既有計畫**：`docs/superpowers/plans/` 下已有 **Spec** 欄指向本設計文件的計畫（使用者直接走 superpowers 寫完）→ 不重叫 writing-plans，只補：最後一個 task 是 after.md（沒有就加，路徑寫實際絕對路徑）；找不到 `.tmp/implement/<feature>/plan-review-*.md` 就照 `plan-review.md` 審；然後交執行。
 

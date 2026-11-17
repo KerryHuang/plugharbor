@@ -45,7 +45,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [lifecycle](./plugins/lifecycle/README.md) | 4.2.0 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
+| [lifecycle](./plugins/lifecycle/README.md) | 4.2.1 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
 | [tickets](./plugins/tickets/README.md) | 1.2.0 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
 | [discovery](./plugins/discovery/README.md) | 1.1.0 | 需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型 |
 | [delivery](./plugins/delivery/README.md) | 1.2.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |

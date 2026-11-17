@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.2.1] - 2026-11-17
+
+起因：某專案一段約 2200 行的後端工作在自動駕駛下花約 5 小時，其中設計已很細仍另寫約 780 行計畫再審；`workspace` 1.19.0 的單元流程改為設計夠細就不另寫計畫。
+
+- docs(implement)：`skills/implement/SKILL.md` 第 3 節「計畫與計畫審查不因改動小而省略」加例外：設計文件已涵蓋介面、權限、錯誤行為、驗收案例時可不另寫計畫、不審計畫，回報標「設計夠細、未另寫計畫」，與 `workspace:unattended` 一致。frontmatter description 不變。
+
 ## [4.2.0] - 2026-11-17
 
 起因：使用者 2026-11-17 轉用 Herdr.app，派工流程在 app 內無法開 worker。
