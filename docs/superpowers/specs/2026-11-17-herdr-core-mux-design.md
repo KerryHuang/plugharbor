@@ -181,3 +181,12 @@ hc 下 `hc send` 送到自己終端時，**必須確認** slash command 不被�
 - 是否新增 hc guard。
 - 測試檔放哪（沿用各 skill 既有 `tests/`）。
 - commit 拆法與 plugin 版號級距（toolkit 有新腳本、行為擴充 → minor）。
+
+## 實作差異（2026-11-17）
+
+- mux.py 放 `plugins/toolkit/skills/agent-dispatch/scripts/`，非 `plugins/toolkit/scripts/`。
+- hc spawn 的 `env -u` 不含 HC_*（hc 給 worker 的身分）。
+- §1b 取消：四種 CLI 皆原生回報 OSC 7501。
+- §2 版面改為主 pane 只切一次、worker 在右半互切，第 7 個起以 `terminal.keep` 不帶 place 開新 tab。
+- app_layout.py、herdr_layout.py 也複製到 lifecycle、tickets、discovery、delivery。
+- hc 版本實為 0.1.21。
