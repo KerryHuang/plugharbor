@@ -44,7 +44,7 @@ argument-hint: "[slug，例如 pr-123-triage]"
 
 接續句固定是：`讀 <交接檔絕對路徑>，從「下一步」接著做；完工或我說收工時，照檔末「收工清理」刪掉它。`
 
-**在 herdr 內（`HERDR_ENV=1`）自己換新**：使用者打了 `/handoff`、在 AskUserQuestion 同意換新，或是無人值守（沒人在場）時。先確認沒有還在跑的 subagent、背景工作、CI 等待（`/clear` 會讓它們變孤兒），有就等它們收完。然後執行：
+**在 herdr 或 Herdr.app 內自己換新**（`python3 ${CLAUDE_PLUGIN_ROOT}/skills/agent-dispatch/scripts/mux.py env` 的 `backend` 不是 `none`）：使用者打了 `/handoff`、在 AskUserQuestion 同意換新，或是無人值守（沒人在場）時。先確認沒有還在跑的 subagent、背景工作、CI 等待（`/clear` 會讓它們變孤兒），有就等它們收完。然後執行：
 
 ```
 nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh '<接續句>' <交接檔路徑>.rotate.log >/dev/null 2>&1 &
@@ -52,7 +52,7 @@ nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh '<接續句>' <�
 
 回報一行「已交接：<交接檔路徑>，這一回合結束後自動清空並接回」，然後直接結束回合，不再呼叫工具。腳本等 pane 閒置後送 `/clear`、`/reload-plugins` 與接續句；`.rotate.log` 最後一行不是「完成」就是失敗，使用者照下面三行手動接回。
 
-**不在 herdr 內**：回報三行，最後一行用程式碼區塊包起來方便複製：
+**不在 herdr 內**（`backend` 是 `none`，或 `core_not_running`）：回報三行，最後一行用程式碼區塊包起來方便複製：
 
 1. 交接檔絕對路徑。
 2. 建議動作：`/rename <slug>` → `/clear`。
@@ -62,4 +62,4 @@ nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh '<接續句>' <�
 讀 <交接檔絕對路徑>，從「下一步」接著做；完工或我說收工時，照檔末「收工清理」刪掉它。
 ```
 
-不在 herdr 內時不要自己執行 `/clear`（做不到）。交接檔在任務完成前不刪；完成後由接手的 session 依「收工清理」刪除——指示寫在檔內與接續句，接手者一開工就讀到，不另設 hook。
+不在 herdr 內時（含 Herdr.app 的 core 沒跑）不要自己執行 `/clear`（做不到）。交接檔在任務完成前不刪；完成後由接手的 session 依「收工清理」刪除——指示寫在檔內與接續句，接手者一開工就讀到，不另設 hook。

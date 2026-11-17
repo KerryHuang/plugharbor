@@ -275,7 +275,9 @@ import { parallelLimit } from './scripts/route.mjs'
 import { execFileSync } from 'node:child_process'
 
 test('detectEnv：herdr 優先，其次 ghostty，最後背景', () => {
-  assert.equal(detectEnv({ HERDR_ENV: '1' }, { ghostty: true }), 'herdr')
+  assert.equal(detectEnv({ HERDR_ENV: '1', HERDR_PANE_ID: 'w:p1' }, { ghostty: true }), 'herdr')
+  assert.equal(detectEnv({ HC_TERMINAL_ID: 't1' }, { ghostty: true }), 'herdr')
+  assert.equal(detectEnv({ HERDR_ENV: '1' }, { ghostty: true }), 'ghostty')
   assert.equal(detectEnv({}, { ghostty: true }), 'ghostty')
   assert.equal(detectEnv({}, { ghostty: false }), 'background')
 })

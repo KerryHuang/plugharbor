@@ -2,7 +2,7 @@
 """印出某個 claude worker 最後一輪的 context 大小（input＋cache），判斷要不要中途交接。
 
 用法：worker_ctx.py <session id 或前綴>
-session id 從 `herdr agent list` 該 worker 的 agent_session.value 取；/clear 後會換新，要重抓。
+session id 從 `mux.py session <id>` 取；/clear 後會換新，要重抓。
 只讀 transcript 尾端，找不到 session 時 exit 1。
 """
 import json

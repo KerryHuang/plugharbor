@@ -21,7 +21,9 @@ def handoff_note() -> str:
     """任務未完時換新的時機與做法；在 herdr 內才能自己換。"""
     when = "\n[toolkit] 任務還沒做完的話，停在沒有 subagent、背景工作、CI 等待的點時換新 session 接手："
     root = os.environ.get("CLAUDE_PLUGIN_ROOT")
-    if os.environ.get("HERDR_ENV") == "1" and root:
+    e = os.environ
+    inside = bool(e.get("HC_TERMINAL_ID")) or (e.get("HERDR_ENV") == "1" and bool(e.get("HERDR_PANE_ID")))
+    if inside and root:
         skill = Path(root, "skills", "handoff", "SKILL.md")
         return (when + f"使用者在場先用 AskUserQuestion 問一次，同意或無人值守就讀 {skill} 照做"
                 "（自動駕駛改照它自己的「換新 session」）。任務已完成就不換。")

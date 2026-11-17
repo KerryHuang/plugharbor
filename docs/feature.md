@@ -90,3 +90,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 - [x] 審稿附語音估計與操作秒數表；回報分開寫成片長度與製作時間；配音授權寫進 MP4 metadata、專案層 `tts.licensed` 只問一次 #50
 - [ ] 📋 實機回歸：在 formwright 用新版重做 design-by-tasks（規格 §5.2，待使用者跑與試聽） #51
 - [ ] 💡 1.1.x 小修：killSync 結束後從 activeKills 移除；build 的鎖延到 verify 後才放；授權文案與「配方宣告 custom 但腳本沒自帶 tts」的標記對齊；frameErr／SIGHUP 補測試；缺 `ps` 時給明確訊息 #52
+
+## toolkit：派工層支援 Herdr.app（2026-11-17 規劃） #53
+
+- [x] 共用轉接腳本 `mux.py` 同時支援 Herdr.app（hc）與 herdr TUI：worker 切在主 session 旁、四種 CLI 缺狀態回報就補、setup 與 user 層規則一併改（使用者 2026-11-17 裁決；設計 `docs/superpowers/specs/2026-11-17-herdr-core-mux-design.md`、計畫 `docs/superpowers/plans/2026-11-17-herdr-core-mux.md`）（2026-11-17 Herdr.app 五情境與 TUI 回歸實機驗收通過） #54

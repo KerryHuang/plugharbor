@@ -68,7 +68,7 @@ argument-hint: "[對象] <任務>"
 
 依序偵測，取第一個可用的：
 
-1. **herdr**（`HERDR_ENV` 是 `1`）：看得見的 pane，步驟見下方第 6 節。
+1. **herdr 或 Herdr.app**（`mux.py env` 的 `backend` 不是 `none`）：看得見的 pane，步驟見下方第 6 節。
 2. **Ghostty 分割**（macOS、`TERM_PROGRAM` 是 `ghostty`）：看得見的分割，用 `bg.mjs ghostty-split`／`ghostty-close`。做法與限制見 `references/background-worker.md`。macOS 自動化權限被拒時退到第 3 層。
 3. **背景 worker**：看不見，只在下列條件都成立時才用，不成立就由你在目前的 session 自己做，並說明原因：
    - 工作不需要中途問人（遇到要決策就停，寫進結果檔）。
@@ -89,59 +89,60 @@ argument-hint: "[對象] <任務>"
 - 「不要刪暫存資料夾，把要清的路徑列在結果檔」。
 - 授權範圍：寫明可以改哪個 repo、哪些路徑，其他 repo 一律不動；prompt 沒寫明可以 push、發版的，就不 push、不發版。
 - 並行多個 worker 時，各自的結果檔與工作區分開，並寫明「另一個 worker 正在寫 X，不要碰」。並行上限預設 4（背景 worker 以同一個 `--ws` 上層目錄計），遇到額度錯誤或逾時就降。
-- **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（herdr `--wait`）或完工通知。背景 worker 在 macOS 等通知、用 `bg.mjs status` 看一次；其他平台用 `bg.mjs wait` 阻塞等結束。
+- **不輪詢**。Claude worker 用 SendMessage 回報；其他 CLI 用阻塞等待（`mux.py send --wait`）或完工通知。背景 worker 在 macOS 等通知、用 `bg.mjs status` 看一次；其他平台用 `bg.mjs wait` 阻塞等結束。
 - **完成的唯一證據是結果檔存在**。
 
-## 6. herdr pane 步驟
+## 6. herdr／Herdr.app 步驟
 
-指令細節見 `references/herdr-long-task.md`。
+動作與回傳欄位見 `references/herdr-long-task.md`。以下 `mux.py` 指 `python3 "${CLAUDE_SKILL_DIR}/scripts/mux.py"`；stdout 是 JSON（`read` 例外，輸出純文字），失敗時是 `{"error":kind,"hint":…}`，exit code 2 用法、3 `core_not_running`、4 `no_backend`、1 其他。
 
 0. 前置：
-   - herdr 沒裝、或升級後指令回 `protocol_mismatch`：見 reference「安裝與升級」。
-   - herdr 指令不加 `2>/dev/null`，錯誤全在 stderr。
-   - 在 herdr pane 裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*` 環境變數，否則會蓋掉真正主 session 的回報。
-   - **不要在 Claude Code 內啟 herdr server**：`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。
+   - `mux.py env` 回 `{"backend":"hc|herdr|none","self":…,"window":bool}`。`none` 就不走這節；`hc` 是 Herdr.app、`herdr` 是 TUI，後面的步驟兩者相同。
+   - `core_not_running`：core 沒跑，請使用者從 Dock 開 Herdr.app；不要自己 stop／restart core，也不要直接跑 `hc` 去試（hc 會用你的環境把 core 自動啟動）。
+   - `window:false`（hc）：視窗沒開，worker 照跑但 `spawn` 回 `visible:false`；告訴使用者開 app 視窗後把該 worker 叫出來。`window_error` 照 hint 回報。
+   - mux.py 不加 `2>/dev/null`，錯誤與 hint 都要看。
+   - 在 herdr 或 Herdr.app 的終端裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*`、`HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET`、`HC_SCOPE`，否則會蓋掉真正主 session 的回報（`ask.mjs` 已自動濾）。
+   - TUI 專屬：**不要在 Claude Code 內啟 herdr server**，`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。
    - 對象是 claude 時，cwd 必須已受信任（本身或任一上層通過信任對話框），否則 worker 卡在對話框沒人能答。檢查腳本見 reference；不通過就請使用者先在該目錄開一次 Claude Code。
 1. 在專案的暫存區開一個工作目錄，把 prompt 寫成檔案（內容照第 5 節共用規則）。**你是 Claude Code、對象是 claude 時**，先用 `ListAgents` 取得自己的位址寫進 prompt，要它寫完結果檔**之後**用 `SendMessage` 回報一句話加結果檔路徑；要用 AskUserQuestion 問人之前，也先發一則「在問：{一句話}」。送不到就在工作區寫 `undelivered` 檔，不重試。
-2. 在同一個 tab 切 pane、重排，再起對方的 CLI。`pane_id` 從回傳的 `result.pane.pane_id` 讀，不要自己推算：
+2. 開 worker 並起對方的 CLI（版面由 `spawn` 處理）。回傳的 `id` 就是之後所有動作的 `<id>`，不要自己推算：
 
    ```bash
-   herdr pane split --current --direction right --cwd "<cwd>" --no-focus --env AGENT_DISPATCH_RESULT="<結果檔>" --env AGENT_DISPATCH_INTERACTIVE=1
-   python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID" --label <短名>
-   herdr agent start <唯一名稱> --kind <claude|codex|agy|pi> --pane <pane_id> -- <模型參數>
+   mux.py spawn --name <唯一名稱> --kind <claude|codex|agy|pi> --cwd "<cwd>" --env AGENT_DISPATCH_RESULT="<結果檔>" --env AGENT_DISPATCH_INTERACTIVE=1 -- <模型參數>
    ```
 
+   - hc 的終端名稱（`--name`）只能 1-32 字、`a-z 0-9 - _`。
    - `<模型參數>` 一定要帶（查表或使用者指定的模型與等級），寫法見 `../agent-mesh-check/references/cli-notes.md`：claude `--model <m> --effort <e>`、codex `-m <m> -c model_reasoning_effort=<e>`、agy `--model <id>`、pi `--model <provider>/<id>:<thinking>`。
-
-   - 每開一個 pane 就跑一次 `herdr_layout.py`（主 session 最大並掛「★」標籤，同 tab 最多 6 個 worker）；不手動 `--direction down`、不 `pane resize`。`--label` 第一次給即可。
+   - `spawn` 負責開 pane、放進主 session 旁（主 session 最大、同 tab 最多 6 個 worker；主 tab 已有 6 個時第 7 個起 `spawn` 自己開新 tab，TUI 不再切主 session、不跑版面腳本）、起 CLI、命名；不手動切 pane、不 `pane resize`、不跑 `herdr_layout.py`。回 `visible:false` 見上面前置。
    - 兩個 `--env` 讓 Stop hook 在 worker 沒寫結果檔就停時攔一次，提醒它寫檔回報；還沒做完就直接再停一次。沒有寫檔工具的 worker 不要帶。
    - 主控在無人值守時再加 `--env AGENT_DISPATCH_UNATTENDED=1`：worker 要用 AskUserQuestion 時會被擋下，改照「（推薦）」做，並把題目與選擇寫進結果檔的「主控裁決待確認」。
-   - 第 7 個起改 `herdr tab create --cwd "<cwd>" --label <短名>`（`--env` 同上），取 `result.root_pane.pane_id`，該 tab 不重排。不用 `workspace create`（使用者看不到）。
-   - 替別的專案開不回報的長駐獨立 session 也開新 tab（不占 6 個名額），一樣用 `agent start` 帶模型參數；任何情況都不用 `pane run` 起 CLI（guard 會擋）。
-   - 起好後 `herdr pane rename <pane_id> <名稱>`。
-   - 指定 agent 定義（claude／codex）：`agent start` 尾端的 `--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。
-   - `agent start` 失敗：先 `herdr pane read <pane_id>` 留畫面，再關掉這個 pane，連同畫面摘要回報；`agent_not_ready` 多半是 cwd 問題。
+   - 指定 agent 定義（claude／codex）：`--` 後面再加 `--agent <plugin>:<agent>`，套用其工具白名單與 model。
+   - 任何情況都不用 `hc run` 或 `pane run` 起 CLI（guard 會擋），一律走 `spawn`。
+   - 替別的專案開不回報的長駐獨立 session：`mux.py` 沒有開新 tab 的動作；TUI 做法見 reference「TUI 專屬」，Herdr.app 內請使用者自己開。
+   - `spawn` 失敗：herdr 後端會先留畫面再關掉 pane（`spawn_failed`，hint 帶畫面摘要），連同 hint 回報，多半是 cwd 問題；`cli_not_found` 是呼叫者 PATH 找不到該 CLI。
+   - Herdr.app 內各 CLI 啟動時可能先跳對話框（信任資料夾、外部檔案 import、hook 審核），此時 `status` 是 null（不是 `blocked`），`send` 的 Enter 會選到預設項。所以剛起的 worker（turn 0）`mux.py send` 會先等就緒（至多 60 秒）再自動加 `--if idle`：status 仍不是 idle 就不送，回 `{"status":"blocked","hint":…}`，不重試。收到時先 `mux.py read <id> --lines 30` 看畫面；有對話框就不替使用者按信任，告訴使用者用 `mux.py attach-hint <id>` 的 hint 進去處理，處理完再送；畫面已是就緒輸入框、沒有對話框時，隔幾秒再送同一則。
 3. 送出 prompt，放在背景等待：
 
    ```bash
-   herdr agent prompt <名稱> "$(cat <prompt 檔>)" --wait --timeout 540000
+   mux.py send <id> --file <prompt 檔> --wait --timeout 540
    ```
 
-   - 一定要用 `$(cat 檔)` 送出，不要用 heredoc 或裸雙引號，因為反引號和 `$()` 會在你這邊的 shell 先被執行。
-   - `--timeout` 一定要搭 `--wait`：單獨給 `--timeout` 整條會被拒，prompt 根本沒送出，而且錯誤只在 stderr。
-   - 送出後先 `herdr pane read <pane_id>` 確認畫面開始工作，再去等。claude worker 的 `SendMessage` 是主訊號，背景等待只是備援。
-4. 判讀結果。狀態燈只是參考：
+   - `--file` 由 mux.py 直接讀檔，不經 shell，反引號與 `$()` 不會被展開；要送短句用 `--text`。
+   - `--timeout` 單位是秒，要搭 `--wait` 才有效（不搭不會等）。回傳 `{"status":S,"raw":…}`，`S` 是 `done|idle|working|blocked|error|timeout|gone`。
+   - 送出後先 `mux.py read <id> --lines 30` 確認畫面開始工作，再去等。claude worker 的 `SendMessage` 是主訊號，背景等待只是備援。
+4. 判讀結果。狀態只是參考：
 
-   | 回傳 | 處置 |
+   | `status` | 處置 |
    |---|---|
    | `done`／`idle`，結果檔在 | 讀它，進第 5 步 |
-   | `done`／`idle`，結果檔不在 | 先不關 pane，`herdr pane read` 看最後一段：在提問 → 照 `blocked`；還沒開始動（codex 常見）→ 隔幾秒查一次結果檔；只用文字收尾忘了寫檔 → 送一句「把結果寫進 <結果檔>」 |
-   | `blocked`，或畫面停在提問 | 不替它回答、不重送 prompt；告訴使用者「worker『{名稱}』在問：{一句話}，`herdr agent attach <pane_id>` 進去回答」。等人答完用 reference 的輪詢 |
-   | 逾時 | 不代表失敗：查結果檔，再 `herdr agent list`；仍在跑就重掛等待，不重送 |
-   | `protocol_mismatch` | 不重派，worker 多半還活著；請使用者在 worker 都 idle 時重啟 server（reference「安裝與升級」） |
+   | `done`／`idle`，結果檔不在 | 先不關 worker，`mux.py read <id>` 看最後一段：在提問 → 照 `blocked`；還沒開始動（codex 常見）→ 隔幾秒查一次結果檔；只用文字收尾忘了寫檔 → 送一句「把結果寫進 <結果檔>」 |
+   | `blocked`，或畫面停在提問 | 不替它回答、不重送 prompt；告訴使用者「worker『{名稱}』在問：{一句話}，`mux.py attach-hint <id>` 給的指令進去回答」。等人答完用 reference 的輪詢 |
+   | `timeout` | 不代表失敗：查結果檔，再 `mux.py alive <id>`；仍在跑就重掛等待，不重送 |
+   | `gone` | worker 已結束：查結果檔，沒有就回報並重派一次 |
+   | `error` | 看 `raw`：TUI 含 `protocol_mismatch` 時不重派，worker 多半還活著，請使用者在 worker 都 idle 時重啟 server（reference「TUI 專屬：安裝與升級」）；其他照 `raw` 回報 |
 
    claude worker 回到 idle、結果還沒到、context 已超過 250K：由你發動中途交接，步驟見 reference 與第 8 節。正在 working 或 blocked 時不插話。
-5. 收工：讀完結果檔就 `herdr pane close <pane_id>`，不留著待命（留著的 worker 會自己找事做）；再跑一次 `herdr_layout.py --main "$HERDR_PANE_ID"` 重排。只關自己在第 2 步開的 pane，不用「清單上沒別人」推論安全，也不要 `herdr workspace close`（會連使用者與你一起關）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
+5. 收工：讀完結果檔就 `mux.py close <id>`，不留著待命（留著的 worker 會自己找事做）。只關自己在第 2 步開的 worker，不用「清單上沒別人」推論安全，也不要關整個 workspace／space（會連使用者與你一起關）。TUI 專屬：關完再跑一次 `python3 "${CLAUDE_SKILL_DIR}/scripts/herdr_layout.py" --main "$HERDR_PANE_ID"` 重排（Herdr.app 的格子 close 後自動消失，不需重排）。最後把結果檔列出的暫存路徑確認都在本次工作區內，一次清掉。
 
 ## 7. 額度
 

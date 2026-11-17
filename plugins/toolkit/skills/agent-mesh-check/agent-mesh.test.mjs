@@ -40,6 +40,11 @@ test('scrubEnv 清掉巢狀 CLI 標記，保留 CODEX_HOME 與 PATH', () => {
   assert.deepEqual(scrubEnv({ CLAUDECODE: '1', CLAUDE_CODE_X: '1', CODEX_THREAD_ID: 't', CODEX_HOME: 'h', PI_X: '1', ANTIGRAVITY_AGENT: '1', HERDR_PANE_ID: 'p', PATH: 'p' }), { CODEX_HOME: 'h', PATH: 'p' })
 })
 
+test('scrubEnv 清掉 hc 與 herdr 身分變數', () => {
+  const ids = ['HC_TERMINAL_ID', 'HC_TERMINAL_SOCKET', 'HC_SCOPE', 'HERDR_PANE_ID', 'HERDR_SOCKET_PATH', 'HERDR_TAB_ID', 'HERDR_WORKSPACE_ID']
+  assert.deepEqual(scrubEnv({ ...Object.fromEntries(ids.map(k => [k, 'x'])), PATH: 'p' }), { PATH: 'p' })
+})
+
 test('classify 判定順序：timeout → 含預期字串 → auth → fail', () => {
   assert.equal(classify({ timedOut: true, out: 'PING-x-ok', code: null }, 'PING-x-ok'), 'timeout')
   assert.equal(classify({ out: 'hdr\nPING-x-ok\ntokens\nPING-x-ok', code: 0 }, 'PING-x-ok'), 'pass')

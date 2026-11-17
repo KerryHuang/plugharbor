@@ -12,6 +12,28 @@
   },
   "groups": [
     [
+      "plugins/toolkit/skills/agent-dispatch/scripts/mux.py",
+      "plugins/workspace/skills/unattended/scripts/mux.py",
+      "plugins/lifecycle/scripts/mux.py",
+      "plugins/tickets/scripts/mux.py",
+      "plugins/discovery/scripts/mux.py",
+      "plugins/delivery/scripts/mux.py"
+    ],
+    [
+      "plugins/toolkit/skills/agent-dispatch/scripts/app_layout.py",
+      "plugins/lifecycle/scripts/app_layout.py",
+      "plugins/tickets/scripts/app_layout.py",
+      "plugins/discovery/scripts/app_layout.py",
+      "plugins/delivery/scripts/app_layout.py"
+    ],
+    [
+      "plugins/toolkit/skills/agent-dispatch/scripts/herdr_layout.py",
+      "plugins/lifecycle/scripts/herdr_layout.py",
+      "plugins/tickets/scripts/herdr_layout.py",
+      "plugins/discovery/scripts/herdr_layout.py",
+      "plugins/delivery/scripts/herdr_layout.py"
+    ],
+    [
       "plugins/lifecycle/references/harness-terms.md",
       "plugins/browser-docs/references/harness-terms.md",
       "plugins/tickets/references/harness-terms.md",

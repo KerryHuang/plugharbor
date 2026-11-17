@@ -1,6 +1,6 @@
-# 沒有 herdr 時的長任務：Ghostty 分割與背景 worker
+# 沒有 herdr／Herdr.app 時的長任務：Ghostty 分割與背景 worker
 
-`scripts/bg.mjs` 負責這兩層。偵測順序見 SKILL.md「長任務」：herdr → Ghostty 分割 → 背景 worker。
+`scripts/bg.mjs` 負責這兩層。偵測順序見 SKILL.md「長任務」：herdr／Herdr.app（`mux.py env`）→ Ghostty 分割 → 背景 worker。
 
 ## Ghostty 分割（看得見、可互動）
 
@@ -73,7 +73,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
   4. 刪除工作目錄。
 - Windows（Git Bash）：用 node 的 detached spawn，不依賴 shell 背景工作。實機驗證見 CHANGELOG。
 
-## macOS 防睡眠（herdr pane 與背景 worker 都適用）
+## macOS 防睡眠（herdr／Herdr.app 的 pane 與背景 worker 都適用）
 
 - 長任務期間不要蓋上螢幕。蓋上會進 Clamshell Sleep，`caffeinate` 用什麼旗標都擋不住；它只擋閒置睡眠（`-i`），`-s` 也只在接電源時有效。
 - 一定要蓋螢幕，就接電源並接外接螢幕（closed-display mode）。

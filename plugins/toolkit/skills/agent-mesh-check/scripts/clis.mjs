@@ -94,7 +94,7 @@ export function scrubEnv(env) {
   const out = {}
   for (const [k, v] of Object.entries(env)) {
     if (PUSH_TOKENS.includes(k) && !keep.has(k)) continue
-    if (k === 'CLAUDECODE' || k.startsWith('CLAUDE_CODE_') || k === 'HERDR_PANE_ID' || k === 'AGENT_DISPATCH_RESULT') continue
+    if (k === 'CLAUDECODE' || k.startsWith('CLAUDE_CODE_') || k === 'HERDR_PANE_ID' || k === 'HERDR_SOCKET_PATH' || k === 'HERDR_TAB_ID' || k === 'HERDR_WORKSPACE_ID' || k.startsWith('HC_TERMINAL_') || k === 'HC_SCOPE' || k === 'AGENT_DISPATCH_RESULT') continue
     if (k.startsWith('CODEX_') && k !== 'CODEX_HOME') continue
     if (k.startsWith('PI_') || k.startsWith('AGY_') || k.startsWith('ANTIGRAVITY_')) continue
     out[k] = v

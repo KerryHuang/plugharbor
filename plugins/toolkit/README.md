@@ -23,10 +23,10 @@ claude plugin install toolkit@plugharbor
 | Stop | `context-size-reminder.py` | context 越過級距時提醒 |
 | PermissionRequest `Bash` | `rm-scratch-allow.py` | `rm` 的目標全在暫存區（session scratchpad、`.tmp/`、`.superpowers/`）、只串唯讀指令時自動核准，免得確認框讓無人值守卡住；其他照常跳確認 |
 | Stop | `reply-language-guard.py` | 使用者用中日韓文提問、這回合卻有整段英文回覆時擋下一次，要求用使用者的語言重述 |
-| Stop | `dispatch-stop-guard.py` | 被派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次；herdr pane 另設 `AGENT_DISPATCH_INTERACTIVE=1`，還沒做完可直接再結束一次 |
+| Stop | `dispatch-stop-guard.py` | 被派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次；herdr／Herdr.app 的 worker 另設 `AGENT_DISPATCH_INTERACTIVE=1`，還沒做完可直接再結束一次 |
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
-| SessionStart | `herdr-env-context.py` | 在 herdr 內時注入一行狀態，agent 不必再檢查能否開 pane |
+| SessionStart | `herdr-env-context.py` | 在 herdr 或 Herdr.app 內時注入一行狀態，agent 不必再檢查能否開 worker；Herdr.app 內另記錄 session id 供 `mux.py session` 取用 |
 | SessionStart、UserPromptSubmit | `disabled-skills.py` | 被明確停用的 plugharbor plugin／skill（如 /doctor 關掉的）：開場一行列名稱；使用者訊息命中其觸發詞（`triggers` 欄位或 description 的「」片語）時提示，先問再用；回「不要」只在該專案忽略 |
 | SessionStart `compact` | `compact-context.py` | context 壓縮後提醒沿用使用者指示的語言與格式 |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
@@ -43,8 +43,9 @@ claude plugin install toolkit@plugharbor
 
 - `git-add-all`（deny）：擋 `git add -A` / `.` / `--all`
 - `git-destructive`（ask）：force push、`reset --hard`、`clean -f`
-- `herdr-tab-create`（ask）：`herdr tab create`；只有第 7 個 worker 起或不回報的獨立 session 才開新 tab
-- `herdr-pane-run-agent`（deny）：`herdr pane run <pane> claude|codex|agy|pi`，改用 `herdr agent start` 帶模型參數
+- `herdr-tab-create`（ask）：`herdr tab create`；手動開新 tab 只留給不回報的獨立 session（第 7 個 worker 起由 `mux.py spawn` 自己開新 tab，不經此 guard）
+- `herdr-pane-run-agent`（deny）：`herdr pane run <pane> claude|codex|agy|pi`，改用 `mux.py spawn` 帶模型參數
+- `hc-run-agent`（deny）：`hc run … claude|codex|agy|pi`，改用 `mux.py spawn`（漏帶 model／effort、版面與父子紀錄）
 
 ## retrospective
 
@@ -74,7 +75,7 @@ Claude Code 另有三支 hook 自動配合：`tower-context.py`（SessionStart �
 把工作交給另一個 agent CLI。路由規則在 `skills/agent-dispatch/references/routing.json`：任務類型 × 難度（top／standard／cheap）查表，得出 CLI＋模型＋思考等級的候選順序，並濾掉 agent-mesh-check 沒通過的 CLI 與額度封鎖中的 CLI。
 
 - **短問答**（`scripts/ask.mjs`）：額度用盡自動改派下一家，輸出超過 16000 字元只回摘要、全文落檔。
-- **長任務**：依序用 herdr pane、Ghostty 分割（macOS）、背景 worker（`scripts/bg.mjs`，在獨立 git worktree 執行）。
+- **長任務**：依序用 herdr／Herdr.app 的 pane（一律經 `skills/agent-dispatch/scripts/mux.py`：`env`、`spawn`、`send`、`wait`、`read`、`alive`、`session`、`close`、`attach-hint`，後端自動判斷）、Ghostty 分割（macOS）、背景 worker（`scripts/bg.mjs`，在獨立 git worktree 執行）。
 - **其他**：
   - 改動碰到安全、資料、DB 結構、公開介面，或超過 300 行時，挑不同家族的模型審查。
   - 額度狀態存在 `~/.local/state/agent-dispatch/state.json`；Windows 存在 `%LOCALAPPDATA%`。
