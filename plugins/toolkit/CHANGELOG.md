@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.28.2] - 2026-11-18
+
+起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。
+- fix(mux.py)：Windows 判斷 core 改用 `hc server status --json`（hc 官方：Windows 上不會啟動 core；Unix 照舊 connect socket）；`spawn` 改用 Python 包一層取代 `env -u`（清掉污染變數、設 `--env`、忽略 Ctrl+C、轉傳 exit code；hc 仍認得底下 agent 的狀態）；沒有 `ps` 時祖先不明照預設；core 沒跑的提示在 Windows 改成開始選單。
+- fix(app_layout.py)：Windows 沒有 `fcntl`，臨界區改用 `msvcrt.locking`。
+- test：`test_mux.py` 新增以 `sys.platform`／假 socket 模擬 Windows 的 8 個測試；Windows 桌機在 Herdr 終端實跑 env／spawn／send／read／alive／session／wait／close 與 `--env` 傳遞全過，Mac 回歸也過。
+
 ## [0.28.1] - 2026-11-18
 
 起因：Windows 桌機的 Codex 0.169.1 每次問答都出現 14 個 `Hook failed / hook exited with code 1`（2026-11-18 實測）。Windows 的 Codex 經 PowerShell 跑 hook，PATH 上沒有 `sh`（Git 的 sh.exe 沒加進 PATH）；`bash` 解析成 WSL，讀不到 `C:/` 路徑。另外 Windows clone 預設 `core.autocrlf=true`，`run-py.sh` 變 CRLF 後找不到腳本，就算找到 sh 也會靜默不跑。

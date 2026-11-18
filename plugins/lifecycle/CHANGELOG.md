@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.2.3] - 2026-11-18
+
+起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。
+- fix：`scripts/mux.py`、`scripts/app_layout.py` 同步 toolkit 0.28.2 的 Windows 支援（副本）。
+
 ## [4.2.2] - 2026-11-17
 
 起因：自動駕駛一段約 2200 行後端工作花約 5 小時（設計已很細仍另寫計畫再審、每個子單元走全套審查與 CI）；跨家族審查指出 1.19.0 的免計畫與續派原實作者規則沒有接通其他流程。

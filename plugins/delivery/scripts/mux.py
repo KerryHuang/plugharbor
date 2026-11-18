@@ -14,7 +14,8 @@ S：done|idle|working|blocked|error|timeout|gone（兩邊的原始值在這裡�
 環境變數：MUX_BACKEND 強制後端；MUX_CORE_SOCKET 覆寫 core socket 路徑；
 MUX_LAYOUT_CMD 取代 TUI 版面腳本、MUX_APP_LAYOUT_CMD 取代 app 版面腳本（測試用）。
 
-core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷。
+core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷；
+Windows 的 Python 沒有 AF_UNIX，改用 `hc server status`（hc 官方：Windows 上它不會啟動 core）。
 """
 import argparse, json, os, shlex, shutil, socket, subprocess, sys
 from pathlib import Path
@@ -87,8 +88,15 @@ def socket_path(env=None):
     return str(Path(state) / "herdr-core" / (env.get("HC_SESSION") or "default") / "default.sock")
 
 
-def core_running():
+def core_running(env=None):
     """以 connect 成功為準；檔案存在不算（stale socket 會 ConnectionRefused）。"""
+    if sys.platform == "win32":
+        try:
+            code, out, _ = run(["hc", "server", "status", "--json"], env=env)
+        except MuxError:
+            return False
+        data = parse_json(out)
+        return code == 0 and isinstance(data, dict) and bool(data.get("pid"))
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.settimeout(2)
     try:
@@ -100,7 +108,17 @@ def core_running():
         s.close()
 
 
+# Windows 沒有 env：改用 Python 包一層。os.execv 在 Windows 是開新程序再結束自己（hc 會當成程式結束），
+# 所以包裝留著當父程序、轉傳 exit code；忽略 Ctrl+C，免得 attach 時按 Ctrl+C 殺掉包裝連帶結束 worker。
+# hc 仍認得包裝底下的 agent 狀態（2026-11-18 實測 claude）。
+WIN_CLEAN_ENV = ("import os,signal,subprocess,sys;signal.signal(signal.SIGINT,signal.SIG_IGN);"
+                 "[os.environ.pop(k,None) for k in {unset!r}];os.environ.update({extra!r});"
+                 "sys.exit(subprocess.call(sys.argv[1:]))")
+
+
 def clean_env_prefix(extra):
+    if sys.platform == "win32":
+        return [sys.executable, "-c", WIN_CLEAN_ENV.format(unset=POLLUTED_VARS, extra=dict(extra))]
     out = ["env"]
     for v in POLLUTED_VARS:
         out += ["-u", v]
@@ -111,7 +129,10 @@ def process_ancestors():
     chain, pid = [], os.getppid()
     while pid and pid > 1 and len(chain) < 64:
         chain.append(pid)
-        r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True)
+        try:
+            r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True)
+        except FileNotFoundError:  # Windows 沒有 ps：祖先不明，交給 detect_backend 的預設
+            return []
         try:
             pid = int(r.stdout.strip())
         except ValueError:
@@ -466,7 +487,7 @@ def resolve_backend(env):
     if not both or env.get("MUX_BACKEND"):
         return detect_backend(env)
     hc_pid = None
-    if core_running():
+    if core_running(env):
         code, out, _ = run(["hc", "get", "--json", env["HC_TERMINAL_ID"]], env=env)
         pid = find_key(parse_json(out), "pid") if code == 0 else None
         hc_pid = pid if isinstance(pid, int) else None
@@ -477,15 +498,15 @@ def get_backend(env):
     name = resolve_backend(env)
     if name == "none":
         raise MuxError("no_backend", "不在 herdr 或 Herdr.app 的終端內")
-    if name == "hc" and not core_running():
-        raise MuxError("core_not_running", "從 Dock 開 Herdr.app")
+    if name == "hc" and not core_running(env):
+        raise MuxError("core_not_running", "從開始選單開 Herdr" if sys.platform == "win32" else "從 Dock 開 Herdr.app")
     return HcBackend(env) if name == "hc" else HerdrBackend(env)
 
 
 def cmd_env(env):
     name = resolve_backend(env)
     window, extra = False, {}
-    if name == "hc" and core_running():
+    if name == "hc" and core_running(env):
         try:
             window = window_open(env)
         except MuxError as e:  # 判斷不出來不讓整個 env 失敗；spawn 才硬擋

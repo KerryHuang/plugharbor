@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.20.2] - 2026-11-18
+
+起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。
+- fix(unattended)：`skills/unattended/scripts/mux.py` 同步 toolkit 0.28.2 的 Windows 支援（副本）。
+
 ## [1.20.1] - 2026-11-18
 
 - docs(project-setup)：`skills/project-setup/references/flow.md` 的 user 層清單拿掉 blog（見 blog 0.2.1）。

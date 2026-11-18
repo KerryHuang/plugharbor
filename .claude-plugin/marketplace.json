@@ -11,7 +11,7 @@
       "name": "lifecycle",
       "source": "./plugins/lifecycle",
       "description": "開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin",
-      "version": "4.2.2",
+      "version": "4.2.3",
       "author": {
         "name": "KerryHuang"
       }
@@ -20,7 +20,7 @@
       "name": "tickets",
       "source": "./plugins/tickets",
       "description": "票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -29,7 +29,7 @@
       "name": "discovery",
       "source": "./plugins/discovery",
       "description": "需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -38,7 +38,7 @@
       "name": "delivery",
       "source": "./plugins/delivery",
       "description": "交付文件——操作手冊（Word／PDF／簡報）與示範影片",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -47,7 +47,7 @@
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
-      "version": "1.20.1",
+      "version": "1.20.2",
       "author": {
         "name": "KerryHuang"
       }
@@ -101,7 +101,7 @@
       "name": "toolkit",
       "source": "./plugins/toolkit",
       "description": "通用 hooks 與分層 guard——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、git 紅線攔截",
-      "version": "0.28.1",
+      "version": "0.28.2",
       "author": {
         "name": "KerryHuang"
       }

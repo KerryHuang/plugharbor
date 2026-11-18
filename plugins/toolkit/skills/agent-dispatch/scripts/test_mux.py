@@ -3,7 +3,8 @@
 
 用法：python3 test_mux.py
 """
-import json, os, shutil, socket, subprocess, sys, tempfile, unittest
+import importlib.util, json, os, shutil, socket, subprocess, sys, tempfile, unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -548,6 +549,107 @@ class TestHerdr(MuxCase):
 
     def test_attach_hint(self):
         self.assertIn("herdr agent attach p1", self.ok(["attach-hint", "p1"], HERDR_ENV)["hint"])
+
+
+# ---------- Windows（Python 沒有 AF_UNIX、PATH 沒有 env／ps）：同程序內以 sys.platform 與假 socket 模擬 ----------
+
+class _NoUnixSocket:
+    SOCK_STREAM = socket.SOCK_STREAM
+
+    @staticmethod
+    def socket(*a, **k):
+        raise AssertionError("Windows 不得碰 AF_UNIX socket")
+
+
+STATUS_JSON = '{"core":{"name":"msi"},"live":1,"pid":16416,"version":"0.1.20"}'
+
+
+class TestWindows(unittest.TestCase):
+    def setUp(self):
+        self.calls, self.resp = [], {}
+        for target, attr, value in ((sys, "platform", "win32"), (mux, "socket", _NoUnixSocket),
+                                    (mux, "run", self.fake_run),
+                                    (mux.shutil, "which", lambda n, path=None: f"C:\\bin\\{n}.EXE")):
+            p = mock.patch.object(target, attr, value)
+            p.start()
+            self.addCleanup(p.stop)
+        self.env = {"HC_TERMINAL_ID": "t1r", "PATH": "C:\\bin"}
+
+    def fake_run(self, argv, env=None):
+        self.calls.append(list(argv))
+        r = self.resp.get(" ".join(argv[:3]), self.resp.get(" ".join(argv[:2]), (0, "", "")))
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    def test_core_running_uses_hc_server_status(self):
+        self.resp["hc server status"] = (0, STATUS_JSON, "")
+        self.assertTrue(mux.core_running(self.env))
+        self.assertEqual(self.calls, [["hc", "server", "status", "--json"]])
+
+    def test_core_down_or_hc_missing_is_not_running(self):
+        for r in ((1, "", "core not running"), (0, "garbage", ""), mux.MuxError("command_not_found")):
+            with self.subTest(r=r):
+                self.resp["hc server status"] = r
+                self.assertFalse(mux.core_running(self.env))
+
+    def test_env_reports_hc_and_window(self):
+        self.resp["hc server status"] = (0, STATUS_JSON, "")
+        r = mux.dispatch(mux.parse_args(["env"]), self.env)
+        self.assertEqual(r, {"backend": "hc", "self": "t1r", "window": True})
+        self.assertIn(["herdr-app", "status"], self.calls)
+
+    def test_core_not_running_hint_is_not_mac_dock(self):
+        self.resp["hc server status"] = (1, "", "")
+        with self.assertRaises(mux.MuxError) as cm:
+            mux.get_backend(self.env)
+        self.assertEqual(cm.exception.kind, "core_not_running")
+        self.assertNotIn("Dock", cm.exception.hint)
+
+    def test_spawn_wraps_with_python_not_env(self):
+        self.resp["hc server status"] = (0, STATUS_JSON, "")
+        self.resp["hc run"] = (0, '{"address":"t7"}', "")
+        args = mux.parse_args(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "D:\\Repos\\x",
+                               "--env", "A=1", "--", "--model", "m"])
+        self.assertEqual(mux.dispatch(args, self.env)["id"], "t7")
+        argv = next(c for c in self.calls if c[:2] == ["hc", "run"])
+        self.assertNotIn("env", argv)
+        i = argv.index(sys.executable)
+        self.assertEqual(argv[i + 1], "-c")
+        self.assertEqual(argv[i + 3:], ["C:\\bin\\claude.EXE", "--model", "m"])
+
+    def test_wrapper_unsets_polluted_sets_extra_and_keeps_exit_code(self):
+        prefix = mux.clean_env_prefix({"A": "1", "B": "x y'\"\\中"})
+        self.assertEqual(prefix[:2], [sys.executable, "-c"])
+        child = ("import os,json,sys;print(json.dumps({k: os.environ.get(k) for k in "
+                 "('A','B','CLAUDECODE','HERDR_PANE_ID','KEEP')}));sys.exit(7)")
+        e = {**os.environ, "CLAUDECODE": "1", "HERDR_PANE_ID": "p", "KEEP": "k", "PYTHONUTF8": "1"}
+        r = subprocess.run([*prefix, sys.executable, "-c", child], capture_output=True, text=True,
+                           encoding="utf-8", env=e)
+        self.assertEqual(r.returncode, 7, r.stderr)
+        self.assertEqual(json.loads(r.stdout), {"A": "1", "B": "x y'\"\\中", "CLAUDECODE": None,
+                                                "HERDR_PANE_ID": None, "KEEP": "k"})
+
+    def test_process_ancestors_without_ps_is_unknown(self):
+        with mock.patch.object(mux.subprocess, "run", side_effect=FileNotFoundError("ps")):
+            self.assertEqual(mux.process_ancestors(), [])
+
+
+class TestAppLayoutWindows(unittest.TestCase):
+    def test_lock_uses_msvcrt_without_fcntl(self):
+        locks = []
+        fake = mock.Mock(LK_LOCK=1, LK_UNLCK=0)
+        fake.locking.side_effect = lambda fd, mode, n: locks.append((mode, n))
+        tmp = tempfile.mkdtemp(prefix="al")
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        with mock.patch.dict(sys.modules, {"fcntl": None, "msvcrt": fake}), \
+                mock.patch.dict(os.environ, {"XDG_STATE_HOME": tmp}):
+            spec = importlib.util.spec_from_file_location("app_layout_win", HERE / "app_layout.py")
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            with mod.locked():
+                self.assertEqual(locks, [(1, 1)])
+        self.assertEqual(locks, [(1, 1), (0, 1)])
 
 
 if __name__ == "__main__":

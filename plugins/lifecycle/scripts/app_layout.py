@@ -16,12 +16,18 @@
 放置做法是 spike 的 D：呼叫端先 `hc run --bg` 得到 hc 位址，這裡 `pane.focus` 到被切的 pane，
 再 `terminal.keep --terminal <tN> --place right|down`（位置相對「目前 focus 的 pane」）。
 放完把 focus 還給主 pane（新 pane 會搶 focus，會打斷使用者在主 session 的輸入），盡力而為：還原失敗不影響回報。
-ls→focus→keep→還原 focus 是臨界區，用 flock 序列化（並行派工時 focus 是全域狀態，不鎖會切到錯的 pane）。
+ls→focus→keep→還原 focus 是臨界區，用 flock（Windows 用 msvcrt.locking）序列化（並行派工時 focus 是全域狀態，不鎖會切到錯的 pane）。
 鎖檔：${XDG_STATE_HOME:-~/.local/state}/plugharbor/app-layout.lock。
 """
-import argparse, fcntl, json, os, subprocess, sys, time
+import argparse, json, os, subprocess, sys, time
 from contextlib import contextmanager
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+    import msvcrt
 
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
@@ -94,11 +100,19 @@ def locked():
     path = Path(base) / "plugharbor" / "app-layout.lock"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        if fcntl:
+            fcntl.flock(f, fcntl.LOCK_EX)
+        else:
+            f.seek(0)  # msvcrt 鎖「目前位置起 1 byte」：各程序都從 0 鎖才互斥
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
         try:
             yield
         finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+            if fcntl:
+                fcntl.flock(f, fcntl.LOCK_UN)
+            else:
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 def restore_focus(main):
