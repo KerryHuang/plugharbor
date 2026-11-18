@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.28.0] - 2026-11-18
+
+起因：改用 Herdr.app 後，分頁名稱固定是「Claude Code」或編號，不跟 Claude 的 session 標題（內建 ai-title、`auto-session-title` 套用的 /rename）走，看起來像沒在改名；標題其實有寫進 terminal title（`hc get` 查得到），只是 Herdr.app 分頁不顯示。
+- feat(hooks)：新增 Stop hook `herdr-tab-title.py`：在 Herdr.app 內（有 `HC_TERMINAL_ID`）每回合結束把 terminal title 用 `herdr-app do tab.rename` 寫成分頁名稱；只改預設名稱（空、編號、「Claude Code」）或上次自己寫的，手動命名不覆寫；分頁有多個 terminal 時只認第一個，worker 不改主分頁。測試 `hooks/tests/herdr-tab-title.sh`。
+
 ## [0.27.0] - 2026-11-18
 
 起因：用短問答（唯讀）派 codex 審查（medium、總時限 1500 秒），codex 說明計畫、讀了 3 個檔後 24 分鐘沒有任何輸出，直到總時限才被中斷、沒交出結論；同一天類似情況 3 次，主控只能等滿總時限才知道卡住。

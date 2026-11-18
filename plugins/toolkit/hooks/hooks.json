@@ -116,6 +116,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" herdr-tab-title.py",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

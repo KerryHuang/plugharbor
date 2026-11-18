@@ -25,6 +25,7 @@ claude plugin install toolkit@plugharbor
 | Stop | `reply-language-guard.py` | 使用者用中日韓文提問、這回合卻有整段英文回覆時擋下一次，要求用使用者的語言重述 |
 | Stop | `dispatch-stop-guard.py` | 被派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次；herdr／Herdr.app 的 worker 另設 `AGENT_DISPATCH_INTERACTIVE=1`，還沒做完可直接再結束一次 |
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
+| Stop | `herdr-tab-title.py` | Herdr.app 內把 session 標題同步成分頁名稱，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart | `herdr-env-context.py` | 在 herdr 或 Herdr.app 內時注入一行狀態，agent 不必再檢查能否開 worker；Herdr.app 內另記錄 session id 供 `mux.py session` 取用 |
 | SessionStart、UserPromptSubmit | `disabled-skills.py` | 被明確停用的 plugharbor plugin／skill（如 /doctor 關掉的）：開場一行列名稱；使用者訊息命中其觸發詞（`triggers` 欄位或 description 的「」片語）時提示，先問再用；回「不要」只在該專案忽略 |
