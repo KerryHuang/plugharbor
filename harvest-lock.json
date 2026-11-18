@@ -37,15 +37,16 @@
       "ref": "",
       "subpath": "",
       "key": "kkkkhazix/agent-autoloop",
-      "version": "v1.6.4",
-      "commit": "f62efedd3548fc21aad4d43454b17efc758ff705",
+      "version": "v1.9.1",
+      "commit": "bfa6d79d09ab60c410337ffe579de8475edb721d",
       "license": "MIT",
       "license_file": "LICENSE",
       "license_blob": "2d848c9f3fed5317d59e0b88cafa289b42a29d2d",
       "subtree": null,
-      "adopted": "2026-11-08",
+      "adopted": "2026-11-18",
       "targets": [
-        "lifecycle:implement"
+        "lifecycle:implement",
+        "workspace:unattended"
       ]
     },
     {
