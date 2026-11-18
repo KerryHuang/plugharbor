@@ -44,13 +44,13 @@ run "$P" lifecycle ui-ux >/dev/null || fail "重跑 exit 非 0"
 
 # ---------- 2) 已裝且版號相同略過、不同 update；其他專案的同名 local 不算 ----------
 P2="$(newproj p2)"; : > "$STUB_LOG"
-printf '[{"id": "lifecycle@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"},\n {"id": "ui-ux@plugharbor", "version": "0.0.1", "scope": "local", "projectPath": "%s"},\n {"id": "blog@plugharbor", "version": "%s", "scope": "local", "projectPath": "/other"}]\n' \
-  "$(ver lifecycle)" "$(native "$P2")" "$(native "$P2")" "$(ver blog)" > "$STUB_STATE/claude-list"
-OUT="$(run "$P2" lifecycle ui-ux blog)" || fail "版號比對 exit 非 0：$OUT"
+printf '[{"id": "lifecycle@plugharbor", "version": "%s", "scope": "local", "projectPath": "%s"},\n {"id": "ui-ux@plugharbor", "version": "0.0.1", "scope": "local", "projectPath": "%s"},\n {"id": "discovery@plugharbor", "version": "%s", "scope": "local", "projectPath": "/other"}]\n' \
+  "$(ver lifecycle)" "$(native "$P2")" "$(native "$P2")" "$(ver discovery)" > "$STUB_STATE/claude-list"
+OUT="$(run "$P2" lifecycle ui-ux discovery)" || fail "版號比對 exit 非 0：$OUT"
 echo "$OUT" | grep -q "UP-TO-DATE: claude lifecycle" || fail "版號相同應 UP-TO-DATE：$OUT"
 if grep -q 'claude plugin \(install\|update\) lifecycle' "$STUB_LOG"; then fail "版號相同不該重裝"; fi
 grep -qx 'claude plugin update ui-ux@plugharbor --scope local' "$STUB_LOG" || fail "版號不同應 update"
-grep -qx 'claude plugin install blog@plugharbor --scope local' "$STUB_LOG" || fail "別的專案裝過不算，應 install"
+grep -qx 'claude plugin install discovery@plugharbor --scope local' "$STUB_LOG" || fail "別的專案裝過不算，應 install"
 rm "$STUB_STATE/claude-list"
 
 # ---------- 3) --shared：專案 scope 先 marketplace add 再 install；pi 不寫 ----------

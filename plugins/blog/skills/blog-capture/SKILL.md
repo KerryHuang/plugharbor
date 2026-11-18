@@ -5,7 +5,7 @@ description: 把目前 session 做的專案、POC 或小成就，整理成一份
 
 # 收 blog 素材
 
-在原本做事的 session 趁熱收素材：這裡最清楚使用者說過什麼、踩過什麼坑、為什麼這樣決定。文章之後在寫文章的 session（用 `write-post` skill）寫，這裡**不寫文章、不碰 blog repo、不 commit**。
+在原本做事的 session 趁熱收素材：這裡最清楚使用者說過什麼、踩過什麼坑、為什麼這樣決定。文章之後在寫文章的 session（用 `write-post` skill）寫，這裡**不寫文章、不碰 blog repo、不 commit**；存好後自動開那個 session 接手（第 5 步）。
 
 ## 1. 判斷是不是公司專案
 
@@ -67,6 +67,14 @@ description: 把目前 session 做的專案、POC 或小成就，整理成一份
 - 同名檔已存在就先讀，補充後另存成 `-v2`，不覆蓋。
 - 沒有 Google Drive connector（例如工具不存在或未授權）：把素材包內容完整貼在回覆裡，請使用者自己存或貼到寫文章的 session，**不要**改存到其他地方。
 
-## 5. 回報
+## 5. 交給寫文章的 session
 
-對呼叫你的人（通常是使用者；若你是 subagent 就回給主 session）一段話：素材包的 Drive 連結、建議題目、「還缺什麼」裡有幾題要使用者回答；公司專案另外列出已移除的資訊類型。最後提醒：要寫成文章時，到寫文章的 session 說「用 blog-inbox 的 <檔名> 寫文章」。
+存好就直接交接，不必等使用者開口。你是 subagent 就跳過這步，把第 6 步的回報交給主 session 處理。
+
+1. 找寫文章的專案：`python3 "${CLAUDE_PLUGIN_ROOT}/skills/blog-capture/scripts/find_blog_project.py"`，它會印出 JSON 陣列，列出 Claude Code 記錄過、且有 `.claude/rules/posts.md` 的專案。找到 1 個就用它；多個就用 AskUserQuestion 問一次要用哪個；0 個就跳到第 6 步，只提醒使用者自己去開。
+2. 開新 session：有裝 toolkit 而且在 herdr／Herdr.app 內，就照 `toolkit:agent-dispatch` 的長任務模式，在那個專案開一個 claude worker（模型照它查表，類型是 docs；文章要公開，可以升一級，回報寫升級理由）。不帶結果檔的 env，也不要求它回報，因為接下來是使用者直接跟它對話。不符合這些條件，就跳到第 6 步提醒使用者。
+3. 送出交接 prompt：開頭是「用 blog-inbox 的 <檔名> 寫文章。」，接著寫已經定的事（建議主軸、還沒確認不能寫的內容、已經排除的資訊類型），並寫明「使用者就在這個 pane，commit、push 前要先經他同意」。送出後讀一次畫面，確認它開始工作。
+
+## 6. 回報
+
+對呼叫你的人（通常是使用者；若你是 subagent 就回給主 session）一段話：素材包的 Drive 連結、建議題目、「還缺什麼」裡有幾題要使用者回答；公司專案另外列出已移除的資訊類型。第 5 步交接成功，就說明寫文章的 session 開在哪裡；沒交接，就提醒使用者到寫文章的 session 說「用 blog-inbox 的 <檔名> 寫文章」，並寫明沒交接的原因。

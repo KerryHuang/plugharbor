@@ -35,7 +35,7 @@
 | ui-ux | 設計新畫面、風格系統、版面與互動規範 |
 | blog | 部落格寫作流程 |
 
-要確認清單與現況是否一致，讀 `plugins/*/.claude-plugin/plugin.json` 的 description。user 層的 plugin（toolkit、research、browser-docs、workspace）不在這裡裝，install-project.sh 會 SKIP。
+要確認清單與現況是否一致，讀 `plugins/*/.claude-plugin/plugin.json` 的 description。user 層的 plugin（toolkit、research、browser-docs、workspace、blog）不在這裡裝，install-project.sh 會 SKIP。
 
 ## 4. plugharbor 安裝
 

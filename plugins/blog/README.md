@@ -7,13 +7,13 @@
 
 ```bash
 claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
-claude plugin install blog@plugharbor
+claude plugin install blog@plugharbor --scope user
 ```
 
 ## Skills
 
 | Skill | 用途 |
 |-------|------|
-| `blog-capture` | 在做事的 session 趁熱把專案或成果整理成素材包，存到 Google Drive 的 `blog-inbox/`（需 Google Drive connector；沒有就把素材包貼在回覆裡）。公司專案會先去識別化。 |
+| `blog-capture` | 在做事的 session 趁熱把專案或成果整理成素材包，存到 Google Drive 的 `blog-inbox/`（需 Google Drive connector；沒有就把素材包貼在回覆裡）。公司專案會先去識別化。存好後，在 herdr／Herdr.app 內會自動到有 `.claude/rules/posts.md` 的專案開 session 接手（需 toolkit）。 |
 | `write-post` | 定題（一次問一題）、蒐集素材、寫白話初稿、檢查、交稿。 |
 | `publish-check` | 使用者說發布、上線文章時：commit 乾淨、個資掃描、build、同步遠端、上線後驗證。 |

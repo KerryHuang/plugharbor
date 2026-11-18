@@ -163,11 +163,11 @@ OUT="$(run "$H")" || fail "沒有 herdr 時 exit 非 0"
 echo "$OUT" | grep -q '^SKIP: herdr' || fail "沒有 herdr 應印 SKIP: herdr"
 mv "$TMP/herdr.off" "$STUB/herdr"
 
-# ---------- 8) 預設只裝 user 層 4 個 ----------
+# ---------- 8) 預設只裝 user 層 5 個 ----------
 H="$TMP/h4"; mkdir -p "$H"; : > "$STUB_LOG"
 PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
-[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 4 ] || fail "預設應只裝 user 層 4 個：$(grep '^claude plugin install ' "$STUB_LOG")"
-for p in toolkit research browser-docs workspace; do
+[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 5 ] || fail "預設應只裝 user 層 5 個：$(grep '^claude plugin install ' "$STUB_LOG")"
+for p in toolkit research browser-docs workspace blog; do
   grep -qx "claude plugin install $p@plugharbor --scope user" "$STUB_LOG" || fail "預設應裝 user 層 $p"
 done
 if grep -q '^claude plugin install lifecycle' "$STUB_LOG"; then fail "專案層 lifecycle 不該裝到 user 層"; fi
@@ -258,7 +258,7 @@ export STUB_STATE="$TMP/state"
 bash "$REPO_DIR/setup/tests/lib/stub-cli.sh" "$STUB" "$TOOLS" pi
 export STUB_STATE="$TMP/state-proj"; mkdir -p "$STUB_STATE"
 echo '[{"name": "plugharbor", "source": "git"}]' > "$STUB_STATE/claude-mkt"
-printf '[{"id": "lifecycle@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "blog@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "ui-ux@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
+printf '[{"id": "lifecycle@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "discovery@plugharbor", "version": "1.0.0", "scope": "user"},\n {"id": "ui-ux@plugharbor", "version": "1.0.0", "scope": "local", "projectPath": "/p"}]\n' > "$STUB_STATE/claude-list"
 {
   echo 'Marketplace `plugharbor`'
   echo "lifecycle@plugharbor   installed, enabled  1.0.0    $REPO_DIR/plugins/lifecycle"
@@ -269,14 +269,14 @@ H="$TMP/h11"; mkdir -p "$H/.pi/agent"
 python3 -c 'import json,os,sys;h,r=sys.argv[1],sys.argv[2];d=os.path.join(h,".pi/agent");json.dump({"packages":["npm:keep-me",os.path.relpath(os.path.join(r,"plugins/lifecycle"),d).replace(os.sep,"/"),os.path.relpath(os.path.join(r,"plugins/toolkit"),d).replace(os.sep,"/")]},open(os.path.join(d,"settings.json"),"w"))' "$H" "$REPO_DIR"
 cp "$H/.pi/agent/settings.json" "$TMP/pi-before"
 OUT="$(run "$H" --check)" || [ $? -eq 3 ] || fail "--check exit 不是 0／3"
-for x in "claude lifecycle" "claude blog" "codex lifecycle" "agy lifecycle" "pi lifecycle"; do
+for x in "claude lifecycle" "claude discovery" "codex lifecycle" "agy lifecycle" "pi lifecycle"; do
   echo "$OUT" | grep -q "STALE: ${x}（專案層" || fail "--check 應報 STALE: ${x}：$OUT"
 done
 cmp -s "$H/.pi/agent/settings.json" "$TMP/pi-before" || fail "--check 不該改 pi settings"
 : > "$STUB_LOG"
-OUT="$(PLUGINS="toolkit research blog" run "$H")" || fail "移除專案層 exit 非 0：$OUT"
+OUT="$(PLUGINS="toolkit research discovery" run "$H")" || fail "移除專案層 exit 非 0：$OUT"
 grep -qx 'claude plugin uninstall lifecycle@plugharbor --scope user' "$STUB_LOG" || fail "claude 應移除 user 層 lifecycle"
-if grep -q 'claude plugin uninstall blog' "$STUB_LOG"; then fail "PLUGHARBOR_PLUGINS 指定的 blog 不該移除"; fi
+if grep -q 'claude plugin uninstall discovery' "$STUB_LOG"; then fail "PLUGHARBOR_PLUGINS 指定的 discovery 不該移除"; fi
 if grep -q 'uninstall ui-ux' "$STUB_LOG"; then fail "local scope 的 ui-ux 不該動"; fi
 grep -qx 'codex plugin remove lifecycle@plugharbor' "$STUB_LOG" || fail "codex 應移除 lifecycle"
 if grep -q 'codex plugin remove ui-ux' "$STUB_LOG"; then fail "codex 沒裝的 ui-ux 不該移除"; fi
@@ -346,10 +346,10 @@ if grep -q '^claude plugin \(install\|update\) toolkit' "$STUB_LOG"; then fail "
 OUT="$(run "$TMP/h15" --check)" || [ $? -eq 3 ] || fail "無對照 --check exit 不是 0／3"
 if echo "$OUT" | grep -q '^RENAME:'; then fail "沒有對照不該印 RENAME：$OUT"; fi
 # 新名是專案層：訊息要指向 install-project.sh，不能說「新名照常安裝」
-printf '[{"id": "old-blog@plugharbor", "version": "0.9.0", "scope": "user"}]\n' > "$STUB_STATE/claude-list"
-OUT="$(PLUGHARBOR_RENAMES="old-blog:blog" run "$TMP/h15" --check)" || [ $? -eq 3 ] || fail "專案層改名 --check exit 不是 0／3"
-echo "$OUT" | grep -q '^RENAME: claude old-blog → blog.*install-project.sh' || fail "專案層新名應指向 install-project.sh：$OUT"
-if echo "$OUT" | grep -q '^RENAME: claude old-blog.*照常安裝'; then fail "專案層新名不該說照常安裝：$OUT"; fi
+printf '[{"id": "old-discovery@plugharbor", "version": "0.9.0", "scope": "user"}]\n' > "$STUB_STATE/claude-list"
+OUT="$(PLUGHARBOR_RENAMES="old-discovery:discovery" run "$TMP/h15" --check)" || [ $? -eq 3 ] || fail "專案層改名 --check exit 不是 0／3"
+echo "$OUT" | grep -q '^RENAME: claude old-discovery → discovery.*install-project.sh' || fail "專案層新名應指向 install-project.sh：$OUT"
+if echo "$OUT" | grep -q '^RENAME: claude old-discovery.*照常安裝'; then fail "專案層新名不該說照常安裝：$OUT"; fi
 
 # ---------- 22) 正式對照 dev-flow → workspace：workspace 已是最新，四個 CLI 只卸 dev-flow、不重裝 workspace ----------
 case " $(bash -c '. "$1/setup/lib.sh"; echo $PH_USER_PLUGINS' _ "$REPO_DIR") " in *" dev-flow "*) fail "PH_USER_PLUGINS 不該含 dev-flow" ;; esac

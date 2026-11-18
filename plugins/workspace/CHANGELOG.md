@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.19.2] - 2026-11-18
+
+- docs(project-setup)：`skills/project-setup/references/flow.md` 的 user 層清單加上 blog（見 blog 0.2.0）。
+
 ## [1.19.1] - 2026-11-17
 
 起因：自動駕駛一段約 2200 行後端工作花約 5 小時（設計已很細仍另寫計畫再審、每個子單元走全套審查與 CI）；跨家族審查指出 1.19.0 的免計畫與續派原實作者規則沒有接通其他流程。
