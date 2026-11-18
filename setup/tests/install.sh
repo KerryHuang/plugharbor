@@ -49,6 +49,10 @@ cat > "$STUB_STATE/herdr-list" <<'EOF'
 - kerry.sidebar (Sidebar) enabled [local:/old/claude-home/herdr/plugins/sidebar]
   config: /x/kerry.sidebar
 EOF
+# codex 對快取整個目錄算 hook 信任 hash：重裝前要清掉來源的 .pytest_cache、.DS_Store，不然會被複製過去
+JUNK="$REPO_DIR/plugins/research"
+trap 'rm -rf "$TMP" "$JUNK/.pytest_cache" "$JUNK/skills/.pytest_cache"; rm -f "$JUNK/.DS_Store"' EXIT
+mkdir -p "$JUNK/.pytest_cache/v" "$JUNK/skills/.pytest_cache"; : > "$JUNK/.DS_Store"
 : > "$STUB_LOG"
 OUT="$(run "$H")" || fail "install exit 非 0：$OUT"
 C="$H/.claude"
@@ -93,6 +97,7 @@ if grep -q 'codex plugin marketplace upgrade' "$STUB_LOG"; then fail "codex 本�
 grep -q 'my-codex-stop' "$H/.codex/hooks.json" || fail "Codex hooks.json 使用者的條目被移除"
 ls "$C"/backups/plugharbor-*/codex/hooks.json >/dev/null 2>&1 || fail "Codex hooks.json 改動前未備份"
 echo "$OUT" | grep -q 'UP-TO-DATE: codex toolkit' || fail "codex 版號相同應印 UP-TO-DATE"
+[ ! -e "$JUNK/.pytest_cache" ] && [ ! -e "$JUNK/skills/.pytest_cache" ] && [ ! -e "$JUNK/.DS_Store" ] || fail "codex 重裝前未清掉來源的 .pytest_cache／.DS_Store"
 if grep -q "codex plugin marketplace add" "$STUB_LOG"; then fail "codex 已有 plugharbor marketplace 不該再 add"; fi
 if grep -q "agy plugin install $REPO_DIR/plugins/toolkit" "$STUB_LOG"; then fail "agy 版號相同（CRLF 輸出）不該重裝 toolkit"; fi
 grep -qx "agy plugin install $REPO_DIR/plugins/research" "$STUB_LOG" || fail "agy 未安裝 research"

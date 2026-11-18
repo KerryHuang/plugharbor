@@ -387,8 +387,13 @@ if command -v codex >/dev/null 2>&1; then
   if ! printf '%s\n' "$out" | ph_codex_has_marketplace; then
     if [ "$CHECK" -eq 1 ]; then note_diff "MISSING: codex marketplace plugharbor"; else run codex plugin marketplace add "$REPO_DIR"; fi
   fi
+  # codex 把來源目錄整個複製進快取並算 hook 信任 hash（只略過 __pycache__ 等）；殘留的 .pytest_cache、.DS_Store 會讓信任失效
+  codex_add() {
+    find "$REPO_DIR/plugins/$1" \( -name .pytest_cache -type d -prune -exec rm -rf {} + \) -o \( -name .DS_Store -type f -exec rm -f {} + \)
+    codex plugin add "$1@plugharbor"
+  }
   for p in $PLUGINS; do
-    sync_plugin codex "$p" "$(printf '%s\n' "$out" | ph_codex_ver "$p")" codex plugin add "$p@plugharbor"
+    sync_plugin codex "$p" "$(printf '%s\n' "$out" | ph_codex_ver "$p")" codex_add "$p"
   done
   # marketplace 移除舊名後 plugin list 就不列它，但 config.toml 的登記與快取還在
   codex_cfg="${CODEX_HOME:-$HOME/.codex}/config.toml"
