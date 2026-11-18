@@ -7,6 +7,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" agent-model-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" agent-model-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -17,6 +18,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -27,6 +29,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" ask-question-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" ask-question-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -37,6 +40,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-track.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-track.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -47,6 +51,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-landing.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-landing.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -59,6 +64,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" loop-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" loop-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -71,6 +77,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/notification.sh\" notify",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\bash.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\bash.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\bash.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/notification.sh\" notify; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -83,6 +90,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/notification.sh\"",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\bash.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\bash.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\bash.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/notification.sh\"; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -93,6 +101,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" context-size-reminder.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" context-size-reminder.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -103,6 +112,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" reply-language-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" reply-language-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -113,6 +123,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" dispatch-stop-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" dispatch-stop-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -123,6 +134,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" herdr-tab-title.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" herdr-tab-title.py; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -135,6 +147,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" auto-session-title.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" auto-session-title.py; exit $LASTEXITCODE",
             "timeout": 10,
             "statusMessage": "自動命名 session…"
           }
@@ -146,6 +159,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" feedback-capture.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" feedback-capture.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -156,6 +170,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" loop-guard.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" loop-guard.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -166,6 +181,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" disabled-skills.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" disabled-skills.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -176,6 +192,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-track.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-track.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -188,16 +205,19 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" herdr-env-context.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" herdr-env-context.py; exit $LASTEXITCODE",
             "timeout": 5
           },
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" disabled-skills.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" disabled-skills.py; exit $LASTEXITCODE",
             "timeout": 5
           },
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-context.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-context.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -208,11 +228,13 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" feedback-reminder.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" feedback-reminder.py; exit $LASTEXITCODE",
             "timeout": 5
           },
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" retro-due-reminder.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" retro-due-reminder.py; exit $LASTEXITCODE",
             "timeout": 10
           }
         ]
@@ -223,6 +245,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" compact-context.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" compact-context.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -235,6 +258,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" rm-scratch-allow.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" rm-scratch-allow.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -247,6 +271,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-track.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-track.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]
@@ -257,6 +282,7 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" send-retry-hint.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" send-retry-hint.py; exit $LASTEXITCODE",
             "timeout": 5
           }
         ]

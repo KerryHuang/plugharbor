@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Cross-platform notification hook for Claude Code（Stop hook：完工桌面通知＋音效）
 # macOS: afplay + osascript / Linux: paplay|aplay + notify-send / Windows(Git Bash): PowerShell toast
+# Windows 的 Codex 經 hooks.json 的 commandWindows 找 Git Bash 執行本檔（裸 bash 是 WSL）；本檔必須是 LF（.gitattributes）。
 # 契約：純通知用途，任何失敗都不得影響主流程——永遠 exit 0。
 
 # 在 herdr pane（TUI）裡由 herdr 自己的 toast 接手（herdr config 的 [ui.toast]）；Herdr.app 比照 TUI 不發，app 是否自帶通知未驗證：

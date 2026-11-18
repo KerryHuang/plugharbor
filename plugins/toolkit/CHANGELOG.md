@@ -2,6 +2,14 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.28.1] - 2026-11-18
+
+起因：Windows 桌機的 Codex 0.169.1 每次問答都出現 14 個 `Hook failed / hook exited with code 1`（2026-11-18 實測）。Windows 的 Codex 經 PowerShell 跑 hook，PATH 上沒有 `sh`（Git 的 sh.exe 沒加進 PATH）；`bash` 解析成 WSL，讀不到 `C:/` 路徑。另外 Windows clone 預設 `core.autocrlf=true`，`run-py.sh` 變 CRLF 後找不到腳本，就算找到 sh 也會靜默不跑。
+- fix(hooks)：`hooks.json` 每條 hook 加 `commandWindows`（PowerShell 5.1 相容）：UTF-8 讀 stdin，依序找 Git for Windows 的 `sh.exe`（`notification.sh` 找 `bash.exe`），找不到一律 exit 0（fail-open，同 `run-py.sh`）。Codex 在 Windows 只跑這個欄位，Claude Code 不受影響。做法照 sdlc plugin 已在 Windows 驗證過的 `codex-hooks.json`。
+- fix：repo 根新增 `.gitattributes`（`*.sh text eol=lf`）；`run-py.sh`、`notification.sh` 更新註解，讓既有 Windows clone pull 後以 LF 重新取出。
+- test：`hooks/tests/test_hooks_windows.py`：每條 `commandWindows` 都等於樣板、bash 腳本用 Git Bash、`.sh` 無 CR；Windows 上另外實跑（python hook 有輸出、通知 exit 0、找不到 sh 時 fail-open）。
+- test：`test_agent_model_guard.py` 的 python hook 數量 23 → 24（0.28.0 新增 `herdr-tab-title.py` 時漏改，HEAD 上就已失敗）。
+
 ## [0.28.0] - 2026-11-18
 
 起因：改用 Herdr.app 後，分頁名稱固定是「Claude Code」或編號，不跟 Claude 的 session 標題（內建 ai-title、`auto-session-title` 套用的 /rename）走，看起來像沒在改名；標題其實有寫進 terminal title（`hc get` 查得到），只是 Herdr.app 分頁不顯示。
