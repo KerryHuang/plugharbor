@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.30.0] - 2026-11-19
+
+起因：Formwright 自動駕駛期間兩筆 skill 摩擦回饋（2026-11-19）。
+- feat(tower)：`takeoff --proxy` 代管航班。主控替 Agent tool subagent 登記時，subagent 不送心跳，航班 30 分鐘後被判 lost，與真斷線分不出來；代管航班只在 worktree 不存在時才算 lost，radar 標 `flying*`。SKILL.md 寫明收尾用 `release --id`。測試 `test_proxy_flight_not_lost_by_stale_beat`。
+- fix(agent-dispatch)：ask.mjs 對 codex 的最終答案另存 `.answer.md`，stdout 指向它；SKILL.md 寫明 `.out.md` 是整段執行紀錄（可達數百 KB）、重讀結論讀 `.answer.md`。原本只印答案、紀錄存 `.out.md`，但說明只寫「全文在 .out.md」，主控去讀 400KB 的紀錄。
+- 刪減候選：兩處皆為增量一行，tower 已知限制與 agent-dispatch 判讀段逐條看過，沒有可合併的重複項。
+
 ## [0.29.1] - 2026-11-18
 
 起因：無人值守中收到 subagent 交回，`disabled-skills.py` 的 UserPromptSubmit 因內文提到 migration 要求用 AskUserQuestion 問啟用 database:migration，但那不是使用者訊息、使用者已睡（2026-11-18）。

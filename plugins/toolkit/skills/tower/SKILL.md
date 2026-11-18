@@ -28,6 +28,7 @@ tower.py takeoff --goal "<一句話目標>" --paths <預計會改的路徑或 gl
 - `--paths` 寫預計範圍，寧可略寬；可重複給，目錄代表其下全部；範圍外的改動落地時會被 land-check 擋（退出碼 10）。
 - 無人值守執行時加 `--mode unattended`。
 - 此 worktree 已有航班時退出碼 2，stdout 印既有航班 id；沿用它，不重複登記。
+- 主控替 Agent tool subagent 登記（subagent 不送心跳）：在該 worktree 內加 `--proxy`，航班不因沒心跳判 `lost`（radar 標 `flying*`，worktree 不在了才算 lost）；收尾由主控 `release --id <航班 id>`（id 看 takeoff 輸出或 radar），忘了釋放就會一直算活的。
 - 輸出 JSON：`id`、`overlaps`（與他班的重疊）、`warnings`（如 feature.md 標 🚧 卻沒有活航班）。
 
 ### 2. 看到重疊：只提醒，由使用者選
@@ -80,7 +81,7 @@ shared:
 
 | 指令 | 用途 |
 |---|---|
-| `takeoff` | 登記；退出碼 2 = 已有航班 |
+| `takeoff [--proxy]` | 登記；退出碼 2 = 已有航班；`--proxy` 代管（無心跳也不 lost） |
 | `amend` | 改目標或範圍 |
 | `beat [--touched <檔>...]` | 手動心跳與記錄改動，輸出目前的重疊 |
 | `radar [--json]` | 全部航班 |

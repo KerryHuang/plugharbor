@@ -269,6 +269,20 @@ class TowerTest(unittest.TestCase):
         states = {f["id"]: f["state"] for f in json.loads(r.stdout)}
         self.assertEqual(states[self.B], "lost")
 
+    def test_proxy_flight_not_lost_by_stale_beat(self):
+        # 起因：主控替 subagent 代管航班，subagent 不送心跳，30 分鐘後被判 lost
+        old = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat(timespec="seconds")
+        r = self.run_cli(self.repo, "takeoff", "--goal", "g", "--paths", "a.py", "--proxy")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        fid = json.loads(r.stdout)["id"]
+        f = self.flight(fid)
+        self.assertTrue(f["proxy"])
+        f["beat"] = old
+        self.assertFalse(tower.is_lost(f, datetime.now(timezone.utc)))
+        f["proxy"] = False
+        self.assertTrue(tower.is_lost(f, datetime.now(timezone.utc)))
+        self.assertIn(fid + "  flying*", self.run_cli(self.repo, "radar").stdout)
+
     def test_missing_worktree_is_lost(self):
         f = self.fake(self.B)
         f["worktree"] = str(self.repo.parent / "gone")

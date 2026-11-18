@@ -208,7 +208,9 @@ def is_lost(f, now):
         return True
     if beat.tzinfo is None:
         beat = beat.replace(tzinfo=timezone.utc)
-    return now - beat > LOST_AFTER or not os.path.isdir(f.get("worktree") or "")
+    if not os.path.isdir(f.get("worktree") or ""):
+        return True
+    return now - beat > LOST_AFTER and not f.get("proxy")  # 代管航班（subagent 不送心跳）只看 worktree 還在不在
 
 
 def _path_hits(a, b):
@@ -481,7 +483,7 @@ def cmd_takeoff(args):
         "session": args.session or os.environ.get("CLAUDE_SESSION_ID", ""),
         "cli": args.cli, "host": host_hash(),
         "mode": args.mode, "started": t, "beat": t,
-        "overrides": [], "state": "flying",
+        "overrides": [], "state": "flying", "proxy": bool(args.proxy),
     }
     save_flight(tdir, f)
     log_event(tdir, "takeoff", id=f["id"], goal=f["goal"])
@@ -531,7 +533,8 @@ def cmd_radar(args):
         print(json.dumps(flights, ensure_ascii=False, indent=2))
     else:
         for f in flights:
-            print(f"{f['id']}  {f['state']:<7} {f['branch']}  {f['goal']}")
+            tag = f"{f['state']}{'*' if f.get('proxy') else ''}"
+            print(f"{f['id']}  {tag:<7} {f['branch']}  {f['goal']}")
     return 0
 
 
@@ -594,6 +597,7 @@ def build_parser():
     p.add_argument("--mode", default="")
     p.add_argument("--session")
     p.add_argument("--cli", default="claude")
+    p.add_argument("--proxy", action="store_true")
     p = add("amend", cmd_amend)
     p.add_argument("--goal")
     p.add_argument("--paths", action="extend", nargs="+")

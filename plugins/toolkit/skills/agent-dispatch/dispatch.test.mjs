@@ -248,6 +248,9 @@ test('ask：codex 只回最後答案，執行紀錄另存（產品化 session 20
   assert.doesNotMatch(r.stdout, /hook log/)
   assert.match(r.stdout, /執行紀錄 \d+ 字元，見 .*p\.md\.out\.md/)
   assert.match(readFileSync(`${r.prompt}.out.md`, 'utf8'), /hook log/)
+  const ans = readFileSync(`${r.prompt}.answer.md`, 'utf8')
+  assert.match(ans, /final answer/)
+  assert.doesNotMatch(ans, /hook log/)
 })
 
 test('buildArgs：codex 給 lastFile 時加 -o，仍在 prompt 之前', () => {

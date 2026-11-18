@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 派工短問答：把 prompt 檔交給另一個 agent CLI 以唯讀模式跑一輪。
 // 對象：--to 指定，或 --type／--tier 查 ../references/routing.json 依序挑；額度用盡就封鎖該家、改派下一家。
-// 第一行固定印「[ask] 交給 <cli>（<模型>／<等級>），理由：…」；輸出超過 16000 字元時全文寫進結果檔，只印摘要。
+// 第一行固定印「[ask] 交給 <cli>（<模型>／<等級>），理由：…」；輸出超過 16000 字元時全文寫進結果檔，只印摘要；codex 另把最終答案存 *.answer.md。
 // exit：目標 CLI 的 exit code；逾時（含無輸出逾時）124；PATH 上找不到 127；用法錯誤 2；所有候選都不能用 75。
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -89,8 +89,9 @@ async function main(argv) {
     const out = o.out ?? `${file}.out.md`
     console.log(`[ask] 交給 ${c.cli}（${c.model ?? '預設模型'}／${c.effort ?? '預設等級'}），理由：${reason}`)
     if (last) {  // 有獨立的最後答案：只印答案，執行紀錄存檔備查
-      writeFileSync(out, r.out)
-      process.stdout.write(`${summarize(last, 16000, 4000, out)}\n\n（執行紀錄 ${r.out.length} 字元，見 ${out}）\n`)
+      const ans = `${out.replace(/(\.out)?\.md$/, '')}.answer.md`  // 答案另存一檔，要重讀答案讀它，不讀整份執行紀錄
+      writeFileSync(out, r.out); writeFileSync(ans, last)
+      process.stdout.write(`${summarize(last, 16000, 4000, ans)}\n\n（最終答案全文見 ${ans}；執行紀錄 ${r.out.length} 字元，見 ${out}，不要整份讀）\n`)
     } else {
       if (r.out.length > 16000 || r.timedOut) writeFileSync(out, r.out)
       process.stdout.write(summarize(r.out, 16000, 4000, out))
