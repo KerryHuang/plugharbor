@@ -119,7 +119,7 @@ S4 拒產張數寫備註——不記就看不出趨勢。歷次紀錄與好模�
 
 ### S2a 實機探索（`manual-explorer`，mode=explore）
 
-先確認 chrome-devtools MCP 就緒：`list_pages` 要能回、且 MCP 以 `--isolated` 註冊；不通就停，請使用者改用 `npx -y chrome-devtools-mcp@latest --isolated` 註冊後重啟 session（有裝 browser-docs 的話，`browser-docs:live-drive` 起手的檢查步驟會跑 doctor 並印出各 CLI 的標準寫法）。
+先確認 chrome-devtools MCP 就緒：`list_pages` 要能回、且 MCP 以 `--isolated` 註冊；不通就停，請使用者改用 `npx -y chrome-devtools-mcp@latest --isolated --redact-network-headers` 註冊後重啟 session（有裝 browser-docs 的話，`browser-docs:live-drive` 起手的檢查步驟會跑 doctor 並印出各 CLI 的標準寫法）。
 
 > **瀏覽器工具**：agent 固定 `chrome-devtools`（`--isolated`）；`claude-in-chrome` 只給主 session
 > 人機互動，有裝 browser-docs 可參考它的 browser-tooling.md。截圖要**指定檔名**、**fullPage**、精確視窗尺寸。

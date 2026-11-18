@@ -43,7 +43,7 @@ color: yellow
    工具參數寫法：`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加。
 4. 回傳必含一行 `viewport：emulate 1680x1000x2 → 實讀 [w, h, dpr]；分頁已關：true/false`；帳號密碼絕不寫進輸出檔與回傳（含「登入用 帳號/密碼 成功」這種順口交代），只寫「登入成功／失敗」。漏了第 4 條，這次派工即為未完成。
 
-isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 一律以 `--isolated` 註冊（`npx -y chrome-devtools-mcp@latest --isolated`）；連不上就停下回報，由主 session 請使用者改註冊。
+isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 一律以 `--isolated` 註冊（`npx -y chrome-devtools-mcp@latest --isolated --redact-network-headers`）；連不上就停下回報，由主 session 請使用者改註冊。
 </law>
 
 ## 輸入（派工 prompt 給）

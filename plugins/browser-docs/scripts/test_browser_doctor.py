@@ -13,6 +13,18 @@ class Registration(unittest.TestCase):
         r = doctor.check_codex_args(["/c", "npx", "chrome-devtools-mcp@latest", "--autoConnect", "--channel=stable"])
         self.assertIn("--isolated", r)
 
+class Redact(unittest.TestCase):
+    def test_missing_redact_warns(self):
+        r = doctor.redact_warning(["-y", "chrome-devtools-mcp@latest", "--isolated"])
+        self.assertIn("--redact-network-headers", r)
+    def test_with_redact_no_warning(self):
+        self.assertIsNone(doctor.redact_warning(["-y", "chrome-devtools-mcp@latest", "--isolated", "--redact-network-headers"]))
+    def test_missing_registration_no_warning(self):
+        self.assertIsNone(doctor.redact_warning("MISSING"))
+        self.assertIsNone(doctor.redact_warning(None))
+    def test_missing_redact_still_passes_check(self):
+        self.assertIsNone(doctor.check_claude_args(["-y", "chrome-devtools-mcp@latest", "--isolated"]))
+
 class Version(unittest.TestCase):
     def test_floor(self):
         self.assertTrue(doctor.version_ok("1.9.0"))

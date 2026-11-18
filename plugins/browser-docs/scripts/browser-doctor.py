@@ -6,8 +6,8 @@ stdout 單行 OK / FAIL <原因>；exit 0 / 1。順便清殘留暫存 profile �
 import argparse, json, os, pathlib, re, shutil, subprocess, sys, tempfile
 sys.stdout.reconfigure(encoding="utf-8")
 
-STD_CLAUDE = '"command": "npx", "args": ["-y", "chrome-devtools-mcp@latest", "--isolated", "--viewport", "1680x1000"]（Windows: "command": "cmd", "args": ["/c", "npx", ...]）'
-STD_CODEX = 'codex mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated --viewport 1680x1000（Git Bash 前加 MSYS_NO_PATHCONV=1）'
+STD_CLAUDE = '"command": "npx", "args": ["-y", "chrome-devtools-mcp@latest", "--isolated", "--redact-network-headers", "--viewport", "1680x1000"]（Windows: "command": "cmd", "args": ["/c", "npx", ...]）'
+STD_CODEX = 'codex mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated --redact-network-headers --viewport 1680x1000（Git Bash 前加 MSYS_NO_PATHCONV=1）'
 
 def _check(args, std):
     if args == "MISSING":
@@ -17,6 +17,12 @@ def _check(args, std):
     if "--isolated" not in args:
         return f"chrome-devtools 註冊缺 --isolated（現為 {' '.join(args)}）。標準：{std}"
     return None
+
+def redact_warning(args):
+    """缺遮罩旗標只警告、不判 FAIL：Authorization 等 header 會原樣進 agent 輸出。"""
+    if not isinstance(args, list) or "--redact-network-headers" in args:
+        return None
+    return "chrome-devtools 註冊缺 --redact-network-headers（Authorization 等 header 會原樣進 agent 輸出），建議補上"
 
 def check_claude_args(args): return _check(args, STD_CLAUDE)
 def check_codex_args(args): return _check(args, STD_CODEX)
@@ -119,6 +125,7 @@ def main():
     v = _pkg_version()
     if not version_ok(v): problems.append(f"chrome-devtools-mcp 版本 {v or '未知'} < 1.8.0（pageId 必填自 1.8.0 起）")
     problems = [p for p in problems if p]
+    warnings = list(dict.fromkeys(w for w in (redact_warning(claude_a), redact_warning(codex_a)) if w))
     # 清理（不影響 OK/FAIL）
     removed = 0
     for d in stale_profiles(tempfile.gettempdir(), _live_profile_dirs()):
@@ -130,7 +137,8 @@ def main():
     note = f"（清除殘留 profile {removed}、孤兒 server {killed}）"
     if problems:
         print("FAIL " + "；".join(problems) + note); sys.exit(1)
-    print("OK " + note); sys.exit(0)
+    warn = "".join(f"；WARN {w}" for w in warnings)
+    print("OK " + note + warn); sys.exit(0)
 
 if __name__ == "__main__":
     main()

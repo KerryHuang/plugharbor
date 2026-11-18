@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.2.2] - 2026-11-18
+
+- fix(skills): `operation-manual` 的 MCP 註冊提示改為 `--isolated --redact-network-headers`，和 browser-docs 0.3.6 的標準註冊一致。起因：2026-11-04 公司 workspace 跑 qa-sweep 時，`get_network_request` 把真的 `Authorization: Bearer` 原樣印進 agent 輸出；2026-11-18 用 chrome-devtools-mcp 1.13.0 實測，加這個旗標後 request／response headers 改由白名單遮罩，回應內文不遮。
+
 ## [1.2.1] - 2026-11-18
 
 起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。

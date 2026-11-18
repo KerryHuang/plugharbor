@@ -3,6 +3,10 @@
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
 
+## [0.3.6] - 2026-11-18
+
+- fix(references): `browser-setup.md` 的 Claude Code／Codex 標準註冊加上 `--redact-network-headers`，新增一節說明遮罩範圍（白名單，回應內文不遮）和要查 header 時的暫時做法。`browser-doctor.py` 缺這個旗標時在 OK 後面加 `WARN`，不判 FAIL；STD 提示同步更新、補測試。起因：2026-11-04 公司 workspace 跑 qa-sweep 時，`get_network_request` 把真的 `Authorization: Bearer` 原樣印進 agent 輸出；2026-11-18 用 chrome-devtools-mcp 1.13.0 實測，加這個旗標後 request／response headers 改由白名單遮罩，回應內文不遮。
+
 ## [0.3.5] - 2026-11-15
 
 - fix(references): `references/harness-terms.md` 的 pi 提問工具改為 `ask_user_question`（參數同 `AskUserQuestion`），沒有該工具或 `pi -p` 回 `no_ui` 時改純文字一次一題；lifecycle 副本同步。`pdf-converter` 的輸出位置改為「該功能規格所在目錄」，拿掉 FRD／SAD 與模組目錄的說法（lifecycle 3.0.0 已移除四份文件）。起因：2026-11-15 lifecycle 3.0.0 在 Formwright 用 pi 試用，模型照 harness-terms 找 `ask_user` 找不到；已安裝的 `rpiv-ask-user-question` 擴充註冊的是 `ask_user_question`，參數與 `AskUserQuestion` 同格式，舊寫法的 `title`／`allowMultiple` 對照也不存在。

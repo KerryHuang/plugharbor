@@ -9,23 +9,27 @@ session 結束自動消失。跨 session 的 profile lock／登入互踢／分�
 
 macOS／Linux：
 ```json
-{"command": "npx", "args": ["-y", "chrome-devtools-mcp@latest", "--isolated", "--viewport", "1680x1000"]}
+{"command": "npx", "args": ["-y", "chrome-devtools-mcp@latest", "--isolated", "--redact-network-headers", "--viewport", "1680x1000"]}
 ```
 
 Windows：
 ```json
-{"command": "cmd", "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--isolated", "--viewport", "1680x1000"]}
+{"command": "cmd", "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--isolated", "--redact-network-headers", "--viewport", "1680x1000"]}
 ```
 
 ## Codex — `~/.codex/config.toml`
 
 ```bash
 codex mcp remove chrome-devtools
-codex mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated --viewport 1680x1000
+codex mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated --redact-network-headers --viewport 1680x1000
 ```
 
 Windows Git Bash 前面加 `MSYS_NO_PATHCONV=1`（否則 `/c` 會被轉成 `C:/`），且 command 用 `cmd /c npx …`。
 Codex `exec` 非互動模式：`-s workspace-write`（approval on-request）下 MCP 呼叫不需 approval；`-s read-only` 會被 approval policy `never` 擋。
+
+## `--redact-network-headers`
+
+`get_network_request` 預設把 request／response headers 原樣輸出，Authorization 的 Bearer token 會進 agent 回報與 transcript（2026-11-04 曾實際發生）。這個旗標用白名單：不在白名單的 header 一律顯示 `<redacted>`（連 `sec-fetch-*`、`content-length` 也遮）；**回應內文不遮**，登入 API 回傳的 JWT 照樣外露，不要落檔或貼出登入回應內文。真要查 header 時，暫時拿掉旗標並重啟 session，查完改回來。doctor 缺旗標只警告、不判 FAIL。
 
 ## 改完之後
 
