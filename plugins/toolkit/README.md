@@ -23,6 +23,7 @@ claude plugin install toolkit@plugharbor
 | Stop | `context-size-reminder.py` | context 越過級距時提醒 |
 | PermissionRequest `Bash` | `rm-scratch-allow.py` | `rm` 的目標全在暫存區（session scratchpad、`.tmp/`、`.superpowers/`）、只串唯讀指令時自動核准，免得確認框讓無人值守卡住；其他照常跳確認 |
 | Stop | `reply-language-guard.py` | 使用者用中日韓文提問、這回合卻有整段英文回覆時擋下一次，要求用使用者的語言重述 |
+| Stop | `text-question-guard.py` | 回合以文字問句結尾、這回合又沒呼叫 AskUserQuestion 時擋下一次，要求改用 AskUserQuestion |
 | Stop | `dispatch-stop-guard.py` | 被派出的 worker（有 `AGENT_DISPATCH_RESULT`）沒寫結果檔就結束時擋下一次；herdr／Herdr.app 的 worker 另設 `AGENT_DISPATCH_INTERACTIVE=1`，還沒做完可直接再結束一次 |
 | UserPromptSubmit | `auto-session-title.py` | 套用上一回合建議的 session 標題，不覆寫手動命名 |
 | Stop | `herdr-tab-title.py` | Herdr.app 內把 session 標題同步成分頁名稱，不覆寫手動命名 |

@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.29.0] - 2026-11-18
+
+起因：user 層規則早寫「需要我決定的事一律用 AskUserQuestion」，跑 brainstorming 時 agent 仍照 skill 用一段文字一題一題問，使用者回「你怎麼沒用 AskUserQuestion 問我」（2026-11-12，feedback-review 回饋佇列）。同義條文已失效，改成機制。
+- feat(hooks)：新增 Stop hook `text-question-guard.py`：去掉程式碼與 inline code 後，回覆最後一段（略過「建議 session 標題」行）有一行以「？」或「?」結尾、且這回合沒呼叫 AskUserQuestion，就擋下一次，要求改用 AskUserQuestion 或把結尾改成陳述句。無人值守 worker（`AGENT_DISPATCH_UNATTENDED=1`）不管；`stop_hook_active` 時放行。以近 30 天 1481 個主 session 回合重播，擋下 8 次，抽查全是真的用文字問使用者，未見誤擋。
+- test：`hooks/tests/test_text_question_guard.py`（10 個）；`test_agent_model_guard.py` 的 python hook 數量 24 → 25。
+
 ## [0.28.2] - 2026-11-18
 
 起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。
