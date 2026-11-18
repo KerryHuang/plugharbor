@@ -48,7 +48,7 @@ class Base(unittest.TestCase):
         return path
 
     def run_raw(self, stdin=b"", args=(), extra_env=None):
-        env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+        env = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_PROJECT_DIR", "AGENT_DISPATCH_UNATTENDED")}
         env.update(HOME=str(self.home), **(extra_env or {}))
         return subprocess.run([sys.executable, str(HOOK), *args], input=stdin, env=env, capture_output=True, timeout=10)
 
@@ -192,6 +192,21 @@ class PromptMatch(Base):
         self.assertNotEqual(self.prompt("跑一次 e2e", session="s1"), "")
         self.assertEqual(self.prompt("再跑一次 e2e", session="s1"), "")
         self.assertNotEqual(self.prompt("跑一次 e2e", session="s2"), "")
+
+    def test_subagent_handback_does_not_ask(self):
+        self.disable()
+        ctx = self.prompt("<task-notification>\n<result>完成，跑一次 e2e</result>\n</task-notification>")
+        self.assertIn("browser-docs:live-drive", ctx)
+        self.assertIn("不要用 AskUserQuestion", ctx)
+        self.assertNotIn("用之前先用 AskUserQuestion 問使用者", ctx)
+
+    def test_unattended_env_does_not_ask(self):
+        self.disable()
+        payload = {"hook_event_name": "UserPromptSubmit", "cwd": str(self.cwd), "prompt": "跑一次 e2e", "session_id": "s9"}
+        p = self.run_raw(json.dumps(payload, ensure_ascii=False).encode("utf-8"), extra_env={"AGENT_DISPATCH_UNATTENDED": "1"})
+        ctx = json.loads(p.stdout.decode("utf-8"))["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("不要用 AskUserQuestion", ctx)
+        self.assertNotIn("用之前先用 AskUserQuestion 問使用者", ctx)
 
     def test_ignored_not_matched(self):
         self.disable()

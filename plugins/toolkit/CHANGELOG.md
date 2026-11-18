@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.29.1] - 2026-11-18
+
+起因：無人值守中收到 subagent 交回，`disabled-skills.py` 的 UserPromptSubmit 因內文提到 migration 要求用 AskUserQuestion 問啟用 database:migration，但那不是使用者訊息、使用者已睡（2026-11-18）。
+- fix(disabled-skills)：訊息以 `<task-notification` 開頭（subagent／背景工作交回）或 `AGENT_DISPATCH_UNATTENDED=1` 時，改提示「不要問、不要啟用，需要就記進回來報告待決」。
+- test：`test_disabled_skills.py` 新增兩個測試；`run_raw` 清掉環境變數 `AGENT_DISPATCH_UNATTENDED`，避免在無人值守 session 跑測試時誤判。
+
 ## [0.29.0] - 2026-11-18
 
 起因：user 層規則早寫「需要我決定的事一律用 AskUserQuestion」，跑 brainstorming 時 agent 仍照 skill 用一段文字一題一題問，使用者回「你怎麼沒用 AskUserQuestion 問我」（2026-11-12，feedback-review 回饋佇列）。同義條文已失效，改成機制。

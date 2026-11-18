@@ -44,16 +44,16 @@ description: Use when 使用者說「無人值守」「自動駕駛」「照 roa
 4. 修正：交回**原實作者**（續派沿用 context，附錯誤情境、通過條件、目前 SHA），修一輪；同一問題反覆誤解就換人診斷。一次審查加一輪修正是正常路徑的目標，不是上限：安全、權限、資料錯誤、公開契約的問題必修，修完逐項核對原發現；審出 🔴 的安全類修完再審一次。會改變使用者看得到的行為的建議，採用也可以，但記成主控裁決待確認。
 5. 閘門（專案）：背景跑，等通知，一次交付一次 CI。所有必要 job 通過才往下；首個失敗就通知診斷，不等全跑完。最終版與已驗證版的測試／建置輸入相同（只差文件）可沿用結果，細則見 `references/speed-rules.md`。
 6. 外洩掃描（專案，沒設定就略過）：只看筆數，必須全部是 0。
-7. 合併（專案）：設定檔在、但沒寫合併方式就用 fast-forward 推預設分支；落後就先 rebase 再重跑閘門。不用 merge commit、不 force push。有裝 `toolkit:tower` 先 `land-check`：10 → `override --kind scope --reason "<理由>"`；11 → 帳本記 `空檔：等航班 <id> 落地` 並做別的；12 → rebase、重跑閘門後重試；沒裝照舊。
+7. 合併（專案）：設定檔在、但沒寫合併方式就用 fast-forward 推預設分支；落後就先 rebase 再重跑閘門（重跑與否見 `references/speed-rules.md`「CI 證據」）。不用 merge commit、不 force push。有裝 `toolkit:tower` 先 `land-check`：10 → `override --kind scope --reason "<理由>"`；11 → 帳本記 `空檔：等航班 <id> 落地` 並做別的；12 → rebase、重跑閘門後重試；沒裝照舊。
 8. 部署（專案）：背景等通知；這次的變更不會觸發部署就不等。
 9. 實機驗證（專案）：照專案寫的方式驗這次動到的地方。
-10. 更新帳本與回來報告，有裝 `toolkit:tower`，確定單元已完成、要清 worktree 時才 `tower.py release`，再照 `worktree` 的移除流程清掉（沒做完、或有未 commit／未 push 的內容就保留 worktree 與分支且不 release，寫進報告），**接著做下一個工作單元**。做完一個就停是錯的：授權是一路推到使用者回來。
+10. 更新帳本與回來報告，有裝 `toolkit:tower`，確定單元已完成、要清 worktree 時才 `tower.py release`，再照 `worktree` 的移除流程清掉本地 worktree 與分支；遠端分支照專案設定「合併」寫的處理，沒寫就保留並列進報告，不自行 `push --delete`（沒做完、或有未 commit／未 push 的內容就保留 worktree 與分支且不 release，寫進報告），**接著做下一個工作單元**。做完一個就停是錯的：授權是一路推到使用者回來。
 
 長工作（閘門、部署、審查、worker）丟背景時，先挑空檔工作，沒有才等，不輪詢。每次在帳本記一行 `等待工作／SHA｜選定任務｜資源｜產出或暫停點`；選不到就寫具體阻塞（缺哪個前置、哪個衝突），不反覆抄「下一段相依」。依序挑：
 
 | 候選 | 條件 |
 |---|---|
-| 空檔來源的項目（待辦檔「近期可開工」、roadmap 近期段的前置、審查與報告留下的缺陷、flaky／CI 紀錄、文件落差；來源與欄位見 `references/speed-rules.md`） | 依賴已滿足；唯讀或文件類不吃 CPU、不改程式碼，永遠可做 |
+| 空檔來源的項目（開 worktree 動手前也照第 1 步 takeoff；沒登記，land-check 只回「沒有航班」等於沒檢查）（待辦檔「近期可開工」、roadmap 近期段的前置、審查與報告留下的缺陷、flaky／CI 紀錄、文件落差；來源與欄位見 `references/speed-rules.md`） | 依賴已滿足；唯讀或文件類不吃 CPU、不改程式碼，永遠可做 |
 | 另一個 worktree 實作別的單元 | 和進行中的單元沒有共用檔（專案設定的共用檔清單；同檔不同段落也算共用），重測試經 `scripts/test-lock.sh` 排隊 |
 | 改到同一批檔案的單元 | 不做，照順序 |
 

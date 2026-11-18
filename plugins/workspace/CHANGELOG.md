@@ -2,6 +2,13 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.20.3] - 2026-11-18
+
+起因：Formwright 自動駕駛期間記下的 6 筆 unattended 摩擦回饋（2026-11-18）。
+- docs(unattended)：SKILL.md 空檔表註明空檔項目動手前也要 takeoff（land-check 回「沒有航班」等於沒檢查）；第 10 步清 worktree 只含本地 worktree 與分支，遠端分支照專案設定「合併」、沒寫就保留列報告，不自行 `push --delete`；`project-config.md` 的「合併」節補「合併後遠端分支刪不刪」。
+- docs(autopilot)：排線的 tower 條目補「radar 只看得到有登記的 session，開工與合併前 `git fetch` 看預設分支有無帳本外的 commit」；佔位段新增「查證後發現功能早已實作」的處置（有證據才標完成，記待確認）；換新記帳的下一步不得與本檔規則衝突；換新啟動那一回合結尾附建議 session 標題。
+- docs(speed-rules)：CI 證據補 rebase／merge 帶入他人改動的沿用判準（檔案無交集、兩邊各自在同一基準通過）；專案設定更嚴時以專案為準。刪除與 SKILL.md 第 5 步重複的「首個失敗就通知診斷」一條作抵。
+
 ## [1.20.2] - 2026-11-18
 
 起因：Windows 桌機的 Herdr.app 終端跑 `mux.py env` 直接丟 `AttributeError: module 'socket' has no attribute 'AF_UNIX'`（`core_running()`，2026-11-18 重現），Windows 上所有經 mux.py 的派工都不能用。另外 `spawn` 用 `env -u …` 當 argv 前綴（Windows 沒有 `env`），`app_layout.py` import `fcntl`（Windows 沒有）。

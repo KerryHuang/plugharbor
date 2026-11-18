@@ -6,6 +6,7 @@
 - SessionStart：只注入一行名稱，細節寫進 ~/.claude/disabled-skills/<專案雜湊>.md。
 - UserPromptSubmit：使用者訊息命中停用 skill 的觸發詞（frontmatter `triggers` ∪ description「」片語）才注入，
   同 session 同一項只提示一次。
+  subagent 交回（<task-notification>）或 AGENT_DISPATCH_UNATTENDED=1 時沒人能答，改提示記進回來報告、不問。
 - `disabled-skills.py ignore <項目> --cwd <專案>`：使用者回「不要」時由 agent 呼叫，只在該專案忽略。
 只看明確的 false 與 skillOverrides "off"；從沒啟用的專案層 plugin 是刻意不裝，不列。任何錯誤都 fail-open。
 """
@@ -279,6 +280,11 @@ def asked(home, session_id):
     return path, set(seen if isinstance(seen, list) else [])
 
 
+def no_human(prompt):
+    """subagent／背景工作交回（<task-notification>）或無人值守 worker（AGENT_DISPATCH_UNATTENDED=1）：沒人能回答提問。"""
+    return os.environ.get("AGENT_DISPATCH_UNATTENDED") == "1" or prompt.lstrip().startswith("<task-notification")
+
+
 def on_prompt(home, cwd, prompt, session_id):
     if not isinstance(prompt, str) or not prompt.strip():
         return
@@ -291,6 +297,12 @@ def on_prompt(home, cwd, prompt, session_id):
         shown = {f"{s.plugin}:{s.name}" for _, s in hits}
         record.write_text(json.dumps(sorted(seen | shown), ensure_ascii=False), encoding="utf-8")
     lines = [f"- {s.plugin}:{s.name}：`{s.path}`；重開 `{i.fix}`；忽略 `{ignore_command(cwd, i.key)}`" for i, s in hits]
+    if no_human(prompt):
+        emit("UserPromptSubmit",
+             "[toolkit] 這則不是使用者訊息（subagent 交回或無人值守），沒人能回答提問：不要用 AskUserQuestion，不要啟用。"
+             "若確實需要下列停用的 plugharbor skill，記進回來報告的「待決」，附該 skill 名稱。\n"
+             + "\n".join(f"- {s.plugin}:{s.name}" for _, s in hits))
+        return
     emit("UserPromptSubmit",
          "[toolkit] 這則訊息可能用得上被停用的 plugharbor skill。用之前先用 AskUserQuestion 問使用者："
          "「用它並重開」（讀 SKILL.md 照做並跑重開指令）、「只這次用」（讀 SKILL.md 照做，不改設定）、"
