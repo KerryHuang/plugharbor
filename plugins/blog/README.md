@@ -7,7 +7,7 @@
 
 ```bash
 claude plugin marketplace add https://github.com/KerryHuang/plugharbor.git
-claude plugin install blog@plugharbor --scope user
+claude plugin install blog@plugharbor
 ```
 
 ## Skills

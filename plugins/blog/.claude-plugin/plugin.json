@@ -1,7 +1,7 @@
 {
   "name": "blog",
   "description": "部落格寫作流程——收素材（blog-capture）、寫白話初稿（write-post）、上線前檢查（publish-check）",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "KerryHuang"
   },

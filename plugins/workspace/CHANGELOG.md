@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.20.1] - 2026-11-18
+
+- docs(project-setup)：`skills/project-setup/references/flow.md` 的 user 層清單拿掉 blog（見 blog 0.2.1）。
+
 ## [1.20.0] - 2026-11-18
 
 - feat(unattended)：`skills/unattended/SKILL.md` 第 6 節「待決」：使用者答待決時明說以後都這樣的，寫一行進專案 `AGENTS.md` 相關段落（附日期），改口時改原條、不另加相反的；只對這次有效的只記帳本。放 AGENTS.md 而不另開 `docs/decisions.md`，是為了跟 lifecycle spec「不另開 decisions.md」一致，也讓四種 CLI 的每個 session 都讀得到（使用者 2026-11-18 裁決）。frontmatter description 不變。起因：重評 agent-autoloop v1.9.1（上游 `skills/agent-autoloop/SKILL.md:48`、commit 66a1d27，MIT，只借概念），使用者 2026-11-18 選擇現在採納；沒有事故佐證，屬借鏡。

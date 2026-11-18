@@ -2,6 +2,10 @@
 
 格式：每次改動 `skills/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.2.1] - 2026-11-18
+
+- chore：blog 退回專案層（撤回 0.2.0 的 user 層安裝）。起因：使用者 2026-11-18 決定保留 claude.ai 帳號層的個人版 blog-capture（claude.ai 對話也要用），兩份並存時 Claude Code 可能觸發到沒有自動交接的那份；改由個人版補上同樣的交接步驟。本 plugin 的 blog-capture 第 5 步保留，供只裝 plugharbor 的人使用。
+
 ## [0.2.0] - 2026-11-18
 
 - feat(blog-capture)：新增第 5 步「交給寫文章的 session」：存好素材包後，用 `skills/blog-capture/scripts/find_blog_project.py` 從 Claude Code 記錄過的專案中，找出有 `.claude/rules/posts.md` 的寫文章專案（不寫死路徑）；有 toolkit 而且在 herdr／Herdr.app 內時，用 `toolkit:agent-dispatch` 在那裡開 claude worker 並送出交接 prompt；條件不符就照舊提醒。附 `test_find_blog_project.py`。frontmatter description 不變。起因：使用者 2026-11-18 收完素材後要求直接接到寫文章的專案開新 session，並說「未來要自動化，不要每次都要提醒一次」。

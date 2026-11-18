@@ -163,11 +163,11 @@ OUT="$(run "$H")" || fail "沒有 herdr 時 exit 非 0"
 echo "$OUT" | grep -q '^SKIP: herdr' || fail "沒有 herdr 應印 SKIP: herdr"
 mv "$TMP/herdr.off" "$STUB/herdr"
 
-# ---------- 8) 預設只裝 user 層 5 個 ----------
+# ---------- 8) 預設只裝 user 層 4 個 ----------
 H="$TMP/h4"; mkdir -p "$H"; : > "$STUB_LOG"
 PLUGINS="" run "$H" >/dev/null || fail "預設 plugin 清單 install exit 非 0"
-[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 5 ] || fail "預設應只裝 user 層 5 個：$(grep '^claude plugin install ' "$STUB_LOG")"
-for p in toolkit research browser-docs workspace blog; do
+[ "$(grep -c '^claude plugin install ' "$STUB_LOG")" = 4 ] || fail "預設應只裝 user 層 4 個：$(grep '^claude plugin install ' "$STUB_LOG")"
+for p in toolkit research browser-docs workspace; do
   grep -qx "claude plugin install $p@plugharbor --scope user" "$STUB_LOG" || fail "預設應裝 user 層 $p"
 done
 if grep -q '^claude plugin install lifecycle' "$STUB_LOG"; then fail "專案層 lifecycle 不該裝到 user 層"; fi

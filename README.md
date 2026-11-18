@@ -3,7 +3,7 @@
 公開的 Claude Code plugin marketplace，也是 Claude Code、Codex、pi、agy 共用的 AI 工作模式唯一來源：plugin 加上 user 層設定（`setup/`）。
 只要 Claude Code 的 plugin 就走 marketplace；要 user 層設定或用其他 CLI，跑 `setup/install.sh`（各 CLI 差異見 [docs/agent-parity.md](./docs/agent-parity.md)）。
 
-plugin 分兩層：工具類（toolkit、research、browser-docs、workspace、blog）裝在 user 層，每個專案都有；其餘是專案層，用 `setup/install-project.sh` 依專案安裝。
+plugin 分兩層：工具類（toolkit、research、browser-docs、workspace）裝在 user 層，每個專案都有；其餘是專案層，用 `setup/install-project.sh` 依專案安裝。
 
 ## 安裝
 
@@ -29,7 +29,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 `bootstrap.sh` 只管 plugharbor 本身；認證或機器特定的項目刻意不管，照順序手動做：
 
 1. **前置**：Git（Windows 用 Git for Windows，下列指令在 Git Bash 執行）；Python 3（toolkit 所有 hook 含 guard、pi packages 註冊與 `settings.json` 合併都需要；沒有的話 install.sh 會 WARN，但 hook 會靜默放行、guard 形同沒有，務必先裝）；Node（可選，Codex／pi／agy 的 user 層副本需要）；各 CLI 本身（Claude Code、Codex、pi、agy）自行安裝並登入。
-2. **一行安裝**：上面的 `curl … | bash`，裝 user 層 5 個 plugin。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 改 user 層要裝哪些；`install.sh --check` 只比對不改。
+2. **一行安裝**：上面的 `curl … | bash`，裝 user 層 4 個 plugin。可用環境變數 `PLUGHARBOR_SRC` 改 clone 位置、`PLUGHARBOR_PLUGINS="toolkit research"` 改 user 層要裝哪些；`install.sh --check` 只比對不改。
    **專案層**：在常用專案各跑一次 `bash ~/plugharbor/setup/install-project.sh <專案根> lifecycle backend …`（預設只自己用，`--shared` 寫進專案設定與團隊共用）。
 3. **其他 marketplace**（Claude Code 登入後）：`claude plugin install superpowers@claude-plugins-official`；其餘依需要。
 4. **通用 MCP**（金鑰與登入各自處理，不入版控）：例如 `claude mcp add --scope user chrome-devtools -- npx -y chrome-devtools-mcp@latest`。
@@ -49,7 +49,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | [tickets](./plugins/tickets/README.md) | 1.2.0 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
 | [discovery](./plugins/discovery/README.md) | 1.1.0 | 需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型 |
 | [delivery](./plugins/delivery/README.md) | 1.2.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |
-| [workspace](./plugins/workspace/README.md) | 1.20.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
+| [workspace](./plugins/workspace/README.md) | 1.20.1 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
 | [backend](./plugins/backend/README.md) | 1.0.3 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
 | [database](./plugins/database/README.md) | 1.0.2 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
@@ -57,7 +57,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | [desktop](./plugins/desktop/README.md) | 1.0.1 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
 | [toolkit](./plugins/toolkit/README.md) | 0.27.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.6.1 | 探索與研究——graphify 知識圖譜、ai-radar AI 情報雷達（週版＋工作日消化採納待辦的每日版）、plugin-harvest 吸收外部 plugin 做法 |
-| [blog](./plugins/blog/README.md) | 0.2.0 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
+| [blog](./plugins/blog/README.md) | 0.2.1 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.5 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
 
 ### skills 與 agents
