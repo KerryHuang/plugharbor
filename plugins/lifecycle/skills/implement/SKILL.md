@@ -61,7 +61,7 @@ git branch --show-current && git status --short
 
 沒有既有計畫、且不適用免計畫時，可用 skill 清單裡有 `superpowers:writing-plans` → 叫用它，輸入設計文件路徑，並明確要求：
 
-> 計畫的 **Spec** 欄寫設計文件路徑。最後一個 task 是後段：照 `<plugin 根>/skills/implement/references/after.md` 做。計畫存好、自審後，先照 `<plugin 根>/skills/implement/references/plan-review.md` 審，必修修完再做 Execution Handoff（請使用者看的是審過的版本）。
+> 計畫的 **Spec** 欄寫設計文件路徑。最後一個 task 是後段：照 `<plugin 根>/skills/implement/references/after.md` 做。計畫存好、自審後，先照 `<plugin 根>/skills/implement/references/plan-review.md` 審，必修修完再做 Execution Handoff（請使用者看的是審過的版本）。要問使用者的設計題先照 `<plugin 根>/references/consultant-desk.md`「設計提問分流」交顧問，只問轉交的。
 
 `<plugin 根>` 即 `${CLAUDE_PLUGIN_ROOT}`，寫進指令時換成實際絕對路徑（計畫檔不展開變數）。計畫審查（`plan-review.md`）排在使用者核准與開工之前。之後：
 

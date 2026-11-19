@@ -2,6 +2,15 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.3.0] - 2026-11-19
+
+起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。
+- feat(agents)：`domain-advisor` 新增 `mode: triage`（設計提問分流）。輸入一批待問使用者的題目，逐題判 decided（答案、理由、依據、可逆性）或 escalate（轉交條件＋讓題目自明的背景與推薦）。轉交下限寫死 9 條：產品方向／商業取捨、難回頭、法規會計稅務勞動、與既有使用者裁決衝突或延伸、放寬權限或安全邊界、證據不足或慣例分歧、通用預設以外的偏離舊系統、顧問與主線推薦不同，以及專案追加的條件。沒給既有裁決與專案條件時，顧問自己讀設計文件、`consultant-notes.md`、`lifecycle.yml`。description 改短（128→102 字元）。
+- feat(references)：`consultant-desk.md` 新增「設計提問分流」：何時送、怎麼送（每輪要問的題一起送；核可類關卡不送）、decided 記成 `（拍板：顧問，待使用者確認）`，不寫成使用者裁決，使用者確認或推翻後改為使用者、無人值守下 escalate 進「待決」不阻塞、分流不算開桌。原本單點諮詢的「與開桌的關係」併成共用的「已解不重問」。
+- feat：接入點：AGENTS 段落範本（`templates/agents-md-section.md`）加一行，讓直接用 superpowers 腦力激盪、寫計畫的 session 在問使用者前先分流；`spec`（交給 brainstorming 的交代、退路的品味決策）與 `implement`（交給 writing-plans 的指令）都引用分流。既有專案要重跑 `setup/install-project.sh <專案根> lifecycle` 才會更新 AGENTS 段落。
+- feat(config)：新鍵 `advisor.escalate`（專案追加的轉交條件，字串清單，只能加不能減）。
+- refactor：`shared-preludes.md` 問題漏斗第 2 層改指向分流，檔案比原本短（9334→9326 bytes）；新增契約測試，檢查分流字樣、常駐卡大小上限、計畫審查那一行仍然獨立。
+
 ## [4.2.4] - 2026-11-18
 
 - fix(agents): `qa-planner`、`qa-fixture`、`qa-runner-ui` 的 MCP 註冊提示改為 `--isolated --redact-network-headers`，和 browser-docs 0.3.6 的標準註冊一致。起因：2026-11-04 公司 workspace 跑 qa-sweep 時，`get_network_request` 把真的 `Authorization: Bearer` 原樣印進 agent 輸出；2026-11-18 用 chrome-devtools-mcp 1.13.0 實測，加這個旗標後 request／response headers 改由白名單遮罩，回應內文不遮。

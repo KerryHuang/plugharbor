@@ -195,6 +195,35 @@ class SkillContracts(unittest.TestCase):
                      "#### 預期", "lifecycle:release", "同步票"):
             self.assertIn(want, s, want)
 
+    def test_advisor_triage_contract(self):
+        # 起因：superpowers 腦力激盪的設計題全問使用者、不經顧問；分流的入口、轉交下限與記帳字樣要對得上
+        a = read("agents/domain-advisor.md")
+        sec = a[a.index("## Triage 模式"):a.index("## 限制")]
+        for want in ("questions:", "user_decisions:", "project_escalate:", "本次對話使用者已答的題", "decided", "escalate",
+                     "產品方向", "難回頭", "法規", "既有使用者裁決衝突", "權限或安全邊界", "證據不足",
+                     "偏離舊系統", "與主線推薦不同", "advisor.escalate", "標 Likely", "可逆性"):
+            self.assertIn(want, sec, want)
+        self.assertIn("| `triage` |", a)
+        desk = read("references/consultant-desk.md")
+        dsec = desk[desk.index("## 設計提問分流"):desk.index("## 編制")]
+        for want in ("mode: triage", "advisor.escalate", "（拍板：顧問，待使用者確認）", "不寫成使用者",
+                     "核可類關卡", "workspace:unattended", "分流不算開桌", "已解不重問", "（拍板：使用者）"):
+            self.assertIn(want, dsec, want)
+        self.assertIn("`advisor.escalate`", read("references/config.md"))
+        for rel in ("templates/agents-md-section.md", "skills/spec/SKILL.md", "skills/implement/SKILL.md",
+                    "references/shared-preludes.md"):
+            self.assertIn("分流", read(rel), rel)
+        self.assertIn("mode: triage", read("templates/agents-md-section.md"))
+
+    def test_shared_preludes_not_fatter(self):
+        # 每個 skill 都載的常駐卡：加分流時不得變胖（4.2.4 為 9334 bytes）；要變長須在 CHANGELOG 寫明拿什麼換並調這個上限
+        self.assertLessEqual(len(read("references/shared-preludes.md").encode("utf-8")), 9334)
+
+    def test_agents_section_keeps_standalone_plan_review(self):
+        # 直接走 superpowers 執行、不說「開始實作」的人也要做計畫審查，不能只併在 implement 那行
+        lines = read("templates/agents-md-section.md").split("\n")
+        self.assertTrue(any(l.startswith("- 計畫寫完做計畫審查") for l in lines))
+
     def test_spec_routes_by_superpowers(self):
         s = read("skills/spec/SKILL.md")
         for want in ("superpowers:brainstorming", "一次一題", "AskUserQuestion", "lean-template.md"):

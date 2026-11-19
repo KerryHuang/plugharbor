@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.0] - 2026-11-19
+
+起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。
+- feat：同步 lifecycle 4.3.0 的副本：`references/consultant-desk.md`、`shared-preludes.md`、`config.md`，內容是顧問的設計提問分流（`mode: triage`）與新設定鍵 `advisor.escalate`。
+
 ## [1.2.2] - 2026-11-18
 
 - fix(skills): `operation-manual` 的 MCP 註冊提示改為 `--isolated --redact-network-headers`，和 browser-docs 0.3.6 的標準註冊一致。起因：2026-11-04 公司 workspace 跑 qa-sweep 時，`get_network_request` 把真的 `Authorization: Bearer` 原樣印進 agent 輸出；2026-11-18 用 chrome-devtools-mcp 1.13.0 實測，加這個旗標後 request／response headers 改由白名單遮罩，回應內文不遮。

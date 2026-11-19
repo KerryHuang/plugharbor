@@ -44,7 +44,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local
 |-------|------|
 | `architect` | 架構顧問（不綁技術棧） |
 | `developer` | 功能開發專家（不綁技術棧） |
-| `domain-advisor` | 通用 Domain 知識顧問，協助 SA/PM 在需求分析與系統分析階段確保業務 Domain 正確性 |
+| `domain-advisor` | 通用 Domain 知識顧問：需求與系統分析階段把關業務 Domain 正確性；問使用者前替設計題分流（`mode: triage`） |
 | `qa-fixture` | QA 前置資料：判定環境可寫性，逐條解析前置條件並備妥資料；另可查核資料斷言 |
 | `qa-planner` | QA 驗收計畫：讀驗收案例檔（或票面的重現步驟），開畫面對出案例欄位↔實機表頭，把案例轉成可執行步驟與預期觀察，產 plan.yml |
 | `qa-runner-ui` | QA 實機執行：照 steps-only 計畫逐條操作，結構化記錄觀察並回寫成功步驟為快取；可依環境送出資料，唯讀環境只到送出前 |

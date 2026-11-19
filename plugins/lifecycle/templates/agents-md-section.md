@@ -4,6 +4,7 @@
 - 設計文件放 `.plugharbor/lifecycle.yml` 的 `spec.dir`（預設 `docs/superpowers/specs/`），檔名 `YYYY-MM-DD-<slug>-design.md`，進版控。
 - 七節各用 `##`，依序：起因、目標（含非目標、反目標）、限制、做法比較、決定、驗收、留給 builder；開頭 `# <功能>`，下一行 `票號：#n · 狀態：草稿 · yyyy-mm-dd`（沒票寫「無」）。專案額外章節放「留給 builder」之前。
 - 決定一條一行：`- D-01 <決定>；否決：<選項與原因>（拍板：使用者／顧問／證據／自行決定）`。
+- 腦力激盪、寫計畫要問使用者設計題前，先整批交 `lifecycle:domain-advisor` 分流（`mode: triage`，見 lifecycle 的 `consultant-desk.md`），只問它轉交的；它定的拍板寫「顧問，待使用者確認」並在回報列出。
 - 驗收每條關鍵規則一正例一反例、預期只寫看得到的事實；欄位內容一律用清單，最小案例：
 
   ```
