@@ -247,6 +247,12 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" retro-due-reminder.py",
             "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" retro-due-reminder.py; exit $LASTEXITCODE",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" scratch-ledger.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" scratch-ledger.py; exit $LASTEXITCODE",
+            "timeout": 10
           }
         ]
       },
@@ -295,6 +301,30 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" send-retry-hint.py",
             "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" send-retry-hint.py; exit $LASTEXITCODE",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" scratch-ledger.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" scratch-ledger.py; exit $LASTEXITCODE",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" scratch-ledger.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" scratch-ledger.py; exit $LASTEXITCODE",
+            "timeout": 3
           }
         ]
       }

@@ -41,6 +41,7 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `text-question-guard.py` | ✅ Stop | 無：Codex 沒有 `AskUserQuestion`，提問規則改寫在 `AGENTS.md` | 無：同左 | 無：pi 沒有 hook 機制 |
 | `disabled-skills.py` | ✅ SessionStart、UserPromptSubmit | 無：只讀 Claude Code 的 `enabledPlugins`／`skillOverrides` | 無 | 無 |
 | `retro-due-reminder.py` | ✅ SessionStart `startup` | 無：adapter 未移植；在 Codex 手動跑 retrospective | 無 | 無：pi 沒有 hook 機制 |
+| `scratch-ledger.py` | ✅ PostToolUse、SessionEnd、SessionStart `startup` | 無（未驗證：Codex 可能經 plugin hooks.json 載入；Codex 有 SessionEnd、shell 工具名也是 `Bash`，腳本對沒有 `reason` 的 payload 照樣運作）；`sweep` 可手動跑 | 無；`sweep` 可手動跑 | 無：pi 沒有 hook 機制；`sweep` 可手動跑 |
 | `loop-guard.py` | ✅ PostToolUseFailure、UserPromptSubmit（重置主 session） | ✅ PostToolUse：`loop-guard.mjs` 轉給同一支 `loop-guard.py`。Codex 沒有失敗事件、`tool_response` 只有輸出字串，成敗改查 `transcript_path` 裡同 `tool_use_id` 的 `item_completed`（`status: failed`／`exit_code`）；輪界用 `turn_id`；subagent 帶 `agent_id`。狀態在 `~/.codex/loop-guard/` | 無：adapter 只替 agy 註冊 Stop | 無：pi 沒有 hook 機制 |
 | `context-size-reminder.py` | ✅ Stop | 無：依賴 Claude transcript 格式與 context 級距；Codex 自己管理 context | 無 | 無 |
 | `notification.sh` | ✅ Notification、Stop | ✅ Stop：`notify.mjs` 把 stdin 轉給 repo 內的 `notification.sh`，通知規則只維護一處（無 Notification 事件） | ✅ Stop：同一支 `notify.mjs`，經 `hooks.json` 的 `plugharbor-notify` | 無：pi 沒有 hook 機制 |

@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 27／共 38（另有 2 項決定不做）；進行中 1、已規劃 2、構想 8；待確認 0 項。更新於 2026-11-18。
+總計：完成 28／共 40（另有 2 項決定不做）；進行中 1、已規劃 2、構想 9；待確認 0 項。更新於 2026-11-19。
 
 ## workspace：unattended（自動駕駛） #8
 
@@ -106,3 +106,12 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 - [ ] 💡 spec 範本（lean-template）加選填的「互動流程」節：Mermaid Sequence 圖，participant 只能用需求裡出現的名詞、不憑空新增；等有專案真的要建模再做 #54
 - [-] 不收三個 UML 建模 skill 與「Actor 對 Use Case 對 Aggregate Root」對應——理由：skill 只寫了排版、方法論沒寫進去；SRP 的角色不等於 UML Actor；聚合由一致性邊界決定；可取的部分 cqrs 與 consultant-desk 已涵蓋（使用者 2026-11-18 確認） #55
+
+## toolkit：agent 暫存生命週期（2026-11-19 規劃） #59
+
+完成 1／共 2。
+
+起因：某 workspace 盤點出 agent 暫存約 9.3 GB 無聲累積。設計見 `docs/superpowers/specs/2026-11-19-agent-scratch-lifecycle-design.md`。
+
+- [x] `scratch-ledger.py`：建立時標記（hook 記 session、agent 補用途與期限）、結束時記帳、開場用一題複選提議刪過期的、每週或磁碟吃緊時提議全區掃描；本身不刪檔（使用者 2026-11-19 裁決四段組合與五題參數；toolkit 0.32.0） #60
+- [ ] 💡 `workspace:tmp-scratch` 加一句「toolkit 會提示補用途與期限」，與帳本規則對齊；等主控裁決 #61

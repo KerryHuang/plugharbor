@@ -33,8 +33,9 @@ claude plugin install toolkit@plugharbor
 | SessionStart `compact` | `compact-context.py` | context 壓縮後提醒沿用使用者指示的語言與格式 |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |
 | SessionStart `startup` | `retro-due-reminder.py` | retrospective 待驗指標到期時提議回顧（讀 `.plugharbor/toolkit.yml`，驗過且無新證據不重提） |
+| PostToolUse、SessionEnd、SessionStart `startup` | `scratch-ledger.py` | agent 暫存生命週期：開 `.tmp`／`.superpowers` 子資料夾時記帳並提示補用途與期限，結束時記大小，開場提議刪除過期的（每專案每天一次、前 4 大），每週或磁碟不到 20 GB 時提議全區掃描（`sweep`）；本身不刪檔 |
 
-所有狀態寫在 `~/.claude/`（`feedback-loop/`、`context-reminder/`、`loop-guard/`、`notification-sound.wav`），不寫進 plugin 目錄。
+所有狀態寫在 `~/.claude/`（`feedback-loop/`、`context-reminder/`、`loop-guard/`、`scratch-ledger/`、`notification-sound.wav`），不寫進 plugin 目錄。
 
 ## 分層 guard
 

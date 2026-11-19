@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.32.0] - 2026-11-19
+
+起因：2026-11-19 某 workspace 盤點出 AI agent 留在各專案的暫存約 9.3 GB（規格鏈 worktree 1.9 GB、978 MB 測試 log、含 cookies 的拋棄式 Chrome profile、成品只在 `.tmp` 的工作區），沒有機制提醒，只能事後人工清。設計：`docs/superpowers/specs/2026-11-19-agent-scratch-lifecycle-design.md`（使用者 2026-11-19 裁決四段組合與五題參數）。
+- feat(hooks)：新增 `scratch-ledger.py`，帳本在 `~/.claude/scratch-ledger/`，hook 與腳本本身不刪檔。PostToolUse（`Write|Edit|MultiEdit|NotebookEdit|Bash`）碰到新的 `.tmp/<單位>`、`.superpowers/<單位>` 就記到本 session，並提示 agent 用 `mark` 補用途與期限（`1d`／`7d`／`handoff`，預設 7 天、從最後使用起算）。SessionEnd 記大小（0.5 秒內量不完標 partial）。SessionStart `startup` 時把本專案已過期的列出來，叫 agent 處理完第一個請求後用一題複選問刪哪些（依大小取前 4 個；worktree 改用 `git worktree remove`；含 git repo、pptx／docx 等成品檔、或超過 2000 項沒看完的會標警示；指令裡的路徑一律 shlex 加引號）。沒勾的 `keep` 7 天，每專案每天最多問一次；還有 session 在用的、交接檔（`handoff`、以 `/clear` 結束、含 `handoff.md`）不列。距上次掃描滿 7 天或磁碟可用不到 20 GB 時，提議跑 `sweep`：列出沒標記且 14 天沒動的、session 沒正常結束的、14 天沒動的交接檔，只讀不刪。
+- test：`hooks/tests/test_scratch_ledger.py`（43 個）；`test_agent_model_guard.py` 的 python hook 數量 25 → 28。
+
 ## [0.31.0] - 2026-11-19
 
 起因：一場 4 小時 40 分的麥克風錄音，`record stop` 合併後 5 分鐘分段全數保留，素材夾 1.08 GB 有一半是重複；合併的 WAV 也比無損壓縮大一倍。
