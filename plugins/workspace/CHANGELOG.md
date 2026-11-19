@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.20.4] - 2026-11-19
+
+起因：toolkit 0.32.0 新增 scratch-ledger（暫存建立時標記、過期開場提議），tmp-scratch 的清理說法要對齊。
+- docs(tmp-scratch)：「兩週沒動就列出來問」改寫為：裝了 toolkit 時依提示補用途與期限、過期由開場提議清；沒裝才沿用原做法。
+
 ## [1.20.3] - 2026-11-18
 
 起因：Formwright 自動駕駛期間記下的 6 筆 unattended 摩擦回饋（2026-11-18）。
