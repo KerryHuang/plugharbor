@@ -4,6 +4,6 @@ superpowers（外部 plugin）管 brainstorm → plan → 實作 → 審查；�
 
 - 設計文件與計畫：照 superpowers 預設放 `docs/superpowers/specs/`、`docs/superpowers/plans/`，進版控（專案刻意排除 `docs/superpowers` 就只放本機），每個專案都一樣；專案還沒有這兩個目錄（含新專案）時先問使用者再建。有 lifecycle 設定時 `spec.dir` 也設成前者。
 - worktree：建在 repo 同層 `../<repo>-<名稱>`，不建 `.worktrees/`；細節照 workspace:worktree。
-- 裝了 lifecycle 時：「開始實作」走 `lifecycle:implement`（實作前檢查、計畫審查、收尾回填）；專案 AGENTS.md 有 lifecycle 段落就照它。
+- 裝了 lifecycle：設計題先交 `lifecycle:domain-advisor`（`mode: triage`）分流再問我；「開始實作」走 `lifecycle:implement`；專案 AGENTS.md 有 lifecycle 段落就照它。
 - 設計初稿（含 subagent 起草）送審前，影響使用者行為的待確認先問完、寫回設計；技術類標為自己的決定。
 - 討論與規劃結果列進 `docs/feature.md`（每項一行：`[x]` 完成、`[ ]` 加 🚧 進行中／📋 已規劃／💡 構想、`[-]` 不做附理由）；有 lifecycle 照它的 `references/feature-checklist.md`（排線、todo 分界）。
