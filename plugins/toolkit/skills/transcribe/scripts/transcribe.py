@@ -356,6 +356,8 @@ def concat_list(segments: List[Path]) -> str:
 SILENCE_DB = -70.0
 CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 STATE_FILE = "record.json"
+RECORDING = "recording.flac"
+MERGE_TOLERANCE_SEC = 1.0  # 合併檔與分段合計的長度差超過這個值，就不刪分段
 
 
 def _spawn(cmd: List[str], log_path: Path) -> int:
@@ -428,13 +430,25 @@ def _max_volume(path: Path) -> Optional[float]:
 
 
 def _run_ffmpeg_concat(list_file: Path, out: Path) -> bool:
+    # 存成 FLAC：無損、約 WAV 的一半大
     r = subprocess.run(
-        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(list_file), "-c", "copy", str(out)],
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(list_file), "-c:a", "flac", str(out)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         _err(r.stderr.strip())
     return r.returncode == 0 and out.exists()
+
+
+def _audio_seconds(path: Path) -> Optional[float]:
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, errors="replace",
+    )
+    try:
+        return float(r.stdout.strip())
+    except ValueError:
+        return None
 
 
 def _read_state(out_dir: Path) -> Optional[dict]:
@@ -732,7 +746,7 @@ def _live_run(out_dir: Path, runner: BackendRunner, model: str, prompt: Optional
         try:
             lines = [f"[{format_ts(offset + start)}] {_zh_tw(conv, text).strip()}" for start, text in runner(str(seg), model, prompt, language) if text.strip()]
             mark = f"<!-- {seg.stem} done -->"
-        except Exception as e:  # 單段失敗不拖垮整場；原始分段還在，事後可對 recording.wav 重轉
+        except Exception as e:  # 單段失敗不拖垮整場；事後可對 recording.flac 重轉
             _err(f"{seg.name} 轉錄失敗：{e!r}")
             lines, mark = [], f"<!-- {seg.stem} failed -->"
         with transcript.open("a", encoding="utf-8") as f:
@@ -809,9 +823,9 @@ def record_start(out_dir: Path, device: Optional[str], segment_sec: int, source:
     if _recording(state):
         _err(f"這個目錄已經在錄音（PID {state['pid']}）；要結束請用 `record stop`")
         return 2
-    if _segments(out_dir) or (out_dir / "recording.wav").exists():
+    if _segments(out_dir) or (out_dir / RECORDING).exists() or (out_dir / "recording.wav").exists():
         # segment muxer 會從 seg-000 開始覆蓋，前一段錄音救不回來
-        _err(f"這個目錄已有之前的錄音分段：{out_dir}\n請換一個新目錄再開錄；要合併舊的請用 `record stop`")
+        _err(f"這個目錄已有之前的錄音（分段或 {RECORDING}）：{out_dir}\n請換一個新目錄再開錄；分段還沒合併的請用 `record stop`")
         return 2
     if not shutil.which("ffmpeg"):
         _err("找不到 ffmpeg，請先跑 `doctor --record` 看安裝方式")
@@ -905,19 +919,34 @@ def record_stop(out_dir: Path) -> int:
         if fpid and _alive(fpid):
             _kill(fpid, system)
     segs = _segments(out_dir)
+    out = out_dir / RECORDING
     if not segs:
+        if out.exists() and state.get("stopped_at"):
+            print(f"錄音已合併過：{out}")
+            return 0
         _err("沒有任何錄音分段，無法合併")
         return 4
     list_file = out_dir / "segments.txt"
     list_file.write_text(concat_list(segs), encoding="utf-8")
-    out = out_dir / "recording.wav"
     if not _run_ffmpeg_concat(list_file, out):
         _err("合併分段失敗，原始分段仍保留在目錄內")
         return 3
     state["stopped_at"] = datetime.now().isoformat(timespec="seconds")
     _write_state(out_dir, state)
-    seconds = max(out.stat().st_size - 44, 0) / 32000  # 16 kHz、單聲道、16-bit
-    print(f"錄音已結束，合併為 {out}（約 {format_ts(seconds)}，{len(segs)} 段）")
+    expected = sum(segment_seconds(p) for p in segs)
+    got = _audio_seconds(out)
+    if got is None or abs(got - expected) > MERGE_TOLERANCE_SEC:
+        _err(f"合併檔長度（{got} 秒）與分段合計（{expected:.1f} 秒）不符，分段保留在目錄內")
+        return 3
+    print(f"錄音已結束，合併為 {out}（約 {format_ts(got)}，{len(segs)} 段）")
+    live = _read_live(out_dir)
+    if live and not live.get("finished") and _alive(live["pid"], "python"):
+        # live 還要讀剩下的分段
+        print("逐段轉錄還在進行，分段先保留；transcript.md 出現 live finished 後再跑一次 `record stop` 清掉分段")
+        return 0
+    for p in segs:
+        p.unlink()
+    list_file.unlink()
     return 0
 
 

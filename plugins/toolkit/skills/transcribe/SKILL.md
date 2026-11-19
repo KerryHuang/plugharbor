@@ -32,7 +32,7 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
    - 出現「幾乎是靜音」警告時，轉述給使用者確認裝置與麥克風權限，不要默默繼續。
    - exit 2＝這個目錄已在錄；exit 3＝沒啟動成功（附 ffmpeg log 尾段）。
 4. 進行中可用 `record status --out "<目錄>"` 查已錄時間。錄音與 Claude session 脫鉤：session 中斷時錄音繼續，新 session 對同一目錄 `record stop` 即可。
-5. 使用者說散會才停：`record stop --out "<目錄>"`，會合併成 `<目錄>/recording.wav`（exit 4＝沒有任何分段）。再用上面的 `transcribe` 轉 `recording.wav`。
+5. 使用者說散會才停：`record stop --out "<目錄>"`，會合併成無損的 `<目錄>/recording.flac`，核對長度與分段合計一致後刪除分段（exit 3＝合併失敗或長度不符，分段保留；exit 4＝沒有任何分段）。再用上面的 `transcribe` 轉 `recording.flac`。
 6. **不要自行讀取或轉錄使用者沒要求的錄音內容**；測試錄音用完即刪。
 
 ## 線上會議（對方聲音＋邊錄邊轉）
@@ -46,8 +46,8 @@ argument-hint: "<音檔路徑>|record [--out <md>] [--prompt-file <術語檔>]"
 5. 開錄後 1 到 2 分鐘跑 `record status --out "<目錄>"`：
    - 「對方聲音：尚未收到」：請使用者確認已授權、會議聲音從系統預設輸出播放。
    - 「逐字稿：已轉 N／M 段（落後）」：機器跟不上，轉告使用者。散會後 `live` 會在背景把剩下的轉完。
-   - 「逐段轉錄已中止」：看 `<目錄>/live.log` 轉述原因，修好後再跑 `live start` 接續（不會重複追加）。某段寫 `<!-- seg-NNN failed -->` 表示那段轉錄失敗，事後可對 `recording.wav` 重轉。
-6. 散會：`record stop --out "<目錄>"`，等 `transcript.md` 出現 `live finished`。`recording.wav` 照常產出。
+   - 「逐段轉錄已中止」：看 `<目錄>/live.log` 轉述原因，修好後再跑 `live start` 接續（不會重複追加）。某段寫 `<!-- seg-NNN failed -->` 表示那段轉錄失敗，事後可對 `recording.flac` 重轉。
+6. 散會：`record stop --out "<目錄>"`，等 `transcript.md` 出現 `live finished`。`recording.flac` 照常產出；live 還在轉時分段先保留，出現 `live finished` 後再跑一次 `record stop` 清掉分段。
 7. 已知限制：會中切換輸出裝置（插拔耳機、AirPods 連線）後，可能收不到對方聲音。`status` 會顯示最近一次收到的時間，看到時間停住就提醒使用者。
 
 ## 會議 AI 顧問「小小」

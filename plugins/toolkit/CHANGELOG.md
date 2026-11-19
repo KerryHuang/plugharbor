@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.31.0] - 2026-11-19
+
+起因：一場 4 小時 40 分的麥克風錄音，`record stop` 合併後 5 分鐘分段全數保留，素材夾 1.08 GB 有一半是重複；合併的 WAV 也比無損壓縮大一倍。
+- feat(transcribe)：`record stop` 合併成 `recording.flac`（無損，原為 `recording.wav`），以 ffprobe 核對合併長度與分段合計（誤差 1 秒內）後刪除分段與 `segments.txt`；長度不符回 exit 3、分段保留。live 還在轉錄時分段先保留，`live finished` 後再跑一次 `stop` 清掉；已清過再跑回報「已合併過」。`start` 遇 `recording.flac` 或舊的 `recording.wav` 都拒絕。測試 `test_stop_keeps_segments_when_length_mismatch`、`test_stop_keeps_segments_while_live_running`、`test_stop_again_after_cleanup_is_noop`、`test_concat_encodes_flac`。
+- 呼叫端注意：輸出檔名改為 `recording.flac`，引用 `recording.wav` 的副本與說明要跟著改。
+
 ## [0.30.0] - 2026-11-19
 
 起因：Formwright 自動駕駛期間兩筆 skill 摩擦回饋（2026-11-19）。

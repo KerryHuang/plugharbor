@@ -1,5 +1,6 @@
 import builtins
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -313,7 +314,7 @@ def rec(monkeypatch, tmp_path):
     import json as _json
 
     on_mac(monkeypatch)
-    state = {"alive": True, "ffmpeg_alive": False, "volume": -30.0, "spawned": [], "killed": [], "concat": []}
+    state = {"alive": True, "ffmpeg_alive": False, "volume": -30.0, "spawned": [], "killed": [], "concat": [], "merged_sec": None}
     monkeypatch.setattr(t, "_importable", lambda m: True)
     monkeypatch.setattr(t.sys, "version_info", (3, 12, 0))
 
@@ -333,6 +334,9 @@ def rec(monkeypatch, tmp_path):
     monkeypatch.setattr(t, "_max_volume", lambda path: state["volume"])
     monkeypatch.setattr(t, "_kill", lambda pid, system, name="ffmpeg": state["killed"].append(pid) or state.update(alive=False))
     monkeypatch.setattr(t, "_run_ffmpeg_concat", fake_concat)
+    # 預設合併後長度等於分段合計；merged_sec 可指定不符的值
+    monkeypatch.setattr(t, "_audio_seconds", lambda p: state["merged_sec"] if state["merged_sec"] is not None
+                        else sum(t.segment_seconds(s) for s in t._segments(Path(p).parent)))
     monkeypatch.setattr(t.time, "sleep", lambda s: None)
     monkeypatch.setattr(t.shutil, "which", lambda name: "/usr/bin/" + name)
     state["dir"] = tmp_path / "會議 素材"
@@ -377,7 +381,47 @@ def test_stop_merges_when_process_gone(rec, capsys):
     assert rec["killed"] == []
     assert "seg-000.wav" in rec["concat"][0] and "seg-001.wav" in rec["concat"][0]
     assert rec["read"]()["stopped_at"] is not None
-    assert "recording.wav" in capsys.readouterr().out
+    assert "recording.flac" in capsys.readouterr().out
+    assert t._segments(rec["dir"]) == [] and not (rec["dir"] / "segments.txt").exists()
+    assert (rec["dir"] / "recording.flac").exists()
+
+
+def test_stop_keeps_segments_when_length_mismatch(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    rec["merged_sec"] = 999.0
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 3
+    assert len(t._segments(rec["dir"])) == 1
+    assert "分段保留" in capsys.readouterr().err
+
+
+def test_stop_keeps_segments_while_live_running(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    (rec["dir"] / "live.json").write_text('{"pid": 5555, "done": 0, "finished": false}', encoding="utf-8")
+    rec["ffmpeg_alive"] = True  # 假環境裡非 4242 的 PID 都看這個旗標：live 程序還活著
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert len(t._segments(rec["dir"])) == 1
+    assert "live finished" in capsys.readouterr().out
+
+
+def test_stop_again_after_cleanup_is_noop(rec, capsys):
+    t.main(["record", "start", "--out", str(rec["dir"])])
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    capsys.readouterr()
+    assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 0
+    assert "已合併" in capsys.readouterr().out
+
+
+def test_concat_encodes_flac(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen["cmd"] = cmd
+        Path(cmd[-1]).write_bytes(b"fLaC")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(t.subprocess, "run", fake_run)
+    assert t._run_ffmpeg_concat(tmp_path / "segments.txt", tmp_path / "recording.flac")
+    assert seen["cmd"][seen["cmd"].index("-c:a") + 1] == "flac"
 
 
 def test_stop_kills_running(rec):
@@ -390,7 +434,7 @@ def test_stop_without_segments_fails(rec, capsys):
     t.main(["record", "start", "--out", str(rec["dir"])])
     (rec["dir"] / "seg-000.wav").unlink()
     assert t.main(["record", "stop", "--out", str(rec["dir"])]) == 4
-    assert not (rec["dir"] / "recording.wav").exists()
+    assert not (rec["dir"] / "recording.flac").exists()
 
 
 def test_status_not_recording(rec, capsys):
@@ -453,9 +497,10 @@ def test_start_refuses_dir_with_old_segments(rec, capsys):
     assert "換" in capsys.readouterr().err
 
 
-def test_start_refuses_dir_with_recording(rec):
+@pytest.mark.parametrize("name", ["recording.flac", "recording.wav"])
+def test_start_refuses_dir_with_recording(rec, name):
     rec["dir"].mkdir(parents=True)
-    (rec["dir"] / "recording.wav").write_bytes(b"OLD")
+    (rec["dir"] / name).write_bytes(b"OLD")
     assert t.main(["record", "start", "--out", str(rec["dir"])]) == 2
     assert rec["spawned"] == []
 
