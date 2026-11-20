@@ -28,7 +28,7 @@ CLAUDE.md is context, not enforced configuration. It should contain only what Cl
    - Each instruction is VERIFIABLE (can objectively check)
    - Each instruction is NON-OBVIOUS (Claude can't infer from code)
    - Each instruction is ACTIONABLE (tells agent what to do/not do)
-   - Emphasis words (`MUST`, `NEVER`, `IMPORTANT`) used appropriately
+   - Emphasis words (`MUST`, `NEVER`, `IMPORTANT`) are rare, each with an adjacent reason — current models over-apply stacked emphasis
 
 4. **Check Separation of Concerns**
    - No focused conventions that should be split into `.claude/rules/<name>.md` for budget reasons
@@ -37,7 +37,7 @@ CLAUDE.md is context, not enforced configuration. It should contain only what Cl
    - No standard language conventions Claude already knows
    - No detailed API docs (should link, not inline)
    - No subdirectory-specific guidance that should live in nested `CLAUDE.md`
-   - Hard rules (`MUST NEVER` about destructive/irreversible actions) have a backing hook — text alone is ~70% compliance
+   - Hard rules (`MUST NEVER` about destructive/irreversible actions) have a backing hook
    - Task-specific sections (test setup, deploy steps) wrapped in `<important if="...">` conditional blocks where appropriate
 
 5. **Validate Project Structure**
@@ -78,7 +78,7 @@ issues:
 - [ ] No linter-enforceable rules (belongs in hooks)
 - [ ] No standard language conventions Claude already knows
 - [ ] No content duplicated in `.claude/rules/` (rules are auto-loaded into context — do NOT Read or Grep rule files; compare against auto-loaded rule content already in context)
-- [ ] Each instruction uses specific verifiable language (MUST/NEVER/IF…THEN)
+- [ ] Each instruction uses specific verifiable language (concrete conditions, IF…THEN) at normal volume, not capitalized emphasis
 - [ ] Referenced paths exist (verify with Glob/Bash)
 - [ ] Referenced commands are valid (verify with Bash)
 - [ ] **No restating README** — open `README.md` if present and flag any line that duplicates it (`no-restating-readme`)

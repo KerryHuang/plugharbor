@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.32.1] - 2026-11-20
+
+起因：prompt-audit（目標 Opus 5.5）查出 `claudemd-reviewer` 的檢查清單要求每條指示用 MUST/NEVER，會鼓勵受審的 CLAUDE.md 疊加大寫加壓詞，新模型會過度套用；使用者 2026-11-20 裁決直接修。
+
+- fix(agents)：`claudemd-reviewer` 改成要求加壓詞少用、旁邊附理由，指示用具體條件（IF…THEN）以一般語氣表達；刪掉沒有出處的「text alone is ~70% compliance」。
+
 ## [0.32.0] - 2026-11-19
 
 起因：2026-11-19 某 workspace 盤點出 AI agent 留在各專案的暫存約 9.3 GB（規格鏈 worktree 1.9 GB、978 MB 測試 log、含 cookies 的拋棄式 Chrome profile、成品只在 `.tmp` 的工作區），沒有機制提醒，只能事後人工清。設計：`docs/superpowers/specs/2026-11-19-agent-scratch-lifecycle-design.md`（使用者 2026-11-19 裁決四段組合與五題參數）。
