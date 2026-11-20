@@ -54,7 +54,7 @@
 | 產出 | 形態 | 票號 | out_path | 用途 |
 |------|------|:----:|---|------|
 | 會議簡報 | 單頁 HTML | 只在抽屜裡 | `.tmp/weekly-report/slides-{週會日}.html` | 會議室投影 |
-| 每週進度報表 | Markdown（mermaid 圖） | **零票號** | `.tmp/weekly-report/report-{週會日}.md` | 會議文件 |
+| 每週進度報表 | Markdown（mermaid 圖） | **零票號** | `.tmp/weekly-report/weekly-{週會日}.md` | 會議文件 |
 | 週會票務明細 | Markdown | 全部 | `.tmp/weekly-report/tickets-{週會日}.md` | 會後查證 |
 
 ```

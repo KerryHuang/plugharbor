@@ -2,7 +2,7 @@
 
 ## 預設：只留在 `.tmp/weekly-report/`
 
-三份成品（`slides-{週會日}.html`、`report-{週會日}.md`、`tickets-{週會日}.md`）與 `dataset.json` 都在 `.tmp/weekly-report/`（應已 gitignore）。
+三份成品（`slides-{週會日}.html`、`weekly-{週會日}.md`、`tickets-{週會日}.md`）與 `dataset.json` 都在 `.tmp/weekly-report/`（應已 gitignore）。
 沒給 `--out-dir` 就停在這裡，回報時直接講明路徑；不要替使用者決定放哪。
 
 ## 給了 `--out-dir`

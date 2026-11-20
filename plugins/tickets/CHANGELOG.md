@@ -2,6 +2,15 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.2] - 2026-11-20
+
+起因：plugharbor#59——Formwright 一次搬 58 張待辦成票，ticket-create 每張兩次互動確認，無人值守時無法照流程，只能繞過它直接跑 gh。
+- feat：`ticket-create` 新增「批次模式」：清單輸入、整批共用階段／類型／labels、一次總表確認；無人值守（使用者不在且呼叫端明示不問）取推薦值直接建，總表落檔（使用者 2026-11-20 裁決採用）。
+
+起因：plugharbor#61——排程用 `claude -p` 跑 `ticket-report daily`，subagent 寫 `report-{日期}.md` 被 Claude Code 拒絕（2026-11-20 本機重現：同一 subagent、同一權限模式，`report-*.md` 被拒、`daily-*.md` 寫入成功），主報表沒產出卻以為完成。
+- fix：主報表檔名 `report-{日期}.md` 改 `daily-{日期}.md`、`report-{週會日}.md` 改 `weekly-{週會日}.md`（檔名改動，下游若依檔名讀取要跟著改；使用者 2026-11-20 裁決採用）。
+- docs：錯誤處理表加「寫檔被拒」一列，要求明講未產出，不當成功收尾。
+
 ## [1.3.1] - 2026-11-20
 
 起因：plugharbor#60——Formwright 的外洩清單因專案公開而放在 repo 外，以環境變數 `LEAK_DENYLIST` 指過去；`ticket_backend.py leak` 不讀它，退出碼 5，SKILL 規則要求公開 repo 停下，等於開不了票。

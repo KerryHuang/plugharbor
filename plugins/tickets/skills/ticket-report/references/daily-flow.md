@@ -35,7 +35,7 @@
 
 | 產出 | 票號 | out_path |
 |------|:----:|---|
-| 主報表 | **零票號** | `.tmp/daily-report/report-{日期}.md` |
+| 主報表 | **零票號** | `.tmp/daily-report/daily-{日期}.md` |
 | 票務明細 | 全部 | `.tmp/daily-report/tickets-{日期}.md` |
 
 ```
