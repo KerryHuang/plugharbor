@@ -3,7 +3,6 @@ name: plugin-healthcheck
 description: >-
   檢查 Claude Code 官方 Plugin 規範最新變化，對比指定 plugin 的結構，產出健康報告與重構建議。
   適用於定期維護、版本升級、或懷疑 plugin 結構已過時。
-  Use when user says "plugin 健康檢查", "plugin health check", "檢查 plugin 結構", "plugin 是否需要更新", "check plugin structure".
 argument-hint: "<plugin> [--fix] [--verbose]"
 disable-model-invocation: true
 ---

@@ -35,7 +35,7 @@ Read `plugins/<name>/.claude-plugin/plugin.json` → extract current `version`.
 | minor | 1.2.0 → 1.3.0 (new skills/features) |
 | major | 1.2.0 → 2.0.0 (breaking changes) |
 
-Confirm with user: "版本 `<current>` → `<new>`，確認？"
+用 AskUserQuestion 確認版號變更 `<current>` → `<new>`。
 
 ### 4. Update All Four Locations
 

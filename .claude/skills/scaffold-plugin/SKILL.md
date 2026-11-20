@@ -72,17 +72,23 @@ Add entry to `.claude-plugin/marketplace.json` `plugins` array:
 
 ### 6. Update README.md
 
-Add row to the plugin table in root `README.md`:
+Add row to the plugin table in root `README.md`（validate.py 要求名稱欄是連結）:
 
 ```markdown
-| <name> | 0.1.0 | <description> |
+| [<name>](./plugins/<name>/README.md) | 0.1.0 | <description> |
+```
+
+再加一列到「skills 與 agents」表（沒有就寫 `—`）：
+
+```markdown
+| <name> | — | — |
 ```
 
 ### 7. Verify
 
 - [ ] `plugins/<name>/.claude-plugin/plugin.json` exists with name, version, description, author, license
 - [ ] `.claude-plugin/marketplace.json` contains new plugin entry
-- [ ] `README.md` plugin table includes new row
+- [ ] `README.md` 版本表與「skills 與 agents」表都有新列
 - [ ] `plugins/<name>/CHANGELOG.md` exists with a `## [0.1.0]` entry
 - [ ] `python3 scripts/ci/validate.py` passes
 
