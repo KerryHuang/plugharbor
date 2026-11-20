@@ -8,7 +8,8 @@
   4. README 清單：根 README「skills 與 agents」表與實際目錄一致
   5. 名稱衝突：skill、agent 名稱跨 plugin 不得重複（pi／Codex 是扁平命名）
   6. 外洩掃描：個人路徑、非範例 email、CGNAT（Tailscale）IP；
-     另讀 repo 根目錄 `.leak-denylist`（gitignored，只存在本機）逐行比對
+     另讀 repo 根目錄 `.leak-denylist`（gitignored，只存在本機）逐行比對，
+     commit 作者與提交者身分（name／email）也比對同一份黑名單
 
 用法：python3 scripts/ci/validate.py
 """
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -275,6 +277,13 @@ def check_leaks() -> None:
             for p in deny:
                 if m := p.search(line):
                     err(f, f"L{lineno} 命中本機黑名單：{m.group(0)}")
+    # 檔案掃不到 commit 身分：別台機器的 git 設定若是公司信箱，會直接公開在歷史裡
+    for var in ("GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT"):
+        r = subprocess.run(["git", "var", var], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        ident = r.stdout.rsplit(" ", 2)[0] if r.returncode == 0 else ""
+        for p in deny:
+            if m := p.search(ident):
+                err(var, f"commit 身分命中本機黑名單：{m.group(0)}（改 `git config user.email`）")
 
 
 def expected_copy(text: str, copy_plugin: str, aliases: dict) -> str:
