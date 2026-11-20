@@ -66,6 +66,7 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 - [ ] 💡 auto-memory 寫入前程式檢查：秘密樣式、隱藏字元、與既有記憶本文完全重複、索引行數上限、從網頁／貼上內容學來的規則不收；等事故再做 #38
 - [ ] 💡 常改的 skill（unattended、agent-dispatch）附 eval 案例，改動後跑一次量效果（可接 `claude plugin eval`；範本參考 dotnet/skills 的 `tests/<plugin>/<skill>/eval.yaml`＋評分腳本、有無 skill 對照、觸發率）；等事故再做 #39
 - [ ] 💡 agent-dispatch `bg.mjs wait` 為「待決」回專用 exit code（agentrun 用 8），呼叫端不必讀結果檔第一行；現行 herdr 事故已修，等事故再做 #40
+- [ ] 💡 agent-mesh-check 比對各家模型清單（`agy models`、`pi --list-models`）與 `routing.json`，有新型號或已下架就提醒；codex、agy、pi 的模型 ID 寫死不會跟新版，claude 用別名不受影響；等第一次派到過時模型再做 #62
 
 ## 借鏡 dotnet/skills（2026-11-13 評估）
 
