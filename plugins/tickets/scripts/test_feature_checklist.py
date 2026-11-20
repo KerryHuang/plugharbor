@@ -152,6 +152,16 @@ class TestFeatureChecklist(unittest.TestCase):
             subprocess.run([sys.executable, str(SCRIPT), str(p), "--write"], check=True, capture_output=True)
             self.assertEqual(run("--check").returncode, 1)  # 數字對了，但不同步仍失敗
 
+    def test_done_status_with_check_mark_and_br(self):
+        rm = self.fc.parse_roadmap("| 工作段 | 狀態 |\n|---|---|\n"
+                                   "| d1 | ✅ 已上線（2026-11-20）；<br>回退安全 |\n"
+                                   "| d2 | ✅完成 |\n| m1 | 進行中 |\n")
+        self.assertEqual(rm["d1"][1], "✅ 已上線（2026-11-20）；<br>回退安全")
+        self.assertTrue(self.fc.seg_done(rm["d1"][1]))
+        self.assertTrue(self.fc.seg_done(rm["d2"][1]))
+        self.assertFalse(self.fc.seg_done(rm["m1"][1]))
+        self.assertFalse(self.fc.seg_done("✅ 進行中"))
+
     def test_parallel_window_and_order_conflict(self):
         roadmap = ("| 工作段 | 內容 | 狀態 | 設計 |\n|---|---|---|---|\n"
                    "| d1 | 已做 | 已上線 | [d](d.md) |\n"

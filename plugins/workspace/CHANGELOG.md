@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.20.5] - 2026-11-21
+
+起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。
+- docs(unattended)：`autopilot.md` 自讀段表的完成規則註明開頭可有 ✅，與 lifecycle 4.3.1 一致。
+
 ## [1.20.4] - 2026-11-19
 
 起因：toolkit 0.32.0 新增 scratch-ledger（暫存建立時標記、過期開場提議），tmp-scratch 的清理說法要對齊。

@@ -11,7 +11,7 @@
       "name": "lifecycle",
       "source": "./plugins/lifecycle",
       "description": "開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin",
-      "version": "4.3.0",
+      "version": "4.3.1",
       "author": {
         "name": "KerryHuang"
       }
@@ -20,7 +20,7 @@
       "name": "tickets",
       "source": "./plugins/tickets",
       "description": "票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "author": {
         "name": "KerryHuang"
       }
@@ -47,7 +47,7 @@
       "name": "workspace",
       "source": "./plugins/workspace",
       "description": "git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查",
-      "version": "1.20.4",
+      "version": "1.20.5",
       "author": {
         "name": "KerryHuang"
       }

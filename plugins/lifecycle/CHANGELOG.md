@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.3.1] - 2026-11-21
+
+起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。
+- fix(scripts)：`feature_checklist.py` 判斷段是否完成前先去掉開頭的 ✅ 與其後空白；狀態格內的 `<br>` 不影響段表解析（加測試）。
+- docs(references)：`feature-checklist.md` 註明狀態開頭可有 ✅。
+
 ## [4.3.0] - 2026-11-19
 
 起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。

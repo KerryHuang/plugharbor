@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.3] - 2026-11-21
+
+起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。
+- fix：同步 lifecycle 4.3.1 的 `feature_checklist.py`、測試與 `feature-checklist.md` 副本（狀態開頭可有 ✅）。
+
 ## [1.3.2] - 2026-11-20
 
 起因：plugharbor#59——Formwright 一次搬 58 張待辦成票，ticket-create 每張兩次互動確認，無人值守時無法照流程，只能繞過它直接跑 gh。

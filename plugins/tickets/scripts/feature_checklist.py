@@ -194,7 +194,7 @@ def parse_roadmap(text):
 
 
 def seg_done(status):
-    return status.startswith(DONE_STATUS)
+    return status.removeprefix("✅").lstrip().startswith(DONE_STATUS)
 
 
 def blocker_state(b, by_name, roadmap):
