@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """ticket_backend 的測試。直接執行：python3 test_ticket_backend.py"""
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -96,6 +98,30 @@ class Leak(unittest.TestCase):
     def test_missing_denylist_returns_none(self):
         with tempfile.TemporaryDirectory() as d:
             self.assertIsNone(tb.load_denylist(Path(d)))
+
+    def test_env_var_denylist_used_when_repo_has_none(self):
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as other:
+            f = Path(other) / "deny.txt"
+            f.write_text(DENY, encoding="utf-8")
+            with mock.patch.dict(os.environ, {"LEAK_DENYLIST": str(f)}):
+                hits = tb.scan_leaks("SecretCorp", tb.load_denylist(Path(d)))
+                self.assertEqual(hits, [(1, "SecretCorp")])
+
+    def test_env_var_wins_over_repo_file(self):
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as other:
+            self.pats(d)  # repo 內那份只有 SecretCorp
+            f = Path(other) / "deny.txt"
+            f.write_text("OtherWord\n", encoding="utf-8")
+            with mock.patch.dict(os.environ, {"LEAK_DENYLIST": str(f)}):
+                pats = tb.load_denylist(Path(d))
+            self.assertEqual(tb.scan_leaks("SecretCorp OtherWord", pats), [(1, "OtherWord")])
+
+    def test_env_var_pointing_nowhere_falls_back(self):
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.dict(os.environ, {"LEAK_DENYLIST": str(Path(d) / "nope")}):
+                self.assertIsNone(tb.load_denylist(Path(d)))
+                self.pats(d)
+                self.assertIsNotNone(tb.load_denylist(Path(d)))
 
     def test_cli_exit_codes(self):
         with tempfile.TemporaryDirectory() as d:

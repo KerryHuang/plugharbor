@@ -47,7 +47,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/config.py get ticket.tool
    python3 ${CLAUDE_SKILL_DIR}/scripts/ticket_backend.py leak <檔>
    ```
 
-   退出碼 4 → 停下，把命中列給叫用端，不送出、不自動改寫。退出碼 5（找不到 `.leak-denylist`）→ GitHub 先查 `gh repo view <repo> --json visibility -q .visibility`，`PUBLIC` 就停下請使用者在 repo 根目錄建 denylist（一行一個字串，`regex:` 開頭為正規式），否則警告後繼續；Linear 警告後繼續。
+   退出碼 4 → 停下，把命中列給叫用端，不送出、不自動改寫。退出碼 5（環境變數 `LEAK_DENYLIST` 指的檔與 `.leak-denylist` 都找不到；清單放在 repo 外的專案設這個變數）→ GitHub 先查 `gh repo view <repo> --json visibility -q .visibility`，`PUBLIC` 就停下請使用者在 repo 根目錄建 denylist（一行一個字串，`regex:` 開頭為正規式），否則警告後繼續；Linear 警告後繼續。
 4. 照 reference 的對應步驟呼叫工具（Linear MCP 或 `gh`）。
 5. 回傳票 ID／URL 與實際做了什麼；工具降級（例如舊版 gh 沒有 `--parent`，父子票退回內文慣例）時明講落差。
 

@@ -5,10 +5,11 @@
   python3 ticket_backend.py stage <stage>   （讀目前目錄的 .plugharbor/lifecycle.yml，輸出 JSON）
     缺設定或階段不合法：退出碼 2，stderr 一行說明。
   python3 ticket_backend.py project-option <stage>   （有設 ticket.project 時印看板對照 JSON，沒設印 null）
-  python3 ticket_backend.py leak <檔案>     （用目前目錄 repo 的 .leak-denylist 掃內文）
+  python3 ticket_backend.py leak <檔案>     （用 $LEAK_DENYLIST 或目前目錄 repo 的 .leak-denylist 掃內文）
     0 無命中；4 有命中（stdout 每行 `L<行號> <命中>`）；5 找不到 denylist。
 """
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -78,11 +79,14 @@ def _main_checkout(root: Path):
 
 
 def load_denylist(root: Path):
-    """讀 root/.leak-denylist（worktree 裡沒有就讀主 checkout 那份）；都沒有回 None。
+    """先讀環境變數 LEAK_DENYLIST 指的檔；沒設或檔不存在就讀 root/.leak-denylist
+    （worktree 裡沒有就讀主 checkout 那份）；都沒有回 None。
     解析規則與 plugharbor repo 的 CI 外洩檢查相同（由測試比對）。"""
-    f = root / ".leak-denylist"
-    if not f.exists() and (main := _main_checkout(root)):
-        f = main / ".leak-denylist"
+    f = Path(os.environ["LEAK_DENYLIST"]) if os.environ.get("LEAK_DENYLIST") else None
+    if not (f and f.is_file()):
+        f = root / ".leak-denylist"
+        if not f.exists() and (main := _main_checkout(root)):
+            f = main / ".leak-denylist"
     if not f.exists():
         return None
     pats = []
@@ -101,7 +105,7 @@ def scan_leaks(text: str, patterns) -> list:
 def leak_main(path: str) -> int:
     pats = load_denylist(Path.cwd())
     if pats is None:
-        print("找不到 .leak-denylist（repo 根目錄或主 checkout）", file=sys.stderr)
+        print("找不到 denylist（$LEAK_DENYLIST、repo 根目錄或主 checkout 的 .leak-denylist）", file=sys.stderr)
         return 5
     hits = scan_leaks(Path(path).read_text(encoding="utf-8"), pats)
     for n, s in hits:

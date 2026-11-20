@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.1] - 2026-11-20
+
+起因：plugharbor#60——Formwright 的外洩清單因專案公開而放在 repo 外，以環境變數 `LEAK_DENYLIST` 指過去；`ticket_backend.py leak` 不讀它，退出碼 5，SKILL 規則要求公開 repo 停下，等於開不了票。
+- fix：`ticket-ops` 的 `load_denylist` 先讀 `LEAK_DENYLIST` 指的檔（不存在才退回 repo 根目錄與主 checkout），附 3 個測試；SKILL.md 退出碼 5 的說明同步。
+
 ## [1.3.0] - 2026-11-19
 
 起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。
