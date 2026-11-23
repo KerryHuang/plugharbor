@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 28／共 42（另有 2 項決定不做）；進行中 1、已規劃 2、構想 11；待確認 0 項。更新於 2026-11-23。
+總計：完成 28／共 46（另有 2 項決定不做）；進行中 1、已規劃 2、構想 15；待確認 0 項。更新於 2026-11-23。
 
 ## workspace：unattended（自動駕駛） #8
 
@@ -124,3 +124,14 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 來源：vercel-labs/agent-skills 的 web-design-guidelines（規則本體 vercel-labs/web-interface-guidelines，16 類約 90 條、每條一行、鎖 commit＋SHA-256）。不裝原版：與 `ui-ux:auditing-ui`、`ui-ux-pro-max` 觸發重疊。
 
 - [ ] 💡 `ui-ux:auditing-ui` 的 checklist.md 補「web 程式碼層」段：挑約 10 條可 grep 的（icon button `aria-label`、`:focus-visible`、`prefers-reduced-motion`、不用 `transition: all`、`color-scheme`、不禁 zoom／paste、不用 `<div onClick>`）；英文排版與 React 專用條不收；等第一次審查漏掉這類問題再做 #66
+
+## toolkit：Herdr.app 多 CLI 對等驗證（2026-11-23） #69
+
+完成 0／共 4。
+
+起因：Windows 的 Herdr.app 開 pane 驗 codex／agy／pi 與 Claude Code 對等。已修：agy hook 改用 Git bin/sh.exe（setup）、guard 支援 agy 與 pi（toolkit 0.34.0）、git guard 擋下 `-C`／`-c` 繞過（0.34.1）。
+
+- [ ] 💡 `mux.py`：Windows 上 `herdr-app` socket 時好時壞（10061）被判成視窗沒開，worker 跳成獨立視窗；pi turn 0 的 `send` 誤報 blocked（prompt 其實已送出） #70
+- [ ] 💡 pi 載入 superpowers skills（目前只有 hook 注入的 using-superpowers） #71
+- [ ] 💡 codex／agy／pi 讀得到 Claude 的 auto-memory 索引（只讀注入） #72
+- [ ] 💡 `install-project.sh` 在 Windows 找不到 plugin（`setup/tests/install.sh` 第 26 項，改動前即失敗） #73
