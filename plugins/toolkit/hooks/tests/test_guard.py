@@ -212,3 +212,46 @@ def test_hc_run_agent_denied(env, cmd):
 ])
 def test_hc_normal_commands_pass(env, cmd):
     assert run(env, "Bash", command=cmd) is None
+
+
+# ---------- agy（Antigravity CLI）：toolCall.name／args 輸入、decision／reason 輸出 ----------
+
+def run_agy(env, name, *, plugin_env=True, **args):
+    e = dict(env) if plugin_env else {k: v for k, v in env.items() if k != "CLAUDE_PLUGIN_ROOT"}
+    payload = {"toolCall": {"name": name, "args": args}, "workspacePaths": [e["CLAUDE_PROJECT_DIR"]]}
+    r = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(payload),
+                       capture_output=True, text=True, encoding="utf-8", env=e)
+    assert r.returncode == 0, r.stderr
+    return json.loads(r.stdout) if r.stdout else None
+
+
+def test_agy_run_command_denied(env):
+    out = run_agy(env, "run_command", CommandLine="git add -A --dry-run", Cwd="/w")
+    assert out["decision"] == "deny" and "git-add-all" in out["reason"]
+    assert "hookSpecificOutput" not in out
+
+
+def test_agy_without_plugin_root_env_still_loads_plugin_guards(env):
+    # agy 不設 CLAUDE_PLUGIN_ROOT，要退回 guard.py 所在的 plugin
+    assert run_agy(env, "run_command", plugin_env=False, CommandLine="git add .")["decision"] == "deny"
+
+
+def test_agy_destructive_asks(env):
+    assert run_agy(env, "run_command", CommandLine="git reset --hard HEAD~1")["decision"] == "ask"
+
+
+def test_agy_write_tools_map_to_write_edit(env):
+    assert run_agy(env, "write_to_file", TargetFile="a", CodeContent="x FORBIDDEN_TOKEN")["decision"] == "deny"
+    assert run_agy(env, "replace_file_content", TargetFile="a", TargetContent="y",
+                   ReplacementContent="FORBIDDEN_TOKEN")["decision"] == "deny"
+    assert run_agy(env, "multi_replace_file_content", TargetFile="a",
+                   ReplacementChunks=[{"ReplacementContent": "ok"}, {"ReplacementContent": "FORBIDDEN_TOKEN"}])["decision"] == "deny"
+
+
+@pytest.mark.parametrize("name,args", [
+    ("run_command", {"CommandLine": "git status"}),
+    ("write_to_file", {"TargetFile": "a", "CodeContent": "fine"}),
+    ("view_file", {"AbsolutePath": "git add -A"}),
+])
+def test_agy_normal_passes(env, name, args):
+    assert run_agy(env, name, **args) is None

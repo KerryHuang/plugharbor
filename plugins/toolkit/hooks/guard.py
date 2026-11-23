@@ -28,6 +28,9 @@ import sys
 from pathlib import Path
 
 FIELDS = {"Bash": "command", "Write": "content", "Edit": "new_string"}
+# agy（Antigravity CLI）：toolCall.name／toolCall.args，換成 Claude 的工具名與欄位（https://antigravity.google/docs/hooks.md）
+AGY_TOOLS = {"run_command": ("Bash", "CommandLine"), "write_to_file": ("Write", "CodeContent"),
+             "replace_file_content": ("Edit", "ReplacementContent")}
 
 
 def _parse(path: Path) -> dict | None:
@@ -80,9 +83,22 @@ def target_text(tool: str, inp: dict) -> str:
     return str(inp.get(FIELDS.get(tool, ""), "") or "")
 
 
+def normalize(payload: dict) -> tuple[str, dict]:
+    """回傳 Claude 形狀的 (tool_name, tool_input)；agy 的 payload 先轉換。"""
+    call = payload.get("toolCall")
+    if not isinstance(call, dict):
+        return payload.get("tool_name") or "", payload.get("tool_input") or {}
+    name, args = call.get("name") or "", call.get("args") or {}
+    if name == "multi_replace_file_content":
+        chunks = [c for c in args.get("ReplacementChunks") or [] if isinstance(c, dict)]
+        return "MultiEdit", {"edits": [{"new_string": c.get("ReplacementContent")} for c in chunks]}
+    tool, key = AGY_TOOLS.get(name, (name, ""))
+    return tool, ({FIELDS[tool]: args.get(key)} if key else {})
+
+
 def decide(payload: dict, guards: list[dict]) -> dict | None:
-    tool = payload.get("tool_name") or ""
-    text = target_text(tool, payload.get("tool_input") or {})
+    tool, inp = normalize(payload)
+    text = target_text(tool, inp)
     hits = [g for g in guards if tool in g["tools"] and text and g["regex"].search(text)]
     if not hits:
         return None
@@ -102,9 +118,17 @@ def main() -> int:
         payload = json.load(sys.stdin)
     except Exception:
         return 0
+    agy = isinstance(payload.get("toolCall"), dict)
     project = os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or ""
-    out = decide(payload, load_guards(project, os.environ.get("CLAUDE_PLUGIN_ROOT")))
-    if out:
+    if not project and agy:
+        project = (payload.get("workspacePaths") or [""])[0] or ""
+    # agy 不設 CLAUDE_PLUGIN_ROOT：退回本檔所在 plugin
+    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT") or str(Path(__file__).resolve().parents[1])
+    out = decide(payload, load_guards(project, plugin_root))
+    if out and agy:
+        json.dump({"decision": out["permissionDecision"], "reason": out["permissionDecisionReason"]},
+                  sys.stdout, ensure_ascii=False)
+    elif out:
         json.dump({"hookSpecificOutput": out}, sys.stdout, ensure_ascii=False)
     return 0
 

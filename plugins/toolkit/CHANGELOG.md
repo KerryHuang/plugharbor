@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.34.0] - 2026-11-23
+
+起因：2026-11-23 在 Windows 的 Herdr.app 驗證 codex／agy／pi 與 Claude Code 對等，`git add -A` 只有 Claude 與 Codex 擋得下：agy 的 payload 是 `toolCall.name／args`、輸出要 `decision／reason`，guard.py 不認得；pi 沒有 hook，toolkit 只出 skills。
+- feat(hooks)：`guard.py` 支援 agy（Antigravity CLI）。`run_command`→Bash（`CommandLine`）、`write_to_file`→Write（`CodeContent`）、`replace_file_content`→Edit（`ReplacementContent`）、`multi_replace_file_content`→MultiEdit；輸出改成 `{"decision","reason"}`；沒有 `CLAUDE_PLUGIN_ROOT` 時退回 guard.py 所在 plugin，專案目錄取 `cwd`／`workspacePaths[0]`。格式依 https://antigravity.google/docs/hooks.md，Windows 實機 agy 1.5.14 驗證擋下 `git add -A --dry-run`。
+- feat(pi)：新增 pi extension `pi/guard.ts`（package.json `pi.extensions`）。`bash`／`powershell`／`write`／`edit` 經 `pi/guard-core.mjs` 換成 Claude 形狀交給同一份 guard.py；deny 擋，ask 有介面就確認、沒介面擋；找不到 python、逾時、輸出看不懂一律放行（與 hook 端 fail-open 一致）。
+- test：`hooks/tests/test_guard.py` 補 agy 6 個；`pi/guard-core.test.mjs`（5 個）。
+
 ## [0.33.0] - 2026-11-23
 
 起因：docs/retrospective/20261123-implement-bypass/report.md（R1）——lifecycle:implement 在 22 個照規格實作的 session 只被叫到 2 次，superpowers 的 writing-plans → executing-plans／subagent-driven-development 自動交接與派工 worker 都繞過入口；上一版改 description 與措辭已失敗。
