@@ -6,6 +6,6 @@
   "keywords": ["pi-package", "toolkit"],
   "pi": {
     "skills": ["./skills"],
-    "extensions": ["./pi/guard.ts"]
+    "extensions": ["./pi/guard.ts", "./pi/memory.ts"]
   }
 }

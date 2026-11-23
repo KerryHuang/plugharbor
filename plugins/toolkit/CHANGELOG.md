@@ -2,6 +2,14 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.36.0] - 2026-11-23
+
+起因：plugharbor#72——Codex／agy／pi 看不到 Claude Code 的 auto-memory，跨 CLI 接手時少了專案教訓。使用者 2026-11-23 裁決只做唯讀，寫入留給 Claude。
+- feat(hooks)：新增 SessionStart `memory-context.py`：從 cwd 往上找 `~/.claude/projects/<slug>/memory/MEMORY.md`（slug＝路徑非英數字元換 `-`），取前 200 行唯讀注入，並註明不要新增、修改或刪除記憶檔；transcript 在 `~/.claude/` 下（Claude 自己）或找不到索引時不輸出。Codex、agy 經 plugin `hooks/hooks.json` 載入；agy 的 payload 沒有 cwd（用 `workspacePaths[0]`），輸出改用 agy 的 `injectSteps` 格式。實機（Windows）：agy、pi 通過；Codex 的 toolkit plugin hook 在 Windows 一律 5 秒逾時，未注入（既有問題，另案）。
+- feat(pi)：新增 extension `pi/memory.ts`，以同規則在 `before_agent_start` 寫進 `claude-memory` prompt 區段。
+- docs：README hook 表、`docs/agent-parity.md` 對照表補這一列。
+- test：`hooks/tests/test_memory_context.py`。
+
 ## [0.35.0] - 2026-11-23
 
 起因：plugharbor#70——Windows 的 session 由 Mac 的 Herdr.app 遠端顯示時，`mux.py` 只問本機 `herdr-app`（本機沒開 app）判成沒視窗，worker 不擺放、在 Mac 跳成獨立視窗。

@@ -241,6 +241,12 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" tower-context.py",
             "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" tower-context.py; exit $LASTEXITCODE",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run-py.sh\" memory-context.py",
+            "commandWindows": "$u=New-Object Text.UTF8Encoding $false; [Console]::InputEncoding=$u; [Console]::OutputEncoding=$u; $OutputEncoding=$u; $in=[Console]::In.ReadToEnd(); $sh=$null; foreach ($c in @($(try { Join-Path (Split-Path (Split-Path (Get-Command git -ErrorAction Stop).Source)) 'bin\\sh.exe' } catch { '' }), \"$env:ProgramFiles\\Git\\bin\\sh.exe\", \"$env:LOCALAPPDATA\\Programs\\Git\\bin\\sh.exe\")) { if ($c -and (Test-Path $c)) { $sh=$c; break } }; if (-not $sh) { exit 0 }; $in | & $sh \"$env:CLAUDE_PLUGIN_ROOT/hooks/run-py.sh\" memory-context.py; exit $LASTEXITCODE",
+            "timeout": 5
           }
         ]
       },

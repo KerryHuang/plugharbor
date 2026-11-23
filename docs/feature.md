@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 31／共 46（另有 2 項決定不做）；進行中 1、已規劃 2、構想 12；待確認 0 項。更新於 2026-11-23。
+總計：完成 32／共 46（另有 2 項決定不做）；進行中 1、已規劃 2、構想 11；待確認 0 項。更新於 2026-11-23。
 
 ## workspace：unattended（自動駕駛） #8
 
@@ -127,11 +127,11 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 ## toolkit：Herdr.app 多 CLI 對等驗證（2026-11-23） #69
 
-完成 3／共 4。
+完成 4／共 4。
 
 起因：Windows 的 Herdr.app 開 pane 驗 codex／agy／pi 與 Claude Code 對等。已修：agy hook 改用 Git bin/sh.exe（setup）、guard 支援 agy 與 pi（toolkit 0.34.0）、git guard 擋下 `-C`／`-c` 繞過（0.34.1）。
 
 - [x] `mux.py`：本機沒開 Herdr.app、由另一台的視窗遠端顯示（Mac 看 Windows）時，經 `hc exec --on` 擺進那邊的主 tab，不再跳窗；pi turn 0 的 `send` 誤報 blocked、Git Bash 把 `/clear` 改寫成路徑一併修（toolkit 0.35.0；2026-11-23 Windows＋Mac 視窗實機驗收） #70
 - [x] pi 載入 superpowers skills：`setup/install.sh` 把 superpowers 的 git 來源（obra/superpowers，tag v7.0.2）加進 pi packages（2026-11-23 pi pane 實機驗收） #71
-- [ ] 💡 codex／agy／pi 讀得到 Claude 的 auto-memory 索引（只讀注入） #72
+- [x] codex／agy／pi 讀得到 Claude 的 auto-memory 索引（只讀注入）：toolkit `memory-context.py` SessionStart hook＋`pi/memory.ts`；寫入不做（使用者 2026-11-23 裁決；toolkit 0.36.0；Windows 實機 agy、pi 通過，Codex 因 plugin hook 逾時未生效） #72
 - [x] `install.sh --check-projects` 在 Windows 報「找不到 plugin」：python 輸出 CRLF，最後一個 plugin 名帶 CR 字元，改為剝掉；測試假清單改用原生路徑（2026-11-23 `setup/tests/install.sh` 全過） #73
