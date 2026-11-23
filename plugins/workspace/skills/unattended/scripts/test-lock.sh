@@ -7,12 +7,14 @@ set -u
 LOCK="${UNATTENDED_TEST_LOCK:-${TMPDIR:-/tmp}/unattended-test.lock}"
 WAIT="${UNATTENDED_TEST_LOCK_POLL:-5}"
 said=0
-until mkdir "$LOCK" 2>/dev/null; do
-  pid="$(cat "$LOCK/pid" 2>/dev/null || true)"
+T() { echo "$(date +%s.%N) me=$$ $*" >> "${LOCK}.trace"; }
+T begin
+until { mkdir "$LOCK" 2>/dev/null; rc=$?; T "mkdir rc=$rc"; [ $rc -eq 0 ]; }; do
+  pid="$(cat "$LOCK/pid" 2>/dev/null || true)"; T "read pid=[$pid]"
   if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then echo "[DEBUG67] stale takeover me=$$ pid=$pid" >&2; ps -o pid,ppid,stat,args >&2; rm -rf "$LOCK"; continue; fi
   [ "$said" -eq 1 ] || { echo "[test-lock] 等前一支重測試結束（pid ${pid:-?}）" >&2; said=1; }
   sleep "$WAIT"
 done
-echo $$ > "$LOCK/pid"
-trap 'rm -rf "$LOCK"' EXIT INT TERM
+echo $$ > "$LOCK/pid"; T "wrote pid"
+trap 'T release; rm -rf "$LOCK"' EXIT INT TERM
 "$@"
