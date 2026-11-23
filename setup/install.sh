@@ -34,7 +34,7 @@ for x in items if isinstance(items, list) else []:
         if pid[:-11] not in names: names.append(pid[:-11])
 for (path, scope), names in sorted(groups.items()):
     print("\t".join([scope, path, " ".join(names)]))
-')" || PROJ_LIST=""
+' | tr -d '\r')" || PROJ_LIST=""  # Windows 的 python stdout 是 CRLF，不剝掉的話每行最後一個 plugin 名帶 \r
   [ -n "$PROJ_LIST" ] || { echo "沒有專案層 plugharbor plugin 的紀錄"; exit 0; }
   BEHIND=0; STALE=0; PFAILS=0
   while IFS="$(printf '\t')" read -r scope path names; do
@@ -482,6 +482,10 @@ for d in (l.strip() for l in sys.stdin):
     except ValueError:   # Windows 跨磁碟機時沒有相對路徑
         rel = d
     added.append(rel.replace(os.sep, "/"))
+# superpowers 自帶 pi manifest（skills＋extension），pi 沒有 Claude 的 marketplace，改掛 git 來源（pin 到 tag）
+SP = "git:github.com/obra/superpowers"
+if not any(isinstance(x, str) and x.split("@")[0] == SP for x in pkgs) and not any(isinstance(x, dict) and str(x.get("source", "")).split("@")[0] == SP for x in pkgs):
+    added.append(SP + "@v7.0.2")
 for a in added:
     print(("MISSING: pi package " if check else "OK:   pi package ") + a)
 if (added or stale) and not check:
