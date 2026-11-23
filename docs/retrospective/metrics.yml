@@ -20,10 +20,11 @@ metrics:
     criterion: 使用者要求照規格實作的 session 中，lifecycle:implement 被叫到的比例 ≥ 80%
     due: {date: "2026-11-23"}
     if_not: 回頭看 implement 的 description 觸發句，或在 superpowers.md 的銜接那條寫得更直接
-    status: open
+    status: failed
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-23", verdict: fail, evidence: "本機 Claude Code transcript 11/09～11/23：照規格實作 22 session（含叫 executing-plans／subagent-driven 者）僅 2 叫到 implement（約 9%）；13 次 brainstorming→writing-plans 直接執行、6 次派工 worker 照計畫直接開工。見 20261123-implement-bypass/"}
   - id: M-20261109-03
     source: commit f5a71de
     layer: workspace
@@ -31,10 +32,11 @@ metrics:
     criterion: 三個 skill 的 Skill 叫用次數，對照改前 14 天基線沒有歸零，且未與 superpowers 同名 skill 在同一 session 重複叫用
     due: {date: "2026-11-23"}
     if_not: 歸零的 skill 評估移除或併入 superpowers 分工；重複叫用的再縮觸發詞
-    status: open
+    status: failed
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-23", verdict: fail, evidence: "三 skill Skill 叫用：改前 14 天 1 次（review），改後 14 天 0 次＝歸零；同 session 與 superpowers 同名重複 0 次"}
   - id: M-20261109-04
     source: commit 609fd19
     layer: toolkit
@@ -42,10 +44,11 @@ metrics:
     criterion: 期間內 Agent tool 派工有明確設 model 的比例 ≥ 95%
     due: {date: "2026-11-23"}
     if_not: 查 agent-model-guard 是否放行了未帶模型的派工，或 dispatch.md 那行沒被讀到
-    status: open
+    status: passed
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-23", verdict: pass, evidence: "Agent 派工 1233 次、帶 model 1231 次（99.8%）；漏的 2 次皆 web-fetch"}
   - id: M-20261109-05
     source: commit 68c6b88
     layer: lifecycle
@@ -53,10 +56,11 @@ metrics:
     criterion: 期間內 Bug 票經 ticket-create 進 implement 後，被規格閘門擋下或使用者改走 systematic-debugging 的次數；≥ 1 次就判 fail
     due: {date: "2026-11-23"}
     if_not: 把 ticket-create 的 Bug 動線改接 superpowers:systematic-debugging（lifecycle patch）
-    status: open
+    status: passed
     checks:
       - {date: "2026-11-13", verdict: not-due, evidence: "due 2026-11-23，未到期"}
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-23，未到期"}
+      - {date: "2026-11-23", verdict: pass, evidence: "期間 Bug 票經 ticket-create 進 implement 0 次，判準 0 次＝pass；樣本為零，未證明動線順暢"}
   - id: M-20261113-01
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -93,5 +97,32 @@ metrics:
     criterion: 2026-11-17 之後，佇列出現 dispatch-stop-guard 誤逼子程序寫派工結果檔的 friction 筆數＝0
     due: {date: "2026-12-08"}
     if_not: 補 agent-dispatch SKILL.md:104 濾除清單，或讓 dispatch-stop-guard 比對 pane id
+    status: open
+    checks: []
+  - id: M-20261123-01
+    source: 20261123-implement-bypass/report.md
+    layer: lifecycle
+    metric: implement 入口（R1 修法上線後）
+    criterion: 有 .plugharbor/lifecycle.yml 的 repo 中，叫 writing-plans／executing-plans／subagent-driven-development 的 session，同 session 也叫 lifecycle:implement 的比例 ≥ 80%
+    due: {date: "2026-12-14"}
+    if_not: (a) hook 失敗就改 (b) after.md 併入計畫範本、implement 降為選用；到期時 R1 未套用則判 fail 並重新排程
+    status: open
+    checks: []
+  - id: M-20261123-02
+    source: 20261123-implement-bypass/report.md
+    layer: lifecycle
+    metric: 票號先寫後開
+    criterion: 2026-11-24～12-14 plugharbor commit 中寫「補開票／撞號／對帳差異」的筆數＝0
+    due: {date: "2026-12-14"}
+    if_not: 清單新增項目一律走腳本開票並回寫號碼
+    status: open
+    checks: []
+  - id: M-20261123-03
+    source: 20261123-implement-bypass/report.md
+    layer: workspace
+    metric: workspace:debugging／review 退場
+    criterion: 退場後到 2026-12-14，回饋佇列中要求恢復或找不到該 skill 的糾正筆數＝0
+    due: {date: "2026-12-14"}
+    if_not: 恢復為只在沒裝 superpowers 時觸發的退路版
     status: open
     checks: []
