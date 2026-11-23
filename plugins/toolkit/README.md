@@ -69,6 +69,10 @@ retrospective:
 
 Claude Code 另有三支 hook 自動配合：`tower-context.py`（SessionStart 摘要在飛航班）、`tower-track.py`（心跳與改動追蹤，撞檔提醒）、`tower-landing.py`（commit／merge／rebase 到預設分支、push 預設分支前跑 land-check，超出範圍、撞檔、落後時擋下或詢問）。專案可用 `.plugharbor/tower.yml` 的區塊式 `shared:` 清單登記共用檔（改了不算撞檔）。其他 CLI 沒有自動追蹤與硬擋，要手動跑 `land-check`。
 
+## implement-gate
+
+`implement-gate.py`（Claude Code PreToolUse，matcher `Skill`）：repo 有 `.plugharbor/lifecycle.yml` 時，session 第一次叫 `superpowers:writing-plans`／`executing-plans`／`subagent-driven-development` 會被擋一次，提示先叫 `lifecycle:implement`；重叫同一個 skill 即放行。沒裝 lifecycle 的 repo 沒有該檔，不作用。
+
 ## transcribe
 
 本機語音轉逐字稿（`skills/transcribe/scripts/transcribe.py`）：Mac Apple Silicon 用 mlx-whisper、其他平台用 faster-whisper，輸出經 OpenCC `s2twp` 轉台灣繁體，每段 `[hh:mm:ss] 文字`。依賴（ffmpeg、轉錄套件、`opencc-python-reimplemented`）由使用者自裝，`transcribe.py doctor` 列出缺件與安裝指令。不上雲端、不分講者。另有 `record devices|start|status|stop`：背景用麥克風錄音、每 300 秒一個 16 kHz wav 分段，錄音與 session 脫鉤，`stop` 合併成無損的 `recording.flac`，長度核對一致後刪除分段；錄音需要 ffmpeg（`doctor --record` 檢查）。線上會議可用 `record start --source system|both` 一併錄系統播放的對方聲音（Mac 需 macOS 14.2+、Python 3.11+、`catap`，用 Core Audio tap，不必裝虛擬音訊驅動；Windows 尚未驗證、暫不開放），`live start` 會在錄音中逐段轉錄到 `transcript.md`。會議 AI 顧問「小小」（`advisor.py`，Mac）：在 `--source both` 錄音上偵測「嘿，小小」，以場合檔限定的唯讀工具呼叫 `claude -p`，用 `say` 經 BlackHole 2ch 與聚合裝置把回答送進會議，發言另存 `advisor.md`；`advisor.py doctor` 做開會前檢查。

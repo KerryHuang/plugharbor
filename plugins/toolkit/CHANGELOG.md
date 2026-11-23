@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.33.0] - 2026-11-23
+
+起因：docs/retrospective/20261123-implement-bypass/report.md（R1）——lifecycle:implement 在 22 個照規格實作的 session 只被叫到 2 次，superpowers 的 writing-plans → executing-plans／subagent-driven-development 自動交接與派工 worker 都繞過入口；上一版改 description 與措辭已失敗。
+- feat(hooks)：新增 `implement-gate.py`（PreToolUse，matcher `Skill`）。攔 `superpowers:writing-plans`、`executing-plans`、`subagent-driven-development`：cwd 所在 git root 有 `.plugharbor/lifecycle.yml`、本 session transcript 沒叫過 `lifecycle:implement`、也沒擋過時，第一次 deny 並提示先叫 lifecycle:implement；重叫同一個 skill 即放行（transcript 內有 `[implement-gate]` 標記）。沒有 lifecycle.yml（沒裝 lifecycle）的 repo 不作用；解析失敗 fail-open。
+- test：`hooks/tests/test_implement_gate.py`（10 個）；`test_agent_model_guard.py` 的 python hook 數量 28 → 29。
+
 ## [0.32.1] - 2026-11-20
 
 起因：prompt-audit（目標 Opus 5.5）查出 `claudemd-reviewer` 的檢查清單要求每條指示用 MUST/NEVER，會鼓勵受審的 CLAUDE.md 疊加大寫加壓詞，新模型會過度套用；使用者 2026-11-20 裁決直接修。

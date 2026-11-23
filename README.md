@@ -45,17 +45,17 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [lifecycle](./plugins/lifecycle/README.md) | 4.3.1 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
-| [tickets](./plugins/tickets/README.md) | 1.3.3 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
+| [lifecycle](./plugins/lifecycle/README.md) | 4.3.2 | 開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin |
+| [tickets](./plugins/tickets/README.md) | 1.3.4 | 票務——建票、改階段、回覆、日報週報、分流、清單對帳；工具可換 Linear／GitHub／Jira |
 | [discovery](./plugins/discovery/README.md) | 1.2.0 | 需求與會議——會議記錄、訪談準備、既有系統勘察、HTML 原型 |
 | [delivery](./plugins/delivery/README.md) | 1.3.0 | 交付文件——操作手冊（Word／PDF／簡報）與示範影片 |
-| [workspace](./plugins/workspace/README.md) | 1.20.5 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
-| [backend](./plugins/backend/README.md) | 1.0.3 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
+| [workspace](./plugins/workspace/README.md) | 2.0.0 | git 與工作區工具＋輕量開發核心——commit、worktree、分支清理、暫存檔、context 治理、除錯、審查、品質檢查、跨平台、無人值守 |
+| [backend](./plugins/backend/README.md) | 1.0.4 | 後端——分層架構、CQRS、資料存取、領域模型、API 端點、背景作業、單元測試；附 .NET 附錄 |
 | [frontend](./plugins/frontend/README.md) | 1.0.2 | 前端——架構分層、元件邏輯抽取、i18n、執行期除錯；附 Vue 附錄 |
 | [database](./plugins/database/README.md) | 1.0.2 | 資料庫——schema 慣例、migration、ORM 同步、資料表說明；附 SQL Server／PostgreSQL／MySQL／SQLite 方言與 EF Core 附錄 |
 | [ui-ux](./plugins/ui-ux/README.md) | 1.0.2 | UI/UX 設計知識庫與畫面規範——風格系統、版面、互動慣例、設計新畫面、唯讀審查；受眾（如兒童）規範以附錄載入 |
 | [desktop](./plugins/desktop/README.md) | 1.0.1 | 桌面應用——MVVM、建置與發佈；附 Avalonia 附錄 |
-| [toolkit](./plugins/toolkit/README.md) | 0.32.1 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
+| [toolkit](./plugins/toolkit/README.md) | 0.33.0 | 通用 hooks 與分層 guard、設定健檢與 agent 派工 skills（派工路由與額度改派）、reviewer agents——桌面通知、session 自動命名、AskUserQuestion 品質檢查、糾正回饋收集、context 提醒、失敗迴圈提醒、git 紅線攔截 |
 | [research](./plugins/research/README.md) | 0.6.1 | 探索與研究——graphify 知識圖譜、ai-radar AI 情報雷達（週版＋工作日消化採納待辦的每日版）、plugin-harvest 吸收外部 plugin 做法 |
 | [blog](./plugins/blog/README.md) | 0.2.1 | 部落格寫作流程——收素材、寫白話初稿、上線前檢查 |
 | [browser-docs](./plugins/browser-docs/README.md) | 0.3.6 | 瀏覽器實機操作與文件轉檔——Chrome 實機驅動與畫面勘察、截圖標註與脫敏、PDF 轉檔與擬真度驗證 |
@@ -68,7 +68,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 | tickets | `ticket-create` `ticket-ops` `ticket-reply` `ticket-report` `triage` | `report-writer` `silent-failure-hunter` `tickets-scout` |
 | discovery | `interview-prep` `meeting-minutes` `prototype-html` `survey-existing-system` | `discovery-domain-advisor` `discovery-report-writer` `discovery-scout` `discovery-silent-failure-hunter` |
 | delivery | `demo-video` `operation-manual` | `manual-explorer` `manual-reviewer` `manual-writer` |
-| workspace | `commit` `review` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` `project-setup` | — |
+| workspace | `commit` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` `submodule-relay` `tmp-scratch` `dual-tool-mirror` `cross-platform` `unattended` `project-setup` | — |
 | backend | `layered-architecture` `cqrs` `data-access` `domain-model` `api-endpoint` `background-job` `unit-testing` | — |
 | frontend | `frontend-architecture` `component-logic` `i18n` `runtime-debug` | — |
 | database | `schema-conventions` `migration` `orm-sync` `schema-docs` | — |
@@ -84,7 +84,7 @@ cd <專案> && claude plugin install lifecycle@plugharbor --scope local   # 專�
 需求進來 → `lifecycle` 的 `spec`（或 superpowers 的 brainstorming）→ `spec-check` → `tickets:ticket-create`（經 `tickets:ticket-ops` 換成專案的票務工具）；
 需求還模糊時先用 `discovery` 的 `meeting-minutes`、`interview-prep`、`survey-existing-system` 釐清。
 進實作由 `lifecycle` 的 `implement` 起頭（規劃與執行交給 superpowers，建議安裝），技術層面再取用 `backend`、`frontend`、
-`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit`／`review` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收，
+`database`、`desktop` 等職責外掛（自動載入專案技術棧的附錄），最後以 `workspace` 的 `commit` 與 `lifecycle` 的 `release` 收尾，完工後以 `lifecycle` 的 `qa-verify` 實機驗收，
 需要交付客戶的操作手冊與示範影片走 `delivery`。一個功能一份規格、一張票。
 
 ## 目錄結構

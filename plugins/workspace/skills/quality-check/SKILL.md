@@ -139,5 +139,5 @@ dotnet nuget locals all --clear && dotnet restore --force
 ## 與其他 skill 銜接
 
 - `lifecycle:implement`（可選）— 實作段落完成後的品質閘門
-- `review` — 審查前先跑品質檢查
+- `superpowers:requesting-code-review`（可選）— 審查前先跑品質檢查
 - `commit` — 提交前先驗證

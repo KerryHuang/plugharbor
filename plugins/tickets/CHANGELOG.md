@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.4] - 2026-11-23
+
+起因：docs/retrospective/20261123-implement-bypass/report.md（R3）——`workspace 的 review` 移除。
+- docs：`references/pipeline.md` 的 workspace 說明移除 review。
+
 ## [1.3.3] - 2026-11-21
 
 起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。

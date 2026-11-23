@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.3.2] - 2026-11-23
+
+起因：docs/retrospective/20261123-implement-bypass/report.md（R2、R3）。
+- fix(feature-checklist)：「同步票」表的「新增項目」「新增 `##` 節」兩列改寫成先 `create`／建父票、行尾只寫回傳的票號、不自行預編號（11-16 修過後 11-18、11-23 又撞號或對帳差異）。
+- docs(agents,release)：`developer`、`tester`、`release` 的 `workspace 的 debugging` 引用改指 `superpowers:test-driven-development`／`systematic-debugging`（皆保留可選與沒裝時的退路）；`reviewer` description 與證據規則句移除 `workspace 的 review`，字數縮短。
+
 ## [4.3.1] - 2026-11-21
 
 起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。

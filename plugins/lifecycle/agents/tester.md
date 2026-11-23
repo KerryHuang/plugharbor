@@ -99,7 +99,7 @@ model: sonnet
 2. 建立測試骨架（編譯失敗即預期紅燈）
 3. 確認篩選測試失敗
 
-交接：`tester (Red) → developer (Green) → developer (Refactor) → tester (下一案例)`。循環做法見 `workspace:debugging`（可選；沒裝就照 Red-Green-Refactor 自行進行）。
+交接：`tester (Red) → developer (Green) → developer (Refactor) → tester (下一案例)`。循環做法見 `superpowers:test-driven-development`（可選；沒裝就照 Red-Green-Refactor 自行進行）。
 
 ## 輸出格式（覆蓋分析）
 

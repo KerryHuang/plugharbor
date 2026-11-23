@@ -70,7 +70,7 @@ git tag --sort=-creatordate | grep -v "beta\|rc" | head -5
 
 ## R2：品質閘
 
-用 `workspace:quality-check`（可選；沒裝就跑專案自帶的 type-check、lint、build、test）對 release branch 的 HEAD 跑（R3 之前則對 develop HEAD 跑，R3 建出的分支 HEAD 必須同 SHA）。全綠才記「已檢查 SHA」＝`git rev-parse HEAD`。失敗 → 停下，不建 release branch；要追根因時用 `workspace:debugging`（可選；沒裝就先寫重現失敗的測試再修）。
+用 `workspace:quality-check`（可選；沒裝就跑專案自帶的 type-check、lint、build、test）對 release branch 的 HEAD 跑（R3 之前則對 develop HEAD 跑，R3 建出的分支 HEAD 必須同 SHA）。全綠才記「已檢查 SHA」＝`git rev-parse HEAD`。失敗 → 停下，不建 release branch；要追根因時用 `superpowers:systematic-debugging`（可選；沒裝就先寫重現失敗的測試再修）。
 
 ## R3：建 release branch
 

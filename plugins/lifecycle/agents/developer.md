@@ -118,7 +118,7 @@ model: sonnet
 | Green | 最小實作通過 | 篩選測試通過 |
 | Refactor | 重構不改行為 | 篩選測試仍通過 |
 
-循環做法見 `workspace:debugging`（可選；沒裝就照 Red-Green-Refactor 自行進行）。
+循環做法見 `superpowers:test-driven-development`（可選；沒裝就照 Red-Green-Refactor 自行進行）。
 
 ## 確定性標籤
 

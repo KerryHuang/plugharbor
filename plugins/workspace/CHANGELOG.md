@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.0] - 2026-11-23
+
+起因：docs/retrospective/20261123-implement-bypass/report.md（R3）——M-20261109-03 判定 fail：workspace 三個 skill 4 週叫用 1 次、改版後 0 次，已被 superpowers 取代，description 卻每個 session 常駐。
+- BREAKING：移除 `debugging`、`review` 兩個 skill（含 references）。替代：TDD 循環 → `superpowers:test-driven-development`、除錯 → `superpowers:systematic-debugging`、審查 → `superpowers:requesting-code-review`。`agent-orchestration` 不動。
+- docs：`quality-check` 銜接段、README、plugin.json 與 marketplace 描述同步移除；根 README 的 workspace 列同步。
+
 ## [1.20.5] - 2026-11-21
 
 起因：Formwright 使用者 2026-11-21 裁決 roadmap 段表已完成的段狀態改以「✅ 」開頭（formwright bf13dd13），`feature_checklist.py --check` 因此把 5 個已上線段判成與清單不同步。
@@ -109,7 +115,7 @@
 
 ## [1.9.0] - 2026-11-12
 
-- feat(debugging): 新增 `skills/debugging/references/legacy-refactor.md`，處理「要重構但沒有測試」的舊程式碼：先用特徵測試或黃金樣本鎖住現有行為（疑似 bug 照錄、另案修，故意改壞驗證測試會抓），大型改動用 Mikado 排前置順序、整模組替換走絞殺榕，小步執行時改名與移動優先用 IDE／LSP 自動重構，刪「沒有呼叫端」的程式碼前查反射、DI、序列化與公開 API，複雜度與 linter 警告數只用來找下手處、不當目標。SKILL.md 與 `tdd-cycle.md` 的 Refactor 階段各加一行指過去。description 加「重構沒測試的舊碼」，同時把「並把規格書轉成測試案例」縮成「規格轉測試」、拿掉「的除錯與 TDD」「要精簡」，長度從 105 字元減為 104；`triggers` 加兩個詞。
+- feat(debugging): 新增 `debugging/references/legacy-refactor.md`，處理「要重構但沒有測試」的舊程式碼：先用特徵測試或黃金樣本鎖住現有行為（疑似 bug 照錄、另案修，故意改壞驗證測試會抓），大型改動用 Mikado 排前置順序、整模組替換走絞殺榕，小步執行時改名與移動優先用 IDE／LSP 自動重構，刪「沒有呼叫端」的程式碼前查反射、DI、序列化與公開 API，複雜度與 linter 警告數只用來找下手處、不當目標。SKILL.md 與 `tdd-cycle.md` 的 Refactor 階段各加一行指過去。description 加「重構沒測試的舊碼」，同時把「並把規格書轉成測試案例」縮成「規格轉測試」、拿掉「的除錯與 TDD」「要精簡」，長度從 105 字元減為 104；`triggers` 加兩個詞。
 - 起因：沒有事故。使用者看了一份流傳的「用 AI 重構程式碼 100 招」速查圖後，比對發現既有的 Red-Green-Refactor 都假設已有測試，沒有涵蓋無測試舊碼；使用者裁決不等事故、先補上。速查圖裡丟給 AI 會出事的指令（一次修全部 linter 警告、依複雜度數字硬拆、靜態搜尋找不到呼叫端就刪），反過來寫成本檔的禁止事項。
 
 ## [1.8.0] - 2026-11-12
@@ -154,13 +160,13 @@
 
 ## [1.3.0] - 2026-11-05
 
-- feat: `review` 新增「專案規範合規」審查面向：只比對路徑涵蓋變更檔的 `CLAUDE.md`／`AGENTS.md`，違規須引用規則原文（`skills/review/references/evidence.md` 第 7 節）。
-- feat: `review` 審遠端 PR／MR 前先看留言，已有先前審查就問要不要重審；使用者要求留言但無發現時也留摘要（`skills/review/references/review-remote.md`）。
+- feat: `review` 新增「專案規範合規」審查面向：只比對路徑涵蓋變更檔的 `CLAUDE.md`／`AGENTS.md`，違規須引用規則原文（`review/references/evidence.md` 第 7 節）。
+- feat: `review` 審遠端 PR／MR 前先看留言，已有先前審查就問要不要重審；使用者要求留言但無發現時也留摘要（`review/references/review-remote.md`）。
 - 做法借鑒自 anthropics/claude-plugins-official 的 `plugins/code-review`（Apache-2.0），內容重新撰寫。
 
 ## [1.2.0] - 2026-11-04
 
-- feat: `review` 新增 `skills/review/references/evidence.md`——預設只報告、變更檔歸屬表、「查無」前先證明查得到、被削弱的測試／拉長的 timeout／新 suppression 要列出、新套件查 registry；只排除改動前就存在的 suppression。
+- feat: `review` 新增 `review/references/evidence.md`——預設只報告、變更檔歸屬表、「查無」前先證明查得到、被削弱的測試／拉長的 timeout／新 suppression 要列出、新套件查 registry；只排除改動前就存在的 suppression。
 - fix: `quality-check` 的可選銜接改指 `lifecycle:implement`。
 
 ## [1.1.2] - 2026-11-04
@@ -174,8 +180,8 @@
 ## [1.1.0] - 2026-11-03
 
 - feat: 新 skill `cross-platform`（跨平台路徑、換行、大小寫、shell 差異），改寫自 desktop-avalonia 的同名 skill，不再綁 Avalonia。
-- feat: `debugging` 吸收 backend-dotnet 的 `tdd-cycle`（Red-Green-Refactor 通用做法放 `skills/debugging/references/tdd-cycle.md`，.NET 指令移到 backend 的附錄）。
-- feat: `review` 吸收 frontend-vue 的 `review-remote`（審查遠端 PR／MR，`skills/review/references/review-remote.md`）。
+- feat: `debugging` 吸收 backend-dotnet 的 `tdd-cycle`（Red-Green-Refactor 通用做法放 `debugging/references/tdd-cycle.md`，.NET 指令移到 backend 的附錄）。
+- feat: `review` 吸收 frontend-vue 的 `review-remote`（審查遠端 PR／MR，`review/references/review-remote.md`）。
 
 ## [1.0.1] - 2026-11-03
 

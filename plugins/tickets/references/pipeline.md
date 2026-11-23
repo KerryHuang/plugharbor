@@ -95,7 +95,7 @@ triage／ticket-create → spec → spec-check → implement → release → qa-
 | **discovery** | 會議記錄、訪談準備、現況勘察、原型 | 可選 |
 | **delivery** | 操作手冊、示範影片 | 可選 |
 | **superpowers** | brainstorming、計畫、實作、審查 | 建議（沒裝時 implement 走退路） |
-| **workspace** | commit、review、quality-check 等版本控制與工作區工具 | 可選 |
+| **workspace** | commit、quality-check 等版本控制與工作區工具 | 可選 |
 | **browser-docs** | 畫面勘察、實機操作、截圖標註 | 可選 |
 | **toolkit** | herdr 派工（雙顧問 pane 模式） | 可選 |
 | **backend／frontend／database／desktop** | 技術職責：依各自領域提供實作與審查規範 | 依專案技術棧 |
