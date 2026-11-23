@@ -1,0 +1,5 @@
+# 視新工作需要再裝：WSL 與 Docker 裝完要重開機，Docker 首次啟動要在 GUI 同意條款。
+Microsoft.WSL
+Docker.DockerDesktop
+Rustlang.Rustup
+Microsoft.DotNet.SDK.8

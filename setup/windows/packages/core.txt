@@ -1,0 +1,16 @@
+# 通用開發：任何工作都要的。ID 於 2026-11-23 以 winget show 驗過存在。
+Git.Git
+GitHub.cli
+GitHub.GitLFS
+Microsoft.PowerShell
+Microsoft.WindowsTerminal
+Python.Python.3.12
+astral-sh.uv
+CoreyButler.NVMforWindows   # Node 22 用 nvm 裝，見 README
+Oven-sh.Bun
+BurntSushi.ripgrep.MSVC
+jqlang.jq
+Gyan.FFmpeg                 # transcribe skill 要用
+JohnMacFarlane.Pandoc
+Microsoft.VisualStudioCode
+Tailscale.Tailscale

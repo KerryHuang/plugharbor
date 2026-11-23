@@ -1,0 +1,6 @@
+# 個人偏好的桌面工具。
+appmakes.Typora
+Xmind.Xmind.8
+ZedIndustries.Zed
+TheDocumentFoundation.LibreOffice
+Notepad++.Notepad++
