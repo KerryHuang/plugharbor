@@ -415,6 +415,16 @@ if command -v agy >/dev/null 2>&1; then
   for p in $REMOVE; do
     [ -z "$(printf '%s\n' "$out" | ph_agy_ver "$p")" ] || stale_remove agy "$p" agy plugin uninstall "$p"
   done
+  # Windows（有 cygpath）：agy 安裝時丟掉 commandWindows，cmd 找不到 sh → 每個 hook 失敗；改成絕對路徑。macOS／Linux 不動
+  if command -v cygpath >/dev/null 2>&1 && [ -n "$PY" ]; then
+    mode=apply; [ "$CHECK" -eq 0 ] || mode=check
+    hout="$(PYTHONUTF8=1 "$PY" "$(ph_native_path "$REPO_DIR/setup/lib/agy_hooks.py")" \
+      "$(ph_native_path "$HOME/.gemini/config/plugins")" \
+      "$(ph_native_path "$(dirname "$(command -v sh)")")" "$mode" $PLUGINS | tr -d '\r')" && rc=0 || rc=$?
+    [ -z "$hout" ] || echo "$hout"
+    DIFFS=$((DIFFS + $(printf '%s\n' "$hout" | grep -c '^DIFF:' || true)))
+    [ "$rc" -eq 0 ] || FAILS=$((FAILS + 1))
+  fi
 else
   echo "SKIP: agy（未安裝）"
 fi

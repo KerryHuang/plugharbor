@@ -66,6 +66,7 @@ Claude Code 的 `plugharbor` marketplace 指向 GitHub（`PLUGHARBOR_REPO`，預
 - pi 的路徑交給 python 前，Git Bash 上（有 `cygpath`）先轉成 `C:/...`，Windows 原生 python 才認得。
   這段只用 stub 測過，真 CLI 的升級行為在切換（cutover）步驟實機驗證。
 - 舊 claude-home 的 guard 等 hook 只在 claude 的 toolkit plugin 這次裝好（或已是最新）後才備份移除；沒裝 claude、沒選 toolkit 或安裝失敗，只印 `STALE:`。
+- agy（只在 Windows，以有 `cygpath` 判斷）：`agy plugin install` 會丟掉 hooks.json 的 `commandWindows`，只留 `sh "./hooks/…"`，而 agy 用 cmd 跑 hook、PATH 常沒有 sh，每個工具呼叫都會失敗。install.sh 每次跑完都用 `setup/lib/agy_hooks.py` 把這類指令改成 Git `sh.exe`／`bash.exe` 與 plugin 根的絕對路徑（冪等，`--check` 報 `DIFF: agy hooks …`）。macOS／Linux 不動。
 
 ## settings 範本的 hooks
 
