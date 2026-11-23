@@ -1,0 +1,28 @@
+name: debug-67
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: test-lock 連跑
+        run: |
+          f=0
+          for i in $(seq 1 120); do
+            out=$(bash plugins/workspace/skills/unattended/tests/test-lock.sh 2>&1) || true
+            if echo "$out" | grep -q FAIL; then f=$((f+1)); echo "=== run $i"; echo "$out"; fi
+          done
+          echo "test-lock fails=$f/120"
+      - name: killSync 連跑
+        run: |
+          f=0
+          for i in $(seq 1 60); do
+            out=$(node --test --test-name-pattern=killSync plugins/delivery/skills/demo-video/scripts/env.test.mjs 2>&1) || { f=$((f+1)); echo "=== run $i"; echo "$out" | grep -E "DEBUG67|true !==|STAT|^ *[0-9]+ " ; }
+          done
+          echo "killSync fails=$f/60"

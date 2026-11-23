@@ -9,7 +9,7 @@ WAIT="${UNATTENDED_TEST_LOCK_POLL:-5}"
 said=0
 until mkdir "$LOCK" 2>/dev/null; do
   pid="$(cat "$LOCK/pid" 2>/dev/null || true)"
-  if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
+  if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then echo "[DEBUG67] stale takeover me=$$ pid=$pid" >&2; ps -o pid,ppid,stat,args >&2; rm -rf "$LOCK"; continue; fi
   [ "$said" -eq 1 ] || { echo "[test-lock] 等前一支重測試結束（pid ${pid:-?}）" >&2; said=1; }
   sleep "$WAIT"
 done

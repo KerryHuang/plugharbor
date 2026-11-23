@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -182,6 +182,7 @@ process.on('exit', h.killSync)
 process.exit(1)`
   const exit = await new Promise((res) => spawn(process.execPath, ['--input-type=module', '-e', code]).on('close', res))
   assert.equal(exit, 1)
+  if (alive(Number(readFileSync(pidFile, 'utf8')))) console.error('[DEBUG67] ' + execSync('ps -o pid,ppid,pgid,stat,args -p ' + readFileSync(pidFile, 'utf8')).toString())
   assert.equal(alive(Number(readFileSync(pidFile, 'utf8'))), false)
   assert.equal(existsSync(join(root, '.data', '.lock')), false)
 })
