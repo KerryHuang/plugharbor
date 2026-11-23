@@ -45,7 +45,7 @@ def implement_called(path):
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
             for line in fh:
-                if '"lifecycle:implement"' not in line:
+                if "lifecycle:implement" not in line:
                     continue
                 try:
                     content = (json.loads(line).get("message") or {}).get("content")

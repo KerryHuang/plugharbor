@@ -71,6 +71,11 @@ class ImplementGate(unittest.TestCase):
                                    encoding="utf-8")
         self.assertEqual(self.run_hook(), "")
 
+    def test_line_cut_inside_skill_name_fail_open(self):
+        self.transcript.write_text('{"message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"lifecycle:implement',
+                                   encoding="utf-8")
+        self.assertEqual(self.run_hook(), "")
+
     def test_missing_or_bad_session_id_fail_open(self):
         for sid in (None, "../x", ""):
             with self.subTest(sid=sid):
