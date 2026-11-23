@@ -56,6 +56,10 @@ def run(env, tool, **inp):
 @pytest.mark.parametrize("cmd", [
     "git add -A", "git add .", "git add --all", "cd repo && git add -A && git commit -m x",
     "git add src/a.ts .", "git status; git add -A",
+    # git 前置參數（-C／-c／--git-dir 等）不能繞過
+    "git -C D:/Repos/x add -A", 'git -C "C:/a b" add .', "git -C 'C:/a b' add --all",
+    "git -c core.autocrlf=false add -A", "git --no-pager -C x add --all", "git --git-dir=.git --work-tree=. add -A",
+    "cd r && git -C sub add -A --dry-run",
 ])
 def test_git_add_all_denied(env, cmd):
     assert run(env, "Bash", command=cmd) == "deny"
@@ -64,6 +68,7 @@ def test_git_add_all_denied(env, cmd):
 @pytest.mark.parametrize("cmd", [
     "git add src/a.ts docs/tasks.md", "git add .claude/rules/x.md", "git add ./src/a.ts",
     "git commit -m 'docs: ban git add -A in rules'", "git status --short", "grep -n 'git add .' README.md",
+    "git -C repo add src/a.ts", "git -C repo status --short", "git -c core.x=1 log -1",
 ])
 def test_normal_commands_pass(env, cmd):
     assert run(env, "Bash", command=cmd) is None
@@ -72,6 +77,7 @@ def test_normal_commands_pass(env, cmd):
 @pytest.mark.parametrize("cmd", [
     "git push --force origin main", "git push -f origin feat/site", "git push --force-with-lease",
     "git reset --hard HEAD~1", "git clean -fd", "git clean -xdf", "git fetch && git reset --hard origin/main",
+    "git -C repo reset --hard", "git -C repo push -f origin main", "git -c x=y clean -fd", "git --no-pager -C a push --force",
 ])
 def test_destructive_asks(env, cmd):
     assert run(env, "Bash", command=cmd) == "ask"

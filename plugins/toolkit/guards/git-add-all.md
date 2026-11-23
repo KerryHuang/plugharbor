@@ -1,6 +1,6 @@
 ---
 tool: Bash
-pattern: '(?:^|[;&|(])\s*git\s+add\s+(?:[^;&|\n]*\s)?(?:-A|--all|\.)(?=\s|$|[;&|)])'
+pattern: '(?:^|[;&|(])\s*git\s+(?:(?:-[Cc]|--git-dir|--work-tree|--namespace)(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)\s+|(?:-P|--no-pager|--paginate|--bare|--no-replace-objects|--literal-pathspecs)\s+)*add\s+(?:[^;&|\n]*\s)?(?:-A|--all|\.)(?=\s|$|[;&|)])'
 action: deny
 evidence: 多 agent／多工並行時，全量 add 會把別人 pre-staged 的檔案誤包進自己的 commit
 ---

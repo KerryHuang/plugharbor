@@ -1,6 +1,6 @@
 ---
 tool: Bash
-pattern: '(?:^|[;&|(])\s*git\s+(?:push\b[^;&|\n]*\s(?:-f|--force(?:-with-lease)?)(?=\s|$)|reset\b[^;&|\n]*\s--hard\b|clean\b[^;&|\n]*\s-[a-zA-Z]*f)'
+pattern: '(?:^|[;&|(])\s*git\s+(?:(?:-[Cc]|--git-dir|--work-tree|--namespace)(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)\s+|(?:-P|--no-pager|--paginate|--bare|--no-replace-objects|--literal-pathspecs)\s+)*(?:push\b[^;&|\n]*\s(?:-f|--force(?:-with-lease)?)(?=\s|$)|reset\b[^;&|\n]*\s--hard\b|clean\b[^;&|\n]*\s-[a-zA-Z]*f)'
 action: ask
 evidence: force push、reset --hard、clean -fd 會丟掉別人或自己的工作，一律先經使用者確認
 ---

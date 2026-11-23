@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.34.1] - 2026-11-23
+
+起因：2026-11-23 Windows 實機驗證 agy guard 時發現 `git -C <路徑> add -A` 不會被擋——`git-add-all`、`git-destructive` 的 regex 要求 `git` 後面直接接子命令，四家 CLI 都可經前置參數繞過。
+- fix(guards)：兩條 git guard 允許子命令前出現 git 全域參數：`-C <路徑>`、`-c <k=v>`、`--git-dir`、`--work-tree`、`--namespace`（值可加引號、可用 `=`），以及 `-P`、`--no-pager`、`--paginate`、`--bare`、`--no-replace-objects`、`--literal-pathspecs`。
+- test：`hooks/tests/test_guard.py` 補 deny 7 個、ask 4 個、放行 3 個。
+
 ## [0.34.0] - 2026-11-23
 
 起因：2026-11-23 在 Windows 的 Herdr.app 驗證 codex／agy／pi 與 Claude Code 對等，`git add -A` 只有 Claude 與 Codex 擋得下：agy 的 payload 是 `toolCall.name／args`、輸出要 `decision／reason`，guard.py 不認得；pi 沒有 hook，toolkit 只出 skills。
