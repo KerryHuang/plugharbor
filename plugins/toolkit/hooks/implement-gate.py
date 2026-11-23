@@ -8,11 +8,12 @@ superpowers 的 brainstorming → writing-plans → executing-plans／subagent-d
 攔 writing-plans／executing-plans／subagent-driven-development，三個條件同時成立才 deny：
   1. cwd 往上找得到 git root，且該處有 `.plugharbor/lifecycle.yml`（沒裝 lifecycle 的 repo 沒有這檔，hook 不作用）
   2. 本 session transcript 沒有叫過 lifecycle:implement 的 Skill tool_use
-  3. transcript 裡還沒出現過本 hook 的 deny 標記（每 session 只擋一次，使用者不要走 implement 時重叫同一個 skill 即放行）
-任何解析失敗一律 fail-open。
+  3. 本 session 還沒擋過（`~/.claude/implement-gate/<session_id>` 狀態檔；每 session 只擋一次，使用者不要走 implement 時重叫同一個 skill 即放行）
+任何解析失敗、狀態檔寫不進去、session_id 缺漏，一律 fail-open。
 """
 import json
 import os
+import re
 import sys
 
 GATED = {
@@ -21,9 +22,9 @@ GATED = {
     "superpowers:subagent-driven-development",
 }
 IMPLEMENT = {"lifecycle:implement"}
-MARKER = "[implement-gate]"
+STATE_DIR = os.environ.get("IMPLEMENT_GATE_STATE_DIR") or os.path.join(os.path.expanduser("~/.claude"), "implement-gate")
 REASON = (
-    MARKER + " 這個 repo 有 lifecycle 設定，先叫 lifecycle:implement，它會接手規劃與執行；"
+    "[implement-gate] 這個 repo 有 lifecycle 設定，先叫 lifecycle:implement，它會接手規劃與執行；"
     "使用者明確不要走 implement 時，直接重叫同一個 skill 即可放行。"
 )
 
@@ -39,27 +40,37 @@ def has_lifecycle_config(cwd):
         d = parent
 
 
-def transcript_state(path):
-    """回傳 (叫過 implement, 已擋過一次)；讀不到就當兩者皆是（fail-open）。"""
-    called = gated = False
+def implement_called(path):
+    """transcript 裡叫過 lifecycle:implement 就回 True；讀不到、或含該字串的行解析不了，都當叫過（fail-open）。"""
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
             for line in fh:
-                if MARKER in line:
-                    gated = True
                 if '"lifecycle:implement"' not in line:
                     continue
                 try:
                     content = (json.loads(line).get("message") or {}).get("content")
                 except Exception:
-                    continue
+                    return True
                 for item in content if isinstance(content, list) else []:
                     if (isinstance(item, dict) and item.get("type") == "tool_use" and item.get("name") == "Skill"
                             and (item.get("input") or {}).get("skill") in IMPLEMENT):
-                        called = True
+                        return True
     except Exception:
-        return True, True
-    return called, gated
+        return True
+    return False
+
+
+def first_gate(session_id):
+    """本 session 第一次擋就建狀態檔並回 True；已擋過、id 不合法或寫不進去回 False（放行）。"""
+    if not isinstance(session_id, str) or not re.fullmatch(r"[\w-]+", session_id):
+        return False
+    try:
+        os.makedirs(STATE_DIR, exist_ok=True)
+        fd = os.open(os.path.join(STATE_DIR, session_id), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+        return True
+    except Exception:
+        return False
 
 
 def main() -> int:
@@ -76,8 +87,7 @@ def main() -> int:
         transcript = payload.get("transcript_path")
         if not transcript:
             return 0
-        called, gated = transcript_state(transcript)
-        if called or gated:
+        if implement_called(transcript) or not first_gate(payload.get("session_id")):
             return 0
     except Exception:
         return 0

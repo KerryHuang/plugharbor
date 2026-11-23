@@ -4,7 +4,8 @@
 
 ## [1.3.4] - 2026-11-23
 
-起因：docs/retrospective/20261123-implement-bypass/report.md（R3）——`workspace 的 review` 移除。
+起因：docs/retrospective/20261123-implement-bypass/report.md（R2、R3）——feature.md 票號先寫後開撞號 4 次；`workspace 的 review` 移除。
+- fix：同步 lifecycle 4.3.2 的 `references/feature-checklist.md` 副本（新增項目與節先 create，行尾只寫回傳號碼）。
 - docs：`references/pipeline.md` 的 workspace 說明移除 review。
 
 ## [1.3.3] - 2026-11-21

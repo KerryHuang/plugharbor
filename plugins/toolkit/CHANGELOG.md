@@ -5,7 +5,7 @@
 ## [0.33.0] - 2026-11-23
 
 起因：docs/retrospective/20261123-implement-bypass/report.md（R1）——lifecycle:implement 在 22 個照規格實作的 session 只被叫到 2 次，superpowers 的 writing-plans → executing-plans／subagent-driven-development 自動交接與派工 worker 都繞過入口；上一版改 description 與措辭已失敗。
-- feat(hooks)：新增 `implement-gate.py`（PreToolUse，matcher `Skill`）。攔 `superpowers:writing-plans`、`executing-plans`、`subagent-driven-development`：cwd 所在 git root 有 `.plugharbor/lifecycle.yml`、本 session transcript 沒叫過 `lifecycle:implement`、也沒擋過時，第一次 deny 並提示先叫 lifecycle:implement；重叫同一個 skill 即放行（transcript 內有 `[implement-gate]` 標記）。沒有 lifecycle.yml（沒裝 lifecycle）的 repo 不作用；解析失敗 fail-open。
+- feat(hooks)：新增 `implement-gate.py`（PreToolUse，matcher `Skill`）。攔 `superpowers:writing-plans`、`executing-plans`、`subagent-driven-development`：cwd 所在 git root 有 `.plugharbor/lifecycle.yml`、本 session transcript 沒叫過 `lifecycle:implement`、也沒擋過時，第一次 deny 並提示先叫 lifecycle:implement；重叫同一個 skill 即放行（以 `~/.claude/implement-gate/<session_id>` 狀態檔記「已擋過」）。沒有 lifecycle.yml（沒裝 lifecycle）的 repo 不作用；transcript 讀不到或解析不了、session_id 缺漏、狀態檔寫不進去一律 fail-open。
 - test：`hooks/tests/test_implement_gate.py`（10 個）；`test_agent_model_guard.py` 的 python hook 數量 28 → 29。
 
 ## [0.32.1] - 2026-11-20
