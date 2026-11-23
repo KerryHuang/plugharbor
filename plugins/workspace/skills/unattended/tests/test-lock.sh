@@ -14,7 +14,7 @@ job a & job b & wait
 check "兩支不重疊" "$(awk 'NR%2==1{s=substr($0,7)} NR%2==0{if(substr($0,5)!=s)exit 1}' "$TMP/log"; echo $?)"
 check "結束後鎖已釋放" "$([ ! -e "$TMP/lock" ]; echo $?)"
 
-mkdir "$TMP/lock"; echo 999999 > "$TMP/lock/pid"
+echo 999999 > "$TMP/lock"
 sh "$SCRIPT" true; check "殘留鎖被接手" "$?"
 
 set +e; sh "$SCRIPT" sh -c 'exit 7'; rc=$?; set -e

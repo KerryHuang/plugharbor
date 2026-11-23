@@ -13,6 +13,8 @@ const CLI = join(dirname(fileURLToPath(import.meta.url)), 'demo-video.mjs')
 const APP = `require('http').createServer((q,r)=>{r.statusCode=q.url==='/ready'?200:404;r.end('ok')}).listen(Number(process.env.PORT),'127.0.0.1')`
 const tmp = () => mkdtempSync(join(tmpdir(), 'dv-env-'))
 const alive = (pid) => { try { process.kill(pid, 0); return true } catch (e) { return e.code !== 'ESRCH' } }
+// killSync 只同步送出 SIGTERM，行程何時真的消失由 OS 排程決定；吃 CPU 的 runner 上會慢幾十 ms，所以輪詢到消失或逾時
+const gone = async (pid, ms = 3000) => { for (const end = Date.now() + ms; alive(pid) && Date.now() < end;) await new Promise((r) => setTimeout(r, 20)); return !alive(pid) }
 const recipe = (start, extra = {}) => ({ build() {}, reset() {}, start: { portEnv: 'PORT', readyPath: '/ready', ...start }, ...extra })
 const listen = (port, host = '127.0.0.1') => new Promise((res) => {
   const s = createServer((q, r) => r.end('mine')).listen(port, host, () => res(s))
@@ -182,6 +184,6 @@ process.on('exit', h.killSync)
 process.exit(1)`
   const exit = await new Promise((res) => spawn(process.execPath, ['--input-type=module', '-e', code]).on('close', res))
   assert.equal(exit, 1)
-  assert.equal(alive(Number(readFileSync(pidFile, 'utf8'))), false)
+  assert.equal(await gone(Number(readFileSync(pidFile, 'utf8'))), true)
   assert.equal(existsSync(join(root, '.data', '.lock')), false)
 })
