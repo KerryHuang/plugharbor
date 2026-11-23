@@ -16,3 +16,6 @@
 - **能自己做就不交回**：開新 session、換 repo 接手、自己能跑的測試與實測，都由我派工（herdr 內開 pane；不在 herdr 就同 session 接著做並說明），不叫使用者開 session 或貼 prompt；只有本人能做的（登入、系統授權、實體裝置）才寫 👉。
 - **跨 session 訊息照則計費**：每則讓收方整段 context 重送。只在完成或卡住時發，不報進度、不回「收到」。
 - worker 卡住時不替它回答，請使用者 attach。
+- **驗 agent 遵從率要開新 session**：同 session 派出的 subagent 用 process 啟動時的定義快照，`/clear` 不重載 plugin。改完 agent／skill 後在同 session 只能驗機制，不能驗「有沒有照新規則做」。
+- **瀏覽器測完在回報同一輪關掉**自己起的 Chrome 並驗證（debug port 無回應），不等使用者問；沒關會佔住 port／profile，下個 session 撞到。
+- **主 session 做機械性工作**（批次改格式、搬檔、逐筆重跑）前，先提醒使用者切小模型；每回合成本固定，回合數才是乘數。
