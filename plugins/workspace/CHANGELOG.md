@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.1] - 2026-11-23
+
+起因：issue #67——CI 的 `test-lock.sh` 測試「兩支不重疊」間歇失敗。在 runner（kernel 7.0.0-azure）上實測：兩個程序同時呼叫 `mkdir` 指令建同一路徑，600 次有 31 次都回傳成功（Python `os.mkdir`、noclobber、`ln`、`flock` 皆 0／600），所以以 `mkdir` 為鎖會讓兩支同時跑。
+- fix(unattended)：`skills/unattended/scripts/test-lock.sh` 改用 noclobber（open O_EXCL）建立鎖檔、內容仍是持有者 pid，殘留鎖接手邏輯不變；預設鎖路徑改為 `unattended-test.pid`，避免舊版殘留的鎖目錄讓新版永遠等待。
+- test：`skills/unattended/tests/test-lock.sh` 的殘留鎖案例改用檔案鎖。
+
 ## [2.0.0] - 2026-11-23
 
 起因：docs/retrospective/20261123-implement-bypass/report.md（R3）——M-20261109-03 判定 fail：workspace 三個 skill 4 週叫用 1 次、改版後 0 次，已被 superpowers 取代，description 卻每個 session 常駐。
