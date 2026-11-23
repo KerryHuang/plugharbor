@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.3.3] - 2026-11-23
+
+起因：plugharbor#70。
+- fix：同步 toolkit 0.35.0 的 `mux.py`、`app_layout.py` 副本（本機沒開 Herdr.app 時改擺進遠端機器的視窗；pi turn 0 誤報 blocked；Git Bash 的 `/` 開頭訊息被改寫成路徑）。
+
 ## [4.3.2] - 2026-11-23
 
 起因：docs/retrospective/20261123-implement-bypass/report.md（R2、R3）。

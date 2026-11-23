@@ -2,7 +2,8 @@
 """派工用的終端多工轉接：同一組動作，後端是 Herdr.app（hc）或 herdr TUI。
 
 用法：mux.py <動作> ...，stdout 為 JSON（read 例外，輸出畫面純文字）。
-  env                                  → {"backend":"hc|herdr|none","self":…,"window":bool[,"window_error":…]}
+  env                                  → {"backend":"hc|herdr|none","self":…,"window":bool[,"window_on":機器][,"window_error":…]}
+    本機沒開 Herdr.app 時，會到 `hc machine ls` 已連線的機器找顯示主 session 的視窗（window_on），spawn 照樣擺進主 tab。
   spawn --name N --kind K --cwd D [--env K=V]... -- <CLI 參數>   → {"id":…,"visible":bool[,"pane":…]}
   send ID (--text T | --file F) [--wait] [--timeout 秒]          → {"status":S,"raw":…}
   wait ID [--timeout 秒]                                          → {"status":S,"raw":…}
@@ -17,7 +18,7 @@ MUX_LAYOUT_CMD 取代 TUI 版面腳本、MUX_APP_LAYOUT_CMD 取代 app 版面腳
 core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷；
 Windows 的 Python 沒有 AF_UNIX，改用 `hc server status`（hc 官方：Windows 上它不會啟動 core）。
 """
-import argparse, json, os, shlex, shutil, socket, subprocess, sys
+import argparse, json, os, shlex, shutil, socket, subprocess, sys, time
 from pathlib import Path
 
 # Windows 預設 cp950：印中文會亂碼。腳本自己處理，不靠呼叫端設 PYTHONUTF8。
@@ -193,6 +194,18 @@ def window_open(env):
     raise MuxError("window_error", f"herdr-app status 失敗（exit {code}）：{(err or out).strip()[:300]}")
 
 
+def undo_msys_path(text, env):
+    """Git Bash 呼叫原生 python 時，MSYS 會把 `/clear` 這類參數改寫成 `C:/Program Files/Git/clear`；
+    斜線指令因此變成一般訊息。開頭是 MSYS 根目錄就還原（沒有 MSYSTEM 或 cygpath 時原樣回傳）。"""
+    if not env.get("MSYSTEM") or not shutil.which("cygpath", path=env.get("PATH")):
+        return text
+    code, root, _ = run(["cygpath", "-m", "/"], env=env)
+    root = root.strip()
+    if code == 0 and root.endswith("/") and text.startswith(root):
+        return "/" + text[len(root):]
+    return text
+
+
 def fail_from(what, code, out, err):
     raise MuxError("backend_error", f"{what} 失敗（exit {code}）：{(err or out).strip()[:300]}")
 
@@ -222,6 +235,7 @@ class HcBackend:
             # hc run 的 argv 由 core 的 PATH 解析，不是呼叫者的；core 的 PATH 常缺 ~/.bun/bin 之類
             raise MuxError("cli_not_found", f"PATH 找不到 {kind}")
         window = window_open(self.env)  # 先判斷：window_error 時不留下沒人看得到的 worker
+        remote = None if window else self.remote_main()
         argv = ["run", "--json", "--bg", "--no-notify", "--name", name, "--cwd", cwd,
                 *clean_env_prefix(env_pairs), cli]
         if kind == "codex":
@@ -231,35 +245,61 @@ class HcBackend:
         ident = find_key(data, "address") if data is not None else None
         if code != 0 or not ident:
             fail_from("hc run", code, out, err)
-        pane = self._place(ident) if window else None
+        if window:
+            pane = self._place(ident, self._main_pane())
+        elif remote:
+            machine, prefix, main = remote
+            pane = self._place(prefix + ident, main, {"HERDR_APP_ON": machine})
+        else:
+            pane = None
         return {"id": ident, "visible": True, "pane": pane} if pane else {"id": ident, "visible": False}
+
+    @staticmethod
+    def _terminals(data):
+        stack = [data]
+        while stack:
+            cur = stack.pop(0)
+            if isinstance(cur, dict):
+                if cur.get("terminal") and cur.get("pane"):
+                    yield cur
+                stack.extend(cur.values())
+            elif isinstance(cur, list):
+                stack.extend(cur)
 
     def _main_pane(self):
         """用自己的 HC_TERMINAL_ID 在 herdr-app ls 找主 session 的 pane id；不在視窗內回 None。"""
         me = self.env.get("HC_TERMINAL_ID")
         code, out, err = run(["herdr-app", "ls"], env=self.env)
         data = parse_json(out) if code == 0 else None
-        stack = [data]
-        while stack and me:
-            cur = stack.pop(0)
-            if isinstance(cur, dict):
-                if cur.get("terminal") == me and cur.get("pane"):
-                    return cur["pane"]
-                stack.extend(cur.values())
-            elif isinstance(cur, list):
-                stack.extend(cur)
-        return None
+        return next((t["pane"] for t in self._terminals(data) if me and t["terminal"] == me), None)
 
-    def _place(self, ident):
-        """把已在背景跑的 worker 放進主 session 所在 tab；任何一步失敗都回 None（worker 照跑，visible:false）。"""
-        main = self._main_pane()
+    def remote_main(self):
+        """本機沒開視窗時，到 hc 已連線的機器找顯示主 session 的 Herdr.app（例：Mac 視窗遠端看 Windows core，
+        主 session 在那邊叫 `msi/t2h`）。回 (機器, 位址前綴, 主 pane)；找不到或不只一處回 None。"""
+        me = self.env.get("HC_TERMINAL_ID")
+        code, out, err = self.hc("machine", "ls", "--json")
+        data = parse_json(out) if code == 0 else None
+        machines = data.get("machines") if isinstance(data, dict) else None
+        hits = []
+        for m in machines if (me and isinstance(machines, list)) else []:
+            if not (isinstance(m, dict) and m.get("state") == "connected" and m.get("name")):
+                continue
+            code, out, err = self.hc("exec", "--on", m["name"], "--", "herdr-app", "ls")
+            for t in self._terminals(parse_json(out) if code == 0 else None):
+                if t["terminal"].endswith("/" + me):
+                    hits.append((m["name"], t["terminal"][:-len(me)], t["pane"]))
+        return hits[0] if len(hits) == 1 else None
+
+    def _place(self, ident, main, extra_env=None):
+        """把已在背景跑的 worker 放進主 session 所在 tab；任何一步失敗都回 None（worker 照跑，visible:false）。
+        extra_env 的 HERDR_APP_ON 讓 app_layout.py 改用 `hc exec --on <機器> -- herdr-app` 操作遠端視窗。"""
         if not main:
             return None
         cmd = os.environ.get("MUX_APP_LAYOUT_CMD")
         argv = shlex.split(cmd) if cmd else [sys.executable, str(Path(__file__).with_name("app_layout.py"))]
         if not (cmd or Path(argv[1]).exists()):
             return None
-        code, out, err = run([*argv, "place", "--main", main, "--terminal", ident], env=self.env)
+        code, out, err = run([*argv, "place", "--main", main, "--terminal", ident], env={**self.env, **(extra_env or {})})
         data = parse_json(out)
         if code != 0 or not isinstance(data, dict) or not data.get("pane"):
             print(f"mux: 版面放置失敗（worker 仍在背景執行）：{(err or out).strip()[:200]}", file=sys.stderr)
@@ -304,6 +344,8 @@ class HcBackend:
             return {"status": "blocked", "raw": sent if sent is not None else (err or out).strip(),
                     "hint": "worker 停在對話框或提示；先 read 畫面：只是提示、輸入框已就緒就隔幾秒重送同一則，否則請使用者用 attach-hint 進去處理"}
         if guarded and (code == 10 or (isinstance(sent, dict) and sent.get("started") is False)):
+            if code != 10 and self._started_late(ident):  # exit 10＝status_mismatch，hc 確定沒打字
+                return {"status": "working", "raw": sent}  # pi：hc 沒等到 turn 開始就回 started:false，其實已送出
             return {"status": "blocked", "raw": sent if sent is not None else (err or out).strip(),
                     "hint": "worker 尚未就緒，可能停在啟動對話框；先 read 畫面，請使用者用 attach-hint 進去處理"}
         if not wait:
@@ -312,6 +354,19 @@ class HcBackend:
                 fail_from("hc send", code, out, err)
             return {"status": "working", "raw": data}
         return self._status(code, out, err, "hc send --wait")
+
+    def _started_late(self, ident, tries=30):
+        """send 回 started:false 後再看至多 15 秒（Windows 實測 pi 送出後 5 秒以上才轉 working）：
+        turn 前進或轉成 working 就算已送出。"""
+        for _ in range(tries):
+            time.sleep(0.5)
+            _, info = self.get(ident)
+            if not isinstance(info, dict):
+                continue
+            st = info.get("status")  # hc get 的 status 是 {"state":…,"app":…}
+            if (info.get("turn") or 0) > 0 or (st.get("state") if isinstance(st, dict) else st) == "working":
+                return True
+        return False
 
     def wait(self, ident, timeout):
         args = ["wait", "--json"]
@@ -511,6 +566,10 @@ def cmd_env(env):
             window = window_open(env)
         except MuxError as e:  # 判斷不出來不讓整個 env 失敗；spawn 才硬擋
             extra["window_error"] = e.hint
+        if not window and "window_error" not in extra:
+            remote = HcBackend(env).remote_main()
+            if remote:
+                window, extra["window_on"] = True, remote[0]
     me = {"hc": env.get("HC_TERMINAL_ID"), "herdr": env.get("HERDR_PANE_ID")}.get(name)
     return {"backend": name, "self": me, "window": window, **extra}
 
@@ -562,6 +621,8 @@ def dispatch(args, env):
         return b.spawn(args.name, args.kind, args.cwd, pairs, args.cli_args)
     if args.cmd == "send":
         text = args.text if args.text is not None else Path(args.file).read_text(encoding="utf-8")
+        if args.text is not None:
+            text = undo_msys_path(text, env)
         return b.send(args.id, text, args.wait, args.timeout)
     if args.cmd == "wait":
         return b.wait(args.id, args.timeout)

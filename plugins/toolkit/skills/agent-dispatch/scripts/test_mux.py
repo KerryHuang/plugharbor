@@ -35,7 +35,7 @@ class MuxCase(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp(prefix="mx"))
         self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
-        for name in ("hc", "herdr", "herdr-app", "claude", "codex", "herdr_layout.py", "app_layout.py"):
+        for name in ("hc", "herdr", "herdr-app", "claude", "codex", "herdr_layout.py", "app_layout.py", "cygpath"):
             (self.dir / name).write_text(STUB, encoding="utf-8")
             (self.dir / name).chmod(0o755)
         self.sock = None
@@ -235,6 +235,40 @@ class TestHc(MuxCase):
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(out), {"id": "t7", "visible": False})
         self.assertIn("版面", err)
+
+    REMOTE_LS = json.dumps({"spaces": [{"machine": "msi", "tabs": [{"terminals": [
+        {"terminal": "msi/t1", "pane": "msi/p1"}]}]}]})
+
+    def test_spawn_without_local_window_places_in_remote_window(self):
+        # Mac 的 Herdr.app 遠端看這台 core：本機沒視窗，改經 hc exec --on 擺進遠端主 tab
+        self.resp("herdr-app", "status", "", rc=2, err="no Herdr window")
+        self.resp("hc", "machine.ls", '{"machines":[{"name":"mac","state":"connected"},{"name":"off","state":"offline"}]}')
+        self.resp("hc", "exec.--on", self.REMOTE_LS)
+        self.resp("hc", "run", '{"address":"t7"}')
+        self.resp("app_layout.py", "place", '{"pane":"msi/p7","visible":true}')
+        r = self.ok(self.spawn_args(), self.layout_env())
+        self.assertEqual(r, {"id": "t7", "visible": True, "pane": "msi/p7"})
+        self.assertIn("app_layout.py place --main msi/p1 --terminal msi/t7", self.calls())
+        self.assertEqual([c for c in self.calls() if c.startswith("hc exec")], ["hc exec --on mac -- herdr-app ls"])
+
+    def test_env_reports_remote_window(self):
+        self.resp("herdr-app", "status", "", rc=2, err="no Herdr window")
+        self.resp("hc", "machine.ls", '{"machines":[{"name":"mac","state":"connected"}]}')
+        self.resp("hc", "exec.--on", self.REMOTE_LS)
+        self.assertEqual(self.ok(["env"], HC_ENV), {"backend": "hc", "self": "t1", "window": True, "window_on": "mac"})
+
+    def test_send_turn0_started_false_but_working_is_working(self):
+        # pi：hc send 回 started:false，但隨後 status 轉 working（其實已送出），不能報 blocked
+        self.resp("hc", "get", '{"address":"t1","state":"live","turn":0,"status":{"state":"working"}}')
+        self.resp("hc", "send", '{"started":false,"status":"idle","turn":0}')
+        self.assertEqual(self.ok(["send", "t1", "--text", "hi"], HC_ENV)["status"], "working")
+
+    def test_send_restores_msys_converted_slash_command(self):
+        # Git Bash 把 /clear 改寫成 <Git 根>/clear 才交給 python；mux 還原成 /clear
+        self.resp("cygpath", "-m", "C:/Git/")
+        self.resp("hc", "send", '{"started":true}')
+        self.ok(["send", "t2", "--text", "C:/Git/clear"], {**HC_ENV, "MSYSTEM": "MINGW64"})
+        self.assertIn("hc send --json -- t2 /clear", self.calls())
 
     def test_send_strips_hc_terminal_id(self):
         self.resp("hc", "send", '{"started":true}')

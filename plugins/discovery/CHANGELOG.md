@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.2.1] - 2026-11-23
+
+起因：plugharbor#70。
+- fix：同步 toolkit 0.35.0 的 `mux.py`、`app_layout.py` 副本（本機沒開 Herdr.app 時改擺進遠端機器的視窗；pi turn 0 誤報 blocked；Git Bash 的 `/` 開頭訊息被改寫成路徑）。
+
 ## [1.2.0] - 2026-11-19
 
 起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。

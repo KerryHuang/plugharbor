@@ -6,7 +6,7 @@ SKILL.md 第 6 節的補充。派工一律走 `scripts/mux.py`，同一組動作
 
 | 動作 | 回傳 |
 |---|---|
-| `env` | `{"backend":"hc\|herdr\|none","self":…,"window":bool}`；`window` 只在 hc 有意義（Herdr.app 視窗開著）；判斷不出來時 `window:false` 並多一個 `window_error` |
+| `env` | `{"backend":"hc\|herdr\|none","self":…,"window":bool}`；`window` 只在 hc 有意義（Herdr.app 視窗開著）；判斷不出來時 `window:false` 並多一個 `window_error`；本機沒視窗但 `hc machine ls` 已連線的機器有顯示主 session 的視窗時 `window:true` 加 `window_on:<機器>` |
 | `spawn --name N --kind <claude\|codex\|agy\|pi> --cwd D [--env K=V]… -- <CLI 參數>` | `{"id":…,"visible":bool[,"pane":…]}` |
 | `send <id> (--text T \| --file F) [--wait] [--timeout 秒]` | `{"status":S,"raw":…}` |
 | `wait <id> [--timeout 秒]` | `{"status":S,"raw":…}` |

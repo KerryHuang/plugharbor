@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.2] - 2026-11-23
+
+起因：plugharbor#70。
+- fix：同步 toolkit 0.35.0 的 `mux.py` 副本（本機沒開 Herdr.app 時改擺進遠端機器的視窗；pi turn 0 誤報 blocked；Git Bash 的 `/` 開頭訊息被改寫成路徑）。
+
 ## [2.0.1] - 2026-11-23
 
 起因：issue #67——CI 的 `test-lock.sh` 測試「兩支不重疊」間歇失敗。在 runner（kernel 7.0.0-azure）上實測：兩個程序同時呼叫 `mkdir` 指令建同一路徑，600 次有 31 次都回傳成功（Python `os.mkdir`、noclobber、`ln`、`flock` 皆 0／600），所以以 `mkdir` 為鎖會讓兩支同時跑。

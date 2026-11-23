@@ -145,4 +145,19 @@ PATH="$TMP:/usr/bin:/bin" "$PY" "$SCRIPT" place --main pX --terminal t1 > "$TMP/
 set -e
 [ "$rc" -ne 0 ] && grep -q layout_failed "$TMP/out.x"; check "找不到主 pane：layout_failed" $?
 
+# HERDR_APP_ON：視窗在另一台機器，每個 herdr-app 呼叫都經 hc exec --on <機器> -- herdr-app
+reset
+cat > "$TMP/hc" <<HC
+#!/bin/sh
+echo "hc \$*" >> "$TMP/hc.log"
+[ "\$1 \$2 \$3 \$4 \$5" = "exec --on mac -- herdr-app" ] || exit 9
+shift 5; exec "$TMP/herdr-app" "\$@"
+HC
+chmod +x "$TMP/hc"; : > "$TMP/hc.log"
+out="$(HERDR_APP_ON=mac placew 1)"
+echo "$out" | grep -q '"visible": true'; check "遠端視窗：回 visible true" $?
+grep -q '^hc exec --on mac -- herdr-app do terminal.keep --terminal t1 --place right$' "$TMP/hc.log"; check "遠端視窗：keep 經 hc exec 送到該機器" $?
+[ "$(grep -c '^hc exec --on mac -- herdr-app ' "$TMP/hc.log")" -eq "$(grep -vc '^keep-target' "$TMP/log")" ] && r=0 || r=1; check "遠端視窗：所有 herdr-app 呼叫都經 hc exec" $r
+rm "$TMP/hc"
+
 exit $fail

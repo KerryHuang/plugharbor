@@ -42,8 +42,11 @@ class LayoutError(Exception):
 
 
 def app(*args):
+    # HERDR_APP_ON=<機器>：視窗開在 hc 已連線的另一台（mux.py remote_main 找到的），經 hc exec 操作那邊的 herdr-app
+    on = os.environ.get("HERDR_APP_ON")
+    argv = ["hc", "exec", "--on", on, "--", "herdr-app", *args] if on else ["herdr-app", *args]
     try:
-        r = subprocess.run(["herdr-app", *args], capture_output=True, text=True, encoding="utf-8")
+        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
     except FileNotFoundError:
         raise LayoutError("找不到 herdr-app")
     if r.returncode != 0:

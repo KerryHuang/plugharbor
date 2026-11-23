@@ -102,6 +102,7 @@ argument-hint: "[對象] <任務>"
    - `mux.py env` 回 `{"backend":"hc|herdr|none","self":…,"window":bool}`。`none` 就不走這節；`hc` 是 Herdr.app、`herdr` 是 TUI，後面的步驟兩者相同。
    - `core_not_running`：core 沒跑，請使用者從 Dock 開 Herdr.app；不要自己 stop／restart core，也不要直接跑 `hc` 去試（hc 會用你的環境把 core 自動啟動）。
    - `window:false`（hc）：視窗沒開，worker 照跑但 `spawn` 回 `visible:false`；告訴使用者開 app 視窗後把該 worker 叫出來。`window_error` 照 hint 回報。
+   - `window_on:<機器>`（hc）：本機沒開 app，但使用者從另一台的 Herdr.app 遠端看這台 core（如 Mac 看 Windows）；`spawn` 會經 `hc exec --on` 擺進那邊的主 tab，照常使用。
    - mux.py 不加 `2>/dev/null`，錯誤與 hint 都要看。
    - 在 herdr 或 Herdr.app 的終端裡跑拋棄式 `claude -p` 時，先濾掉 `HERDR_*`、`HC_TERMINAL_ID`、`HC_TERMINAL_SOCKET`、`HC_SCOPE`，否則會蓋掉真正主 session 的回報（`ask.mjs` 已自動濾）。
    - TUI 專屬：**不要在 Claude Code 內啟 herdr server**，`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。

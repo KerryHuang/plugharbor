@@ -2,6 +2,14 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.35.0] - 2026-11-23
+
+起因：plugharbor#70——Windows 的 session 由 Mac 的 Herdr.app 遠端顯示時，`mux.py` 只問本機 `herdr-app`（本機沒開 app）判成沒視窗，worker 不擺放、在 Mac 跳成獨立視窗。
+- feat(agent-dispatch)：`mux.py` 本機沒視窗時，到 `hc machine ls` 已連線的機器跑 `hc exec --on <機器> -- herdr-app ls` 找主 session（位址如 `msi/t2h`），找到唯一一處就經 `app_layout.py`（新環境變數 `HERDR_APP_ON`）擺進那邊的主 tab；`env` 多回 `window_on:<機器>`。
+- fix(agent-dispatch)：hc `send` 對 turn 0 的 worker 回 `started:false` 時，再看至多 15 秒，turn 前進或轉 working 就回 `working`（pi 實測送出後 5 秒以上才轉 working，原本誤報 blocked）。
+- fix(agent-dispatch)：Git Bash 呼叫時 MSYS 把 `--text /clear` 改寫成 `C:/Program Files/Git/clear`，`mux.py send` 開頭是 MSYS 根目錄就還原成 `/`。
+- test：`test_mux.py` 補遠端擺放、`window_on`、started:false 轉 working、MSYS 還原；`tests/app_layout.sh` 補 `HERDR_APP_ON`。
+
 ## [0.34.1] - 2026-11-23
 
 起因：2026-11-23 Windows 實機驗證 agy guard 時發現 `git -C <路徑> add -A` 不會被擋——`git-add-all`、`git-destructive` 的 regex 要求 `git` 後面直接接子命令，四家 CLI 都可經前置參數繞過。
