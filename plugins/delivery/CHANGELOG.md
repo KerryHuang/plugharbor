@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.1] - 2026-11-23
+
+起因：issue #67——CI 的 `skills/demo-video/scripts/env.test.mjs`「killSync：行程 exit 時同步收掉 server 並刪鎖檔（I1）」間歇失敗（`alive` 為 true）。CPU 滿載的 runner 上實測 150 次失敗 8 次：`killSync` 只同步送出 SIGTERM，行程何時消失由 OS 排程決定，測試卻在父行程結束後立刻檢查。
+- test(demo-video)：`skills/demo-video/scripts/env.test.mjs` 該案例改為輪詢到 server 消失（上限 3 秒）才斷言；被測的 `lib/env.mjs` 行為不變。
+
 ## [1.3.0] - 2026-11-19
 
 起因：使用者 2026-11-19 回報 superpowers 腦力激盪、寫計畫時向使用者丟一長串設計題，全都不經 domain 顧問；顧問桌只在 `spec` 蒐證後開，介入太晚，使用者要求設計題先過顧問，顧問決定不了的才問。
