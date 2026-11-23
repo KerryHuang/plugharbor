@@ -1,6 +1,6 @@
 # 功能清單
 
-總計：完成 28／共 40（另有 2 項決定不做）；進行中 1、已規劃 2、構想 9；待確認 0 項。更新於 2026-11-19。
+總計：完成 28／共 42（另有 2 項決定不做）；進行中 1、已規劃 2、構想 11；待確認 0 項。更新於 2026-11-23。
 
 ## workspace：unattended（自動駕駛） #8
 
@@ -61,12 +61,12 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 ## 借鏡 agentrun（Parcha-ai/agentrun，2026-11-13 評估） #37
 
-完成 0／共 3。
+完成 0／共 4。
 
 - [ ] 💡 auto-memory 寫入前程式檢查：秘密樣式、隱藏字元、與既有記憶本文完全重複、索引行數上限、從網頁／貼上內容學來的規則不收；等事故再做 #38
 - [ ] 💡 常改的 skill（unattended、agent-dispatch）附 eval 案例，改動後跑一次量效果（可接 `claude plugin eval`；範本參考 dotnet/skills 的 `tests/<plugin>/<skill>/eval.yaml`＋評分腳本、有無 skill 對照、觸發率）；等事故再做 #39
 - [ ] 💡 agent-dispatch `bg.mjs wait` 為「待決」回專用 exit code（agentrun 用 8），呼叫端不必讀結果檔第一行；現行 herdr 事故已修，等事故再做 #40
-- [ ] 💡 agent-mesh-check 比對各家模型清單（`agy models`、`pi --list-models`）與 `routing.json`，有新型號或已下架就提醒；codex、agy、pi 的模型 ID 寫死不會跟新版，claude 用別名不受影響；等第一次派到過時模型再做 #62
+- [ ] 💡 agent-mesh-check 比對各家模型清單（`agy models`、`pi --list-models`）與 `routing.json`，有新型號或已下架就提醒；codex、agy、pi 的模型 ID 寫死不會跟新版，claude 用別名不受影響；等第一次派到過時模型再做 #64
 
 ## 借鏡 dotnet/skills（2026-11-13 評估）
 
@@ -116,3 +116,11 @@ ticket skill 的 GitHub 後端從沒實測過；拿專案雙軌並行驗證：re
 
 - [x] `scratch-ledger.py`：建立時標記（hook 記 session、agent 補用途與期限）、結束時記帳、開場用一題複選提議刪過期的、每週或磁碟吃緊時提議全區掃描；本身不刪檔（使用者 2026-11-19 裁決四段組合與五題參數；toolkit 0.32.0） #60
 - [ ] 💡 `workspace:tmp-scratch` 加一句「toolkit 會提示補用途與期限」，與帳本規則對齊；等主控裁決 #61
+
+## 借鏡 Vercel web-design-guidelines skill（2026-11-23 評估） #65
+
+完成 0／共 1。
+
+來源：vercel-labs/agent-skills 的 web-design-guidelines（規則本體 vercel-labs/web-interface-guidelines，16 類約 90 條、每條一行、鎖 commit＋SHA-256）。不裝原版：與 `ui-ux:auditing-ui`、`ui-ux-pro-max` 觸發重疊。
+
+- [ ] 💡 `ui-ux:auditing-ui` 的 checklist.md 補「web 程式碼層」段：挑約 10 條可 grep 的（icon button `aria-label`、`:focus-visible`、`prefers-reduced-motion`、不用 `transition: all`、`color-scheme`、不禁 zoom／paste、不用 `<div onClick>`）；英文排版與 React 專用條不收；等第一次審查漏掉這類問題再做 #66
