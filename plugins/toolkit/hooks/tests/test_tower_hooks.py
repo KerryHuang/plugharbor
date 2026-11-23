@@ -540,11 +540,11 @@ class RegistrationTest(unittest.TestCase):
             return {(g["matcher"], h["command"].rsplit(" ", 1)[1], h["timeout"])
                     for g in hooks[event] for h in g["hooks"]}
 
-        self.assertIn((".*", "tower-track.py", 5), reg("PreToolUse"))
-        self.assertIn(("Bash", "tower-landing.py", 5), reg("PreToolUse"))
-        self.assertIn(("", "tower-track.py", 5), reg("UserPromptSubmit"))
-        self.assertIn(("Edit|Write|MultiEdit", "tower-track.py", 5), reg("PostToolUse"))
-        self.assertIn(("", "tower-context.py", 5), reg("SessionStart"))
+        self.assertIn((".*", "tower-track.py", 15), reg("PreToolUse"))
+        self.assertIn(("Bash", "tower-landing.py", 15), reg("PreToolUse"))
+        self.assertIn(("", "tower-track.py", 15), reg("UserPromptSubmit"))
+        self.assertIn(("Edit|Write|MultiEdit", "tower-track.py", 15), reg("PostToolUse"))
+        self.assertIn(("", "tower-context.py", 15), reg("SessionStart"))
 
 
 class OutsideRepoTest(HookTest):

@@ -35,7 +35,7 @@ loop-guard 不受影響：Codex 0.166 解析 plugin `hooks.json` 時忽略不認
 | `feedback-capture.py` | ✅ UserPromptSubmit | 無：回饋佇列只在 Claude 收集；未接 Codex 的 UserPromptSubmit | 無 | 無 |
 | `feedback-reminder.py` | ✅ SessionStart `startup` | 無：同上，佇列只有 Claude 端會寫入 | 無 | 無 |
 | `herdr-env-context.py` | ✅ SessionStart | 無：adapter 未移植；照 dispatch 規則自行查 `HERDR_ENV` | 無 | 無：pi 沒有 hook 機制 |
-| `memory-context.py`（唯讀注入 Claude auto-memory 索引） | 不輸出（Claude 自己載入） | ⚠️ 經 plugin `hooks/hooks.json` 的 SessionStart 註冊，但 Windows 上 Codex 跑 toolkit plugin hook 一律 5 秒逾時（PowerShell 啟動器），2026-11-23 實測未注入；macOS 未驗 | ✅ 同左（agy 的 SessionStart 改輸出 `injectSteps`、cwd 取 `workspacePaths[0]`，2026-11-23 實測） | ✅ `pi/memory.ts`（`before_agent_start` 寫進 `claude-memory` 區段）；三者都只讀，不寫記憶 |
+| `memory-context.py`（唯讀注入 Claude auto-memory 索引） | 不輸出（Claude 自己載入） | ✅ 經 plugin `hooks/hooks.json` 的 SessionStart（Windows：0.36.2 起不再逾時，2026-11-23 實測注入；macOS 未驗） | ✅ 同左（agy 的 SessionStart 改輸出 `injectSteps`、cwd 取 `workspacePaths[0]`，2026-11-23 實測） | ✅ `pi/memory.ts`（`before_agent_start` 寫進 `claude-memory` 區段）；三者都只讀，不寫記憶 |
 | `compact-context.py` | ✅ SessionStart `compact` | 無：adapter 未移植 | 無 | 無：pi 沒有 hook 機制 |
 | `rm-scratch-allow.py` | ✅ PermissionRequest `Bash` | 無：adapter 未移植 | 無：adapter 未移植 | 無：pi 沒有 hook 機制 |
 | `reply-language-guard.py` | ✅ Stop | 無：adapter 未移植 | 無：adapter 未移植 | 無：pi 沒有 hook 機制 |

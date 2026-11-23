@@ -29,7 +29,7 @@ claude plugin install toolkit@plugharbor
 | Stop | `herdr-tab-title.py` | Herdr.app 內把 session 標題同步成分頁名稱，不覆寫手動命名 |
 | UserPromptSubmit | `feedback-capture.py` | 收集使用者糾正，寫入 `~/.claude/feedback-loop/queue.jsonl` |
 | SessionStart | `herdr-env-context.py` | 在 herdr 或 Herdr.app 內時注入一行狀態，agent 不必再檢查能否開 worker；Herdr.app 內另記錄 session id 供 `mux.py session` 取用 |
-| SessionStart | `memory-context.py` | Codex／agy 開場唯讀注入（agy 用 `injectSteps` 格式；Windows 上 Codex 的 plugin hook 目前會逾時） Claude Code 的 auto-memory 索引（`~/.claude/projects/<專案>/memory/MEMORY.md` 前 200 行，從 cwd 往上找）；Claude 下不輸出。pi 由 `pi/memory.ts` 以同規則寫進 system prompt 區段 |
+| SessionStart | `memory-context.py` | Codex／agy 開場唯讀注入（agy 用 `injectSteps` 格式） Claude Code 的 auto-memory 索引（`~/.claude/projects/<專案>/memory/MEMORY.md` 前 200 行，從 cwd 往上找）；Claude 下不輸出。pi 由 `pi/memory.ts` 以同規則寫進 system prompt 區段 |
 | SessionStart、UserPromptSubmit | `disabled-skills.py` | 被明確停用的 plugharbor plugin／skill（如 /doctor 關掉的）：開場一行列名稱；使用者訊息命中其觸發詞（`triggers` 欄位或 description 的「」片語）時提示，先問再用；回「不要」只在該專案忽略 |
 | SessionStart `compact` | `compact-context.py` | context 壓縮後提醒沿用使用者指示的語言與格式 |
 | SessionStart `startup` | `feedback-reminder.py` | 佇列積壓或久未回顧時提醒 |

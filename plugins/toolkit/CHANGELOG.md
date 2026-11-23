@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.36.2] - 2026-11-23
+
+起因：plugharbor#74——Windows 上 Codex 跑 toolkit 的 plugin hook 一律「timed out after 5s」。Codex 以 `powershell -Command`（會載入使用者 profile）並行跑同一事件的所有 hook；實測載入 profile、並行 6 支 python hook 要 5.49 秒。
+- fix(hooks)：`run-py.sh` 在 Windows（Git Bash／MSYS，看 `MSYSTEM`）直接 exec PATH 上第一個不在 WindowsApps 的 python，不先試跑；WindowsApps 下的（可能是 Store 假執行檔）與其他平台照舊先試跑。同條件並行 6 支降到 3.81 秒、單支 2.46 → 1.84 秒。
+- fix(hooks)：`hooks.json` 的 timeout 5 → 15、10 → 20 秒（SessionEnd 的 3 秒不動，Codex 本身封頂 3 秒）。只在 hook 卡住時才會等到上限。
+- test：`test_tower_hooks.py` 註冊斷言同步新 timeout。
+
 ## [0.36.1] - 2026-11-23
 
 起因：跨 CLI 派工審查發現，舊主將若因額度無法回應，現有流程可能來不及留下交接紀錄。
