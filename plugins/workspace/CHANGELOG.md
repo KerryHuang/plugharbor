@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.3] - 2026-11-23
+
+起因：回饋佇列 20261119063549-c5e92a（retrospective 20261123-feedback-plugin-handoff R1）——unattended 第 7 步同時寫「落後就先 rebase」與「不 force push」，沒寫 rebase 後推到哪；已推過的功能分支落後時，主控用了 `--force-with-lease`。
+- fix(unattended)：第 7 步改寫為在本地 rebase、只 fast-forward 推預設分支，rebase 過的功能分支不推回同名遠端分支（改寫既有句，未新增條文）。
+- fix：同步 toolkit 0.37.0 的 `mux.py` 副本（spawn 自動帶 cwd 的 `.mcp.json` 引用的環境變數給 worker）。
+
 ## [2.0.2] - 2026-11-23
 
 起因：plugharbor#70。

@@ -71,6 +71,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期；期間無漂英文訊號，20261113135638-17b9d7 是誤擋（壓縮前舊英文），已由 2e47aaf 修"}
+      - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無「說中文」或漂英文訊號"}
   - id: M-20261113-02
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -81,6 +82,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期"}
+      - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無信任誤判訊號"}
   - id: M-20261117-01
     source: 20261117-reply-address/report.md
     layer: toolkit
@@ -89,7 +91,8 @@ metrics:
     due: {date: "2026-12-08"}
     if_not: 查 hook 是否觸發；不觸發就改在 mux.py spawn 產生的 prompt 內帶固定重送步驟
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-12-08，未到期；11-17 後佇列無「位址錯了／改名」糾正"}
   - id: M-20261117-02
     source: 20261117-reply-address/report.md
     layer: toolkit
@@ -98,7 +101,8 @@ metrics:
     due: {date: "2026-12-08"}
     if_not: 補 agent-dispatch SKILL.md:104 濾除清單，或讓 dispatch-stop-guard 比對 pane id
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-12-08，未到期"}
   - id: M-20261123-01
     source: 20261123-implement-bypass/report.md
     layer: lifecycle
@@ -124,5 +128,32 @@ metrics:
     criterion: 退場後到 2026-12-14，回饋佇列中要求恢復或找不到該 skill 的糾正筆數＝0
     due: {date: "2026-12-14"}
     if_not: 恢復為只在沒裝 superpowers 時觸發的退路版
+    status: open
+    checks: []
+  - id: M-20261123-04
+    source: 20261123-feedback-plugin-handoff/report.md
+    layer: workspace
+    metric: unattended 不再 force push
+    criterion: R1 上線後，回饋佇列出現 unattended 對功能分支 force push 或「rebase 與不 force push 衝突」的筆數＝0
+    due: {date: "2026-12-21"}
+    if_not: 升級成 guard：unattended 模式下擋 push --force／--force-with-lease
+    status: open
+    checks: []
+  - id: M-20261123-05
+    source: 20261123-feedback-plugin-handoff/report.md
+    layer: toolkit
+    metric: worker 的 MCP 環境變數
+    criterion: R2 發版後，回饋佇列出現 mux spawn 的 worker 缺環境變數、MCP ENOENT 的筆數＝0
+    due: {date: "2026-12-21"}
+    if_not: 改為 spawn 前用使用者 login shell 匯出整份環境（扣除污染變數）
+    status: open
+    checks: []
+  - id: M-20261123-06
+    source: 20261123-feedback-plugin-handoff/report.md
+    layer: workspace
+    metric: 派工附上已確認的答案
+    criterion: 2026-11-24～12-21 回饋佇列出現「派工漏附已確認決定、產出與已確認答案相反」的筆數＝0
+    due: {date: "2026-12-21"}
+    if_not: 改寫 unattended 第 0 步，派初稿時指名附帳本與 design-questions 的已確認答案
     status: open
     checks: []

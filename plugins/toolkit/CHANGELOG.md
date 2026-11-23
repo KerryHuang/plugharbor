@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.37.0] - 2026-11-23
+
+起因：回饋佇列 20261120090428-e08e5f（retrospective 20261123-feedback-plugin-handoff R2）——經 Herdr.app（hc）派的 claude worker 用的是 core 的環境，沒有 `~/.zshenv` 裡的變數；專案 `.mcp.json` 引用的 `${TOOL_MCP}` 變成空值，MCP 啟動 ENOENT，一張票的 db-check 靜默略過、另一張停下。
+- feat(agent-dispatch)：`mux.py spawn` 讀 `--cwd` 的 `.mcp.json`，裡面引用的 `${VAR}`（含 `${VAR:-預設}`）若在呼叫者環境、又沒用 `--env` 指定，就自動帶給 worker；hc 與 herdr 後端都適用。
+- test：`test_mux.py` 補 `test_spawn_carries_mcp_json_vars`。
+
 ## [0.36.2] - 2026-11-23
 
 起因：plugharbor#74——Windows 上 Codex 跑 toolkit 的 plugin hook 一律「timed out after 5s」。Codex 以 `powershell -Command`（會載入使用者 profile）並行跑同一事件的所有 hook；實測載入 profile、並行 6 支 python hook 要 5.49 秒。

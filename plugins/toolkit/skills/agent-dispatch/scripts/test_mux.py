@@ -296,6 +296,22 @@ class TestHc(MuxCase):
         self.assertTrue(argv[j + 1].endswith("/claude"))
         self.assertEqual(argv[j + 2:], ["--model", "m"])
 
+    def test_spawn_carries_mcp_json_vars(self):
+        # hc run 用 core 的環境：.mcp.json 引用、只在呼叫者 shell 裡的變數要帶過去（2026-11-20 MCP ENOENT）
+        cwd = self.dir / "proj"
+        cwd.mkdir()
+        (cwd / ".mcp.json").write_text(
+            '{"mcpServers":{"s":{"command":"${TOOL_MCP}","args":["${EXPLICIT}","${MISSING:-x}"]}}}',
+            encoding="utf-8")
+        self.resp("hc", "run", '{"address":"t7"}')
+        self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", str(cwd), "--env", "EXPLICIT=cli"],
+                {**HC_ENV, "TOOL_MCP": "/opt/s", "EXPLICIT": "fromenv"})
+        argv = self.hc_run()
+        self.assertIn("TOOL_MCP=/opt/s", argv)
+        self.assertIn("EXPLICIT=cli", argv)
+        self.assertNotIn("EXPLICIT=fromenv", argv)
+        self.assertFalse([a for a in argv if a.startswith("MISSING=")])
+
     def test_spawn_hc_resolves_absolute_cli(self):
         self.resp("hc", "run", '{"address":"t7"}')
         self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp", "--", "--model", "m"], HC_ENV)

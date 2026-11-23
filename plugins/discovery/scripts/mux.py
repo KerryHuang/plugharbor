@@ -5,6 +5,7 @@
   env                                  → {"backend":"hc|herdr|none","self":…,"window":bool[,"window_on":機器][,"window_error":…]}
     本機沒開 Herdr.app 時，會到 `hc machine ls` 已連線的機器找顯示主 session 的視窗（window_on），spawn 照樣擺進主 tab。
   spawn --name N --kind K --cwd D [--env K=V]... -- <CLI 參數>   → {"id":…,"visible":bool[,"pane":…]}
+  spawn：cwd 的 .mcp.json 引用的 ${VAR} 若在呼叫者環境裡、又沒用 --env 指定，會自動帶給 worker。
   send ID (--text T | --file F) [--wait] [--timeout 秒]          → {"status":S,"raw":…}
   wait ID [--timeout 秒]                                          → {"status":S,"raw":…}
   read ID [--lines N] | alive ID | session ID | close ID | attach-hint ID
@@ -18,7 +19,7 @@ MUX_LAYOUT_CMD 取代 TUI 版面腳本、MUX_APP_LAYOUT_CMD 取代 app 版面腳
 core 沒跑時不得呼叫任何 hc（hc 會以呼叫者環境自動啟動 core），所以先直接連 socket 判斷；
 Windows 的 Python 沒有 AF_UNIX，改用 `hc server status`（hc 官方：Windows 上它不會啟動 core）。
 """
-import argparse, json, os, shlex, shutil, socket, subprocess, sys, time
+import argparse, json, os, re, shlex, shutil, socket, subprocess, sys, time
 from pathlib import Path
 
 # Windows 預設 cp950：印中文會亂碼。腳本自己處理，不靠呼叫端設 PYTHONUTF8。
@@ -618,6 +619,12 @@ def dispatch(args, env):
                 raise MuxError("usage", f"--env 要 K=V：{item}", code=2)
             k, v = item.split("=", 1)
             pairs[k] = v
+        # worker 的環境來自 core／herdr server，不是呼叫者 shell：.mcp.json 引用的 ${VAR} 要帶過去，否則 MCP 起不來
+        mcp = Path(args.cwd) / ".mcp.json"
+        if mcp.is_file():
+            for k in re.findall(r"\$\{([A-Za-z_]\w*)(?::-[^}]*)?\}", mcp.read_text(encoding="utf-8")):
+                if k in env and k not in pairs:
+                    pairs[k] = env[k]
         return b.spawn(args.name, args.kind, args.cwd, pairs, args.cli_args)
     if args.cmd == "send":
         text = args.text if args.text is not None else Path(args.file).read_text(encoding="utf-8")

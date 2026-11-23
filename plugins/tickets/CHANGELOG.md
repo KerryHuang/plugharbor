@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [1.3.6] - 2026-11-23
+
+起因：retrospective 20261123-feedback-plugin-handoff R2。
+- fix：同步 toolkit 0.37.0 的 `mux.py` 副本（spawn 自動帶 cwd 的 `.mcp.json` 引用的環境變數給 worker）。
+
 ## [1.3.5] - 2026-11-23
 
 起因：plugharbor#70。
