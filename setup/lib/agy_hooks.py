@@ -6,7 +6,9 @@ agy 在 Windows 用 cmd 跑 hook，PATH 常沒有 sh，於是每個 hook 都失�
 等於每次工具呼叫都失敗、agy 完全不能用（2026-11-23 實測）。
 
 用法：agy_hooks.py <agy plugins 目錄> <shell bin 目錄> <check|apply> <plugin…>
-- 只改 `sh|bash "./<相對路徑>"` 開頭的指令，改成 `"<bin>/sh.exe" "<plugin 根>/<相對路徑>"`；已是絕對路徑的不動（冪等）。
+- 只改 `sh|bash "./hooks/…"` 或先前改寫過的 `"…/sh.exe" "…/hooks/…"`，改成 `"<bin>/sh.exe" "<plugin 根>/hooks/…"`；已一致的不動（冪等）。
+- bin 要給 Git for Windows 的 `bin/`（啟動器，會把 /usr/bin 補進 PATH）：agy 給 hook 的 PATH 沒有 /usr/bin，
+  直接用 `usr/bin/sh.exe` 時 run-py.sh 的 `dirname` 找不到，hook 靜默 fail-open（2026-11-23 實測）。
 - check：要改的印 `DIFF: agy hooks <p>（N 條…）`；apply：改寫並印 `OK:   agy hooks <p>（改寫 N 條）`。
 - 沒有 hooks.json 的 plugin 略過；讀寫或 JSON 錯誤印 `FAIL: …`，exit 1。
 """
@@ -16,7 +18,8 @@ import re
 import sys
 import tempfile
 
-REL = re.compile(r'^(sh|bash) "\./([^"]+)"(.*)$', re.S)
+# agy 轉出的 `sh "./hooks/x"`，或先前改寫過的 `"<任一目錄>/sh.exe" "<plugin 根>/hooks/x"`
+REL = re.compile(r'^(?:(sh|bash)|"[^"]*/(sh|bash)\.exe") "(?:\./|[^"]*/)(hooks/[^"]+)"(.*)$', re.S)
 
 
 def rewrite(obj, root, bindir):
@@ -26,8 +29,10 @@ def rewrite(obj, root, bindir):
         if isinstance(cmd, str):
             m = REL.match(cmd)
             if m:
-                obj["command"] = f'"{bindir}/{m.group(1)}.exe" "{root}/{m.group(2)}"{m.group(3)}'
-                n += 1
+                want = f'"{bindir}/{m.group(1) or m.group(2)}.exe" "{root}/{m.group(3)}"{m.group(4)}'
+                if want != cmd:
+                    obj["command"] = want
+                    n += 1
         for v in obj.values():
             n += rewrite(v, root, bindir)
     elif isinstance(obj, list):
@@ -58,7 +63,7 @@ def main(argv):
         if n == 0:
             continue
         if mode == "check":
-            print(f"DIFF: agy hooks {p}（{n} 條用相對路徑呼叫 sh，Windows 上會失敗；install 會改成絕對路徑）")
+            print(f"DIFF: agy hooks {p}（{n} 條 sh 呼叫未指向 Git bin 啟動器，Windows 上 hook 會失敗或靜默略過；install 會改寫）")
             continue
         try:
             fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")

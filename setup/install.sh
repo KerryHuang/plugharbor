@@ -418,9 +418,12 @@ if command -v agy >/dev/null 2>&1; then
   # Windows（有 cygpath）：agy 安裝時丟掉 commandWindows，cmd 找不到 sh → 每個 hook 失敗；改成絕對路徑。macOS／Linux 不動
   if command -v cygpath >/dev/null 2>&1 && [ -n "$PY" ]; then
     mode=apply; [ "$CHECK" -eq 0 ] || mode=check
+    # Git for Windows 的 bin/sh.exe 是啟動器、會補 /usr/bin；usr/bin/sh.exe 不會，hook 裡的 dirname 就找不到
+    sh_bin="$(cygpath -m /)"; sh_bin="${sh_bin%/}/bin"
+    [ -x "$sh_bin/sh.exe" ] || sh_bin="$(dirname "$(command -v sh)")"
     hout="$(PYTHONUTF8=1 "$PY" "$(ph_native_path "$REPO_DIR/setup/lib/agy_hooks.py")" \
       "$(ph_native_path "$HOME/.gemini/config/plugins")" \
-      "$(ph_native_path "$(dirname "$(command -v sh)")")" "$mode" $PLUGINS | tr -d '\r')" && rc=0 || rc=$?
+      "$(ph_native_path "$sh_bin")" "$mode" $PLUGINS | tr -d '\r')" && rc=0 || rc=$?
     [ -z "$hout" ] || echo "$hout"
     DIFFS=$((DIFFS + $(printf '%s\n' "$hout" | grep -c '^DIFF:' || true)))
     [ "$rc" -eq 0 ] || FAILS=$((FAILS + 1))

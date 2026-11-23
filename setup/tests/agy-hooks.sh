@@ -27,4 +27,9 @@ grep -q '"node \\"C:/x/notify.mjs\\""' "$f" || { echo "FAIL 非相對指令被�
 out="$(run apply)"
 [ -z "$out" ] || { echo "FAIL 第二次 apply 應無輸出：$out"; exit 1; }
 [ -z "$(run check)" ] || { echo "FAIL apply 後 check 應一致"; exit 1; }
+
+# 換 bin 目錄（舊版寫成 usr/bin 的要改成 Git bin 啟動器）：先前改寫過的絕對路徑也要跟著更新
+out="$(PYTHONUTF8=1 "$py" "$root/setup/lib/agy_hooks.py" "$tmp/plugins" "C:/Git/bin" apply toolkit)"
+echo "$out" | grep -q '^OK:   agy hooks toolkit（改寫 2 條' || { echo "FAIL 換 bin：$out"; exit 1; }
+grep -q 'C:/Git/bin/sh.exe' "$f" && ! grep -q 'usr/bin' "$f" || { echo "FAIL 換 bin 未生效：$(cat "$f")"; exit 1; }
 echo "OK agy-hooks"
