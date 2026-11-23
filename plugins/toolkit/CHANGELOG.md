@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.36.1] - 2026-11-23
+
+起因：跨 CLI 派工審查發現，舊主將若因額度無法回應，現有流程可能來不及留下交接紀錄。
+
+- docs(agent-dispatch)：區分升級協作者與更換主將；長任務分階段保存交接紀錄，並在確認原主將停寫、接手方收到後才移交寫入權。
+
 ## [0.36.0] - 2026-11-23
 
 起因：plugharbor#72——Codex／agy／pi 看不到 Claude Code 的 auto-memory，跨 CLI 接手時少了專案教訓。使用者 2026-11-23 裁決只做唯讀，寫入留給 Claude。

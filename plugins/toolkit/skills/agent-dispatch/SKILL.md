@@ -159,9 +159,11 @@ argument-hint: "[對象] <任務>"
   回報標記到什麼時候。要提前解除，就請使用者說一聲，再用同一指令把到期時間設成現在。
 - 狀態檔位置：`$XDG_STATE_HOME/agent-dispatch/state.json`；Windows 是 `%LOCALAPPDATA%\agent-dispatch\state.json`；其他是 `~/.local/state/agent-dispatch/state.json`。
 
-## 8. 交棒（context 快滿，交給新 session）
+## 8. 主將換模與交棒
 
-做法見 `references/handoff-protocol.md`：交接內容有上限，對方確認收到才算交出，沒確認之前所有權留在你這裡。
+- **只有一段卡住**：主將照第 1 節把該段派給更合適的模型，繼續負責整案和驗收。
+- **整案需要重拆，或目前 session 無法繼續**：同 CLI 若支援，由操作者在安全點切換目前 session 的模型。需要換 session 或 CLI 時，依 `references/handoff-protocol.md` 交棒。派工的模型參數只影響新 worker。
+- **長任務**：每個階段完成時更新交接紀錄。原 CLI 因額度封鎖且已無法回應時，由操作者依同一份協議用最近的紀錄交棒。CLI 封鎖期間，同一家換模型不會解除派工封鎖。
 
 ## 參考
 
