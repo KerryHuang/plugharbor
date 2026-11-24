@@ -12,6 +12,18 @@
   },
   "groups": [
     [
+      "plugins/lifecycle/scripts/gen-pi-roles.py",
+      "plugins/tickets/scripts/gen-pi-roles.py"
+    ],
+    [
+      "plugins/lifecycle/scripts/test_pi_roles.py",
+      "plugins/tickets/scripts/test_pi_roles.py"
+    ],
+    [
+      "plugins/lifecycle/pi/roles.ts",
+      "plugins/tickets/pi/roles.ts"
+    ],
+    [
       "plugins/toolkit/skills/agent-dispatch/scripts/mux.py",
       "plugins/workspace/skills/unattended/scripts/mux.py",
       "plugins/lifecycle/scripts/mux.py",

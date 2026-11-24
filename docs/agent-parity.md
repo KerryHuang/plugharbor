@@ -66,6 +66,7 @@ Codex 0.166.0 與 agy 都讀專案根的 `.agents/skills/<skill>/SKILL.md`；Cod
 ### pi 與 agy（實測：pi 2026-11-13、agy 2026-11-15）
 
 - pi：專案根的 `.agents/skills/<skill>/SKILL.md` 與 `.pi/skills/<skill>/SKILL.md` 都會載入，`.agents/skills/` 下指向 `.claude/skills/` 的相對 symlink 也會載入（`pi -p --no-session --approve` 問可用 skill 名稱，三種配置各只多出對應的那個 skill）。所以鏡像只建 `.agents/skills`，Claude Code、Codex、pi、agy 共用一份，`mirror.py` 不另建 `.pi/skills`。
+- pi 的 agent 角色：Claude 的 `agents/*.md` 在 pi 不會自動出現。lifecycle、tickets 各有 `scripts/gen-pi-roles.py`（兩份相同、`shared-copies.json` 驗同步）產生 `pi/roles/<plugin>-<agent>.md`，由 `pi/roles.ts`（`package.json` 的 `pi.extensions`）回應 pi-herdr-agents 的 `pi-herdr-subagents:roles:discover:v1` 註冊；`subagents_list` 與 `subagent({ agent: "lifecycle-reviewer" })` 看得到。原檔名已帶 plugin 前綴的不重複加（`tickets-scout`）。不寫死 `model`（模型名與 Claude 不同），`thinking` 依原等級（opus→high、sonnet→medium、haiku→low），`tools` 轉 pi 工具名（Glob→`find`＋`ls`），WebSearch／WebFetch 無對應而略過。沒裝 pi-herdr-agents 時 `roles.ts` 不做事。
 - pi 的專案層檔案要信任才載入：沒加 `--approve` 的非互動執行，專案的 skill 不會出現（互動模式第一次開專案時會問）。pi 沒有列 skill 的子命令，只能在專案目錄用 `pi --approve -p` 問模型。
 - agy：`.agents/skills/` 下的目錄 symlink 與檔案 symlink 都不會載入，只有實體複本出現在 skill 清單；沒載入的同名 skill 會被別處的同名 skill 頂替。所以 `install-project.sh` 偵測到 agy 就預設複製（`PLUGHARBOR_LINK_MODE=symlink` 可改回），代價是 plugharbor 更新後要重跑。
 

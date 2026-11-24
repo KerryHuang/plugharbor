@@ -5,6 +5,7 @@
   "license": "MIT",
   "keywords": ["pi-package", "lifecycle"],
   "pi": {
-    "skills": ["./skills"]
+    "skills": ["./skills"],
+    "extensions": ["./pi/roles.ts"]
   }
 }
