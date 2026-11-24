@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.37.1] - 2026-11-24
+
+起因：換 session 時 handoff 的 `self-rotate.sh` 把接回訊息連送三次，新 session 多收兩則同樣的指示。接回訊息開頭是「讀 <長路徑>」，路徑沒有空白、整段換到下一行，畫面上找不到連續的前 10 個字，腳本誤判沒送出而重送到上限，log 最後記「失敗」。
+- fix(handoff)：`self-rotate.sh` 比對接回訊息時，畫面與訊息都先去掉空白與換行。
+- test：`tests/self-rotate.sh` 補「第一個字後面就折行」情境（herdr、hc 兩種後端）。
+
 ## [0.37.0] - 2026-11-23
 
 起因：回饋佇列 20261120090428-e08e5f（retrospective 20261123-feedback-plugin-handoff R2）——經 Herdr.app（hc）派的 claude worker 用的是 core 的環境，沒有 `~/.zshenv` 裡的變數；專案 `.mcp.json` 引用的 `${TOOL_MCP}` 變成空值，MCP 啟動 ENOENT，一張票的 db-check 靜默略過、另一張停下。

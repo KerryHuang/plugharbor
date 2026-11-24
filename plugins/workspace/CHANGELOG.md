@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.4] - 2026-11-24
+
+起因：同 toolkit 0.37.1——`self-rotate.sh` 在接回訊息第一個字後就折行時，誤判沒送出、連送三次。
+- fix(unattended)：同步 toolkit 0.37.1 的 `self-rotate.sh` 副本（畫面與訊息去掉空白、換行再比對）；`tests/self-rotate.sh` 補對應情境。
+
 ## [2.0.3] - 2026-11-23
 
 起因：回饋佇列 20261119063549-c5e92a（retrospective 20261123-feedback-plugin-handoff R1）——unattended 第 7 步同時寫「落後就先 rebase」與「不 force push」，沒寫 rebase 後推到哪；已推過的功能分支落後時，主控用了 `--force-with-lease`。

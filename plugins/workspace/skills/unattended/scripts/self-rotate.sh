@@ -42,7 +42,8 @@ OLD="$(sid)"
 send /clear 'S="$(sid)"; [ -n "$S" ] && [ "$S" != "$OLD" ]'
 send /reload-plugins 'screen | grep -q Reloaded'
 wait_idle 60 || :
-# 長句在畫面上會折行，只比對前 10 個字（perl 按字元切，不切壞中文）
-HEAD="$(perl -CSA -e 'print substr($ARGV[0], 0, 10)' "$MSG")"
-send "$MSG" 'screen | grep -qF -- "$HEAD"'
+# 長句在畫面上會折行（連第一個字後面都可能折：不可斷的長路徑整段換到下一行），
+# 所以畫面與訊息都去掉空白、換行再比對前 10 個字（perl 按字元處理，不切壞中文）
+HEAD="$(perl -CSA -e '($s = $ARGV[0]) =~ s/\s+//g; print substr($s, 0, 10)' "$MSG")"
+send "$MSG" 'screen | perl -CS -0777 -pe "s/\\s+//g" | grep -qF -- "$HEAD"'
 echo 完成 >>"$LOG"

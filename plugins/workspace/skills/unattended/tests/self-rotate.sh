@@ -7,7 +7,7 @@ SCRIPT="$HERE/../scripts/self-rotate.sh"
 TMP="$(mktemp -d)"
 trap 'kill "${CPID:-}" 2>/dev/null || true; rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/bin" "$TMP/state/plugharbor/hc-sessions"
-# 共用的「畫面／session」模擬：STUB_MODE = swallow（預設，/clear 後吞一個指令）｜fold（長句折行）｜noclear（/clear 無效）
+# 共用的「畫面／session」模擬：STUB_MODE = swallow（預設，/clear 後吞一個指令）｜fold（長句折行）｜wrapword（第一個空白就折行：不可斷的長路徑整段排到下一行）｜noclear（/clear 無效）
 # ｜blank（/clear 沒換 id，但之後讀 session id 暫時回空）
 cat > "$TMP/lib.sh" <<'LIB'
 S="$STUB_DIR"; M="${STUB_MODE:-swallow}"
@@ -22,7 +22,11 @@ deliver() {
   fi
   if [ -e "$S/swallow" ]; then rm "$S/swallow"; return 0; fi   # 重繪中，吞掉
   [ "$1" = /reload-plugins ] && echo "Reloaded: 5 plugins" >> "$S/screen"
-  if [ "$M" = fold ]; then printf '%s\n' "$1" | fold -b -w 30 >> "$S/screen"; else echo "❯ $1" >> "$S/screen"; fi
+  case "$M" in
+    fold) printf '%s\n' "$1" | fold -b -w 30 >> "$S/screen" ;;
+    wrapword) printf '❯ %s\n  %s\n' "${1%% *}" "${1#* }" >> "$S/screen" ;;
+    *) echo "❯ $1" >> "$S/screen" ;;
+  esac
 }
 LIB
 cat > "$TMP/bin/herdr" <<'STUB'
@@ -90,6 +94,10 @@ for B in herdr hc; do
   LONG="讀 /a/很長的路徑/handoff.md，從「下一步」接著做；完工時照檔末刪掉它。"
   reset_sid $B; rot $B fold "$LONG" "$TMP/log" || true
   check "$B 折行的長句只送一次" "$([ "$(grep -cF '讀 /a/' "$TMP/sent")" -eq 1 ] && [ "$(tail -1 "$TMP/log")" = 完成 ]; echo $?)"
+
+  # 情境 1c：第一個字後面就折行（路徑沒有空白、整段換到下一行），仍只送一次
+  reset_sid $B; rot $B wrapword "$LONG" "$TMP/log" || true
+  check "$B 首字後折行的長句只送一次" "$([ "$(grep -cF '讀 /a/' "$TMP/sent")" -eq 1 ] && [ "$(tail -1 "$TMP/log")" = 完成 ]; echo $?)"
 
   # 情境 2：不在 herdr／Herdr.app 內就不跑
   if env -u HERDR_ENV -u HERDR_PANE_ID -u HC_TERMINAL_ID PATH="$TMP/bin:/usr/bin:/bin" sh "$SCRIPT" 2>/dev/null; then r=1; else r=0; fi
