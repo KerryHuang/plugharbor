@@ -1,14 +1,18 @@
 // 四個 agent CLI 的共用核心：找執行檔、組無互動指令、清巢狀環境變數、帶逾時執行、判定結果。
 // agent-dispatch 以相對路徑 import 這支；參數的實測依據見 ../references/cli-notes.md。
-import { spawn } from 'node:child_process'
+import { spawn, execSync } from 'node:child_process'
 import { accessSync, statSync, readFileSync, existsSync, constants } from 'node:fs'
 import { join, dirname, delimiter } from 'node:path'
 
-export const CLIS = ['claude', 'codex', 'agy', 'pi']
+// claude-api：同一支 claude 執行檔，改用 API key 計費；key 由 AGENT_DISPATCH_CLAUDE_API_KEY_CMD（shell 指令，stdout 印 key）取得。
+export const CLIS = ['claude', 'claude-api', 'codex', 'agy', 'pi']
+const KEY_CMD = 'AGENT_DISPATCH_CLAUDE_API_KEY_CMD'
 
 const pathOf = env => env.PATH ?? env.Path ?? ''
 
 export function resolveBin(name, env = process.env, platform = process.platform) {
+  // 沒設 key 來源就視為沒裝；PATH 上若剛好有同名的 claude-api 包裝也不採用，實際跑的一律是 claude
+  if (name === 'claude-api') return env[KEY_CMD] ? resolveBin('claude', env, platform) : null
   const names = platform === 'win32' ? [`${name}.exe`, `${name}.cmd`, name] : [name]
   for (const dir of pathOf(env).split(platform === 'win32' ? ';' : delimiter).filter(Boolean)) {
     for (const n of names) {
@@ -31,7 +35,8 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastF
   // prompt 以 - 開頭（如 --- frontmatter）會被當成選項（claude 報 unknown option）；前面補一個半形空格，四家都當位置參數
   if (String(prompt).startsWith('-')) prompt = ` ${prompt}`
   switch (name) {
-    case 'claude': {
+    case 'claude':
+    case 'claude-api': {
       const base = mode === 'worker' ? ['-p', prompt, '--permission-mode', 'acceptEdits', '--allowedTools', 'Bash']
         : mode === 'driver' ? ['-p', prompt, '--allowedTools', 'Bash']
         : mode === 'ask' ? ['-p', prompt, '--tools', 'Read,Grep,Glob'] : ['-p', prompt, '--tools', '']
@@ -69,7 +74,7 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastF
 // 關鍵字還要和錯誤字樣同一行（「Credits used: 12」這類統計不算）。
 // 重置時間：相對時間（in N minutes/hours）優先，其次帶時區的 ISO 時間；不在未來 7 天內就用預設 1 小時，避免永不改派或封到遠期。
 const QUOTA = /\b(usage limit|quota|rate.?limit|credits?|429)\b/i
-const NEEDS_TOPUP = /out of credits|insufficient (credits|balance|funds)|refill|billing/i
+const NEEDS_TOPUP = /out of credits|insufficient (credits|balance|funds)|credit balance is too low|refill|billing/i
 const ERRORISH =/error|exceeded|reached|exhausted|usage limit|rate.?limit|too many requests/i
 export function quotaInfo(out, now = Date.now()) {
   const tail = out.slice(-2000).split(/\r?\n/).slice(-20).join('\n')
@@ -86,6 +91,16 @@ export function quotaInfo(out, now = Date.now()) {
   return { resetAt: now + 3_600_000 }
 }
 
+// quotaInfo 之外，claude-api 的 key 失效（被撤銷、停用）也要封鎖：沒人換 key 就不會自己恢復，封 24 小時。
+// 只看輸出尾段（同 quotaInfo）；呼叫端只在非零 exit 時呼叫，前段提到 Invalid API key 但成功的不算。
+const KEY_BAD = /invalid api key|authentication_error|api key.*(revoked|disabled)/i
+export function blockInfo(cli, out, now = Date.now()) {
+  const q = quotaInfo(out, now)
+  if (q || cli !== 'claude-api') return q
+  const tail = out.slice(-2000).split(/\r?\n/).slice(-20).join('\n')
+  return KEY_BAD.test(tail) ? { resetAt: now + 24 * 3_600_000 } : null
+}
+
 // 從某個 CLI 裡再叫 CLI 時，留著外層的標記會被當成巢狀 session 擋下或誤判。
 // 推送用 token 一律不傳（被派的 CLI 不該 push）；真的要傳就列在 AGENT_DISPATCH_KEEP_ENV（逗號分隔）。
 const PUSH_TOKENS = ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GITLAB_TOKEN', 'GLAB_TOKEN']
@@ -98,6 +113,26 @@ export function scrubEnv(env) {
     if (k.startsWith('CODEX_') && k !== 'CODEX_HOME') continue
     if (k.startsWith('PI_') || k.startsWith('AGY_') || k.startsWith('ANTIGRAVITY_')) continue
     out[k] = v
+  }
+  return out
+}
+
+// 派工時給子程序的環境。claude-api：跑 key 指令取 key（失敗、逾時、空白回 null，錯誤訊息不含 key）；
+// 有設 key 來源時 claude 要清掉繼承的 ANTHROPIC_API_KEY／AUTH_TOKEN，免得誤走 API 計費。key 指令本身不傳給子程序。
+export function cliEnv(name, env, { timeoutMs = 10_000 } = {}) {
+  const out = scrubEnv(env)
+  const cmd = env[KEY_CMD]
+  delete out[KEY_CMD]
+  if (name === 'claude-api') {
+    if (!cmd) return null
+    let key
+    try { key = execSync(cmd, { shell: true, timeout: timeoutMs, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() } catch { return null }
+    if (!key) return null
+    delete out.ANTHROPIC_AUTH_TOKEN
+    out.ANTHROPIC_API_KEY = key
+  } else if (name === 'claude' && cmd) {
+    delete out.ANTHROPIC_API_KEY
+    delete out.ANTHROPIC_AUTH_TOKEN
   }
   return out
 }

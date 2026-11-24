@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CLIS, buildArgs, quotaInfo, run, scrubEnv } from '../agent-mesh-check/scripts/clis.mjs'
+import { CLIS, buildArgs, quotaInfo, run, scrubEnv, resolveBin, cliEnv, blockInfo } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, delimiter, basename } from 'node:path'
@@ -98,6 +98,90 @@ test('quotaInfo 正常輸出回 null', () => {
   assert.equal(quotaInfo('all good'), null)
 })
 
+// ── claude-api：同一支 claude、改用 API key 計費 ──
+const KEY_CMD = 'AGENT_DISPATCH_CLAUDE_API_KEY_CMD'
+
+test('quotaInfo：API 額度不足（credit balance is too low）封鎖 24 小時', () => {
+  const out = 'API Error: 400 Your credit balance is too low to access the Anthropic API'
+  assert.deepEqual(quotaInfo(out, 1000), { resetAt: 1000 + 24 * 3_600_000 })
+})
+
+test('buildArgs claude-api 與 claude 相同', () => {
+  for (const m of ['probe', 'driver', 'ask', 'worker']) {
+    const o = { model: 'opus', effort: 'high', resultFile: '/tmp/x/r.md' }
+    assert.deepEqual(buildArgs('claude-api', m, 'P', o), buildArgs('claude', m, 'P', o))
+  }
+})
+
+test('resolveBin claude-api：沒設 key 來源回 null（即使 PATH 上有同名執行檔）', () => {
+  const d = mkdtempSync(join(tmpdir(), 'cabin-'))
+  for (const n of ['claude', 'claude-api']) { writeFileSync(join(d, n), '#!/bin/sh\n'); chmodSync(join(d, n), 0o755) }
+  assert.equal(resolveBin('claude-api', { PATH: d }), null)
+  assert.equal(resolveBin('claude-api', { PATH: d, [KEY_CMD]: '' }), null)
+})
+
+test('resolveBin claude-api：有設時回 claude 的路徑，不是同名的 claude-api 包裝', () => {
+  const d = mkdtempSync(join(tmpdir(), 'cabin-'))
+  for (const n of ['claude', 'claude-api']) { writeFileSync(join(d, n), '#!/bin/sh\n'); chmodSync(join(d, n), 0o755) }
+  assert.equal(resolveBin('claude-api', { PATH: d, [KEY_CMD]: 'echo k' }), join(d, 'claude'))
+})
+
+test('resolveBin claude-api：platform 傳給 claude 的查找', () => {
+  const d = mkdtempSync(join(tmpdir(), 'cabin-'))
+  writeFileSync(join(d, 'claude.cmd'), '')
+  assert.equal(resolveBin('claude-api', { PATH: d, [KEY_CMD]: 'echo k' }, 'win32'), join(d, 'claude.cmd'))
+})
+
+test('cliEnv claude-api：key 指令輸出 "sk-test\n" → 設 ANTHROPIC_API_KEY，不留 AUTH_TOKEN 與 key 指令', () => {
+  const e = cliEnv('claude-api', { PATH: '/bin', ANTHROPIC_AUTH_TOKEN: 'oauth', [KEY_CMD]: 'echo sk-test' })
+  assert.equal(e.ANTHROPIC_API_KEY, 'sk-test')
+  assert.equal(e.ANTHROPIC_AUTH_TOKEN, undefined)
+  assert.equal(e[KEY_CMD], undefined)
+  assert.equal(e.PATH, '/bin')
+})
+
+test('cliEnv claude-api：指令 exit 1、只印空白、逾時、沒設都回 null', () => {
+  const base = { PATH: process.env.PATH }
+  assert.equal(cliEnv('claude-api', { ...base, [KEY_CMD]: 'echo leaked; exit 1' }), null)
+  assert.equal(cliEnv('claude-api', { ...base, [KEY_CMD]: 'echo "   "' }), null)
+  const t0 = Date.now()
+  assert.equal(cliEnv('claude-api', { ...base, [KEY_CMD]: 'sleep 30' }, { timeoutMs: 500 }), null)
+  assert.ok(Date.now() - t0 < 10_000)
+  assert.equal(cliEnv('claude-api', base), null)
+})
+
+test('cliEnv claude：有設 key 來源時刪掉繼承的 ANTHROPIC_API_KEY 與 ANTHROPIC_AUTH_TOKEN', () => {
+  const e = cliEnv('claude', { ANTHROPIC_API_KEY: 'k', ANTHROPIC_AUTH_TOKEN: 't', HOME: '/h', [KEY_CMD]: 'echo x' })
+  assert.deepEqual(e, { HOME: '/h' })
+})
+
+test('cliEnv claude：沒設 key 來源時保留 ANTHROPIC_API_KEY', () => {
+  const e = cliEnv('claude', { ANTHROPIC_API_KEY: 'k', ANTHROPIC_AUTH_TOKEN: 't' })
+  assert.deepEqual(e, { ANTHROPIC_API_KEY: 'k', ANTHROPIC_AUTH_TOKEN: 't' })
+})
+
+test('cliEnv 其他 CLI：不留 key 指令，其餘等同 scrubEnv', () => {
+  const env = { ANTHROPIC_API_KEY: 'k', GH_TOKEN: 'g', [KEY_CMD]: 'echo x' }
+  assert.deepEqual(cliEnv('codex', env), { ANTHROPIC_API_KEY: 'k' })
+})
+
+test('blockInfo：claude-api 尾段 "Invalid API key" → 封鎖 24 小時', () => {
+  assert.deepEqual(blockInfo('claude-api', 'Invalid API key · Fix external API key', 1000), { resetAt: 1000 + 24 * 3_600_000 })
+})
+
+test('blockInfo：claude 同樣輸出 → null', () => {
+  assert.equal(blockInfo('claude', 'Invalid API key · Fix external API key', 1000), null)
+})
+
+test('blockInfo：Invalid API key 只出現在前段、尾 20 行沒有 → null', () => {
+  const out = ['Invalid API key', ...Array.from({ length: 25 }, (_, i) => `line ${i}`)].join('\n')
+  assert.equal(blockInfo('claude-api', out, 1000), null)
+})
+
+test('blockInfo：額度錯誤優先照 quotaInfo', () => {
+  assert.deepEqual(blockInfo('claude-api', 'Error: rate limit reached, try again in 5 minutes', 0), { resetAt: 300_000 })
+})
+
 // ── 路由表 ──
 const routing = loadRouting()
 const firstOf = { 'plan': 'codex', 'architecture': 'codex', 'review-critical': 'codex',
@@ -160,7 +244,7 @@ test('blockCli 寫入後讀得回來', () => {
 test('meshAvailable：只排除第 2 層明確沒過的；結果裡沒有的（之後才裝）視為可用；沒資料回 null', () => {
   assert.equal(meshAvailable(undefined), null)
   const last = { results: [{ layer: 2, a: 'claude', status: 'pass' }, { layer: 2, a: 'agy', status: 'auth' }, { layer: 1, a: 'pi', status: 'skip' }] }
-  assert.deepEqual([...meshAvailable(last)].sort(), ['claude', 'codex', 'pi'])
+  assert.deepEqual([...meshAvailable(last)].sort(), ['claude', 'claude-api', 'codex', 'pi'])
 })
 
 // ── ask.mjs：改派與長結果 ──

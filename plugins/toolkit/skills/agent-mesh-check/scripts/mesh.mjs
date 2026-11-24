@@ -19,7 +19,7 @@ export function pairs(installed, from, full) {
 }
 
 // 各 CLI 給子程序設的標記（2026-10-23 實測）。巢狀時可能同時存在多個，那時才看 --from。
-const MARKERS = { claude: ['CLAUDECODE'], codex: ['CODEX_THREAD_ID', 'CODEX_CI'], agy: ['ANTIGRAVITY_AGENT'], pi: ['PI_CODING_AGENT'] }
+const MARKERS = { claude: ['CLAUDECODE'], 'claude-api': [], codex: ['CODEX_THREAD_ID', 'CODEX_CI'], agy: ['ANTIGRAVITY_AGENT'], pi: ['PI_CODING_AGENT'] }
 const detectAll = env => CLIS.filter(c => MARKERS[c].some(k => env[k]))
 
 // agent 自報的 --from 可能錯（pi 用 Claude 模型時會說自己是 claude），只有一個標記時以標記為準。

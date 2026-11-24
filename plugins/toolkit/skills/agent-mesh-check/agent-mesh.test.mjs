@@ -10,7 +10,7 @@ import { pairs, resolveFrom, statePath, diffVersions, callerScript, sweepStale }
 
 const ASK = fileURLToPath(new URL('../agent-dispatch/scripts/ask.mjs', import.meta.url))
 
-test('CLIS 固定四個', () => assert.deepEqual(CLIS, ['claude', 'codex', 'agy', 'pi']))
+test('CLIS 固定五個', () => assert.deepEqual(CLIS, ['claude', 'claude-api', 'codex', 'agy', 'pi']))
 
 test('resolveBin 找得到可執行檔、找不到回 null', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mesh-bin-'))
@@ -86,7 +86,7 @@ test('pairs：入口為中心 vs --full', () => {
   assert.equal(p.length, 4)
   assert.ok(p.some(([a, b]) => a === 'pi' && b === 'claude'))
   assert.ok(p.some(([a, b]) => a === 'claude' && b === 'pi'))
-  assert.equal(pairs(CLIS, null, true).length, 12)
+  assert.equal(pairs(CLIS, null, true).length, 20)
   assert.deepEqual(pairs(['claude'], 'pi', false), [])
 })
 
