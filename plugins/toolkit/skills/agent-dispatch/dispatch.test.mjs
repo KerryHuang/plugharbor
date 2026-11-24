@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CLIS, buildArgs, quotaInfo, run, scrubEnv, resolveBin, cliEnv, blockInfo } from '../agent-mesh-check/scripts/clis.mjs'
+import { CLIS, buildArgs, quotaInfo, run, scrubEnv, resolveBin, cliEnv, blockInfo, hasKeyCmd } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, delimiter, basename } from 'node:path'
@@ -104,6 +104,41 @@ const KEY_CMD = 'AGENT_DISPATCH_CLAUDE_API_KEY_CMD'
 test('quotaInfo：API 額度不足（credit balance is too low）封鎖 24 小時', () => {
   const out = 'API Error: 400 Your credit balance is too low to access the Anthropic API'
   assert.deepEqual(quotaInfo(out, 1000), { resetAt: 1000 + 24 * 3_600_000 })
+})
+
+test('quotaInfo：claude 實際輸出單行 "Credit balance is too low"（沒有 error 字樣）→ 封鎖 24 小時', () => {
+  assert.deepEqual(quotaInfo('Credit balance is too low', 1000), { resetAt: 1000 + 24 * 3_600_000 })
+  assert.deepEqual(blockInfo('claude-api', 'Credit balance is too low\n', 1000), { resetAt: 1000 + 24 * 3_600_000 })
+})
+
+test('quotaInfo：too low 沒有 credit／quota 字樣 → 不封鎖', () => {
+  assert.equal(quotaInfo('warning: the font size is too low', 1000), null)
+  assert.equal(blockInfo('claude-api', 'volume too low', 1000), null)
+})
+
+test('blockInfo：claude-api 的 "Your ANTHROPIC_API_KEY belongs to a disabled organization" → 封鎖 24 小時；claude 不封', () => {
+  const out = 'Your ANTHROPIC_API_KEY belongs to a disabled organization · Update or unset the environment variable'
+  assert.deepEqual(blockInfo('claude-api', out, 1000), { resetAt: 1000 + 24 * 3_600_000 })
+  assert.equal(blockInfo('claude', out, 1000), null)
+})
+
+test('hasKeyCmd：有值且 trim 後非空才算有設', () => {
+  assert.equal(hasKeyCmd({}), false)
+  assert.equal(hasKeyCmd({ [KEY_CMD]: '' }), false)
+  assert.equal(hasKeyCmd({ [KEY_CMD]: '  \t ' }), false)
+  assert.equal(hasKeyCmd({ [KEY_CMD]: 'echo k' }), true)
+})
+
+test('key 來源只有空白：到處都視為沒設（claude 保留繼承的 key、claude-api 不可解析、候選排除 claude-api）', () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-ws-'))
+  writeFileSync(join(d, 'claude'), '#!/bin/sh\n'); chmodSync(join(d, 'claude'), 0o755)
+  const env = { PATH: d, ANTHROPIC_API_KEY: 'sk-mine', [KEY_CMD]: '  ' }
+  assert.equal(resolveBin('claude-api', env), null)
+  assert.equal(cliEnv('claude', env).ANTHROPIC_API_KEY, 'sk-mine')
+  assert.equal(cliEnv('claude-api', env), null)
+  const routing = loadRouting()
+  for (const tier of ['standard', 'cheap', 'top'])
+    assert.ok(!candidates({ tier, routing, state: { blocks: {} }, available: null, now: 0, env }).some(c => c.cli === 'claude-api'), tier)
 })
 
 test('buildArgs claude-api 與 claude 相同', () => {
@@ -370,12 +405,14 @@ test('ask：claude-api key 失效 → 封鎖 24 小時（auth）並改派 claude
   assert.ok(!(r.stdout + r.stderr).includes('sk-bad'))
 })
 
-test('ask：claude-api 取 key 失敗 → 略過並改派 claude，不封鎖', () => {
+test('ask：claude-api 取 key 失敗 → 封鎖 1 小時（key）、略過並改派 claude', () => {
   const r = ask(['--type', 'docs'], { PATH: keyShimDir(), AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' })
   assert.equal(r.status, 0, r.stderr)
   assert.match(r.stderr, /claude-api 取 key 失敗，略過/)
   assert.match(r.stdout, /\[ask\] 交給 claude（/)
-  assert.equal(r.state.blocks['claude-api'], undefined)
+  assert.equal(r.state.blocks['claude-api'].reason, 'key')
+  const left = r.state.blocks['claude-api'].until - Date.now()
+  assert.ok(left > 59 * 60_000 && left <= 3_600_000, String(left))
 })
 
 test('ask：--to claude-api 沒設 key 來源 → exit 127 並說明', () => {
@@ -614,6 +651,9 @@ test('背景 worker：claude-api 取 key 失敗 → failed、tail 寫取 key 失
   const { job, status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, { cli: 'claude-api' })
   assert.equal(status.state, 'failed')
   assert.match(status.tail, /取 key 失敗/)
+  const st = readState(job.statusFile.replace(/[^/\\]+[/\\]status\.json$/, 'state.json'))
+  assert.equal(st.blocks['claude-api'].reason, 'key')
+  assert.ok(st.blocks['claude-api'].until > Date.now() + 59 * 60_000)
   assert.ok(!existsSync(join(job.worktree, 'changed.txt')))  // 沒跑 worker
 })
 

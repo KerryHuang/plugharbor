@@ -132,6 +132,7 @@ export async function supervise(ws) {
   try {
     const env = workerEnv(process.env, job.resultFile, job.cli)
     if (!env) {  // key 只在這裡的記憶體；失敗訊息不含 key 指令的輸出
+      blockCli(job.stateFile, job.cli, Date.now() + 3_600_000, 'key')  // 封 1 小時：否則 pick 一直挑它、重派一直 failed
       writeJson(job.statusFile, { ...status, state: 'failed', tail: `${job.cli} 取 key 失敗（檢查 AGENT_DISPATCH_CLAUDE_API_KEY_CMD）`, endedAt: new Date().toISOString() })
       notify(`worker ${job.name}：failed`, '看 status.json')
       return 'failed'

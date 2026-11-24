@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { CLIS } from '../../agent-mesh-check/scripts/clis.mjs'
+import { CLIS, hasKeyCmd } from '../../agent-mesh-check/scripts/clis.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -68,7 +68,7 @@ export function candidates({ type, tier, routing, state, available, now = Date.n
   const t = tier ?? routing.types[type]
   if (!routing.tiers[t]) throw new Error(`未知的任務類型或等級：${type ?? tier}`)
   // 沒設 key 來源就沒有 claude-api 可派，候選與改動前相同
-  const hasApiKey = !!env.AGENT_DISPATCH_CLAUDE_API_KEY_CMD
+  const hasApiKey = hasKeyCmd(env)
   return routing.tiers[t].filter(c =>
     (hasApiKey || c.cli !== 'claude-api') &&
     (!available || available.has(c.cli)) &&

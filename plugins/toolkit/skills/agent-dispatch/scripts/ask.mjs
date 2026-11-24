@@ -79,6 +79,8 @@ async function main(argv) {
     const env = cliEnv(c.cli, process.env)  // key 只放子程序環境，不進 argv
     if (!env) {
       console.error(`[ask] ${c.cli} 取 key 失敗，略過`)
+      // 封 1 小時：否則 route 只看有沒有設環境變數，下次又挑它（例如鑰匙圈授權框沒人按）
+      blockCli(stateFile, c.cli, Date.now() + 3_600_000, 'key')
       if (o.to) return 127
       continue
     }

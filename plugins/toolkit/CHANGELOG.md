@@ -7,7 +7,10 @@
 起因：訂閱方案（Ultra／Max）每月附一筆 Claude API 額度，月底作廢，只付用 API key 跑的 `claude -p`；2026-11-24 週用量快見底、API 額度沒動，但自動駕駛與無人值守派出去的工作仍全扣訂閱。目的是非互動派工先扣 API 額度，用完或過期自動退回訂閱。
 - feat(agent-dispatch)：新派工對象 `claude-api`（同一支 `claude`、以 API key 計費）。key 來源由 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD` 指定（shell 指令、stdout 印 key），只進子程序的 `ANTHROPIC_API_KEY`，不落檔、不進 argv。top 等級訂閱優先（claude-api 排 claude 後），standard／cheap API 優先（排 claude 前）；額度不足與認證失敗封鎖 24 小時並改派；pane 一律以 claude 開並清 key。沒設 key 來源時行為與以前相同。
 - feat(agent-mesh-check)：第 2 層驗 claude-api（取 key 失敗記 fail）；第 1 層沒設 key 來源記略過；第 3 層互叫排除 claude-api。
-- test：`agent-mesh.test.mjs` 補 `findBins`。
+- fix(agent-dispatch)：額度判定認得 claude 實際輸出的單行 `Credit balance is too low`；key 判定認得 `Your ANTHROPIC_API_KEY belongs to a disabled organization`；取 key 失敗（ask、bg）封鎖 claude-api 1 小時，pick 不再一直挑它；「有設 key 來源」統一由 `hasKeyCmd` 判斷（trim 後非空，與 mux.py 一致），純空白視為沒設。
+- fix(agent-mesh-check)：第 3 層 driver 改用 `cliEnv`，key 指令與主 session 的 `ANTHROPIC_API_KEY` 不再傳給 driver。
+- docs：SKILL.md 補「沒綁卡」；cli-notes 更正 hc 為 Herdr.app，補 macOS 鑰匙圈首次授權提示。
+- test：`agent-mesh.test.mjs` 補 `findBins`；`dispatch.test.mjs` 補單行額度、disabled organization、取 key 失敗封鎖、空白 key 來源。
 
 ## [0.37.1] - 2026-11-24
 

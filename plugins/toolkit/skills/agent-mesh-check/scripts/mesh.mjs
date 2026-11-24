@@ -138,7 +138,7 @@ async function main(argv) {
       const script = `call-${a}-${b}.mjs`
       writeFileSync(join(sandbox, script), callerScript(bins[b], b, ch.prompt, timeoutMs))
       const driver = `Run this exact shell command once in the current directory and wait for it to finish (it takes up to a minute): node ${script}\nThen reply with its final output line verbatim and nothing else. Do not run anything else.`
-      const r = await run(bins[a], buildArgs(a, 'driver', driver), { cwd: sandbox, timeoutMs: timeoutMs * 2, env: scrubEnv(process.env) })
+      const r = await run(bins[a], buildArgs(a, 'driver', driver), { cwd: sandbox, timeoutMs: timeoutMs * 2, env: cliEnv(a, process.env) })
       const status = classify(r, ch.expect)
       return { layer: 3, a, b, status, ms: r.ms, note: status === 'pass' ? '' : tail(r.out) }
     } }))

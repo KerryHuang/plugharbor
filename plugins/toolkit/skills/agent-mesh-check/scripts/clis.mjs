@@ -8,11 +8,14 @@ import { join, dirname, delimiter } from 'node:path'
 export const CLIS = ['claude', 'claude-api', 'codex', 'agy', 'pi']
 const KEY_CMD = 'AGENT_DISPATCH_CLAUDE_API_KEY_CMD'
 
+// 「有設 key 來源」的唯一判斷：有值且 trim 後非空；與 mux.py 的 strip 檢查一致，純空白視為沒設。
+export const hasKeyCmd = env => !!env[KEY_CMD]?.trim()
+
 const pathOf = env => env.PATH ?? env.Path ?? ''
 
 export function resolveBin(name, env = process.env, platform = process.platform) {
   // 沒設 key 來源就視為沒裝；PATH 上若剛好有同名的 claude-api 包裝也不採用，實際跑的一律是 claude
-  if (name === 'claude-api') return env[KEY_CMD] ? resolveBin('claude', env, platform) : null
+  if (name === 'claude-api') return hasKeyCmd(env) ? resolveBin('claude', env, platform) : null
   const names = platform === 'win32' ? [`${name}.exe`, `${name}.cmd`, name] : [name]
   for (const dir of pathOf(env).split(platform === 'win32' ? ';' : delimiter).filter(Boolean)) {
     for (const n of names) {
@@ -75,7 +78,8 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastF
 // 重置時間：相對時間（in N minutes/hours）優先，其次帶時區的 ISO 時間；不在未來 7 天內就用預設 1 小時，避免永不改派或封到遠期。
 const QUOTA = /\b(usage limit|quota|rate.?limit|credits?|429)\b/i
 const NEEDS_TOPUP = /out of credits|insufficient (credits|balance|funds)|credit balance is too low|refill|billing/i
-const ERRORISH =/error|exceeded|reached|exhausted|usage limit|rate.?limit|too many requests/i
+// too low：claude 額度不足只印單行「Credit balance is too low」，沒有 error 字樣
+const ERRORISH = /error|exceeded|reached|exhausted|too low|usage limit|rate.?limit|too many requests/i
 export function quotaInfo(out, now = Date.now()) {
   const tail = out.slice(-2000).split(/\r?\n/).slice(-20).join('\n')
   if (!tail.split('\n').some(l => QUOTA.test(l) && ERRORISH.test(l))) return null
@@ -93,7 +97,7 @@ export function quotaInfo(out, now = Date.now()) {
 
 // quotaInfo 之外，claude-api 的 key 失效（被撤銷、停用）也要封鎖：沒人換 key 就不會自己恢復，封 24 小時。
 // 只看輸出尾段（同 quotaInfo）；呼叫端只在非零 exit 時呼叫，前段提到 Invalid API key 但成功的不算。
-const KEY_BAD = /invalid api key|authentication_error|api key.*(revoked|disabled)/i
+const KEY_BAD = /invalid api key|authentication_error|api[ _]key.*(revoked|disabled)|disabled organization/i
 export function blockInfo(cli, out, now = Date.now()) {
   const q = quotaInfo(out, now)
   if (q || cli !== 'claude-api') return q
@@ -121,7 +125,7 @@ export function scrubEnv(env) {
 // 有設 key 來源時 claude 要清掉繼承的 ANTHROPIC_API_KEY／AUTH_TOKEN，免得誤走 API 計費。key 指令本身不傳給子程序。
 export function cliEnv(name, env, { timeoutMs = 10_000 } = {}) {
   const out = scrubEnv(env)
-  const cmd = env[KEY_CMD]
+  const cmd = hasKeyCmd(env) ? env[KEY_CMD] : null
   delete out[KEY_CMD]
   if (name === 'claude-api') {
     if (!cmd) return null
