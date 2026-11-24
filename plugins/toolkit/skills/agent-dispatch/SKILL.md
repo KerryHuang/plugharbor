@@ -13,6 +13,7 @@ argument-hint: "[對象] <任務>"
 ## 1. 選對象
 
 - 使用者指定對象就照做（`--to`）。
+- `claude-api` 是同一支 claude、以 API key 計費；設了 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD`（印 key 的指令，如 `security find-generic-password -s <服務名> -w`）才啟用。key 要用沒開自動儲值的 org；規劃類訂閱優先，其餘 API 優先。要用 claude.ai connector 指定 `--to claude`；pane 一律走訂閱。
 - 沒指定時，判斷任務類型，交給腳本查表（`--type`），**直接派，不先徵詢**：
 
   | 等級 | 類型 |
@@ -58,7 +59,7 @@ argument-hint: "[對象] <任務>"
 
 - 下列情況要**跨家族審查**（同家換型號不算獨立）：改動碰到安全、資料、DB 結構、公開介面（路徑樣式在 `routing.json` 的 `crossReview`），或變更超過 300 行。
 - 其他小改只做同家審查。
-- 挑審查者：用 `route.mjs` 的 `reviewer()` 規則——top 等級候選裡第一個跟作者不同家族的。家族：claude 與 pi 是 anthropic、codex 是 openai、agy 是 google。
+- 挑審查者：用 `route.mjs` 的 `reviewer()` 規則——top 等級候選裡第一個跟作者不同家族的。家族：claude、claude-api 與 pi 是 anthropic、codex 是 openai、agy 是 google。
 - 每次派審查前都先跑 `node "${CLAUDE_SKILL_DIR}/scripts/route.mjs" reviewer <作者 CLI>`，不沿用上一次的審查者。回傳的 `crossFamily` 是 `false` 就直接走同家審查，不要先送別家再等失敗。
 - 湊不到別家（都沒裝、沒登入或封鎖中）就退回同家審查，回報寫「湊不到別家，退回同家審查」，不問使用者。同家審查用新的 context：同家 CLI 的短問答，或 Agent subagent。
 - 只有 `reviewer` 正常回傳 JSON 且 `crossFamily` 是 `false` 才算湊不到別家。腳本報錯、印出用法或輸出不是 JSON 是**工具故障**：用 Base directory 的腳本重試一次；仍失敗才同家審查，回報寫「工具故障，退回同家審查」並附錯誤訊息，不能寫成湊不到別家。

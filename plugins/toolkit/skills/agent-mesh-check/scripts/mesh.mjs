@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir, homedir, hostname } from 'node:os'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { CLIS, resolveBin, buildArgs, scrubEnv, run, classify, version } from './clis.mjs'
+import { CLIS, resolveBin, buildArgs, scrubEnv, cliEnv, run, classify, version } from './clis.mjs'
 
 const usage = `用法：node mesh.mjs [--from <${CLIS.join('|')}>] [--full] [--timeout <秒，預設 180>] [--concurrency <預設 4>] [--json]
   --from   目前入口（執行本 skill 的 CLI）；省略時從環境變數判斷，判斷不出來就要求指定
@@ -17,6 +17,9 @@ export function pairs(installed, from, full) {
   if (!installed.includes(from)) return []
   return installed.filter(x => x !== from).flatMap(x => [[from, x], [x, from]])
 }
+
+// 沒設 key 來源時 claude-api 的 resolveBin 為 null，自然不列入已安裝
+export const findBins = env => Object.fromEntries(CLIS.map(c => [c, resolveBin(c, env)]))
 
 // 各 CLI 給子程序設的標記（2026-10-23 實測）。巢狀時可能同時存在多個，那時才看 --from。
 const MARKERS = { claude: ['CLAUDECODE'], 'claude-api': [], codex: ['CODEX_THREAD_ID', 'CODEX_CI'], agy: ['ANTIGRAVITY_AGENT'], pi: ['PI_CODING_AGENT'] }
@@ -99,16 +102,15 @@ async function main(argv) {
   if (who.note) console.error(`[入口] ${who.note}`)
   if (!opt.full && !opt.from) { console.error(`判斷不出目前入口，請加 --from <cli>（或用 --full）\n${usage}`); return 2 }
 
-  const env = scrubEnv(process.env)
   const timeoutMs = opt.timeout * 1000
   const rows = []
   const versions = {}
   const bins = {}
   // ① 安裝
   for (const c of CLIS) {
-    bins[c] = resolveBin(c)
+    bins[c] = resolveBin(c, process.env)
     versions[c] = bins[c] ? await version(c, bins[c]) : null
-    rows.push({ layer: 1, a: c, b: '', status: bins[c] ? 'pass' : 'skip', ms: 0, note: bins[c] ? (versions[c] ?? '版本讀不到') : '未安裝' })
+    rows.push({ layer: 1, a: c, b: '', status: bins[c] ? 'pass' : 'skip', ms: 0, note: bins[c] ? (versions[c] ?? '版本讀不到') : c === 'claude-api' ? '未設定 AGENT_DISPATCH_CLAUDE_API_KEY_CMD' : '未安裝' })
   }
   const installed = CLIS.filter(c => bins[c])
   if (opt.from && !installed.includes(opt.from)) { console.error(`入口 ${opt.from} 不在 PATH 上`); return 2 }
@@ -119,6 +121,8 @@ async function main(argv) {
     // ② 自己能不能回話
     const self = await pool(installed.map(c => ({ uses: [c], fn: async () => {
       const ch = challenge()
+      const env = cliEnv(c, process.env)
+      if (!env) return { layer: 2, a: c, b: '', status: 'fail', ms: 0, note: '取 key 失敗' }
       const r = await run(bins[c], buildArgs(c, 'probe', ch.prompt), { cwd: sandbox, timeoutMs, env })
       const status = classify(r, ch.expect)
       return { layer: 2, a: c, b: '', status, ms: r.ms, note: status === 'pass' ? '' : tail(r.out) }
@@ -126,14 +130,15 @@ async function main(argv) {
     rows.push(...self)
     const ok = new Set(self.filter(r => r.status === 'pass').map(r => r.a))
     // ③ A 用 shell 叫 B
-    const mesh = pairs(installed, opt.from, opt.full)
+    // claude-api 與 claude 同一支執行檔，互叫路徑相同；且第 3 層以 scrubEnv 跑 B 拿不到 key，測到的會是訂閱。第 2 層才驗它。
+    const mesh = pairs(installed.filter(c => c !== 'claude-api'), opt.from, opt.full)
     const jobs = mesh.map(([a, b]) => ({ uses: [a, b], fn: async () => {
       if (!ok.has(a) || !ok.has(b)) return { layer: 3, a, b, status: 'skip', ms: 0, note: '第 2 層未通過' }
       const ch = challenge()
       const script = `call-${a}-${b}.mjs`
       writeFileSync(join(sandbox, script), callerScript(bins[b], b, ch.prompt, timeoutMs))
       const driver = `Run this exact shell command once in the current directory and wait for it to finish (it takes up to a minute): node ${script}\nThen reply with its final output line verbatim and nothing else. Do not run anything else.`
-      const r = await run(bins[a], buildArgs(a, 'driver', driver), { cwd: sandbox, timeoutMs: timeoutMs * 2, env })
+      const r = await run(bins[a], buildArgs(a, 'driver', driver), { cwd: sandbox, timeoutMs: timeoutMs * 2, env: scrubEnv(process.env) })
       const status = classify(r, ch.expect)
       return { layer: 3, a, b, status, ms: r.ms, note: status === 'pass' ? '' : tail(r.out) }
     } }))

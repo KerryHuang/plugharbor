@@ -51,4 +51,5 @@
   - `--sandbox` 只限制 shell 指令，它自己的 `write_file` 工具照樣能寫檔（2026-10-23 實測寫進暫存目錄）。
   - 使用者的 agy 設定若在 `permissions.allow` 放了 `write_file(*)`、`command(*)`，無互動模式下寫檔不會先問，參數層擋不住。
   - 派工短問答只能在 prompt 開頭加唯讀指示當作軟防線。要硬擋，得由使用者自己收窄 agy 的 allow 清單。
+- **claude-api**：同一支 `claude`，只差環境有 `ANTHROPIC_API_KEY`（由 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD` 取得）。2026-11-24 實測：設了該變數的 `claude -p` 一定用 key（假 key 回 `Invalid API key`、exit 1）；本機 MCP 照常載入；claude.ai connectors 會印 disabled 警告。herdr pane 的環境來自 herdr server、不繼承呼叫端，mux 清 key 只作用於 hc（Ghostty 等）路徑；herdr server 若在帶 `ANTHROPIC_API_KEY` 的 shell 啟動，pane 會改按量計費。
 - **agy 回應較慢**：一輪約 8～12 秒；互叫一組約 20 秒。

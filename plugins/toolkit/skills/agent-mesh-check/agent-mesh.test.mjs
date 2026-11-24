@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { CLIS, resolveBin, buildArgs, scrubEnv, run, classify, cmdLineError } from './scripts/clis.mjs'
-import { pairs, resolveFrom, statePath, diffVersions, callerScript, sweepStale } from './scripts/mesh.mjs'
+import { pairs, resolveFrom, statePath, diffVersions, callerScript, sweepStale, findBins } from './scripts/mesh.mjs'
 
 const ASK = fileURLToPath(new URL('../agent-dispatch/scripts/ask.mjs', import.meta.url))
 
@@ -88,6 +88,19 @@ test('pairs：入口為中心 vs --full', () => {
   assert.ok(p.some(([a, b]) => a === 'claude' && b === 'pi'))
   assert.equal(pairs(CLIS, null, true).length, 20)
   assert.deepEqual(pairs(['claude'], 'pi', false), [])
+})
+
+test('findBins：claude-api 只在設了 key 來源時算已安裝', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'mesh-bin-'))
+  try {
+    writeFileSync(join(dir, 'claude'), '#!/bin/sh\n')
+    chmodSync(join(dir, 'claude'), 0o755)
+    const none = findBins({ PATH: dir })
+    assert.equal(none['claude-api'], null)
+    assert.equal(none.claude, join(dir, 'claude'))
+    assert.equal(findBins({ PATH: dir, AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo k' })['claude-api'], join(dir, 'claude'))
+    assert.doesNotThrow(() => resolveFrom(null, { PATH: dir }))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('環境標記判斷入口與 statePath', () => {

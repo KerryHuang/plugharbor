@@ -84,6 +84,7 @@ Claude Code 另有三支 hook 自動配合：`tower-context.py`（SessionStart �
 
 - **短問答**（`scripts/ask.mjs`）：額度用盡自動改派下一家，輸出超過 16000 字元只回摘要、全文落檔。
 - **長任務**：依序用 herdr／Herdr.app 的 pane（一律經 `skills/agent-dispatch/scripts/mux.py`：`env`、`spawn`、`send`、`wait`、`read`、`alive`、`session`、`close`、`attach-hint`，後端自動判斷）、Ghostty 分割（macOS）、背景 worker（`scripts/bg.mjs`，在獨立 git worktree 執行）。
+- **claude-api**：設 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD`（印 key 的指令）後，非互動派工可走 API 額度（同一支 claude、API key 計費）；沒設則與以前相同。
 - **其他**：
   - 改動碰到安全、資料、DB 結構、公開介面，或超過 300 行時，挑不同家族的模型審查。
   - 額度狀態存在 `~/.local/state/agent-dispatch/state.json`；Windows 存在 `%LOCALAPPDATA%`。

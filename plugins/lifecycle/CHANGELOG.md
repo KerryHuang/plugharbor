@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/`、`templates/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [4.3.5] - 2026-11-24
+
+起因：同 toolkit 0.38.0（claude-api 派工路由）。
+- fix：mux.py 副本同步 toolkit 0.38.0：claude-api pane 以 claude 開並清 key。
+
 ## [4.3.4] - 2026-11-23
 
 起因：retrospective 20261123-feedback-plugin-handoff R2。

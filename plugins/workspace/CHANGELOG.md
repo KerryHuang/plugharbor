@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.0.5] - 2026-11-24
+
+起因：同 toolkit 0.38.0（claude-api 派工路由）。
+- fix：mux.py 副本同步 toolkit 0.38.0：claude-api pane 以 claude 開並清 key。
+
 ## [2.0.4] - 2026-11-24
 
 起因：同 toolkit 0.37.1——`self-rotate.sh` 在接回訊息第一個字後就折行時，誤判沒送出、連送三次。

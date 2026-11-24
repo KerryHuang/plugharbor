@@ -1,6 +1,6 @@
 {
   "name": "lifecycle",
-  "version": "4.3.4",
+  "version": "4.3.5",
   "description": "開發主線——規格、規格檢查、實作入口、QA 實機驗收、發版；工程核心交 superpowers，票務、需求會議、交付文件各自獨立成 plugin",
   "author": {
     "name": "KerryHuang"

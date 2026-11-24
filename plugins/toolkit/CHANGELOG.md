@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.38.0] - 2026-11-24
+
+起因：訂閱方案（Ultra／Max）每月附一筆 Claude API 額度，月底作廢，只付用 API key 跑的 `claude -p`；2026-11-24 週用量快見底、API 額度沒動，但自動駕駛與無人值守派出去的工作仍全扣訂閱。目的是非互動派工先扣 API 額度，用完或過期自動退回訂閱。
+- feat(agent-dispatch)：新派工對象 `claude-api`（同一支 `claude`、以 API key 計費）。key 來源由 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD` 指定（shell 指令、stdout 印 key），只進子程序的 `ANTHROPIC_API_KEY`，不落檔、不進 argv。top 等級訂閱優先（claude-api 排 claude 後），standard／cheap API 優先（排 claude 前）；額度不足與認證失敗封鎖 24 小時並改派；pane 一律以 claude 開並清 key。沒設 key 來源時行為與以前相同。
+- feat(agent-mesh-check)：第 2 層驗 claude-api（取 key 失敗記 fail）；第 1 層沒設 key 來源記略過；第 3 層互叫排除 claude-api。
+- test：`agent-mesh.test.mjs` 補 `findBins`。
+
 ## [0.37.1] - 2026-11-24
 
 起因：換 session 時 handoff 的 `self-rotate.sh` 把接回訊息連送三次，新 session 多收兩則同樣的指示。接回訊息開頭是「讀 <長路徑>」，路徑沒有空白、整段換到下一行，畫面上找不到連續的前 10 個字，腳本誤判沒送出而重送到上限，log 最後記「失敗」。
