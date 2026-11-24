@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { CLIS, resolveBin, buildArgs, scrubEnv, run, quotaInfo } from '../../agent-mesh-check/scripts/clis.mjs'
+import { CLIS, resolveBin, buildArgs, cliEnv, run, quotaInfo, blockInfo } from '../../agent-mesh-check/scripts/clis.mjs'
 import { statePath as meshStatePath } from '../../agent-mesh-check/scripts/mesh.mjs'
 import { loadRouting, statePath, readState, blockCli, readMesh, candidates } from './route.mjs'
 
@@ -28,6 +28,9 @@ export function summarize(text, limit = 16000, head = 4000, file) {
   return `${text.slice(0, head)}\n…（以下省略）\n全文 ${text.length} 字元，見 ${file}`
 }
 
+// claude-api 沒有「安裝」的問題，是沒設 key 來源
+const missing = cli => cli === 'claude-api' ? '未設定 AGENT_DISPATCH_CLAUDE_API_KEY_CMD（claude-api 的 key 來源）' : `${cli} 不在 PATH 上（未安裝？）`
+
 async function main(argv) {
   const o = { timeout: 600, idleTimeout: 480, cwd: process.cwd() }
   let file = null
@@ -45,7 +48,7 @@ async function main(argv) {
   if (!(Number.isFinite(o.timeout) && o.timeout > 0)) { console.error(`--timeout 要是正數（秒）\n${usage}`); return 2 }
   o.idleTimeout = Number(o.idleTimeout)
   if (!(Number.isFinite(o.idleTimeout) && o.idleTimeout >= 0)) { console.error(`--idle-timeout 要是 0 或正數（秒）\n${usage}`); return 2 }
-  if (o.to && !resolveBin(o.to)) { console.error(`${o.to} 不在 PATH 上（未安裝？）`); return 127 }
+  if (o.to && !resolveBin(o.to)) { console.error(missing(o.to)); return 127 }
   let prompt
   try { prompt = readFileSync(file, 'utf8') } catch (e) { console.error(`讀不到 prompt 檔：${e.message}`); return 2 }
 
@@ -69,20 +72,27 @@ async function main(argv) {
     const c = { ...list[i], ...(o.model && { model: o.model }), ...(o.effort && { effort: o.effort }) }
     const bin = resolveBin(c.cli)
     if (!bin) {
-      console.error(`${c.cli} 不在 PATH 上（未安裝？）`)
+      console.error(missing(c.cli))
+      if (o.to) return 127
+      continue
+    }
+    const env = cliEnv(c.cli, process.env)  // key 只放子程序環境，不進 argv
+    if (!env) {
+      console.error(`[ask] ${c.cli} 取 key 失敗，略過`)
       if (o.to) return 127
       continue
     }
     const tmp = c.cli === 'codex' ? mkdtempSync(join(tmpdir(), 'ask-')) : null
     const lastFile = tmp && join(tmp, 'last.md')
-    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, { ...c, lastFile }), { cwd: o.cwd, timeoutMs: o.timeout * 1000, idleMs: o.idleTimeout * 1000, env: scrubEnv(process.env) })
+    const r = await run(bin, buildArgs(c.cli, 'ask', guarded, { ...c, lastFile }), { cwd: o.cwd, timeoutMs: o.timeout * 1000, idleMs: o.idleTimeout * 1000, env })
     let last = ''
     if (tmp) { try { last = readFileSync(lastFile, 'utf8').trim() } catch {} rmSync(tmp, { recursive: true, force: true }) }
-    const q = r.code !== 0 && !r.timedOut ? quotaInfo(r.out) : null
+    const q = r.code !== 0 && !r.timedOut ? blockInfo(c.cli, r.out) : null
     if (q) {
-      blockCli(stateFile, c.cli, q.resetAt, 'quota')
+      const why = quotaInfo(r.out) ? 'quota' : 'auth'  // blockInfo 非 null 而 quotaInfo 是 null＝claude-api 的 key 失效
+      blockCli(stateFile, c.cli, q.resetAt, why)
       const next = list.slice(i + 1).find(n => resolveBin(n.cli))
-      console.error(`[ask] ${c.cli} 額度用盡，封鎖到 ${fmt(q.resetAt)}${next && !o.to ? `，改派 ${next.cli}` : ''}`)
+      console.error(`[ask] ${c.cli} ${why === 'auth' ? 'API key 認證失敗' : '額度用盡'}，封鎖到 ${fmt(q.resetAt)}${next && !o.to ? `，改派 ${next.cli}` : ''}`)
       if (o.to) { process.stdout.write(r.out); return r.code ?? 1 }
       continue
     }

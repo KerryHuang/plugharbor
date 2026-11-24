@@ -349,6 +349,47 @@ function ask(args, env = {}) {
   return { ...r, state: readState(state), work, prompt }
 }
 
+// 假 claude（key 驗證）：環境有 ANTHROPIC_API_KEY=sk-bad 時印 Invalid API key 並 exit 1；沒有時印 ok。PATH 只放這個目錄，不會叫到真的 agy／codex
+function keyShimDir() {
+  const d = mkdtempSync(join(tmpdir(), 'ad-key-'))
+  writeShim(join(d, 'claude'), `
+if (process.env.ANTHROPIC_API_KEY === 'sk-bad') { console.log('Invalid API key'); process.exit(1) }
+console.log('ok')
+`)
+  return process.platform === 'win32' ? d + delimiter + process.env.PATH : d
+}
+
+test('ask：claude-api key 失效 → 封鎖 24 小時（auth）並改派 claude，claude 拿不到 key', () => {
+  const r = ask(['--type', 'docs'], { PATH: keyShimDir(), AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo sk-bad', ANTHROPIC_API_KEY: 'sk-bad' })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /\[ask\] 交給 claude（/)
+  assert.match(r.stdout, /ok/)
+  assert.match(r.stderr, /改派 claude/)
+  assert.equal(r.state.blocks['claude-api'].reason, 'auth')
+  assert.ok(r.state.blocks['claude-api'].until > Date.now() + 23 * 3_600_000)
+  assert.ok(!(r.stdout + r.stderr).includes('sk-bad'))
+})
+
+test('ask：claude-api 取 key 失敗 → 略過並改派 claude，不封鎖', () => {
+  const r = ask(['--type', 'docs'], { PATH: keyShimDir(), AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stderr, /claude-api 取 key 失敗，略過/)
+  assert.match(r.stdout, /\[ask\] 交給 claude（/)
+  assert.equal(r.state.blocks['claude-api'], undefined)
+})
+
+test('ask：--to claude-api 沒設 key 來源 → exit 127 並說明', () => {
+  const r = ask(['--to', 'claude-api'], { PATH: keyShimDir(), AGENT_DISPATCH_CLAUDE_API_KEY_CMD: '' })
+  assert.equal(r.status, 127)
+  assert.match(r.stderr, /AGENT_DISPATCH_CLAUDE_API_KEY_CMD/)
+})
+
+test('ask：--to claude-api 取 key 失敗 → exit 127', () => {
+  const r = ask(['--to', 'claude-api'], { PATH: keyShimDir(), AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' })
+  assert.equal(r.status, 127)
+  assert.match(r.stderr, /取 key 失敗/)
+})
+
 test('summarize：超過上限只留開頭並指向結果檔', () => {
   const s = summarize('x'.repeat(20000), 16000, 4000, '/r.md')
   assert.ok(s.length < 4200)
@@ -411,7 +452,7 @@ test('ask：長輸出寫進結果檔，stdout 只放摘要', () => {
 })
 
 // ── 背景 worker ──
-import { detectEnv, prepare, supervise, running, ghosttyAvailable, ghosttySplitScript, start, statusOf, wait } from './scripts/bg.mjs'
+import { detectEnv, prepare, supervise, running, ghosttyAvailable, ghosttySplitScript, start, statusOf, wait, workerEnv } from './scripts/bg.mjs'
 import { parallelLimit } from './scripts/route.mjs'
 import { execFileSync } from 'node:child_process'
 
@@ -452,7 +493,7 @@ if (process.env.SHIM_RESULT === 'push') {
 if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing result'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'quota') { console.log('Error: usage limit reached'); process.exit(1) }
 if (process.env.SHIM_RESULT === '429') { fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成'); console.log('handler returns 429 on rate limit'); process.exit(1) }
-fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt')
+fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt；key=' + (process.env.ANTHROPIC_API_KEY ? 'set' : 'none'))
 `)
   return d
 }
@@ -465,7 +506,7 @@ function tmpRepo() {
   return repo
 }
 
-async function runJob(env, { state, setup } = {}) {
+async function runJob(env, { state, setup, cli = 'claude' } = {}) {
   const repo = tmpRepo()
   setup?.(repo)
   const root = mkdtempSync(join(tmpdir(), 'ad ws '))
@@ -474,7 +515,7 @@ async function runJob(env, { state, setup } = {}) {
   // shim 放最前面：蓋過真的 claude，git 仍找得到
   Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
   try {
-    const job = prepare({ repo, name: 't1', cli: 'claude', promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
+    const job = prepare({ repo, name: 't1', cli, promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
     await supervise(job.ws)
     return { repo, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
   } finally {
@@ -546,6 +587,42 @@ test('背景 worker：結果檔已寫，輸出碰巧有 429 → 仍判 done，�
   const { job, status } = await runJob({ SHIM_RESULT: '429' })
   assert.equal(status.state, 'done')
   assert.equal(readState(job.statusFile.replace(/[^/\\]+[/\\]status\.json$/, 'state.json')).blocks.claude, undefined)
+})
+
+test('workerEnv：設了 key 來源時 claude 的環境沒有 ANTHROPIC_API_KEY，也沒有 key 指令', () => {
+  const e = workerEnv({ PATH: '/b', ANTHROPIC_API_KEY: 'sk-main', AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo sk-x' }, '/r.md', 'claude')
+  assert.equal(e.ANTHROPIC_API_KEY, undefined)
+  assert.equal(e.AGENT_DISPATCH_CLAUDE_API_KEY_CMD, undefined)
+  assert.equal(e.AGENT_DISPATCH_RESULT, '/r.md')
+})
+
+test('workerEnv：claude-api 取得 key；取 key 失敗回 null', () => {
+  assert.equal(workerEnv({ PATH: '/b', AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo sk-x' }, '/r.md', 'claude-api').ANTHROPIC_API_KEY, 'sk-x')
+  assert.equal(workerEnv({ PATH: '/b', AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, '/r.md', 'claude-api'), null)
+})
+
+test('prepare：claude-api 沒設 key 來源 → 錯誤訊息點名 AGENT_DISPATCH_CLAUDE_API_KEY_CMD', () => {
+  const old = process.env.AGENT_DISPATCH_CLAUDE_API_KEY_CMD
+  delete process.env.AGENT_DISPATCH_CLAUDE_API_KEY_CMD
+  try {
+    const root = mkdtempSync(join(tmpdir(), 'ad-nk-'))
+    assert.throws(() => prepare({ repo: tmpRepo(), name: 'x', cli: 'claude-api', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /AGENT_DISPATCH_CLAUDE_API_KEY_CMD/)
+  } finally { if (old !== undefined) process.env.AGENT_DISPATCH_CLAUDE_API_KEY_CMD = old }
+})
+
+test('背景 worker：claude-api 取 key 失敗 → failed、tail 寫取 key 失敗，job.json 與 status.json 沒有 key', async () => {
+  const { job, status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, { cli: 'claude-api' })
+  assert.equal(status.state, 'failed')
+  assert.match(status.tail, /取 key 失敗/)
+  assert.ok(!existsSync(join(job.worktree, 'changed.txt')))  // 沒跑 worker
+})
+
+test('背景 worker：claude-api 取得 key 傳給 worker，key 不進 job.json 與 status.json', async () => {
+  const { job, status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo sk-secret' }, { cli: 'claude-api' })
+  assert.equal(status.state, 'done')
+  assert.match(readFileSync(job.resultFile, 'utf8'), /key=set/)
+  const files = ['job.json', 'status.json', 'log.txt'].map(f => readFileSync(join(job.ws, f), 'utf8')).join('')
+  assert.ok(!files.includes('sk-secret'))
 })
 
 test('背景 worker：額度用盡 → 並行上限降 1 並記 1 小時後恢復；到期後回到路由表的值', async () => {
