@@ -64,10 +64,13 @@ export function readMesh(file) {
   try { return meshAvailable(JSON.parse(readFileSync(file, 'utf8'))) } catch { return null }
 }
 
-export function candidates({ type, tier, routing, state, available, now = Date.now(), exclude = [] }) {
+export function candidates({ type, tier, routing, state, available, now = Date.now(), exclude = [], env = process.env }) {
   const t = tier ?? routing.types[type]
   if (!routing.tiers[t]) throw new Error(`未知的任務類型或等級：${type ?? tier}`)
+  // 沒設 key 來源就沒有 claude-api 可派，候選與改動前相同
+  const hasApiKey = !!env.AGENT_DISPATCH_CLAUDE_API_KEY_CMD
   return routing.tiers[t].filter(c =>
+    (hasApiKey || c.cli !== 'claude-api') &&
     (!available || available.has(c.cli)) &&
     !((state.blocks[c.cli]?.until ?? 0) > now) &&
     !exclude.includes(c.cli))
@@ -80,8 +83,8 @@ export function needsCrossReview({ paths = [], lines = 0 }, routing) {
 }
 
 // 審查者：top 候選裡第一個不同家族的；湊不到就退回同家（crossFamily:false，回報要寫明）
-export function reviewer({ author, routing, state, available, now = Date.now() }) {
-  const pool = candidates({ tier: 'top', routing, state, available, now })
+export function reviewer({ author, routing, state, available, now = Date.now(), env = process.env }) {
+  const pool = candidates({ tier: 'top', routing, state, available, now, env })
   const fam = routing.family[author]
   const other = pool.find(c => routing.family[c.cli] !== fam)
   if (other) return { ...other, crossFamily: true }

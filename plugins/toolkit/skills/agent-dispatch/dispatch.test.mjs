@@ -210,6 +210,58 @@ test('candidates：只剩可用的 CLI，exclude 也排除', () => {
   assert.ok(!candidates({ tier: 'top', routing, state: none, available: null, now: 0, exclude: ['codex'] }).some(x => x.cli === 'codex'))
 })
 
+const withKey = { AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo k' }
+const pick = (tier, env) => candidates({ tier, routing, state: none, available: null, now: 0, env })
+
+test('routing：standard 與 cheap 的 claude-api 緊接在 claude 之前，model/effort 相同', () => {
+  for (const tier of ['standard', 'cheap']) {
+    const list = routing.tiers[tier]
+    const i = list.findIndex(c => c.cli === 'claude-api')
+    assert.ok(i >= 0, tier)
+    assert.equal(list[i + 1].cli, 'claude')
+    assert.equal(list[i].model, list[i + 1].model)
+    assert.equal(list[i].effort, list[i + 1].effort)
+  }
+})
+
+test('routing：top 的 claude-api 緊接在 claude 之後，family 為 anthropic', () => {
+  const list = routing.tiers.top
+  const i = list.findIndex(c => c.cli === 'claude')
+  assert.equal(list[i + 1].cli, 'claude-api')
+  assert.equal(list[i + 1].model, list[i].model)
+  assert.equal(list[i + 1].effort, list[i].effort)
+  assert.equal(routing.family['claude-api'], 'anthropic')
+})
+
+test('reviewer(claude-api) 不挑 claude 或 pi（同家族）', () => {
+  const r = reviewer({ author: 'claude-api', routing, state: none, available: null, now: 0, env: withKey })
+  assert.equal(r.cli, 'codex'); assert.equal(r.crossFamily, true)
+  const s = reviewer({ author: 'claude-api', routing, state: { blocks: { codex: { until: 100 } } }, available: null, now: 0, env: withKey })
+  assert.equal(s.cli, 'agy'); assert.equal(s.crossFamily, true)
+})
+
+test('candidates：沒設 key 來源時不含 claude-api，結果與改動前相同（standard／cheap／top 三級）', () => {
+  for (const env of [{}, { AGENT_DISPATCH_CLAUDE_API_KEY_CMD: '' }])
+    for (const tier of ['standard', 'cheap', 'top']) {
+      const c = pick(tier, env).map(x => x.cli)
+      assert.ok(!c.includes('claude-api'), tier)
+      assert.deepEqual(c, routing.tiers[tier].map(x => x.cli).filter(x => x !== 'claude-api'))
+      assert.equal(c.length, 4)
+    }
+})
+
+test('candidates：有設時含 claude-api', () => {
+  for (const tier of ['standard', 'cheap', 'top']) assert.ok(pick(tier, withKey).some(x => x.cli === 'claude-api'), tier)
+})
+
+test('reviewer：沒設 key 來源、author codex、claude 被封鎖 → 不挑 claude-api', () => {
+  const state = { blocks: { claude: { until: 100 } } }
+  const r = reviewer({ author: 'codex', routing, state, available: null, now: 0, env: {} })
+  assert.notEqual(r.cli, 'claude-api'); assert.notEqual(r.cli, 'claude')
+  const r2 = reviewer({ author: 'codex', routing, state, available: new Set(['codex', 'claude-api', 'pi']), now: 0, env: {} })
+  assert.equal(r2.cli, 'pi')
+})
+
 test('candidates：未知類型拋錯', () => {
   assert.throws(() => candidates({ type: 'nope', routing, state: none, available: null, now: 0 }))
 })
