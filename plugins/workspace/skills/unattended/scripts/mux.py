@@ -40,7 +40,9 @@ POLLUTED_VARS = (
 
 MAX_WORKERS = 6  # 同 herdr_layout.py；TUI 主 tab 的 worker 上限
 STATES = ("done", "idle", "working", "blocked", "error", "timeout", "gone")
-KINDS = ("claude", "codex", "agy", "pi")
+KINDS = ("claude", "claude-api", "codex", "agy", "pi")
+KEY_CMD_VAR = "AGENT_DISPATCH_CLAUDE_API_KEY_CMD"  # 有設＝使用者有 API key 路線；與 clis.mjs 同名
+API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 EXIT_CODES = {"core_not_running": 3, "no_backend": 4}
 
 
@@ -118,11 +120,17 @@ WIN_CLEAN_ENV = ("import os,signal,subprocess,sys;signal.signal(signal.SIGINT,si
                  "sys.exit(subprocess.call(sys.argv[1:]))")
 
 
-def clean_env_prefix(extra):
+def api_key_unset(env, kind):
+    """互動 pane 不吃 API 額度：有設 key 來源時 claude pane 要清掉繼承的 key，否則互動用法會改按量計費。"""
+    return API_KEY_VARS if kind == "claude" and env.get(KEY_CMD_VAR, "").strip() else ()
+
+
+def clean_env_prefix(extra, unset=()):
+    unset = POLLUTED_VARS + tuple(unset)
     if sys.platform == "win32":
-        return [sys.executable, "-c", WIN_CLEAN_ENV.format(unset=POLLUTED_VARS, extra=dict(extra))]
+        return [sys.executable, "-c", WIN_CLEAN_ENV.format(unset=unset, extra=dict(extra))]
     out = ["env"]
-    for v in POLLUTED_VARS:
+    for v in unset:
         out += ["-u", v]
     return out + [f"{k}={v}" for k, v in extra.items()]
 
@@ -238,7 +246,7 @@ class HcBackend:
         window = window_open(self.env)  # 先判斷：window_error 時不留下沒人看得到的 worker
         remote = None if window else self.remote_main()
         argv = ["run", "--json", "--bg", "--no-notify", "--name", name, "--cwd", cwd,
-                *clean_env_prefix(env_pairs), cli]
+                *clean_env_prefix(env_pairs, api_key_unset(self.env, kind)), cli]
         if kind == "codex":
             argv.append("--no-daemon")
         code, out, err = self.hc(*argv, *cli_args)
@@ -625,7 +633,9 @@ def dispatch(args, env):
             for k in re.findall(r"\$\{([A-Za-z_]\w*)(?::-[^}]*)?\}", mcp.read_text(encoding="utf-8")):
                 if k in env and k not in pairs:
                     pairs[k] = env[k]
-        return b.spawn(args.name, args.kind, args.cwd, pairs, args.cli_args)
+        # claude-api 只在非互動 -p 走 API 額度；pane 是互動用法，一律以 claude（訂閱）開，後端只看到 claude
+        kind, note = ("claude", {"note": "pane 為互動模式，改用訂閱"}) if args.kind == "claude-api" else (args.kind, {})
+        return {**b.spawn(args.name, kind, args.cwd, pairs, args.cli_args), **note}
     if args.cmd == "send":
         text = args.text if args.text is not None else Path(args.file).read_text(encoding="utf-8")
         if args.text is not None:

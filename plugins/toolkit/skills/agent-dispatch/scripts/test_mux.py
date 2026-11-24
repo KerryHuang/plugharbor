@@ -111,6 +111,13 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(mux.detect_backend(env), "none")
         self.assertEqual(mux.detect_backend({"MUX_BACKEND": "herdr"}), "herdr")
 
+    def test_clean_env_prefix_posix_extra_unset(self):
+        out = mux.clean_env_prefix({"A": "1"}, ("ANTHROPIC_API_KEY",))
+        i = out.index("ANTHROPIC_API_KEY")
+        self.assertEqual(out[i - 1], "-u")
+        self.assertLess(i, out.index("A=1"))
+        self.assertNotIn("ANTHROPIC_API_KEY", mux.clean_env_prefix({"A": "1"}))
+
     def test_clean_env_prefix(self):
         want = ["env"] + [x for v in mux.POLLUTED_VARS for x in ("-u", v)] + ["A=1", "B=x y"]
         self.assertEqual(mux.clean_env_prefix({"A": "1", "B": "x y"}), want)
@@ -295,6 +302,40 @@ class TestHc(MuxCase):
         self.assertFalse([a for a in argv if a.startswith("HC_")])
         self.assertTrue(argv[j + 1].endswith("/claude"))
         self.assertEqual(argv[j + 2:], ["--model", "m"])
+
+    def test_spawn_claude_api_is_claude_with_note_and_unsets_key(self):
+        # 互動 pane 不吃 API 額度：claude-api 一律以 claude 開，並清掉繼承的 key（否則會按量計費）
+        self.resp("hc", "run", '{"address":"t7","name":"w1","state":"live"}')
+        r = self.ok(["spawn", "--name", "w1", "--kind", "claude-api", "--cwd", "/tmp"],
+                    {**HC_ENV, "AGENT_DISPATCH_CLAUDE_API_KEY_CMD": "echo k"})
+        self.assertEqual(r["note"], "pane 為互動模式，改用訂閱")
+        argv = self.hc_run()
+        self.assertTrue(argv[argv.index("env") + 1:][-1].endswith("/claude"))
+        for v in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"):
+            self.assertIn(v, argv)
+
+    def test_spawn_claude_unsets_key_only_when_key_cmd_set(self):
+        self.resp("hc", "run", '{"address":"t7","name":"w1","state":"live"}')
+        self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp"],
+                {**HC_ENV, "AGENT_DISPATCH_CLAUDE_API_KEY_CMD": " echo k "})
+        self.assertIn("ANTHROPIC_API_KEY", self.hc_run())
+        (self.dir / "calls.log").unlink()
+        for val in (None, "  "):  # 沒設或只有空白＝沒設，行為與改動前相同
+            env = dict(HC_ENV)
+            if val is not None:
+                env["AGENT_DISPATCH_CLAUDE_API_KEY_CMD"] = val
+            r = self.ok(["spawn", "--name", "w1", "--kind", "claude", "--cwd", "/tmp"], env)
+            self.assertNotIn("note", r)
+            argv = self.hc_run()
+            self.assertNotIn("ANTHROPIC_API_KEY", argv)
+            self.assertNotIn("ANTHROPIC_AUTH_TOKEN", argv)
+            (self.dir / "calls.log").unlink()
+
+    def test_spawn_codex_keeps_key_even_when_key_cmd_set(self):
+        self.resp("hc", "run", '{"address":"t7","name":"w1","state":"live"}')
+        self.ok(["spawn", "--name", "w1", "--kind", "codex", "--cwd", "/tmp"],
+                {**HC_ENV, "AGENT_DISPATCH_CLAUDE_API_KEY_CMD": "echo k"})
+        self.assertNotIn("ANTHROPIC_API_KEY", self.hc_run())
 
     def test_spawn_carries_mcp_json_vars(self):
         # hc run 用 core 的環境：.mcp.json 引用、只在呼叫者 shell 裡的變數要帶過去（2026-11-20 MCP ENOENT）
@@ -513,6 +554,14 @@ class TestHerdr(MuxCase):
                 "herdr pane rename p9 w1"]
         self.assertEqual(self.calls(), want)
 
+    def test_spawn_herdr_claude_api_starts_claude(self):
+        self.resp("herdr", "pane.layout", self.layout_json(5))
+        self.resp("herdr", "pane.split", '{"result":{"pane":{"pane_id":"p9"}}}')
+        r = self.ok(["spawn", "--name", "w1", "--kind", "claude-api", "--cwd", "/tmp"],
+                    {**HERDR_ENV, **self.layout})
+        self.assertEqual(r["note"], "pane 為互動模式，改用訂閱")
+        self.assertIn("herdr agent start w1 --kind claude --pane p9 --", self.calls())
+
     def test_spawn_herdr_seventh_worker_opens_new_tab(self):
         # 主 tab 已有 6 個 worker：開新 tab（不切 pane、不跑版面腳本），主 session 不被切小
         self.resp("herdr", "pane.layout", self.layout_json(6))
@@ -667,6 +716,22 @@ class TestWindows(unittest.TestCase):
         i = argv.index(sys.executable)
         self.assertEqual(argv[i + 1], "-c")
         self.assertEqual(argv[i + 3:], ["C:\\bin\\claude.EXE", "--model", "m"])
+
+    def test_spawn_claude_api_windows_unset_list_has_key(self):
+        self.resp["hc server status"] = (0, STATUS_JSON, "")
+        self.resp["hc run"] = (0, '{"address":"t7"}', "")
+        env = {**self.env, "AGENT_DISPATCH_CLAUDE_API_KEY_CMD": "echo k"}
+        args = mux.parse_args(["spawn", "--name", "w1", "--kind", "claude-api", "--cwd", "D:\\x"])
+        self.assertEqual(mux.dispatch(args, env)["note"], "pane 為互動模式，改用訂閱")
+        argv = next(c for c in self.calls if c[:2] == ["hc", "run"])
+        code = argv[argv.index(sys.executable) + 2]
+        self.assertIn("ANTHROPIC_API_KEY", code)
+        self.assertIn("ANTHROPIC_AUTH_TOKEN", code)
+        self.assertEqual(argv[-1], "C:\\bin\\claude.EXE")
+
+    def test_clean_env_prefix_unset_param_both_paths(self):
+        self.assertIn("ANTHROPIC_API_KEY", mux.clean_env_prefix({}, ("ANTHROPIC_API_KEY",))[2])
+        self.assertNotIn("ANTHROPIC_API_KEY", mux.clean_env_prefix({})[2])
 
     def test_wrapper_unsets_polluted_sets_extra_and_keeps_exit_code(self):
         prefix = mux.clean_env_prefix({"A": "1", "B": "x y'\"\\中"})
