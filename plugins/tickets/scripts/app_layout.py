@@ -15,6 +15,7 @@
 
 放置做法是 spike 的 D：呼叫端先 `hc run --bg` 得到 hc 位址，這裡 `pane.focus` 到被切的 pane，
 再 `terminal.keep --terminal <tN> --place right|down`（位置相對「目前 focus 的 pane」）。
+focus 之後用 `status` 核對 focus 確實到了該 pane，沒到就回 layout_failed、不 keep（issue #75：主 pane 在使用者沒在看的 space 時 keep 會切進別處）。
 放完把 focus 還給主 pane（新 pane 會搶 focus，會打斷使用者在主 session 的輸入），盡力而為：還原失敗不影響回報。
 ls→focus→keep→還原 focus 是臨界區，用 flock（Windows 用 msvcrt.locking）序列化（並行派工時 focus 是全域狀態，不鎖會切到錯的 pane）。
 鎖檔：${XDG_STATE_HOME:-~/.local/state}/plugharbor/app-layout.lock。
@@ -125,6 +126,15 @@ def restore_focus(main):
         pass  # 盡力而為：worker 已放好，不能因此回報失敗
 
 
+def focus_pane(pane):
+    """pane.focus 後用 status 核對 focus 真的到了：keep 的位置相對「目前 focus 的 pane」，
+    focus 沒到（如主 pane 在使用者沒在看的 space）就 keep 會切進使用者正在看的別處（issue #75）。"""
+    app("do", "pane.focus", "--pane", pane)
+    now = find_key(app("status"), "focused_pane")
+    if now != pane:
+        raise LayoutError(f"pane.focus 後 focus 在 {now}、不是 {pane}（它可能在使用者沒在看的 space），為免放進別處而中止")
+
+
 def place(main, terminal):
     with locked():
         terms = terminals_of_tab(app("ls"), main)
@@ -141,7 +151,7 @@ def place(main, terminal):
                     target, direction = main, "right"
                 else:
                     target, direction = workers[-1].get("pane"), ("down" if n % 2 else "right")
-                app("do", "pane.focus", "--pane", target)
+                focus_pane(target)
                 kept = keep("--terminal", terminal, "--place", direction)
         finally:
             restore_focus(main)

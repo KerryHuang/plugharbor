@@ -21,12 +21,19 @@ def save():
 def opt(name):
     return args[args.index(name) + 1]
 if args[0] == "ls":
-    print(json.dumps({"spaces": [{"tabs": [{"tab": "tb1", "terminals": [
-        {"terminal": p["terminal"], "pane": p["pane"], "name": p.get("name")} for p in st["panes"]]}]}]}))
+    tabs = {}
+    for p in st["panes"]:
+        tabs.setdefault(p.get("tab", "tb1"), []).append(
+            {"terminal": p["terminal"], "pane": p["pane"], "name": p.get("name")})
+    print(json.dumps({"spaces": [{"tabs": [{"tab": t, "terminals": ts} for t, ts in tabs.items()]}]}))
+elif args[0] == "status":
+    print(json.dumps({"focused_pane": st["focus"]}))
 elif args[:2] == ["do", "pane.focus"]:
     time.sleep(0.2)  # 拉大並行時的競態視窗
     st = json.load(open(state_f, encoding="utf-8"))
-    st["focus"] = opt("--pane"); save(); print('{"ok":true}')
+    if not os.environ.get("STUB_FOCUS_STICKY"):  # 模擬 issue #75：pane.focus 沒把使用者正在看的 focus 切走
+        st["focus"] = opt("--pane"); save()
+    print('{"ok":true}')
 elif args[:2] == ["do", "terminal.keep"]:
     nr = os.environ.get("STUB_NOT_RUNNING")  # 模擬 hc run 剛回傳、app 還沒看到該終端
     left = int(open(nr).read() or 0) if nr else 0
@@ -107,6 +114,15 @@ grep -q 'do terminal.keep --terminal t7$' "$TMP/log"; check "7 workers：termina
 [ "$(panes_of)" = "$before" ]; check "7 workers：主 tab 版面不變" $?
 grep -q '"pane": "pwt7"' "$TMP/out.7" && grep -q '"tab": "tb2"' "$TMP/out.7"; check "7 workers：回 worker 的 pane 與新 tab" $?
 [ "$(tail -1 "$TMP/log")" = "do pane.focus --pane p1" ]; check "7 workers：focus 還給主 pane" $?
+
+# issue #75：pane.focus 沒生效（使用者正在看別的 space，focus 停在 px）→ 不得 keep，回 layout_failed
+reset
+echo '{"focus":"px","panes":[{"pane":"p1","terminal":"t0","rect":{"x":0,"y":0,"w":100,"h":40}},{"pane":"px","terminal":"tx","tab":"tb9","rect":{"x":0,"y":0,"w":100,"h":40}}]}' > "$STUB_STATE"
+set +e
+STUB_FOCUS_STICKY=1 placew 1 > "$TMP/out.s" 2>&1; rc=$?
+set -e
+[ "$rc" -ne 0 ] && grep -q layout_failed "$TMP/out.s"; check "focus 沒切到主 pane：layout_failed" $?
+! grep -q 'terminal.keep' "$TMP/log"; check "focus 沒切到主 pane：不呼叫 terminal.keep（不切到別的 space）" $?
 
 # 還原 focus 失敗：worker 已放好，仍回 visible true
 reset

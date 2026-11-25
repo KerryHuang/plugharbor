@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.1] - 2026-11-25
+
+起因：issue #75——blog 主控（hc 後端）spawn 的 worker 被放進使用者正在看的另一個 workspace。`app_layout.py` 的 `terminal.keep --place` 位置相對「目前 focus 的 pane」，但 `pane.focus` 之後沒核對 focus 真的到了。
+- fix(agent-dispatch)：`app_layout.py` 在 `pane.focus` 後用 `herdr-app status` 的 `focused_pane` 核對；沒到就回 `layout_failed`、不呼叫 `terminal.keep`（不再切進別處）。根因為推論，未實機驗證 `pane.focus` 的跨 space 行為。
+- chore：同步 lifecycle、tickets、discovery、delivery 的 app_layout.py 副本（validate 要求），這四個 plugin 本身不 bump。
+- test：`tests/app_layout.sh` 的 stub 加 `status` 與 `STUB_FOCUS_STICKY`，新增「focus 沒切到主 pane」兩項。
+
 ## [0.40.0] - 2026-11-25
 
 起因：0.39.0 讓自動駕駛的實作類工作走背景 worker，但 worker 套不到 Agent 定義（如 `lifecycle:developer` 的工具白名單），只能在 prompt 叫它「先讀定義檔照做」，約束靠 worker 自覺。使用者 2026-11-25 裁決現在就加 `--agent`。
