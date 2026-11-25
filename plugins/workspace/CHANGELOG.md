@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.1.1] - 2026-11-25
+
+起因：toolkit 0.40.0 的 `bg.mjs --agent`，unattended 派實作者不必再靠 prompt 叫 worker 讀定義檔。
+- docs(unattended)：`skills/unattended/references/dispatch.md` 實作者派 `--agent lifecycle:developer`、QA 走查照對應定義；`--model`／`--effort` 優先於定義的 model；「先讀定義檔」退路改成只限套不上時（非 claude 系、plugin 未啟用）。
+
 ## [2.1.0] - 2026-11-25
 
 起因：2026-11-24 晚 Formwright 自動駕駛（7 個 session 接力）約 70 次派工全用 Agent tool，100% 扣 claude.ai 訂閱、claude-api 零使用。unattended 第 2 步寫「派實作（subagent 或 pane worker）」，兩條路都到不了 API；第 3 步「先試跨家族」被各 session 從舊帳本抄成「退回同家」，沒實際跑 `route.mjs reviewer`。

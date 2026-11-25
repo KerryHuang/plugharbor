@@ -2,7 +2,7 @@
 // 背景 worker：沒有 herdr（也沒有可用的 Ghostty 分割）時的長任務模式。
 // 每個 worker 一個工作目錄 <ws>：wt/（獨立 git worktree，分支 dispatch/<name>）、job.json、status.json、result.md、log.txt。
 // 條件（SKILL.md 有寫）：只派不需要中途問人的工作；只在 worktree 改檔；不改主線、不 push；合併前由使用者審。
-//   node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model <m>] [--effort <e>] [--timeout <秒>] --ws <dir> [--state <檔>] [--mesh <檔>] <prompt 檔>
+//   node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model <m>] [--effort <e>] [--agent <plugin>:<agent>] [--timeout <秒>] --ws <dir> [--state <檔>] [--mesh <檔>] <prompt 檔>
 //   node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> <prompt 檔>   修正輪：同一個 worktree；claude 系接續上一輪 session
 //   node bg.mjs status --ws <dir>        只讀狀態，不等待
 //   node bg.mjs wait --ws <dir> [--timeout <秒>]   阻塞到狀態不再是 running（沒有完工通知的平台用）
@@ -98,17 +98,21 @@ const isWorktree = dir => { try { return execFileSync('git', ['-C', dir, 'rev-pa
 // 建 worktree（或用 --worktree／--continue 指定的既有 worktree）、寫 job.json 與 running 狀態；超過並行上限就拋錯。不啟動程序（start 才啟動）。
 // 參數與 prompt 檔先驗完才建 worktree，失敗不留孤兒 worktree／分支。
 // continueFrom：上一輪的 ws。沿用它的 worktree 與派工方式（--to／--type，可再覆寫）；上一輪由 claude 系跑完的，接續它的 session。
-export function prepare({ repo, name, cli, type, model, effort, promptFile, ws, state, mesh, timeout = 3600, worktree: existing, continueFrom, lockWaitMs }) {
+export function prepare({ repo, name, cli, type, model, effort, agent, promptFile, ws, state, mesh, timeout = 3600, worktree: existing, continueFrom, lockWaitMs }) {
   ws = resolve(ws)
   if (!(Number.isFinite(timeout) && timeout > 0)) throw new Error(`--timeout 要是正數（秒），收到 ${timeout}`)
-  let resumeSession = null
+  if (agent && !/^\w[\w.-]*(:[\w.-]+)?$/.test(agent)) throw new Error(`--agent 格式要是 <plugin>:<agent>（或單獨 <agent>），收到 ${agent}`)
+  let resumeSession = null, resumeAgentApplied = false
   if (continueFrom) {
     const pj = readJson(join(resolve(continueFrom), 'job.json')), ps = readJson(join(resolve(continueFrom), 'status.json'))
     if (!pj || !ps) throw new Error(`--continue 讀不到上一輪的 job.json／status.json：${continueFrom}`)
     if (ps.state === 'running') throw new Error(`上一輪還在跑（${continueFrom}），等它結束再續派`)
     existing ??= pj.worktree
     if (!cli && !type) { cli = pj.to ?? (pj.type ? undefined : pj.cli); type = pj.type }  // 舊版 job.json 只有 cli
-    if (CLAUDE_FAMILY.includes(ps.cli) && ps.sessionId) resumeSession = ps.sessionId
+    const changed = agent !== undefined && agent !== (pj.agent ?? undefined)
+    agent ??= pj.agent ?? undefined  // 沿用上一輪的 Agent 定義，--agent 可覆寫
+    // resume 時 claude 不重新套 --agent：session 沿用上一輪的定義，帶了不存在的名稱也不報錯（實測）。換 agent 就開新 session
+    if (CLAUDE_FAMILY.includes(ps.cli) && ps.sessionId && !changed) { resumeSession = ps.sessionId; resumeAgentApplied = !!ps.agentApplied }
   }
   if (!cli && !type) throw new Error('要指定 --to <cli> 或 --type <類型>')
   // 每輪都要新的工作目錄：沿用舊的會把上一輪的 result.md 當成本輪完成
@@ -136,7 +140,7 @@ ${body}
 - 只在目前目錄（git worktree）改檔；不要切分支、不要 push、不要動主線（git 的 push／fetch 在這裡已被關閉）。
 - 完成或遇到需要使用者決策時，把結果寫到 ${resultFile}（完成／失敗／待決、做了什麼、要清的路徑），寫完就停。寫完結果檔才算完成。`
     const line = routeLine(list[0], reason)
-    writeJson(join(ws, 'job.json'), { name, to: cli ?? null, type: cli ? null : type, candidates: list, reason, timeout, worktree, resultFile, statusFile, stateFile, prompt, resumeSession })
+    writeJson(join(ws, 'job.json'), { name, to: cli ?? null, type: cli ? null : type, candidates: list, reason, timeout, worktree, resultFile, statusFile, stateFile, prompt, resumeSession, resumeAgentApplied, agent: agent ?? null })
     writeJson(statusFile, { state: 'running', pid: process.pid, cli: list[0].cli, model: list[0].model, effort: list[0].effort, line, startedAt: new Date().toISOString() })
     return { ws, worktree, statusFile, resultFile, line }
   }, lockWaitMs)
@@ -163,6 +167,9 @@ function notify(title, msg) {
 
 // 改派時給下一家的提示：worktree 裡可能有前一家沒做完的改動
 const RETRY_NOTE = prev => `\n\n注意：前一位 worker（${prev}）被額度或 API key 問題中斷，worktree 可能留有它沒做完的改動；先看 git status 與 git log 再接手。`
+// 非 claude 系不支援 --agent：退回「prompt 叫它讀定義檔照做」，status.json 的 agentNote 記下
+const AGENT_NOTE = a => `\n\n注意：派工指定的 Agent 定義是 ${a}，但這次沒能用 --agent 套上；請讀 prompt 裡指明的定義檔並照它做，沒指明就找 agents/${a.split(':').at(-1)}.md。`
+const AGENT_MISSING = /--agent '[^']*' not found/  // 該 plugin 在這個 worktree 沒啟用：同一家去掉 --agent、改走 prompt 退路
 const NO_SESSION = /no conversation found/i
 
 // 監督者：依序跑候選 CLI、等它結束、依結果檔寫最終狀態、發通知。start 以 detached 方式起這個模式。
@@ -175,7 +182,7 @@ export async function supervise(ws) {
   let status = { ...readJson(job.statusFile), pid: process.pid }
   writeJson(job.statusFile, status)
   const attempts = [], log = []
-  let contention = false, last = null, resumable = !!job.resumeSession
+  let contention = false, last = null, resumable = !!job.resumeSession, agentOffCli = null
   try {
     for (let i = 0; i < list.length; i++) {
       const c = list[i]
@@ -190,15 +197,19 @@ export async function supervise(ws) {
       const claude = CLAUDE_FAMILY.includes(c.cli)
       const resume = claude && resumable ? job.resumeSession : null
       const sessionId = claude && !resume ? randomUUID() : null
-      const prompt = attempts.length ? job.prompt + RETRY_NOTE(attempts.at(-1).cli) : job.prompt
+      const agent = job.agent ?? null
+      const agentNative = !!agent && claude && agentOffCli !== c.cli && !resume
+      const agentApplied = resume ? !!(agent && job.resumeAgentApplied) : agentNative
+      const prompt = (attempts.length ? job.prompt + RETRY_NOTE(attempts.at(-1).cli) : job.prompt) + (agent && !agentApplied && !resume ? AGENT_NOTE(agent) : '')
       const line = attempts.length ? `${routeLine(c, job.reason)}；改派自 ${attempts.map(a => `${a.cli}（${a.outcome}）`).join('、')}` : status.line
-      status = { ...status, cli: c.cli, model: c.model, effort: c.effort, line, sessionId: resume ?? sessionId, resumed: !!resume, attempts, startedAt: new Date().toISOString() }
+      status = { ...status, cli: c.cli, model: c.model, effort: c.effort, line, sessionId: resume ?? sessionId, resumed: !!resume, attempts, agent, agentApplied, agentNote: !agent || agentApplied ? undefined : resume ? '接續上一輪 session，上一輪未套上定義' : `${c.cli} ${claude ? '找不到該 Agent 定義（plugin 未啟用？）' : '不支援 --agent'}，已改在 prompt 叫它讀定義檔`, startedAt: new Date().toISOString() }
       writeJson(job.statusFile, status)
-      const r = await run(resolveBin(c.cli), buildArgs(c.cli, 'worker', prompt, { ...c, resultFile: job.resultFile, sessionId, resume }), {
+      const r = await run(resolveBin(c.cli), buildArgs(c.cli, 'worker', prompt, { ...c, resultFile: job.resultFile, sessionId, resume, agent: agentNative ? agent : undefined }), {
         cwd: job.worktree, timeoutMs: job.timeout * 1000, env })
       log.push(`===== ${c.cli}（${c.model ?? '預設模型'}／${c.effort ?? '預設等級'}）${resume ? `resume ${resume}` : ''} =====\n${r.out}`)
       writeFileSync(join(ws, 'log.txt'), log.join('\n'))
       const done = existsSync(job.resultFile)
+      if (!done && agentNative && r.code !== 0 && !r.timedOut && AGENT_MISSING.test(r.out.slice(0, 2000))) { agentOffCli = c.cli; i--; continue }
       if (!done && resume && NO_SESSION.test(r.out.slice(-2000))) { resumable = false; i--; continue }  // 同一家改開新 session
       const q = !done && r.code !== 0 && !r.timedOut ? blockInfo(c.cli, r.out) : null
       last = { state: done ? 'done' : q ? 'quota' : 'failed', code: r.code, timedOut: r.timedOut, ...(!done && { tail: r.out.slice(-2000) }) }
@@ -266,10 +277,11 @@ function cli(argv) {
   const o = {}
   let file = null
   for (let i = 0; i < rest.length; i++) {
-    const key = { '--repo': 'repo', '--name': 'name', '--to': 'cli', '--type': 'type', '--model': 'model', '--effort': 'effort',
+    const key = { '--repo': 'repo', '--name': 'name', '--to': 'cli', '--type': 'type', '--model': 'model', '--effort': 'effort', '--agent': 'agent',
       '--timeout': 'timeout', '--ws': 'ws', '--state': 'state', '--mesh': 'mesh', '--cwd': 'cwd', '--worktree': 'worktree', '--continue': 'continueFrom' }[rest[i]]
     if (key) o[key] = rest[++i]; else file = rest[i]
   }
+  if (rest.includes('--agent') && !o.agent) { console.error('--agent 要帶值：<plugin>:<agent>'); return 2 }
   // 互動分割有人在場，不設 AGENT_DISPATCH_RESULT：否則 Stop hook 會在 worker 每次想問人時擋下
   if (cmd === 'ghostty-split' && o.cwd && file) {
     console.log(execFileSync('osascript', ['-e', ghosttySplitScript({ cwd: o.cwd, command: file })], { encoding: 'utf8' }).trim())
@@ -291,7 +303,7 @@ function cli(argv) {
       return 0
     } catch (e) { console.error(e.message); return e.code === 'NO_CANDIDATE' ? 75 : 1 }
   }
-  console.error(`用法：node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model] [--effort] [--timeout] --ws <dir> [--state] [--mesh] <prompt 檔>
+  console.error(`用法：node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model] [--effort] [--agent] [--timeout] --ws <dir> [--state] [--mesh] <prompt 檔>
       node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> [--to | --type] <prompt 檔>
       node bg.mjs status --ws <dir>
       node bg.mjs wait --ws <dir> [--timeout <秒>]

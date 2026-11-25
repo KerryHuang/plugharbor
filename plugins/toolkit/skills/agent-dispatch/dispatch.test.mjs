@@ -518,12 +518,12 @@ test('ghosttySplitScript：引號與反斜線都跳脫，帶工作目錄與環�
 // 假 driver CLI：在 cwd 改一個檔；SHIM_RESULT=0 時不寫結果檔並 exit 1
 function driverShim() {
   const d = mkdtempSync(join(tmpdir(), 'ad-drv-'))
-  const f = join(d, 'claude')
-  writeShim(f, `
+  const body = `
 const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
 if (process.env.SHIM_ARGS) fs.appendFileSync(process.env.SHIM_ARGS, JSON.stringify(process.argv.slice(2)) + '\\n')
 if (process.env.SHIM_RESULT === 'api-quota' && process.env.ANTHROPIC_API_KEY) { console.log('Credit balance is too low'); process.exit(1) }
+if (process.env.SHIM_RESULT === 'no-agent' && process.argv.includes('--agent')) { console.log("--agent 'x:y' not found. Available agents: claude"); process.exit(1) }
 if (process.env.SHIM_RESULT === 'no-session' && process.argv.includes('--resume')) { console.log('No conversation found with session ID: x'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'push') {
   const r = require('node:child_process').spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/leak'], { encoding: 'utf8' })
@@ -534,7 +534,8 @@ if (process.env.SHIM_RESULT === '0') { console.log('crashed before writing resul
 if (process.env.SHIM_RESULT === 'quota') { console.log('Error: usage limit reached'); process.exit(1) }
 if (process.env.SHIM_RESULT === '429') { fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成'); console.log('handler returns 429 on rate limit'); process.exit(1) }
 fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, '完成：改了 changed.txt；key=' + (process.env.ANTHROPIC_API_KEY ? 'set' : 'none'))
-`)
+`
+  for (const n of ['claude', 'codex']) writeShim(join(d, n), body)  // codex 同一份：測不支援 --agent 的退路
   return d
 }
 
@@ -546,7 +547,7 @@ function tmpRepo() {
   return repo
 }
 
-async function runJob(env, { state, setup, cli = 'claude', type, mesh } = {}) {
+async function runJob(env, { state, setup, cli = 'claude', type, mesh, agent } = {}) {
   const repo = tmpRepo()
   setup?.(repo)
   const root = mkdtempSync(join(tmpdir(), 'ad ws '))
@@ -555,7 +556,7 @@ async function runJob(env, { state, setup, cli = 'claude', type, mesh } = {}) {
   // shim 放最前面：蓋過真的 claude，git 仍找得到
   Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
   try {
-    const job = prepare({ repo, name: 't1', cli: type ? undefined : cli, type, mesh: mesh ?? join(root, 'no-mesh.json'), promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
+    const job = prepare({ repo, name: 't1', cli: type ? undefined : cli, type, agent, mesh: mesh ?? join(root, 'no-mesh.json'), promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
     await supervise(job.ws)
     return { repo, root, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
   } finally {
@@ -1040,4 +1041,78 @@ test('背景 worker --type：claude-api 取 key 失敗且狀態檔寫不進去 �
   assert.equal(status.state, 'done')
   assert.equal(status.cli, 'claude')
   assert.deepEqual(status.attempts, [{ cli: 'claude-api', outcome: 'key' }])
+})
+
+// ── --agent 透傳 ──
+test('buildArgs worker：claude 系帶 --agent、在 --add-dir 之前；其他模式與其他 CLI 不帶', () => {
+  const a = buildArgs('claude', 'worker', 'P', { resultFile: '/ws/j/result.md', agent: 'lifecycle:developer', model: 'sonnet' })
+  assert.ok(has(a, '--agent', 'lifecycle:developer'))
+  assert.ok(has(a, '--model', 'sonnet'))  // --model 與 --agent 並存，由 CLI 以 --model 為準
+  assert.equal(a.indexOf('--add-dir'), a.length - 2)
+  assert.ok(!buildArgs('claude', 'worker', 'P').includes('--agent'))
+  assert.ok(!buildArgs('claude', 'ask', 'P', { agent: 'x:y' }).includes('--agent'))
+  assert.ok(!buildArgs('codex', 'worker', 'P', { agent: 'x:y' }).join(' ').includes('x:y'))
+})
+
+test('prepare --agent：格式錯誤在建 worktree 之前就拋錯', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-ag-'))
+  const repo = tmpRepo()
+  assert.throws(() => prepare({ repo, name: 'x', cli: 'claude', agent: 'a b;rm', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /--agent 格式/)
+  assert.equal(branches(repo), '')
+})
+
+test('背景 worker --agent：claude 帶 --agent，status 記 agentApplied', async () => {
+  const f = argsLog()
+  const { status, job } = await runJob({ SHIM_ARGS: f }, { agent: 'lifecycle:developer' })
+  assert.equal(status.state, 'done')
+  assert.equal(status.agent, 'lifecycle:developer')
+  assert.equal(status.agentApplied, true)
+  assert.equal(status.agentNote, undefined)
+  assert.ok(has(readArgs(f)[0], '--agent', 'lifecycle:developer'))
+  assert.match(readFileSync(join(job.ws, 'job.json'), 'utf8'), /"agent": "lifecycle:developer"/)
+})
+
+test('背景 worker --agent：codex 不支援 → 不帶旗標、prompt 叫它讀定義檔、status 記說明', async () => {
+  const f = argsLog()
+  const { status } = await runJob({ SHIM_ARGS: f }, { cli: 'codex', agent: 'lifecycle:developer' })
+  assert.equal(status.state, 'done')
+  assert.equal(status.agentApplied, false)
+  assert.match(status.agentNote, /codex 不支援 --agent/)
+  const a = readArgs(f)[0]
+  assert.ok(!a.includes('--agent'))
+  assert.match(a.at(-1), /Agent 定義是 lifecycle:developer[\s\S]*agents\/developer\.md/)
+})
+
+test('背景 worker --continue：resume 時不重帶 --agent（沿用 session、agentApplied 承接）；換 agent 就開新 session', async () => {
+  const f = argsLog()
+  const { job: prev } = await runJob({ SHIM_ARGS: f }, { agent: 'lifecycle:developer' })
+  const stateFile = JSON.parse(readFileSync(join(prev.ws, 'job.json'), 'utf8')).stateFile
+  const { status: s1 } = await continueJob({ SHIM_ARGS: f }, { ...prev, stateFile })
+  const second = readArgs(f)[1]
+  assert.ok(has(second, '--resume', JSON.parse(readFileSync(prev.statusFile, 'utf8')).sessionId) && !second.includes('--agent'))
+  assert.equal(s1.agent, 'lifecycle:developer')
+  assert.equal(s1.agentApplied, true)
+  const { status: s2 } = await continueJob({ SHIM_ARGS: f }, { ...prev, stateFile }, { agent: 'lifecycle:reviewer', ws: join(dirname(prev.ws), 'fix2') })
+  const third = readArgs(f)[2]
+  assert.ok(has(third, '--agent', 'lifecycle:reviewer') && !third.includes('--resume') && third.includes('--session-id'))
+  assert.equal(s2.agent, 'lifecycle:reviewer')
+})
+
+test('背景 worker --agent 退路：只影響觸發的那一家，改派的下一家重新嘗試 --agent', async () => {
+  const f = argsLog()
+  const { status } = await runJob({ SHIM_RESULT: 'no-agent', SHIM_ARGS: f, ...KEY }, { type: 'implement', agent: 'x:y' })
+  const calls = readArgs(f)
+  assert.ok(calls[0].includes('--agent') && !calls[1].includes('--agent'))
+  assert.equal(status.state, 'done')
+})
+
+test('背景 worker --agent：claude 找不到該 Agent 定義 → 同一家去掉 --agent、prompt 退路、status 記說明', async () => {
+  const f = argsLog()
+  const { status } = await runJob({ SHIM_RESULT: 'no-agent', SHIM_ARGS: f }, { agent: 'x:y' })
+  assert.equal(status.state, 'done')
+  assert.equal(status.agentApplied, false)
+  assert.match(status.agentNote, /找不到該 Agent 定義/)
+  const [first, second] = readArgs(f)
+  assert.ok(first.includes('--agent') && !second.includes('--agent'))
+  assert.match(second[1], /Agent 定義是 x:y/)
 })

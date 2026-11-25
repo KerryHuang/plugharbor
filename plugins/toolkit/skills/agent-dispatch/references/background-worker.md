@@ -39,7 +39,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-close <id>
 
 ```bash
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start (--repo <repo> | --worktree <既有 worktree>) --name <短名> (--to <cli> | --type <類型>) \
-  [--model <模型>] [--effort <等級>] [--timeout <秒，預設 3600>] --ws <工作目錄> <prompt 檔>
+  [--model <模型>] [--effort <等級>] [--agent <plugin>:<agent>] [--timeout <秒，預設 3600>] --ws <工作目錄> <prompt 檔>
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --continue <上一輪工作目錄> --name <短名> --ws <新工作目錄> [--to <cli> | --type <類型>] <修正 prompt 檔>
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" status --ws <工作目錄>   # 只讀，不等待
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <秒>]   # 阻塞到結束；done→0、逾時→124、其他→1
@@ -50,12 +50,13 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
 - `--worktree`：在既有 worktree 跑（如無人值守的單元 worktree），不新建 `dispatch/<短名>` 分支；不是 git worktree 就報錯。
 - `--continue`（修正輪）：沿用上一輪的 worktree 與派工方式（`--to`／`--type`，可覆寫；`--model`／`--effort` 不沿用，要就再帶）。上一輪由 claude 或 claude-api 跑完的，用 `--resume` 接續它的 session（同一份 session 檔，換計費方式也接得上，`status.json` 記 `resumed: true`）；session 不見了就同一家開新 session 重跑。改派到別家時是新 session，所以修正 prompt 仍要自足（錯誤情境、通過條件、目前 SHA、上一輪結果檔路徑）。上一輪還在跑時不能續派。
 
+- `--agent <plugin>:<agent>`：只對 claude／claude-api 透傳 `claude -p --agent`。實測：套上該定義的指示與 `tools` 白名單，`--permission-mode acceptEdits`／`--allowedTools Bash` 照常疊加；命令列的 `--model`／`--effort` 蓋過定義的 `model`。`--continue` 沿用上一輪的 agent（接續 session 時不重帶旗標：session 本來就是那個角色，且 `--resume` 下帶不存在的名稱也不報錯）；`--agent` 換成別的就開新 session。codex／agy／pi 沒有這個旗標，或 claude 回 `--agent '…' not found`（plugin 在該 worktree 沒啟用）時，同一家改成 prompt 叫它讀定義檔，`status.json` 記 `agentApplied: false` 與 `agentNote`；未驗證：agy／pi 實際讀不讀得到定義檔。
 - `--ws` 是這個 worker 專用的工作目錄。多個 worker 放在同一個上層目錄下，並行上限以那一層計算；放在不同上層目錄的 worker 互相不計。`start` 用那一層的 `.agent-dispatch.lock` 目錄當鎖，避免同時 start 都通過上限檢查；鎖超過 60 秒沒釋放視為過期。
 - `--timeout` 要是正數；參數或 prompt 檔有問題時在建 worktree 之前就報錯，不留孤兒分支。
 - 工作目錄內容：
   - `wt/`：worktree，分支 `dispatch/<短名>`（用 `--worktree`／`--continue` 時沒有，改在指定的 worktree）。
   - `job.json`：派工設定。
-  - `status.json`：狀態，`running`／`done`／`failed`／`quota`；另記實際對象 `cli`／`model`／`effort`、回報行 `line`、claude 系的 `sessionId`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）；超過 `startedAt`＋timeout＋60 秒仍是 running（pid 被重用）也顯示 `failed`（`note: stale…`）。
+  - `status.json`：狀態，`running`／`done`／`failed`／`quota`；另記實際對象 `cli`／`model`／`effort`、回報行 `line`、claude 系的 `sessionId`、有 `--agent` 時的 `agent`／`agentApplied`／`agentNote`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）；超過 `startedAt`＋timeout＋60 秒仍是 running（pid 被重用）也顯示 `failed`（`note: stale…`）。
   - `result.md`：worker 寫的結果。
   - `log.txt`：CLI 的完整輸出。
 - 並行上限：

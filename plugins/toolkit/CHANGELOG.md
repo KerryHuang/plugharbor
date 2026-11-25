@@ -2,6 +2,15 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.0] - 2026-11-25
+
+起因：0.39.0 讓自動駕駛的實作類工作走背景 worker，但 worker 套不到 Agent 定義（如 `lifecycle:developer` 的工具白名單），只能在 prompt 叫它「先讀定義檔照做」，約束靠 worker 自覺。使用者 2026-11-25 裁決現在就加 `--agent`。
+- feat(agent-dispatch)：`bg.mjs start --agent <plugin>:<agent>` 對 claude／claude-api 透傳 `claude -p --agent`；`--continue` 沿用上一輪的 agent。實測 `-p` 下定義的指示與 `tools` 白名單生效，`--permission-mode acceptEdits`／`--allowedTools Bash` 照常疊加，`--model`／`--effort` 以命令列為準（蓋過定義的 `model`）。
+- feat(agent-dispatch)：套不上時退路——codex／agy／pi 不支援、或 claude 回 `--agent … not found`（plugin 在該 worktree 沒啟用）：同一家去掉旗標、prompt 加一句叫它讀定義檔；`status.json` 記 `agent`、`agentApplied`、`agentNote`。
+- feat(agent-mesh-check)：`buildArgs` 的 claude 系 worker 模式接受 `agent`（`--agent`，在 `--add-dir` 之前）。
+- fix（codex 跨家族審查）：`--resume` 下 claude 不驗 `--agent` 名稱，接續 session 時不重帶旗標、`agentApplied` 承接上一輪，換 agent 就開新 session；找不到定義的退路只限觸發的那一家、只認輸出開頭的 `--agent '…' not found`；`--agent` 缺值或以 `-` 開頭報錯。
+- test：`dispatch.test.mjs` 補 buildArgs、格式驗證、claude 透傳、codex 退路、找不到定義退路、`--continue` 沿用與覆寫；driver shim 加 codex。
+
 ## [0.39.0] - 2026-11-25
 
 起因：2026-11-24 晚 Formwright 自動駕駛約 70 次派工全走 Agent tool，claude-api 零使用——0.38.0 的路由只在 agent-dispatch 腳本裡生效，`workspace:unattended` 的實作者到不了。要讓無人值守經背景 worker 派實作，bg.mjs 缺三件事：依路由挑對象並在額度用盡時改派、在既有的單元 worktree 跑、修正輪續派原實作者。

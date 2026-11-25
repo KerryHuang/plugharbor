@@ -30,7 +30,9 @@ SKILL.md 第 2～4 步與第 6 節的細則。起因：Agent subagent 跑在主 
    node "$BG" start --worktree <單元 worktree> --name <段>-r1 --type implement --timeout <秒> --ws <帳本資料夾>/bg/<段>-r1 <prompt 檔>
    ```
 
-   - prompt 照第 2 步：自足、含第 0 節授權範圍、重測試用 `test-lock.sh` 包。原本派 Agent 定義（如 `lifecycle:developer`）的，寫明「先讀 <定義檔絕對路徑> 照它做」。結果檔路徑與「寫完就停」腳本會自己加。
+   - 原本派 Agent 定義的純 Bash／編輯類（如 `lifecycle:developer`）加 `--agent <plugin>:<agent>`；要 MCP 的定義（如 `lifecycle:qa-runner-ui`）照上表不走背景 worker。`--model`／`--effort` 以 `start` 帶的為準（`--type` 一律是路由表等級）。機制與狀態欄位見 agent-dispatch 的背景 worker 文件（該 skill 目錄下的 background-worker）。
+   - 套不上時（非 claude 系、plugin 在 worktree 沒啟用）腳本退成 prompt 叫 worker 讀定義檔，`status.json` 記 `agentApplied: false`。所以 prompt 一律寫明「先讀 <定義檔絕對路徑> 照它做」。
+   - prompt 照第 2 步：自足、含第 0 節授權範圍、重測試用 `test-lock.sh` 包。結果檔路徑與「寫完就停」腳本會自己加。
    - `--timeout` 預設 3600 秒；整段實作估得比這長就加大。
    - worker 跑的期間主控不改這個 worktree。
 2. 等結束：用 Bash 的背景執行跑 `node "$BG" wait --ws <ws> --timeout <同上加 300>`，結束時會收到通知；期間做空檔工作，不輪詢 `status`。
