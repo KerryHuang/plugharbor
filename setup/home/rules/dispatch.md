@@ -5,7 +5,7 @@
 | 情況 | 交給 |
 |---|---|
 | 小、需要目前對話的 context | 自己做 |
-| 範圍明確、不需中途問人、結果一份回報就裝得下 | Agent subagent（同一則訊息平行派） |
+| 範圍明確、不需中途問人、結果一份回報就裝得下 | 背景 worker（`agent-dispatch` 的 `bg.mjs --type`，走 API 額度）；要 MCP／Web 或未提交改動才用 Agent subagent（同一則訊息平行派） |
 | 長（預估 15 分鐘以上）、可能中途問人、要完整 session 能力或換 CLI | herdr（TUI 或 Herdr.app）pane worker（專案有派工 skill（如 `<plugin>:dispatch-worker`）就用；沒有或要派 agy／pi，用 `agent-dispatch` 的長任務模式；唯讀第二意見用 `agent-dispatch` 短問答，不開 pane） |
 
 - **派工帶模型**：派 Agent tool 時依等級表（agent-dispatch `routing.json`：規劃／架構／關鍵審查 opus-high、實作／研究／QA sonnet-medium、文件／機械 haiku-low）設 `model` 與 `effort`，pane 與其他 CLI 也明確帶，不繼承預設。碰安全、資料、DB 結構、公開介面或超過 300 行可升一級，回報寫「升級理由：…」。
