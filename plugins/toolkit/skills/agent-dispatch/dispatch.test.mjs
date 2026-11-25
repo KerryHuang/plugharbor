@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { CLIS, buildArgs, quotaInfo, run, scrubEnv, resolveBin, cliEnv, blockInfo, hasKeyCmd } from '../agent-mesh-check/scripts/clis.mjs'
 import { mkdtempSync, writeFileSync, readFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, delimiter, basename } from 'node:path'
+import { join, delimiter, basename, dirname } from 'node:path'
 import { loadRouting, readState, writeState, blockCli, meshAvailable, candidates, needsCrossReview, reviewer, statePath } from './scripts/route.mjs'
 
 const has = (args, ...seq) => {
@@ -522,6 +522,9 @@ function driverShim() {
   writeShim(f, `
 const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
+if (process.env.SHIM_ARGS) fs.appendFileSync(process.env.SHIM_ARGS, JSON.stringify(process.argv.slice(2)) + '\\n')
+if (process.env.SHIM_RESULT === 'api-quota' && process.env.ANTHROPIC_API_KEY) { console.log('Credit balance is too low'); process.exit(1) }
+if (process.env.SHIM_RESULT === 'no-session' && process.argv.includes('--resume')) { console.log('No conversation found with session ID: x'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'push') {
   const r = require('node:child_process').spawnSync('git', ['push', 'origin', 'HEAD:refs/heads/leak'], { encoding: 'utf8' })
   fs.writeFileSync(process.env.AGENT_DISPATCH_RESULT, JSON.stringify({ push: r.status, gh: process.env.GH_TOKEN ?? null }))
@@ -543,7 +546,7 @@ function tmpRepo() {
   return repo
 }
 
-async function runJob(env, { state, setup, cli = 'claude' } = {}) {
+async function runJob(env, { state, setup, cli = 'claude', type, mesh } = {}) {
   const repo = tmpRepo()
   setup?.(repo)
   const root = mkdtempSync(join(tmpdir(), 'ad ws '))
@@ -552,9 +555,9 @@ async function runJob(env, { state, setup, cli = 'claude' } = {}) {
   // shim 放最前面：蓋過真的 claude，git 仍找得到
   Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
   try {
-    const job = prepare({ repo, name: 't1', cli, promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
+    const job = prepare({ repo, name: 't1', cli: type ? undefined : cli, type, mesh: mesh ?? join(root, 'no-mesh.json'), promptFile: prompt, ws: join(root, 't1'), state: state ?? join(root, 'state.json') })
     await supervise(job.ws)
-    return { repo, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
+    return { repo, root, job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
   } finally {
     for (const [k, v] of Object.entries(old)) v === undefined ? delete process.env[k] : (process.env[k] = v)
   }
@@ -903,4 +906,138 @@ test('ask：持續有輸出不觸發 --idle-timeout', () => {
   const r = ask(['--to', 'codex', '--idle-timeout', '1', '--timeout', '20'], { SHIM_CODEX: 'chatty' })
   assert.equal(r.status, 0, r.stderr)
   assert.match(r.stdout, /tick 5/)
+})
+
+// ── 背景 worker：--type 改派、--worktree、--continue 續派 ──
+const argsLog = () => join(mkdtempSync(join(tmpdir(), 'ad-args-')), 'args.jsonl')
+const readArgs = f => readFileSync(f, 'utf8').trim().split('\n').map(l => JSON.parse(l))
+const KEY = { AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo sk-test' }
+
+test('buildArgs worker：claude 系帶 --session-id／--resume，仍在 --add-dir 之前', () => {
+  const a = buildArgs('claude-api', 'worker', 'P', { resultFile: '/ws/j/result.md', sessionId: 'S1' })
+  assert.ok(has(a, '--session-id', 'S1'))
+  assert.equal(a.indexOf('--add-dir'), a.length - 2)
+  assert.ok(has(buildArgs('claude', 'worker', 'P', { resume: 'S2' }), '--resume', 'S2'))
+  assert.ok(!buildArgs('claude', 'worker', 'P').includes('--session-id'))
+})
+
+test('背景 worker --type：claude-api 額度用盡 → 封鎖、改派 claude 做完，status 記實際對象與改派紀錄', async () => {
+  const f = argsLog()
+  const { job, status, root } = await runJob({ ...KEY, SHIM_RESULT: 'api-quota', SHIM_ARGS: f }, { type: 'implement' })
+  assert.match(readFileSync(join(job.ws, 'job.json'), 'utf8'), /"type": "implement"/)
+  assert.equal(status.state, 'done')
+  assert.equal(status.cli, 'claude')
+  assert.deepEqual(status.attempts, [{ cli: 'claude-api', outcome: 'quota' }])
+  assert.match(status.line, /^\[bg\] 交給 claude（sonnet／medium），理由：implement；改派自 claude-api（quota）/)
+  assert.ok(readState(join(root, 'state.json')).blocks['claude-api'].until > Date.now())
+  const [first, second] = readArgs(f)
+  assert.ok(first.includes('--session-id') && second.includes('--session-id'))
+  assert.notEqual(first[first.indexOf('--session-id') + 1], second[second.indexOf('--session-id') + 1])
+  assert.match(second[1], /前一位 worker（claude-api）被額度或 API key 問題中斷/)
+  assert.match(readFileSync(join(job.ws, 'log.txt'), 'utf8'), /===== claude-api[\s\S]*===== claude（/)
+})
+
+test('背景 worker --to claude-api：額度用盡不改派，回 quota', async () => {
+  const { status } = await runJob({ ...KEY, SHIM_RESULT: 'api-quota' }, { cli: 'claude-api' })
+  assert.equal(status.state, 'quota')
+  assert.equal(status.cli, 'claude-api')
+})
+
+test('prepare --type：候選全被濾掉 → NO_CANDIDATE，不建 worktree', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-nc-'))
+  const repo = tmpRepo()
+  const old = process.env.PATH
+  process.env.PATH = mkdtempSync(join(tmpdir(), 'ad-empty-'))
+  try {
+    assert.throws(() => prepare({ repo, name: 'nc', type: 'implement', promptFile: promptStub(), ws: join(root, 'nc'), state: join(root, 's.json'), mesh: join(root, 'm.json') }),
+      e => e.code === 'NO_CANDIDATE')
+  } finally { process.env.PATH = old }
+  assert.equal(branches(repo), '')
+})
+
+test('prepare --worktree：用既有 worktree、不開新分支；不是 worktree 就拋錯', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-ewt-'))
+  const repo = tmpRepo()
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    assert.throws(() => prepare({ worktree: root, name: 'x', cli: 'claude', promptFile: promptStub(), ws: join(root, 'x'), state: join(root, 's.json') }), /不是 git worktree/)
+    const job = prepare({ worktree: repo, name: 'y', cli: 'claude', promptFile: promptStub(), ws: join(root, 'y'), state: join(root, 's.json') })
+    assert.equal(job.worktree, repo)
+    assert.equal(branches(repo), '')
+  } finally { process.env.PATH = old }
+})
+
+async function continueJob(env, prev, extra = {}) {
+  const old = { PATH: process.env.PATH, ...Object.fromEntries(Object.keys(env).map(k => [k, process.env[k]])) }
+  Object.assign(process.env, { PATH: driverShim() + delimiter + process.env.PATH, AGENT_DISPATCH_NO_NOTIFY: '1', ...env })
+  try {
+    const job = prepare({ continueFrom: prev.ws, name: 'fix1', promptFile: promptStub(), ws: join(dirname(prev.ws), 'fix1'), state: prev.stateFile, mesh: join(dirname(prev.ws), 'no-mesh.json'), ...extra })
+    await supervise(job.ws)
+    return { job, status: JSON.parse(readFileSync(job.statusFile, 'utf8')) }
+  } finally {
+    for (const [k, v] of Object.entries(old)) v === undefined ? delete process.env[k] : (process.env[k] = v)
+  }
+}
+
+test('背景 worker --continue：同一個 worktree、接續上一輪的 claude session、沿用派工方式', async () => {
+  const f = argsLog()
+  const { job: prev, status: ps, repo } = await runJob({ SHIM_ARGS: f })
+  const { job, status } = await continueJob({ SHIM_ARGS: f }, { ...prev, stateFile: JSON.parse(readFileSync(join(prev.ws, 'job.json'), 'utf8')).stateFile })
+  assert.equal(status.state, 'done')
+  assert.equal(job.worktree, prev.worktree)
+  assert.equal(status.resumed, true)
+  assert.equal(status.sessionId, ps.sessionId)
+  const second = readArgs(f)[1]
+  assert.ok(has(second, '--resume', ps.sessionId) && !second.includes('--session-id'))
+  assert.match(branches(repo), /^\+? ?dispatch\/t1$/)  // 沒有多開分支（+ 表示在別的 worktree 檢出）
+})
+
+test('背景 worker --continue：session 不見了 → 同一家開新 session 重跑', async () => {
+  const f = argsLog()
+  const { job: prev } = await runJob({})
+  const { status } = await continueJob({ SHIM_RESULT: 'no-session', SHIM_ARGS: f }, { ...prev, stateFile: JSON.parse(readFileSync(join(prev.ws, 'job.json'), 'utf8')).stateFile })
+  assert.equal(status.state, 'done')
+  assert.equal(status.resumed, false)
+  const [a, b] = readArgs(f)
+  assert.ok(a.includes('--resume') && b.includes('--session-id'))
+})
+
+test('prepare --continue：上一輪還在跑 → 拋錯', () => {
+  const ws = mkdtempSync(join(tmpdir(), 'ad-cr-'))
+  writeFileSync(join(ws, 'job.json'), JSON.stringify({ worktree: ws, to: 'claude' }))
+  writeFileSync(join(ws, 'status.json'), JSON.stringify({ state: 'running', pid: process.pid }))
+  assert.throws(() => prepare({ continueFrom: ws, name: 'f', promptFile: promptStub(), ws: join(ws, 'f') }), /還在跑/)
+})
+
+test('prepare：工作目錄已用過（有 result.md／job.json）→ 拋錯；--continue 不能沿用上一輪的 ws', async () => {
+  const { job: prev } = await runJob({})
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    assert.throws(() => prepare({ continueFrom: prev.ws, name: 'f', promptFile: promptStub(), ws: prev.ws }), /工作目錄已用過/)
+  } finally { process.env.PATH = old }
+})
+
+test('prepare --continue：舊版 job.json 只有 cli → 沿用該 cli', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-old-'))
+  const repo = tmpRepo()
+  const prev = join(root, 'p'); mkdirSync(prev)
+  writeFileSync(join(prev, 'job.json'), JSON.stringify({ cli: 'claude', worktree: repo }))
+  writeFileSync(join(prev, 'status.json'), JSON.stringify({ state: 'done', cli: 'claude' }))
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  try {
+    const job = prepare({ continueFrom: prev, name: 'f', promptFile: promptStub(), ws: join(root, 'f'), state: join(root, 's.json') })
+    assert.equal(JSON.parse(readFileSync(join(job.ws, 'job.json'), 'utf8')).to, 'claude')
+  } finally { process.env.PATH = old }
+})
+
+test('背景 worker --type：claude-api 取 key 失敗且狀態檔寫不進去 → 仍改派下一家做完', async () => {
+  const d = mkdtempSync(join(tmpdir(), 'ad-ro2-'))
+  const notDir = join(d, 'file'); writeFileSync(notDir, 'x')
+  const { status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, { type: 'implement', state: join(notDir, 'state.json') })
+  assert.equal(status.state, 'done')
+  assert.equal(status.cli, 'claude')
+  assert.deepEqual(status.attempts, [{ cli: 'claude-api', outcome: 'key' }])
 })

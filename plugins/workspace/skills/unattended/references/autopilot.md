@@ -68,7 +68,7 @@
 
 收尾 commit 進了主線、累積報告與下一步排線寫好後，在 herdr 或 Herdr.app 內（`python3 ${CLAUDE_PLUGIN_ROOT}/skills/unattended/scripts/mux.py env` 的 `backend` 不是 `none`）就換新 session 再開下一段：下一段拿到乾淨的 context 與已安裝的最新版 plugin。`backend` 是 `none` 就不換，直接接下一段。hc 下 self-rotate 要靠 toolkit 的 SessionStart hook 記錄 session id（`mux.py session` 讀它）；沒裝 toolkit 就不換，照 `toolkit:handoff` 的手動路徑（回報三行交接、請使用者自己 `/clear`）。
 
-- **前提**：沒有還在跑的 subagent、背景工作或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一段收尾再試。
+- **前提**：沒有還在跑的 subagent、背景工作（含 agent-dispatch 背景 worker，`bg.mjs status` 不是 running）或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一段收尾再試。
 - **先記帳**：帳本寫 `換新：<段> 收尾後`，加上這段試過但排除的方向、下一步的第一個動作（具體到檔案或指令，且不得與本檔規則衝突，例如佔位段寫成「先設計」；接回時發現衝突以本檔為準並記帳）、目前載入的各 plugin 版本；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。帳本就是交接檔，不另跑 `/handoff`。
 - **啟動**：執行 `nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh 繼續自動駕駛 <帳本資料夾>/rotate.log >/dev/null 2>&1 &`，然後直接結束這一回合，不再呼叫工具。使用者規則若要求回報末尾附「建議 session 標題」，就寫在這一回合的結尾（此時沒有 subagent 在跑），標題取下一段；派出 subagent 後就錯過時機。腳本等這個 pane 閒置後送 `/clear`、`/reload-plugins`、「繼續自動駕駛」，新 context 照「接回」接著做。
 - 有裝 `toolkit:tower`：新 session 沿用原航班（以 worktree 找到），不重新 takeoff；沒裝照舊。

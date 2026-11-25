@@ -2,6 +2,17 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.39.0] - 2026-11-25
+
+起因：2026-11-24 晚 Formwright 自動駕駛約 70 次派工全走 Agent tool，claude-api 零使用——0.38.0 的路由只在 agent-dispatch 腳本裡生效，`workspace:unattended` 的實作者到不了。要讓無人值守經背景 worker 派實作，bg.mjs 缺三件事：依路由挑對象並在額度用盡時改派、在既有的單元 worktree 跑、修正輪續派原實作者。
+- feat(agent-dispatch)：`bg.mjs start --type <類型>` 查路由表（同 ask：濾掉沒裝、未通過 mesh、封鎖中的），額度用盡或 key 失效就封鎖那一家、在同一個 worktree 改派下一個候選；`--to` 照舊不改派。候選全被濾掉 exit 75。
+- feat(agent-dispatch)：`start` 第一行印 `[bg] 交給 <cli>（<模型>／<等級>），理由：…`；`status.json` 記實際對象（`cli`／`model`／`effort`）、回報行 `line`（含改派自哪家）、`attempts`、`sessionId`。
+- feat(agent-dispatch)：`--worktree <既有 worktree>` 在指定 worktree 跑、不開 `dispatch/*` 分支；`--continue <上一輪 ws>` 續派修正輪：沿用 worktree 與派工方式，claude 系以 `--resume` 接續上一輪 session（session 不見就同一家開新 session）。
+- feat(agent-mesh-check)：`buildArgs` 的 claude 系接受 `sessionId`／`resume`（`--session-id`／`--resume`）。
+- docs：背景 worker 條件「合併前由使用者審」放寬為「或專案設定已授權主控在審查與閘門通過後自行合併」（使用者 2026-11-25 裁決）；補「用不到 MCP」條件與新參數說明；cli-notes 記 `--resume` 實測。
+- fix(agent-dispatch)：取 key 失敗時狀態檔寫不進去不再中止改派；`start` 拒絕已用過的工作目錄（避免把上一輪的 `result.md` 當成本輪完成）；`--continue` 相容只有 `cli` 的舊版 job.json（codex 跨家族審查必修 3 項）。
+- test：`dispatch.test.mjs` 補改派、`--to` 不改派、NO_CANDIDATE、`--worktree`、`--continue` 接續與 session 不見、上一輪還在跑、工作目錄已用過、舊版 job.json、key 失敗＋狀態檔寫不進去。
+
 ## [0.38.0] - 2026-11-24
 
 起因：訂閱方案（Ultra／Max）每月附一筆 Claude API 額度，月底作廢，只付用 API key 跑的 `claude -p`；2026-11-24 週用量快見底、API 額度沒動，但自動駕駛與無人值守派出去的工作仍全扣訂閱。目的是非互動派工先扣 API 額度，用完或過期自動退回訂閱。

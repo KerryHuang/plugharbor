@@ -33,7 +33,8 @@ export function resolveBin(name, env = process.env, platform = process.platform)
 // probe：唯讀只回字串；driver：自動核准，只用在驗證第 3 層的 A；ask：派工短問答，唯讀但保留使用者設定；
 // worker：背景 worker 要能改檔（claude 自動接受編輯、pi 開讀寫工具，codex／agy 同 driver）。
 // opts.model／opts.effort：派工指定模型與思考等級（參數名見 ../references/cli-notes.md）；不給就和以前完全相同。
-export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastFile } = {}) {
+// opts.sessionId／opts.resume：只給 claude 系（背景 worker 續派用）——新 session 指定 id，或接續既有 session。
+export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastFile, sessionId, resume } = {}) {
   const m = (flag, v) => (v ? [flag, v] : [])
   // prompt 以 - 開頭（如 --- frontmatter）會被當成選項（claude 報 unknown option）；前面補一個半形空格，四家都當位置參數
   if (String(prompt).startsWith('-')) prompt = ` ${prompt}`
@@ -45,7 +46,7 @@ export function buildArgs(name, mode, prompt, { model, effort, resultFile, lastF
         : mode === 'ask' ? ['-p', prompt, '--tools', 'Read,Grep,Glob'] : ['-p', prompt, '--tools', '']
       // acceptEdits 只放行 cwd（wt/）底下；結果檔在上一層，要加進可寫範圍。--add-dir 吃多個值，放最後
       const dir = mode === 'worker' && resultFile ? ['--add-dir', dirname(resultFile)] : []
-      return [...base, ...m('--model', model), ...m('--effort', effort), ...dir]
+      return [...base, ...m('--model', model), ...m('--effort', effort), ...m('--session-id', sessionId), ...m('--resume', resume), ...dir]
     }
     case 'codex': {
       const lean = mode === 'ask' ? [] : ['--ignore-user-config', '--ignore-rules']

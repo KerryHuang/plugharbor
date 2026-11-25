@@ -76,15 +76,16 @@ argument-hint: "[對象] <任務>"
 3. **背景 worker**：看不見，只在下列條件都成立時才用，不成立就由你在目前的 session 自己做，並說明原因：
    - 工作不需要中途問人（遇到要決策就停，寫進結果檔）。
    - 只在獨立 git worktree 裡改檔，不改主線、不 push。
-   - 你合併前會先讓使用者審。
+   - 你合併前會先讓使用者審，或專案設定已授權你在審查與閘門通過後自行合併（如 `workspace:unattended`）。
+   - 用不到 MCP（瀏覽器、DB）、不需要 `git fetch`。
 
    這是**信任模型、不是沙箱**：worker 有 shell 與寫檔權限（claude acceptEdits＋Bash、codex danger-full-access、agy 跳過確認），「只改 worktree」主要靠 prompt。腳本另外做兩道防線：不傳推送用 token（`GH_TOKEN`、`GITHUB_TOKEN`、`GITLAB_TOKEN`、`GLAB_TOKEN` 等），並對 worker 程序關掉 git 的遠端傳輸（push 必失敗）。
 
    ```bash
-   node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --repo <repo> --name <短名> --to <cli> --model <m> --effort <e> --ws <工作目錄> <prompt 檔>
+   node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --repo <repo> --name <短名> (--to <cli> --model <m> --effort <e> | --type <類型>) --ws <工作目錄> <prompt 檔>
    ```
 
-   狀態、並行上限、收工步驟見 `references/background-worker.md`。
+   `--type` 查表並在額度用盡、key 失效時同一個 worktree 自動改派；`--worktree` 用既有 worktree、`--continue` 續派修正輪。狀態、並行上限、收工步驟見 `references/background-worker.md`。
 
 三層共用的規則：
 

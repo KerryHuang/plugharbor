@@ -11,7 +11,7 @@
 | agy | `-p <p> --sandbox --disable-slash-commands` | `-p <p> --dangerously-skip-permissions` | 同 probe |
 | pi | `-p <p> --no-tools --no-session` | `-p <p> --tools bash --no-session` | `-p <p> --tools read,grep,find,ls --no-mcp --no-session` |
 
-背景 worker（agent-dispatch `bg.mjs`）另有 `worker` 模式：claude `-p <p> --permission-mode acceptEdits --allowedTools Bash`、pi `-p <p> --tools read,bash,edit,write --no-session`，codex 與 agy 同 driver。
+背景 worker（agent-dispatch `bg.mjs`）另有 `worker` 模式：claude `-p <p> --permission-mode acceptEdits --allowedTools Bash`、pi `-p <p> --tools read,bash,edit,write --no-session`，codex 與 agy 同 driver。claude 系另帶 `--session-id <uuid>`（新 session）或 `--resume <uuid>`（續派修正輪）；2026-11-25 macOS 實測 claude-api 開的 session 用 `-p --resume` 接得上、記得上一輪內容。
 
 說明：
 

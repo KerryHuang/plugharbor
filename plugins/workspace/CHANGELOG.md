@@ -2,6 +2,14 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.1.0] - 2026-11-25
+
+起因：2026-11-24 晚 Formwright 自動駕駛（7 個 session 接力）約 70 次派工全用 Agent tool，100% 扣 claude.ai 訂閱、claude-api 零使用。unattended 第 2 步寫「派實作（subagent 或 pane worker）」，兩條路都到不了 API；第 3 步「先試跨家族」被各 session 從舊帳本抄成「退回同家」，沒實際跑 `route.mjs reviewer`。
+- feat(unattended)：實作、QA／走查、文件、機械類經 `toolkit:agent-dispatch` 背景 worker 依路由派（`--type`，API 優先、額度用完自動改派），修正輪用 `--continue`；規劃、架構、關鍵審查、domain-advisor 分流維持訂閱。沒裝 toolkit、沒設 key 來源、候選全被濾掉、要用 MCP 等情況退回 Agent subagent，記 `退回訂閱：<原因>`。細則新增 `skills/unattended/references/dispatch.md`。
+- feat(unattended)：派工回報照抄腳本第一行；回來報告加「本輪派工：API／訂閱／其他家」計數行。
+- fix(unattended)：第 3 步明寫每段審查前都實際跑 `route.mjs reviewer <作者 CLI>`，不得沿用帳本或上一段的結論（對齊 agent-dispatch 第 4 節）。
+- 需要 toolkit 0.39.0（`bg.mjs` 的 `--type`／`--worktree`／`--continue`）；沒裝 toolkit 照舊用 Agent subagent。
+
 ## [2.0.5] - 2026-11-24
 
 起因：同 toolkit 0.38.0（claude-api 派工路由）。

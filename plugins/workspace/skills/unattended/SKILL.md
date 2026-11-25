@@ -39,9 +39,9 @@ description: Use when 使用者說「無人值守」「自動駕駛」「照 roa
 
    行為類照推薦做、記成主控裁決待確認、列進回來報告的「待決」；題目帶具體例子，讓人不看設計也能答。推翻的先改設計再續審。理由：方向翻盤要整段重審。
 1. 開工登記：有裝 `toolkit:tower` 就在單元 worktree（沒有先開）裡跑 `tower.py takeoff --mode unattended --goal "<單元目標>" --segment <段號>`（帶預計 `--paths`），航班 ID 記帳本；起飛回 `kind: work` 重疊就跳過此段，`kind: path` 當共用檔照順序；沒裝照舊。
-2. 派實作（subagent 或 pane worker），prompt 自足並含第 0 節的授權範圍。**設計夠細（介面、權限、錯誤行為、驗收案例都有）就不另寫實作計畫、不審計畫**，整段交一個實作者做到底；缺哪項先補哪項。本機只跑新增或修改的測試類別、直接受影響的既有類別，加前端 typecheck／build；安全網與完整套件交閘門（第 5 步）。
-3. 審查：整段完成後**讀整份 diff 審一次**，新 context；有 `toolkit:agent-dispatch` 就先試跨家族，沒裝或湊不到別家，就同家、新 context 審，回報寫「退回同家審查」。審查者從 diff 出發，可讀必要上下文（呼叫端、權限守衛、既有測試），**不跑測試**。派工腳本報錯而退回同家的是**工具故障**：照常往下做，但在回來報告最前面標 🔴、附錯誤訊息，有推播工具就推播；不能寫成湊不到別家。
-4. 修正：交回**原實作者**（續派沿用 context，附錯誤情境、通過條件、目前 SHA），修一輪；同一問題反覆誤解就換人診斷。一次審查加一輪修正是正常路徑的目標，不是上限：安全、權限、資料錯誤、公開契約的問題必修，修完逐項核對原發現；審出 🔴 的安全類修完再審一次。會改變使用者看得到的行為的建議，採用也可以，但記成主控裁決待確認。
+2. 派實作，prompt 自足並含第 0 節的授權範圍。實作、QA／走查、文件、機械類照 `references/dispatch.md` 經 `toolkit:agent-dispatch` 的背景 worker 依路由派（API 優先，額度用完自動改派）；條件不成立就用 Agent subagent，帳本記 `退回訂閱：<原因>`。**設計夠細（介面、權限、錯誤行為、驗收案例都有）就不另寫實作計畫、不審計畫**，整段交一個實作者做到底；缺哪項先補哪項。本機只跑新增或修改的測試類別、直接受影響的既有類別，加前端 typecheck／build；安全網與完整套件交閘門（第 5 步）。
+3. 審查：整段完成後**讀整份 diff 審一次**，新 context；有 `toolkit:agent-dispatch` 就先試跨家族：每段審查前都實際跑 `route.mjs reviewer <作者 CLI>`（作者是實際跑完的那家：背景 worker 看 `status.json` 的 `cli`，Agent subagent 是 `claude`），不得沿用帳本或上一段的結論。沒裝或湊不到別家，就同家、新 context 審，回報寫「退回同家審查」。審查者從 diff 出發，可讀必要上下文（呼叫端、權限守衛、既有測試），**不跑測試**。派工腳本報錯而退回同家的是**工具故障**：照常往下做，但在回來報告最前面標 🔴、附錯誤訊息，有推播工具就推播；不能寫成湊不到別家。
+4. 修正：交回**原實作者**（續派沿用 context，附錯誤情境、通過條件、目前 SHA；背景 worker 用 `--continue`），修一輪；同一問題反覆誤解就換人診斷。一次審查加一輪修正是正常路徑的目標，不是上限：安全、權限、資料錯誤、公開契約的問題必修，修完逐項核對原發現；審出 🔴 的安全類修完再審一次。會改變使用者看得到的行為的建議，採用也可以，但記成主控裁決待確認。
 5. 閘門（專案）：背景跑，等通知，一次交付一次 CI。所有必要 job 通過才往下；首個失敗就通知診斷，不等全跑完。最終版與已驗證版的測試／建置輸入相同（只差文件）可沿用結果，細則見 `references/speed-rules.md`。
 6. 外洩掃描（專案，沒設定就略過）：只看筆數，必須全部是 0。
 7. 合併（專案）：設定檔在、但沒寫合併方式就用 fast-forward 推預設分支；落後就先在本地 rebase 再重跑閘門（重跑與否見 `references/speed-rules.md`「CI 證據」），只 fast-forward 推預設分支；rebase 過的功能分支不推回同名遠端分支（已推過的只能 force push）。不用 merge commit、不 force push。有裝 `toolkit:tower` 先 `land-check`：10 → `override --kind scope --reason "<理由>"`；11 → 帳本記 `空檔：等航班 <id> 落地` 並做別的；12 → rebase、重跑閘門後重試；沒裝照舊。
@@ -63,7 +63,7 @@ description: Use when 使用者說「無人值守」「自動駕駛」「照 roa
 
 - 同一個 worktree 裡有人在改檔時不跑閘門；要並行就讓另一方用另一個 worktree。
 - 兩件工作共用同一批檔案、schema 遷移、build 產物或瀏覽器就不並行：前一件合併後，下一件才開始實作。只共用 CPU 的可以並行實作，但重測試不同時跑：一律用 `sh <本 skill 的 Base directory>/scripts/test-lock.sh <測試指令>` 包起來，派出去的 prompt 也照抄。專案的具體清單寫在專案設定。
-- 實作者交回後不立刻丟掉：Agent subagent 記下 agent id，修正用 SendMessage 續派；pane worker 保留到該段審查與修正完成才關，帳本記 worker id／session，中斷後可恢復。審查者一律新 context，交回就關。
+- 實作者交回後不立刻丟掉：背景 worker 帳本記工作目錄，修正用 `--continue`；Agent subagent 記下 agent id，修正用 SendMessage 續派；pane worker 保留到該段審查與修正完成才關，帳本記 worker id／session，中斷後可恢復。審查者一律新 context，交回就關。
 - 用 `toolkit:agent-dispatch` 的 `mux.py spawn` 開 worker 時帶 `--env AGENT_DISPATCH_UNATTENDED=1`（有裝 toolkit 時，worker 的提問會被擋下、改照推薦做）；worker 代做的決定收進回來報告的「主控裁決待確認」。不寫自動回答提問的程式；仍卡住就記進報告。
 
 ## 4. 停下條件（只有這些）
@@ -86,7 +86,7 @@ description: Use when 使用者說「無人值守」「自動駕駛」「照 roa
 
 1. 一句話結論：哪些可以驗、哪些還不行。
 2. 可驗項目：每項附路徑、帳號或資料、具體操作步驟與預期結果。
-3. 驗證結果分開宣稱：閘門數字、外洩掃描、push 的 commit 範圍、部署、實機；沒跑到的標「未驗證」。工具故障造成的降級標 🔴 列在最前面。
+3. 驗證結果分開宣稱：閘門數字、外洩掃描、push 的 commit 範圍、部署、實機；沒跑到的標「未驗證」。另加一行本輪 API／訂閱各派幾次（格式見 `references/dispatch.md`）。工具故障造成的降級標 🔴 列在最前面。
 4. 主控裁決待確認：每條附理由與選錯代價。
 5. 處置結果：工作中發現的問題各自怎麼處理（已修、已排隊並有 owner 與啟動條件、待使用者決定、未授權不動，含授權範圍外 repo 的發現）與已知問題。
 6. 塔台紀錄（有裝 `toolkit:tower` 才寫；沒裝略過）：`<git-common-dir>/tower/log.jsonl` 在帳本期間的事件（撞檔、override、等航班）。

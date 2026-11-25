@@ -34,21 +34,28 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" ghostty-close <id>
 
 - 工作不需要中途問人。遇到要決策就停下來，寫進結果檔。
 - 只在獨立 git worktree 裡改檔，不改主線、不 push。
-- 主控合併前由使用者審過。
+- 主控合併前由使用者審過，或專案設定已授權主控在審查與閘門通過後自行合併（如 `workspace:unattended`）。
+- 用不到 MCP（瀏覽器、DB）：claude worker 只放行 Bash 與編輯，MCP 工具會被拒。
 
 ```bash
-node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --repo <repo> --name <短名> --to <cli> \
+node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start (--repo <repo> | --worktree <既有 worktree>) --name <短名> (--to <cli> | --type <類型>) \
   [--model <模型>] [--effort <等級>] [--timeout <秒，預設 3600>] --ws <工作目錄> <prompt 檔>
+node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" start --continue <上一輪工作目錄> --name <短名> --ws <新工作目錄> [--to <cli> | --type <類型>] <修正 prompt 檔>
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" status --ws <工作目錄>   # 只讀，不等待
 node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <秒>]   # 阻塞到結束；done→0、逾時→124、其他→1
 ```
 
+- 對象：`--to` 指定一家，額度用盡照實回 `quota`、不改派；`--type` 查路由表（濾掉沒裝、未通過 agent-mesh-check、封鎖中的），監督程序遇到額度用盡或 key 失效就封鎖那一家、在**同一個 worktree** 改派下一個候選（prompt 加一句「worktree 可能有前一位沒做完的改動」）。候選全被濾掉時 `start` exit 75。
+- `start` 第一行固定是 `[bg] 交給 <cli>（<模型>／<等級>），理由：…`；改派後的實際對象看 `status.json` 的 `cli` 與 `line`（`…；改派自 claude-api（quota）`），`attempts` 記被跳過的各家與原因（`quota`／`auth`／`key`）。
+- `--worktree`：在既有 worktree 跑（如無人值守的單元 worktree），不新建 `dispatch/<短名>` 分支；不是 git worktree 就報錯。
+- `--continue`（修正輪）：沿用上一輪的 worktree 與派工方式（`--to`／`--type`，可覆寫；`--model`／`--effort` 不沿用，要就再帶）。上一輪由 claude 或 claude-api 跑完的，用 `--resume` 接續它的 session（同一份 session 檔，換計費方式也接得上，`status.json` 記 `resumed: true`）；session 不見了就同一家開新 session 重跑。改派到別家時是新 session，所以修正 prompt 仍要自足（錯誤情境、通過條件、目前 SHA、上一輪結果檔路徑）。上一輪還在跑時不能續派。
+
 - `--ws` 是這個 worker 專用的工作目錄。多個 worker 放在同一個上層目錄下，並行上限以那一層計算；放在不同上層目錄的 worker 互相不計。`start` 用那一層的 `.agent-dispatch.lock` 目錄當鎖，避免同時 start 都通過上限檢查；鎖超過 60 秒沒釋放視為過期。
 - `--timeout` 要是正數；參數或 prompt 檔有問題時在建 worktree 之前就報錯，不留孤兒分支。
 - 工作目錄內容：
-  - `wt/`：worktree，分支 `dispatch/<短名>`。
+  - `wt/`：worktree，分支 `dispatch/<短名>`（用 `--worktree`／`--continue` 時沒有，改在指定的 worktree）。
   - `job.json`：派工設定。
-  - `status.json`：狀態，`running`／`done`／`failed`／`quota`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）；超過 `startedAt`＋timeout＋60 秒仍是 running（pid 被重用）也顯示 `failed`（`note: stale…`）。
+  - `status.json`：狀態，`running`／`done`／`failed`／`quota`；另記實際對象 `cli`／`model`／`effort`、回報行 `line`、claude 系的 `sessionId`。監督程序已不在卻仍寫 running 時，`status`／`wait` 顯示 `failed`（`note: supervisor gone`）；超過 `startedAt`＋timeout＋60 秒仍是 running（pid 被重用）也顯示 `failed`（`note: stale…`）。
   - `result.md`：worker 寫的結果。
   - `log.txt`：CLI 的完整輸出。
 - 並行上限：
@@ -57,7 +64,7 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
   - 1 小時後自動恢復成路由表的值；要提早恢復就刪掉狀態檔裡這兩個欄位。
 - 結束時：
   - 結果檔在 → `done`（不論輸出內容）。
-  - 沒寫結果檔、輸出尾段是額度錯誤 → `quota`，同時封鎖該家。
+  - 沒寫結果檔、輸出尾段是額度錯誤（claude-api 含 key 失效）→ 封鎖該家；`--type` 改派下一個候選，`--to` 或候選用完就是 `quota`。
   - 其他 → `failed`，並附輸出最後 2000 字元；監督程序本身出錯也寫 `failed` 與 `error`。
   - 最終狀態先寫，再改共用狀態檔（封鎖、降並行）；後者失敗只在 `status.json` 加 `stateError`，不改變最終狀態。
 - CLI 參數用 `worker` 模式：claude `--permission-mode acceptEdits --allowedTools Bash`、pi `--tools read,bash,edit,write`，codex／agy 同 driver。
@@ -67,9 +74,9 @@ node "${CLAUDE_SKILL_DIR}/scripts/bg.mjs" wait --ws <工作目錄> [--timeout <�
   - 擋不住的：worker 自己清掉這些環境變數，或繞過 git 推送（如 `gh` 用 keychain 裡的登入、`curl` 打 API）。需要硬隔離就改用容器或另一個帳號。
 - macOS 會跳桌面通知。其他平台沒有通知，主控用 `bg.mjs wait` 阻塞等結束。
 - 收工：
-  1. 使用者審 `wt/` 的改動。
+  1. 使用者審 `wt/` 的改動（或照專案授權的審查與閘門）。
   2. 由主控合併。
-  3. `git worktree remove <ws>/wt`，刪除分支 `dispatch/<短名>`。
+  3. `git worktree remove <ws>/wt`，刪除分支 `dispatch/<短名>`（用 `--worktree` 的由該 worktree 的主人照它的流程清）。
   4. 刪除工作目錄。
 - Windows（Git Bash）：用 node 的 detached spawn，不依賴 shell 背景工作。實機驗證見 CHANGELOG。
 
