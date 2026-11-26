@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.4] - 2026-11-26
+
+起因：2026-11-26 prompt-audit（目標 Opus 5.5）發現 `rule-reviewer` 要求「用 MUST、NEVER 的命令式」，與 11-20 改過的 `claudemd-reviewer`「強調詞要少、各附理由」相反，同一個 plugin 的兩個 reviewer 給出互相矛盾的審查標準。
+- fix(rule-reviewer)：Content 檢查改成與 `claudemd-reviewer` 一致——命令式、強調詞少且附理由。
+
 ## [0.40.3] - 2026-11-26
 
 起因：2026-11-25 夜 formwright 自動駕駛派的 3 則背景 worker prompt（`bg.mjs` 固定開頭「背景 worker 任務（規則見最後一段）」，內含「改用」「不要再」）被 `feedback-capture` 當成使用者糾正記進佇列；同類的「唯讀任務」前綴自 11-08 略過後已驗效。

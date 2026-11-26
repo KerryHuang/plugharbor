@@ -76,7 +76,7 @@ issues:
 
 **Content:**
 - [ ] Body < 50 lines
-- [ ] Uses imperative language (MUST, NEVER) — not passive voice
+- [ ] Uses imperative language — not passive voice; emphasis words (`MUST`, `NEVER`, `IMPORTANT`) are rare, each with an adjacent reason — current models over-apply stacked emphasis
 - [ ] No procedural content (numbered steps, multi-step code blocks)
 - [ ] No duplication with CLAUDE.md laws (compare against context; see Process)
 - [ ] No duplication with other rules (compare against auto-loaded rule content in context — do NOT Grep rule files)
