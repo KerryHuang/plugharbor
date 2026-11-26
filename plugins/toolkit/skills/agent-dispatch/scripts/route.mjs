@@ -82,12 +82,18 @@ export function needsCrossReview({ paths = [], lines = 0 }, routing) {
   return lines > maxLines || paths.some(p => pathPatterns.some(re => new RegExp(re, 'i').test(p.replace(/\\/g, '/'))))
 }
 
-// 審查者：top 候選裡第一個不同家族的；湊不到就退回同家（crossFamily:false，回報要寫明）
-export function reviewer({ author, routing, state, available, now = Date.now(), env = process.env }) {
+// 審查者：top 候選裡第一個不同家族的；湊不到就退回同家（crossFamily:false，回報要寫明）。
+// 退回同家時預設用 standard 等級（effort 拉到 high），final（最終審查、高風險改動）才維持 top。
+export function reviewer({ author, routing, state, available, now = Date.now(), env = process.env, final = false }) {
   const pool = candidates({ tier: 'top', routing, state, available, now, env })
   const fam = routing.family[author]
   const other = pool.find(c => routing.family[c.cli] !== fam)
   if (other) return { ...other, crossFamily: true }
+  if (!final) {
+    const std = candidates({ tier: 'standard', routing, state, available, now, env })
+    const s = std.find(c => c.cli !== author) ?? std[0]
+    if (s) return { ...s, effort: 'high', crossFamily: false }
+  }
   const same = pool.find(c => c.cli !== author) ?? pool[0]
   return same ? { ...same, crossFamily: false } : null
 }
@@ -98,20 +104,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (cmd === 'pick' || cmd === 'reviewer') {
     // 唯讀查表，不派工：
     //   pick <類型>       → 有序候選 JSON（全被濾掉時印 []）
-    //   reviewer <作者CLI> → top 候選裡第一個不同家族的審查者 JSON（crossFamily:false＝湊不到、退回同家）
+    //   reviewer <作者CLI> [--final] → top 候選裡第一個不同家族的審查者 JSON（crossFamily:false＝湊不到、退回同家；同家預設 standard，--final 維持 top）
     const opt = k => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined }
     const { statePath: meshStatePath } = await import('../../agent-mesh-check/scripts/mesh.mjs')
     try {
       const ctx = { routing: loadRouting(), state: readState(opt('--state') ?? statePath()),
         available: readMesh(opt('--mesh') ?? meshStatePath(process.env)) }
       if (cmd === 'reviewer' && !CLIS.includes(cli)) throw new Error(`未知的 CLI：${cli}（可用：${CLIS.join('、')}）`)
-      console.log(JSON.stringify(cmd === 'pick' ? candidates({ type: cli, ...ctx }) : reviewer({ author: cli, ...ctx })))
+      console.log(JSON.stringify(cmd === 'pick' ? candidates({ type: cli, ...ctx }) : reviewer({ author: cli, ...ctx, final: process.argv.includes('--final') })))
     } catch (e) {
       console.error(e.message)
       process.exitCode = 2
     }
   } else if (cmd !== 'block' || !cli || Number.isNaN(t)) {
-    console.error('用法：node route.mjs block <cli> <到期時間，ISO 格式> [理由]｜pick <任務類型>｜reviewer <作者 CLI>')
+    console.error('用法：node route.mjs block <cli> <到期時間，ISO 格式> [理由]｜pick <任務類型>｜reviewer <作者 CLI> [--final]')
     process.exitCode = 2
   } else if (!CLIS.includes(cli)) {
     console.error(`未知的 CLI：${cli}（可用：${CLIS.join('、')}）`)

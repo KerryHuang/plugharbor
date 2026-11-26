@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.0] - 2026-11-26
+
+起因：同 0.42.1 的用量分析。Opus 審查 subagent 一週 87 次約 $286；codex 因 workspace 額度用完（「out of credits」）、agy 額度封鎖，`reviewer` 一律退回同家 opus／high，連修正輪複審也是。
+- feat(agent-dispatch)：`route.mjs reviewer` 退回同家時預設回 standard 等級（sonnet）、effort 拉到 high；加 `--final` 才維持 top 等級（opus）。跨家族結果不變。SKILL.md 第 4 節寫明何時加 `--final`（整支分支最終審查、碰 `crossReview` 路徑、超過 `maxLines`）。測試補一項。
+- user 層 `dispatch.md` 等級表「關鍵審查」拆成「最終審查 opus-high」「逐件審查 sonnet-high」；同行精簡措辭，字數與改前相同。
+
 ## [0.42.1] - 2026-11-26
 
 起因：用量分析（11/19～11/26 transcript 換算 API 牌價）。主控以 Opus 派出的「實作／修正」subagent 73 次共約 $570；11/26 formwright 自動駕駛有 8 次 `--type implement` 被升成 opus/high，占當天 API worker 費用大半。升級理由幾乎都是「DB 結構／公開 API／>300 行」——產品型專案每張票都符合，升級變常態；同樣條件第 4 節已要求跨家族審查，等於同一份風險付兩次。

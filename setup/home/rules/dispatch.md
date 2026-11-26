@@ -8,7 +8,7 @@
 | 範圍明確、不需中途問人、結果一份回報就裝得下 | 背景 worker（`agent-dispatch` 的 `bg.mjs --type`，走 API 額度）；要 MCP／Web 或未提交改動才用 Agent subagent（同一則訊息平行派） |
 | 長（預估 15 分鐘以上）、可能中途問人、要完整 session 能力或換 CLI | herdr（TUI 或 Herdr.app）pane worker（專案有派工 skill（如 `<plugin>:dispatch-worker`）就用；沒有或要派 agy／pi，用 `agent-dispatch` 的長任務模式；唯讀第二意見用 `agent-dispatch` 短問答，不開 pane） |
 
-- **派工帶模型**：派 Agent tool 時依等級表（agent-dispatch `routing.json`：規劃／架構／關鍵審查 opus-high、實作／研究／QA sonnet-medium、文件／機械 haiku-low）設 `model` 與 `effort`，pane 與其他 CLI 也明確帶，不繼承預設。高風險改動仍照表派，靠跨家族審查把關；退件兩次才升一級，寫「升級理由：…」。
+- **派工帶模型**：派 Agent tool 依等級表（agent-dispatch `routing.json`：規劃／架構／最終審查 opus-high、逐件審查 sonnet-high、實作／研究／QA sonnet-medium、文件／機械 haiku-low）設 `model`、`effort`，pane 與其他 CLI 同樣明確帶。高風險仍照表派、靠跨家族審查；退件兩次才升一級，寫「升級理由：…」。
 - 平行與否看**共用資源**（同一 worktree、檔案、build／測試產物、瀏覽器、DB 寫入、吃 CPU 的測試）。長工作丟背景前先做或派不衝突的待辦，沒有才等、不輪詢。
 - **該不該拆**：能力、工具、context、驗證迴圈都相同就不拆；「實作＋測試」是一件事，失敗後的診斷才另派。
 - **派工 prompt 要自足**：自帶目標、背景、前置產出、交付物、驗收標準，及已拍板決定（不要重問）與試過排除方向（不要重走）；worker 得讀完整對話才做得下去＝沒切乾淨。

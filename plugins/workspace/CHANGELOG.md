@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.2.2] - 2026-11-26
+
+起因：同 toolkit 0.43.0——同家 opus 審查一週約 $286，自動駕駛連修正輪複審也走 opus。
+- docs(unattended)：第 2 節第 3 步寫明整段審查加 `--final`（最終審查），修正輪只看修正 diff 的複審不加；unattended 的派工對照表「關鍵審查」改為「最終審查」。
+
 ## [2.2.1] - 2026-11-26
 
 起因：同 toolkit 0.41.0——使用 plugharbor 的專案自動駕駛回報 `bg.mjs --type reviewer` 不存在、審查者拿不到 diff、同主控兩條平行線 land-check 互等死結。

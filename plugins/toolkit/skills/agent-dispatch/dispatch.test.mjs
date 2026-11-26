@@ -314,6 +314,16 @@ test('reviewer 優先挑不同家族，湊不到退回同家', () => {
   assert.equal(s.crossFamily, false)
 })
 
+test('reviewer 退回同家：預設 sonnet／high，final 才維持 top 等級', () => {
+  const avail = new Set(['claude', 'pi'])
+  const s = reviewer({ author: 'claude', routing, state: none, available: avail, now: 0 })
+  assert.equal(s.crossFamily, false); assert.match(s.model, /sonnet/); assert.equal(s.effort, 'high')
+  const f = reviewer({ author: 'claude', routing, state: none, available: avail, now: 0, final: true })
+  assert.equal(f.crossFamily, false); assert.match(f.model, /opus/)
+  const x = reviewer({ author: 'claude', routing, state: none, available: null, now: 0 })
+  assert.equal(x.cli, 'codex'); assert.equal(x.effort, 'high')  // 跨家族不受影響
+})
+
 test('readState：不存在或壞掉回空', () => {
   const d = mkdtempSync(join(tmpdir(), 'ad-'))
   assert.deepEqual(readState(join(d, 'none.json')), { blocks: {} })
