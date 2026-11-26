@@ -17,5 +17,5 @@
 - **跨 session 訊息照則計費**：每則讓收方整段 context 重送。只在完成或卡住時發，不報進度、不回「收到」。
 - worker 卡住時不替它回答，請使用者 attach。
 - **驗 agent 遵從率要開新 session**：同 session 派出的 subagent 用 process 啟動時的定義快照，`/clear` 不重載 plugin。改完 agent／skill 後在同 session 只能驗機制，不能驗「有沒有照新規則做」。
-- **瀏覽器測完在回報同一輪關掉**自己起的 Chrome 並驗證（debug port 無回應），不等使用者問；沒關會佔住 port／profile，下個 session 撞到。
+- **瀏覽器**：claude-in-chrome 連了多台瀏覽器時，開分頁前先 `list_connected_browsers` 選使用者面前那台（要使用者登入或看畫面時尤其）；用完在回報同一輪關掉自己起的 Chrome（驗 debug port 無回應）與自己開的分頁，不等使用者問；沒關會佔住 port／profile，下個 session 撞到。
 - **主 session 做機械性工作**（批次改格式、搬檔、逐筆重跑）前，先提醒使用者切小模型；每回合成本固定，回合數才是乘數。
