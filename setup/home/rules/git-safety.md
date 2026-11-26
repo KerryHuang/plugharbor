@@ -5,6 +5,8 @@
 - `git add -A` / `git add .` 由 guard `git-add-all` 擋下（理由見 toolkit plugin 的 `guards/`）；一律從 `git status --short` 清單**逐檔指名** add。
 - commit 前必驗 staged：`git status` 確認暫存區只含本次要提交的檔案；
   多出來的用 `git restore --staged <檔>` 移出，不要一起提交。
+- 逐檔 add 擋不住**同一個檔裡別人的 hunk**：add 前先 `git diff <檔>`，有不是自己的改動就只暫存自己那段
+  （`git add -p` 不能用時：以 HEAD 版本加上自己的改動做出 blob，`git hash-object -w` 後 `git update-index --cacheinfo`），commit 前看 `git diff --cached`。
 - `add`、`status`、`commit`、`push` **拆成各自獨立的工具呼叫**，不用 `&&` 串接：串在一起時 status 印出來也沒機會讀，複驗形同虛設。
 - 誤掃已 push 的內容，勿自行 revert/reset 硬修（會跟並行作業打架），先協調再收斂。
 
