@@ -87,7 +87,7 @@ https://code.claude.com/docs/en/skills
 | 檢查項 | 等級 | 說明 |
 |--------|------|------|
 | 官方支援但本 plugin 未使用的目錄 | INFO | 如 hooks/, outputStyles/ |
-| 本 plugin 使用但官方不支援的目錄 | WARNING | references/, templates/ 是自訂 |
+| 本 plugin 使用但官方不自動探索的目錄 | INFO | references/、templates/ 是本 repo 慣例（AGENTS.md），確認以 `${CLAUDE_PLUGIN_ROOT}/` 引用即可 |
 | .claude-plugin/ 位置正確 | CRITICAL | plugin 內只含 plugin.json；marketplace.json 只在 repo 根的 `.claude-plugin/` |
 
 #### 3.4 內容品質檢查
@@ -96,8 +96,7 @@ https://code.claude.com/docs/en/skills
 |--------|------|------|
 | 所有 plugin 內路徑引用的檔案存在 | CRITICAL | 避免破損引用 |
 | 無殘留的硬編碼路徑 | WARNING | 專案特定路徑不應出現 |
-| 無殘留的硬編碼 agent 名稱 | WARNING | 應用自然語言描述 |
-| 無超出 plugin 範圍的實作細節 | INFO | 參考上游階段範圍 |
+| 引用的 `plugin:skill`／`plugin:agent` 名稱存在 | WARNING | 指名的對象已改名或刪除就是破損引用 |
 
 ### 4. 產出健康報告
 
