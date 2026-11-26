@@ -353,6 +353,7 @@ def land_check(tdir, me):
         res["scope_extra"] = extra
         res["behind"] = bool(base) and not _is_ancestor(wt, base, "HEAD")
         now = datetime.now(timezone.utc)
+        waived = any(o.get("kind") == "collision" for o in me.get("overrides", []))
         for o in load_flights(tdir):
             if (o.get("state") != "flying" or o.get("id") == me.get("id")
                     or o.get("worktree") == me.get("worktree")):
@@ -369,7 +370,13 @@ def land_check(tdir, me):
             ob = _diff_base(o["worktree"], branch)
             theirs = actual_changes(o["worktree"], ob)
             hit = sorted(mine & theirs)
-            if hit:
+            # 同一主控（同 session）的平行線互撞：互相排隊會死結，先落地者照走，後者 rebase 時處理
+            same = bool(me.get("session")) and o.get("session") == me.get("session")
+            if hit and (same or waived):
+                why = "同一 session 的航班" if same else "已 override collision"
+                res["warnings"].append(
+                    f"{why} {o['id']} 也改了：{', '.join(hit)}（後落地的一方 rebase 時處理）")
+            elif hit:
                 res["collisions"].append(
                     {"flight": o["id"], "goal": o.get("goal", ""), "files": hit})
         res["warnings"] += feature_warnings(tdir, me)
@@ -480,7 +487,8 @@ def cmd_takeoff(args):
         "work": {"segment": args.segment, "feature": args.feature, "ticket": args.ticket},
         "paths": _posix(args.paths), "touched": [],
         "branch": current_branch(cwd), "worktree": root,
-        "session": args.session or os.environ.get("CLAUDE_SESSION_ID", ""),
+        "session": (args.session or os.environ.get("CLAUDE_CODE_SESSION_ID")
+                    or os.environ.get("CLAUDE_SESSION_ID", "")),
         "cli": args.cli, "host": host_hash(),
         "mode": args.mode, "started": t, "beat": t,
         "overrides": [], "state": "flying", "proxy": bool(args.proxy),

@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.2.1] - 2026-11-26
+
+起因：同 toolkit 0.41.0——使用 plugharbor 的專案自動駕駛回報 `bg.mjs --type reviewer` 不存在、審查者拿不到 diff、同主控兩條平行線 land-check 互等死結。
+- docs(unattended)：第 2 節第 3 步寫明 `reviewer` 是 `route.mjs` 子命令，拿回傳的 `cli`／`model`／`effort` 用 `--to` 派；diff 與材料先寫進單元 worktree 內被 gitignore 的暫存目錄再派審查。第 7 步 11 的處理分開：自己帳本裡的航班 `override --kind collision`，他人的才排隊。
+
 ## [2.2.0] - 2026-11-26
 
 起因：Formwright 近 7 天自動駕駛回顧，主控只在段收尾換新 session，context 一路到 340K–368K 撞自動 compact；5,759 次 API 呼叫平均 203K，額度用盡停工約 58 小時。

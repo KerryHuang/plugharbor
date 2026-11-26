@@ -224,7 +224,8 @@ def judge(me, res, default, sync, via_target):
     if unattended:
         return decision("deny", (
             f"塔台：航班 {fid} 與他班撞檔：{hits}。無人值守不能詢問人，請排隊："
-            f"改做別的工作單元，等航班 {ids} landed 後再 rebase 並落地。{note}"))
+            f"改做別的工作單元，等航班 {ids} landed 後再 rebase 並落地。"
+            f"對方是同一主控的平行線（換過 session）就 override --kind collision 放行。{note}"))
     return decision("ask", f"塔台：航班 {fid} 與他班撞檔：{hits}。確認要現在落地嗎？{note}")
 
 

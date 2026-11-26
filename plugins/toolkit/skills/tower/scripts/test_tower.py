@@ -34,8 +34,11 @@ class TowerTest(unittest.TestCase):
         git(self.repo, "commit", "-q", "-m", "init")
         self.tdir = self.repo / ".git" / "tower"
 
-    def run_cli(self, cwd, *args):
+    def run_cli(self, cwd, *args, env_extra=None):
         env = dict(os.environ, HOME=str(self.home))
+        for k in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID"):
+            env.pop(k, None)  # 不繼承外層 session，否則撞檔測試在 Claude session 內會被判同主控
+        env.update(env_extra or {})
         return subprocess.run(
             [sys.executable, str(TOWER), *args],
             cwd=cwd, env=env, capture_output=True, text=True,
@@ -352,13 +355,13 @@ class TowerTest(unittest.TestCase):
 
     # ---- land-check ----
 
-    def mkwt(self, name, paths=("a.py",), feature=None):
+    def mkwt(self, name, paths=("a.py",), feature=None, session=None):
         wt = self.repo.parent / name
         git(self.repo, "worktree", "add", "-q", "-b", name, str(wt))
         args = ["takeoff", "--goal", name, "--paths", *paths]
         if feature:
             args += ["--feature", feature]
-        r = self.run_cli(wt, *args)
+        r = self.run_cli(wt, *args, env_extra={"CLAUDE_CODE_SESSION_ID": session} if session else None)
         self.assertEqual(r.returncode, 0, r.stderr)
         return wt, json.loads(r.stdout)["id"]
 
@@ -396,6 +399,38 @@ class TowerTest(unittest.TestCase):
         code, out = self.land(wa)
         self.assertEqual(code, 11)
         self.assertEqual(out["collisions"][0]["files"], ["a.py"])
+
+    def test_takeoff_reads_claude_code_session_id(self):
+        _, fid = self.mkwt("fa", session="s-1")
+        self.assertEqual(self.flight(fid)["session"], "s-1")
+
+    def test_same_session_collision_is_warning(self):
+        wa, _ = self.mkwt("fa", session="s-1")
+        wb, fb = self.mkwt("fb", session="s-1")
+        (wb / "a.py").write_text("b\n")
+        (wa / "a.py").write_text("a\n")
+        code, out = self.land(wa)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["collisions"], [])
+        self.assertTrue(any(fb in w and "a.py" in w for w in out["warnings"]), out)
+
+    def test_different_session_still_11(self):
+        wa, _ = self.mkwt("fa", session="s-1")
+        wb, _ = self.mkwt("fb", session="s-2")
+        (wb / "a.py").write_text("b\n")
+        (wa / "a.py").write_text("a\n")
+        self.assertEqual(self.land(wa)[0], 11)
+
+    def test_override_collision_clears_11(self):
+        wa, _ = self.mkwt("fa")
+        wb, _ = self.mkwt("fb")
+        (wb / "a.py").write_text("b\n")
+        (wa / "a.py").write_text("a\n")
+        r = self.run_cli(wa, "override", "--kind", "collision", "--reason", "r")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        code, out = self.land(wa)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(out["warnings"], out)
 
     def test_declared_only_not_collision(self):
         wa, _ = self.mkwt("fa")

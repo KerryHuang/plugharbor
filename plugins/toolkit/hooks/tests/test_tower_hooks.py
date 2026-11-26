@@ -44,7 +44,8 @@ class HookTest(unittest.TestCase):
 
     def env(self, **extra):
         e = {k: v for k, v in os.environ.items()
-             if k not in ("AGENT_DISPATCH_UNATTENDED", "CLAUDE_PLUGIN_ROOT")}
+             if k not in ("AGENT_DISPATCH_UNATTENDED", "CLAUDE_PLUGIN_ROOT",
+                          "CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID")}
         e.update(HOME=str(self.home), USERPROFILE=str(self.home))
         e.update(extra)
         return e

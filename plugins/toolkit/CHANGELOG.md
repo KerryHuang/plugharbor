@@ -2,6 +2,14 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.41.0] - 2026-11-26
+
+起因：使用 plugharbor 的專案在自動駕駛時回報三筆摩擦（回饋佇列 20261126140542-b2f7fc、-cff048、-a341c0）：同一主控的兩條平行線改到共用檔，land-check 互回 11、無人值守規定排隊，互等成死結；`bg.mjs --type reviewer` 報「未知的任務類型」；背景 worker 用 `lifecycle:reviewer` 審查時沒有 Bash 跑不了 `git diff`、也讀不到 worktree 外的材料。
+- feat(tower)：land-check 遇到同一 session 登記的航班互撞，改列 `warnings`、不回 11；新增 `override --kind collision` 放行撞檔（原本只有 `scope` 有作用，SKILL.md「用 override 放行」的誤擋退路其實無效）。SKILL.md 寫明先落地者照走、後落地者 rebase 處理；`tower-landing.py` 無人值守拒絕訊息補同主控的放行方式。
+- fix(tower)：takeoff 的 `session` 改讀 Claude Code 實際注入的 `CLAUDE_CODE_SESSION_ID`（原本讀不存在的 `CLAUDE_SESSION_ID`，欄位一直是空的）；tower 與 hook 測試不再繼承外層 session 變數。
+- fix(agent-dispatch)：未知任務類型的錯誤訊息列出可用類型，並指向 `route.mjs reviewer <作者 CLI>` 加 `--to` 的審查派法。
+- docs(agent-dispatch)：`skills/agent-dispatch/references/review-prompt.md` 規則加一條——diff 與審查材料先落檔到受審 worktree 內被 gitignore 的暫存目錄。
+
 ## [0.40.5] - 2026-11-26
 
 起因：2026-11-26 prompt-audit 發現 `tidy-memory` 本文寫死 2026-08-13 那次實測的檔數與 bytes 數字，會隨各機器的記憶目錄過期，模型可能拿舊數字當判斷依據。

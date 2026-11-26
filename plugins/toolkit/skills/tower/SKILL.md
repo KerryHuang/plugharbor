@@ -57,7 +57,7 @@ tower.py land-check
 
 - `0` 通過：照常落地；`warnings`（如 feature.md 還沒勾 `[x]`、失聯航班也碰過同檔）逐條看過再走。
 - `10` 改了申報範圍外的檔：範圍該擴大就 `amend --paths`；確定是刻意的就 `tower.py override --kind scope --reason "<理由>"` 後重試。
-- `11` 與他班實際改動撞檔：有人在場，告訴使用者撞了哪些檔、對方目標，請使用者確認再繼續；無人值守，不硬闖，進佇列，回報寫「排隊等航班 <id> 落地」，繼續做不衝突的工作。
+- `11` 與他班實際改動撞檔：有人在場，告訴使用者撞了哪些檔、對方目標，請使用者確認再繼續；無人值守，不硬闖，進佇列，回報寫「排隊等航班 <id> 落地」，繼續做不衝突的工作。對方是同一主控的另一條平行線時不排隊（互等會死結）：同一 session 登記的航班互撞，只列進 `warnings`、不回 11；換過 session 的就 `override --kind collision --reason "<同一主控的航班 id>"` 後重試。先落地者照走，後落地的一方 rebase 時處理衝突。
 - `12` 落後預設分支：先 rebase（或 merge）預設分支，解完衝突、重跑測試，再 land-check。
 
 同時命中多項時優先序 11 → 12 → 10。共用跑道（預設的 `docs/feature.md`、`docs/roadmap.md`、`docs/todo.md`、`**/CHANGELOG.md` 等，加上專案設定）不算撞檔。
@@ -85,7 +85,7 @@ shared:
 | `amend` | 改目標或範圍 |
 | `beat [--touched <檔>...]` | 手動心跳與記錄改動，輸出目前的重疊 |
 | `radar [--json]` | 全部航班 |
-| `override --kind scope --reason` | 記錄刻意越界的理由 |
+| `override --kind scope\|collision --reason` | 放行越界（10）或撞檔（11），並記理由 |
 | `land-check` | 落地核對 |
 | `landed` / `release` | 標記已落地 / 刪除登記 |
 
@@ -111,7 +111,7 @@ toolkit 在 Claude Code 自動配合，不必手動：
 - `tower-landing.py` 的指令解析是字串近似：引號內的 `git commit` 字樣會誤判；`env`、`sudo`、`bash -c "..."`、`xargs` 包裝、`git pull`（會 merge）、`git cherry-pick` 不涵蓋。
 - 在預設分支上以本 worktree 航班 merge／rebase 時，只有不指定 ref 或目標是 `origin/<預設>`、`<預設>`、`FETCH_HEAD`、`@{u}` 才視為同步（不擋「落後」「超出範圍」）；併入其他本地分支視為落地，連帶比對該分支帶進來的檔。
 - 沒有 origin 的本地 repo 在預設分支上，已 commit 的改動不計入核對（只看工作區）。
-- 以他班分支為目標落地時，該班 worktree 未 commit 的檔也計入，merge 實際帶不進來的檔可能造成誤擋，用 `override` 放行。
+- 以他班分支為目標落地時，該班 worktree 未 commit 的檔也計入，merge 實際帶不進來的檔可能造成誤擋，用 `override --kind collision` 放行。
 - 不核對：`git push --all`／`--mirror`、從 feature 分支裸 `git push`（upstream 設為 main）。
 - 子 shell 內的 `cd` 會外洩到後續指令（不還原目錄），偏向多檢查。
 - Codex 可能經 plugin 的 `hooks.json` 載入這些 hook，但未驗證。

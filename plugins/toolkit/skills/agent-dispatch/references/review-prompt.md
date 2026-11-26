@@ -42,5 +42,6 @@
 ## 規則
 
 - 審查者一律開新的 context，不能是作者本人，也不能是接續作者的 subagent。
+- diff 與審查材料由主控先落檔到受審 worktree 內被 gitignore 的暫存目錄（如 `.tmp/`），prompt 給檔案路徑：審查者可能沒有 Bash 跑不了 `git diff`（如 `lifecycle:reviewer`），也可能讀不到 worktree 外的檔。
 - 修訂者自己補了裁決沒寫的細節時，要列進下一輪 prompt，讓審查者一起看。
 - 審查者的結論是給主控的意見，不是裁決；採不採用由主控決定並記錄理由。

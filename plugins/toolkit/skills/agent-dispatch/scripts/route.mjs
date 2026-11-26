@@ -66,7 +66,7 @@ export function readMesh(file) {
 
 export function candidates({ type, tier, routing, state, available, now = Date.now(), exclude = [], env = process.env }) {
   const t = tier ?? routing.types[type]
-  if (!routing.tiers[t]) throw new Error(`未知的任務類型或等級：${type ?? tier}`)
+  if (!routing.tiers[t]) throw new Error(`未知的任務類型或等級：${type ?? tier}（可用類型：${Object.keys(routing.types).join('、')}；挑審查者用 route.mjs reviewer <作者 CLI>，再以 --to 派）`)
   // 沒設 key 來源就沒有 claude-api 可派，候選與改動前相同
   const hasApiKey = hasKeyCmd(env)
   return routing.tiers[t].filter(c =>

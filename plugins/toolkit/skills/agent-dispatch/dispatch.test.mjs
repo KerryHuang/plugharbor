@@ -873,6 +873,13 @@ test('route.mjs pick 未知類型 exit 2', () => {
   assert.equal(r.status, 2)
 })
 
+test('誤把 reviewer 當類型：錯誤訊息列出可用類型並指向 reviewer 子命令', () => {
+  const r = spawnSync(process.execPath, [ROUTE, 'pick', 'reviewer'], { encoding: 'utf8' })
+  assert.equal(r.status, 2)
+  assert.match(r.stderr, /review-critical/)
+  assert.match(r.stderr, /route\.mjs reviewer <作者 CLI>/)
+})
+
 test('route.mjs reviewer 挑跟作者不同家族的審查者', () => {
   const d = mkdtempSync(join(tmpdir(), 'rev-'))
   const state = join(d, 'state.json')
