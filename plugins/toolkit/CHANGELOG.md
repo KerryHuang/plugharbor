@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.5] - 2026-11-26
+
+起因：2026-11-26 prompt-audit 發現 `tidy-memory` 本文寫死 2026-08-13 那次實測的檔數與 bytes 數字，會隨各機器的記憶目錄過期，模型可能拿舊數字當判斷依據。
+- docs(tidy-memory)：兩處實測數字改寫成通則，保留結論（`--session` 主要用來查詢；量字元數不量 bytes）。
+
 ## [0.40.4] - 2026-11-26
 
 起因：2026-11-26 prompt-audit（目標 Opus 5.5）發現 `rule-reviewer` 要求「用 MUST、NEVER 的命令式」，與 11-20 改過的 `claudemd-reviewer`「強調詞要少、各附理由」相反，同一個 plugin 的兩個 reviewer 給出互相矛盾的審查標準。
