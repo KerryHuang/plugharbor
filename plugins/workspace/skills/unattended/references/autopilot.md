@@ -66,11 +66,16 @@
 
 ## 換新 session
 
-收尾 commit 進了主線、累積報告與下一步排線寫好後，在 herdr 或 Herdr.app 內（`python3 ${CLAUDE_PLUGIN_ROOT}/skills/unattended/scripts/mux.py env` 的 `backend` 不是 `none`）就換新 session 再開下一段：下一段拿到乾淨的 context 與已安裝的最新版 plugin。`backend` 是 `none` 就不換，直接接下一段。hc 下 self-rotate 要靠 toolkit 的 SessionStart hook 記錄 session id（`mux.py session` 讀它）；沒裝 toolkit 就不換，照 `toolkit:handoff` 的手動路徑（回報三行交接、請使用者自己 `/clear`）。
+兩個時機任一成立就換新 session，接手的拿到乾淨的 context 與已安裝的最新版 plugin：
 
-- **前提**：沒有還在跑的 subagent、背景工作（含 agent-dispatch 背景 worker，`bg.mjs status` 不是 running）或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一段收尾再試。
-- **先記帳**：帳本寫 `換新：<段> 收尾後`，加上這段試過但排除的方向、下一步的第一個動作（具體到檔案或指令，且不得與本檔規則衝突，例如佔位段寫成「先設計」；接回時發現衝突以本檔為準並記帳）、目前載入的各 plugin 版本；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。帳本就是交接檔，不另跑 `/handoff`。
-- **啟動**：執行 `nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh 繼續自動駕駛 <帳本資料夾>/rotate.log >/dev/null 2>&1 &`，然後直接結束這一回合，不再呼叫工具。使用者規則若要求回報末尾附「建議 session 標題」，就寫在這一回合的結尾（此時沒有 subagent 在跑），標題取下一段；派出 subagent 後就錯過時機。腳本等這個 pane 閒置後送 `/clear`、`/reload-plugins`、「繼續自動駕駛」，新 context 照「接回」接著做。
+- **段收尾**：收尾 commit 進了主線、累積報告與下一步排線寫好後。
+- **context 超過 200K**（門檻只寫在這裡）：每次自己 commit 或實作者交回 commit 後，跑 `python3 <本 skill 的 Base directory>/scripts/worker_ctx.py "${CLAUDE_CODE_SESSION_ID:?}"`，印出的數字超過門檻，就在這個 commit 邊界換，段沒做完也換；任務推理中途不切。指令失敗（例如不是 Claude Code）就只看段收尾。不用 `/compact` 代替：更耗額度，壓完仍停在高水位。
+
+換新要在 herdr 或 Herdr.app 內（`python3 ${CLAUDE_PLUGIN_ROOT}/skills/unattended/scripts/mux.py env` 的 `backend` 不是 `none`）；`backend` 是 `none` 就不換，照原順序往下做。hc 下 self-rotate 要靠 toolkit 的 SessionStart hook 記錄 session id（`mux.py session` 讀它）；沒裝 toolkit 就不換，照 `toolkit:handoff` 的手動路徑（回報三行交接、請使用者自己 `/clear`）。
+
+- **前提**：沒有還在跑的 subagent、背景工作（含 agent-dispatch 背景 worker，`bg.mjs status` 不是 running）或 pane worker；`/clear` 會讓它們變成孤兒。平行線還在做就這次不換，帳本記 `換新：略過 — <理由>`，下一個時機再試。
+- **先記帳**：帳本寫 `換新：<段> 收尾後`；段中途換則寫 `換新：<段> 中途`，附 worktree／分支、已完成的 Task 與 commit。兩種都加上這段試過但排除的方向、下一步的第一個動作（具體到檔案或指令，且不得與本檔規則衝突，例如佔位段寫成「先設計」；接回時發現衝突以本檔為準並記帳）、目前載入的各 plugin 版本；接回只靠帳本、roadmap、`git log`，沒寫進去的都會丟。帳本就是交接檔，不另跑 `/handoff`。
+- **啟動**：執行 `nohup sh <本 skill 的 Base directory>/scripts/self-rotate.sh 繼續自動駕駛 <帳本資料夾>/rotate.log >/dev/null 2>&1 &`，然後直接結束這一回合，不再呼叫工具。使用者規則若要求回報末尾附「建議 session 標題」，就寫在這一回合的結尾（此時沒有 subagent 在跑），標題取接下來要做的段；派出 subagent 後就錯過時機。腳本等這個 pane 閒置後送 `/clear`、`/reload-plugins`、「繼續自動駕駛」，新 context 照「接回」接著做。
 - 有裝 `toolkit:tower`：新 session 沿用原航班（以 worktree 找到），不重新 takeoff；沒裝照舊。
 - **失敗時**：`rotate.log` 最後一行不是「完成」，session 會停在原地；使用者送「繼續自動駕駛」照常接回。
 

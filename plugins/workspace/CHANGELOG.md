@@ -2,6 +2,12 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.2.0] - 2026-11-26
+
+起因：Formwright 近 7 天自動駕駛回顧，主控只在段收尾換新 session，context 一路到 340K–368K 撞自動 compact；5,759 次 API 呼叫平均 203K，額度用盡停工約 58 小時。
+- feat(unattended)：`skills/unattended/references/autopilot.md`「換新 session」加第二個時機——context 超過 200K 就在下一個 commit 邊界換，段沒做完也換，帳本記段名、worktree／分支、已完成的 Task／commit；不用 `/compact` 代替。使用者 2026-11-26 裁決 200K 起步、驗過再降。
+- feat(unattended)：新增 `skills/unattended/scripts/worker_ctx.py`（toolkit `agent-dispatch` 同名腳本的副本，測試檢查一致），主控用它讀自己最新的 context 大小。
+
 ## [2.1.1] - 2026-11-25
 
 起因：toolkit 0.40.0 的 `bg.mjs --agent`，unattended 派實作者不必再靠 prompt 叫 worker 讀定義檔。
