@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.1] - 2026-11-26
+
+起因：自動駕駛回報（回饋佇列 20261126200452-8480e0）。上一輪以 `--type implement --model opus --effort high` 派出，`bg.mjs start --continue` 續派時模型與等級重新走路由變成 sonnet／medium，卻 resume 同一個 session；主控得自己察覺、kill 再重派。usage 與 unattended「續派沿用 context」都讓人以為會沿用。
+- fix(agent-dispatch)：`--continue` 沒覆寫 `--to`／`--type` 時，沿用上一輪實際跑的模型與等級（`status.json` 的 `model`／`effort`，只套在同一家候選）；`--model`／`--effort` 逐項覆寫，換 `--type` 不沿用。usage 與 `agent-dispatch/references/background-worker.md` 寫明。測試補一項。
+
 ## [0.43.0] - 2026-11-26
 
 起因：同 0.42.1 的用量分析。Opus 審查 subagent 一週 87 次約 $286；codex 因 workspace 額度用完（「out of credits」）、agy 額度封鎖，`reviewer` 一律退回同家 opus／high，連修正輪複審也是。

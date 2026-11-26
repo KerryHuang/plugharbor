@@ -1021,6 +1021,22 @@ test('背景 worker --continue：session 不見了 → 同一家開新 session �
   assert.ok(a.includes('--resume') && b.includes('--session-id'))
 })
 
+test('prepare --continue：沒帶 --model／--effort 就沿用上一輪實際跑的；有帶的那一項才覆寫；換 --type 不沿用', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ad-cme-'))
+  const repo = tmpRepo()
+  const prev = join(root, 'p'); mkdirSync(prev)
+  writeFileSync(join(prev, 'job.json'), JSON.stringify({ type: 'implement', worktree: repo }))
+  writeFileSync(join(prev, 'status.json'), JSON.stringify({ state: 'done', cli: 'claude', model: 'opus', effort: 'high' }))
+  const old = process.env.PATH
+  process.env.PATH = driverShim() + delimiter + old
+  const top = (ws, extra = {}) => JSON.parse(readFileSync(join(prepare({ continueFrom: prev, name: 'f', promptFile: promptStub(), ws: join(root, ws), state: join(root, 's.json'), mesh: join(root, 'm.json'), ...extra }).ws, 'job.json'), 'utf8')).candidates.find(c => c.cli === 'claude')
+  try {
+    assert.deepEqual(top('a'), { cli: 'claude', model: 'opus', effort: 'high' })
+    assert.deepEqual(top('b', { effort: 'low' }), { cli: 'claude', model: 'opus', effort: 'low' })
+    assert.notEqual(top('c', { type: 'docs' })?.model, 'opus')
+  } finally { process.env.PATH = old }
+})
+
 test('prepare --continue：上一輪還在跑 → 拋錯', () => {
   const ws = mkdtempSync(join(tmpdir(), 'ad-cr-'))
   writeFileSync(join(ws, 'job.json'), JSON.stringify({ worktree: ws, to: 'claude' }))

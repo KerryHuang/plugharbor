@@ -3,7 +3,7 @@
 // 每個 worker 一個工作目錄 <ws>：wt/（獨立 git worktree，分支 dispatch/<name>）、job.json、status.json、result.md、log.txt。
 // 條件（SKILL.md 有寫）：只派不需要中途問人的工作；只在 worktree 改檔；不改主線、不 push；合併前由使用者審。
 //   node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model <m>] [--effort <e>] [--agent <plugin>:<agent>] [--timeout <秒>] --ws <dir> [--state <檔>] [--mesh <檔>] <prompt 檔>
-//   node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> <prompt 檔>   修正輪：同一個 worktree；claude 系接續上一輪 session
+//   node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> [--model] [--effort] <prompt 檔>   修正輪：同一個 worktree、沿用上一輪的模型與等級；claude 系接續上一輪 session
 //   node bg.mjs status --ws <dir>        只讀狀態，不等待
 //   node bg.mjs wait --ws <dir> [--timeout <秒>]   阻塞到狀態不再是 running（沒有完工通知的平台用）
 //   node bg.mjs ghostty-split --cwd <dir> "<指令>"   印出新分割的 id（macOS、在 Ghostty 裡）
@@ -81,8 +81,12 @@ const missing = cli => cli === 'claude-api' ? '未設定 AGENT_DISPATCH_CLAUDE_A
 export const routeLine = (c, reason) => `[bg] 交給 ${c.cli}（${c.model ?? '預設模型'}／${c.effort ?? '預設等級'}），理由：${reason}`
 
 // 候選：--to 指定一家（不改派）；--type 查表（濾掉沒裝、未通過 agent-mesh-check、封鎖中），額度／key 失效時監督程序依序改派。
-function pickCandidates({ cli, type, model, effort, stateFile, mesh }) {
-  const ov = c => ({ ...c, ...(model && { model }), ...(effort && { effort }) })
+// inherit：--continue 沿用上一輪實際跑的 { cli, model, effort }，只套在同一家的候選；明確帶的 --model／--effort 優先
+function pickCandidates({ cli, type, model, effort, stateFile, mesh, inherit }) {
+  const ov = c => {
+    const h = inherit?.cli === c.cli ? inherit : {}
+    return { ...c, ...((model ?? h.model) && { model: model ?? h.model }), ...((effort ?? h.effort) && { effort: effort ?? h.effort }) }
+  }
   if (cli) {
     if (!resolveBin(cli)) throw new Error(missing(cli))
     return { list: [ov({ cli })], reason: '使用者指定' }
@@ -97,18 +101,18 @@ const isWorktree = dir => { try { return execFileSync('git', ['-C', dir, 'rev-pa
 
 // 建 worktree（或用 --worktree／--continue 指定的既有 worktree）、寫 job.json 與 running 狀態；超過並行上限就拋錯。不啟動程序（start 才啟動）。
 // 參數與 prompt 檔先驗完才建 worktree，失敗不留孤兒 worktree／分支。
-// continueFrom：上一輪的 ws。沿用它的 worktree 與派工方式（--to／--type，可再覆寫）；上一輪由 claude 系跑完的，接續它的 session。
+// continueFrom：上一輪的 ws。沿用它的 worktree 與派工方式（--to／--type，可再覆寫；沒覆寫時也沿用實際跑的模型與等級，--model／--effort 可逐項覆寫）；上一輪由 claude 系跑完的，接續它的 session。
 export function prepare({ repo, name, cli, type, model, effort, agent, promptFile, ws, state, mesh, timeout = 3600, worktree: existing, continueFrom, lockWaitMs }) {
   ws = resolve(ws)
   if (!(Number.isFinite(timeout) && timeout > 0)) throw new Error(`--timeout 要是正數（秒），收到 ${timeout}`)
   if (agent && !/^\w[\w.-]*(:[\w.-]+)?$/.test(agent)) throw new Error(`--agent 格式要是 <plugin>:<agent>（或單獨 <agent>），收到 ${agent}`)
-  let resumeSession = null, resumeAgentApplied = false
+  let resumeSession = null, resumeAgentApplied = false, inherit = null
   if (continueFrom) {
     const pj = readJson(join(resolve(continueFrom), 'job.json')), ps = readJson(join(resolve(continueFrom), 'status.json'))
     if (!pj || !ps) throw new Error(`--continue 讀不到上一輪的 job.json／status.json：${continueFrom}`)
     if (ps.state === 'running') throw new Error(`上一輪還在跑（${continueFrom}），等它結束再續派`)
     existing ??= pj.worktree
-    if (!cli && !type) { cli = pj.to ?? (pj.type ? undefined : pj.cli); type = pj.type }  // 舊版 job.json 只有 cli
+    if (!cli && !type) { cli = pj.to ?? (pj.type ? undefined : pj.cli); type = pj.type; inherit = { cli: ps.cli, model: ps.model, effort: ps.effort } }  // 舊版 job.json 只有 cli
     const changed = agent !== undefined && agent !== (pj.agent ?? undefined)
     agent ??= pj.agent ?? undefined  // 沿用上一輪的 Agent 定義，--agent 可覆寫
     // resume 時 claude 不重新套 --agent：session 沿用上一輪的定義，帶了不存在的名稱也不報錯（實測）。換 agent 就開新 session
@@ -120,7 +124,7 @@ export function prepare({ repo, name, cli, type, model, effort, agent, promptFil
   if (existing && !isWorktree(existing)) throw new Error(`--worktree 不是 git worktree：${existing}`)
   if (!existing && !repo) throw new Error('要指定 --repo（新建 worktree）或 --worktree（用既有的）')
   const stateFile = state ?? statePath()
-  const { list, reason } = pickCandidates({ cli, type, model, effort, stateFile, mesh })
+  const { list, reason } = pickCandidates({ cli, type, model, effort, stateFile, mesh, inherit })
   const body = readFileSync(promptFile, 'utf8')
   return withLock(dirname(ws), () => {
     const limit = parallelLimit(readState(stateFile), loadRouting())
@@ -304,7 +308,7 @@ function cli(argv) {
     } catch (e) { console.error(e.message); return e.code === 'NO_CANDIDATE' ? 75 : 1 }
   }
   console.error(`用法：node bg.mjs start (--repo <r> | --worktree <既有 worktree>) --name <n> (--to <cli> | --type <類型>) [--model] [--effort] [--agent] [--timeout] --ws <dir> [--state] [--mesh] <prompt 檔>
-      node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> [--to | --type] <prompt 檔>
+      node bg.mjs start --continue <上一輪 ws> --name <n> --ws <dir> [--to | --type] [--model] [--effort] <prompt 檔>（沒帶就沿用上一輪的模型與等級）
       node bg.mjs status --ws <dir>
       node bg.mjs wait --ws <dir> [--timeout <秒>]
       node bg.mjs ghostty-split --cwd <dir> "<指令>"
