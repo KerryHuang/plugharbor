@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.42.1] - 2026-11-26
+
+起因：用量分析（11/19～11/26 transcript 換算 API 牌價）。主控以 Opus 派出的「實作／修正」subagent 73 次共約 $570；11/26 formwright 自動駕駛有 8 次 `--type implement` 被升成 opus/high，占當天 API worker 費用大半。升級理由幾乎都是「DB 結構／公開 API／>300 行」——產品型專案每張票都符合，升級變常態；同樣條件第 4 節已要求跨家族審查，等於同一份風險付兩次。
+- fix(agent-dispatch)：高風險改動不再升級實作者，照查表派、由跨家族審查把關；同一件被審查退回兩次以上才升一級。user 層 `dispatch.md` 同步改（字數未增加）。
+
 ## [0.42.0] - 2026-11-26
 
 起因：佇列 20261126121405-475036（agent friction），另有回饋歸檔中同類「怎麼沒改名」4 筆。被問到 session 標題時，agent 拿 `~/.claude/sessions` 的 derived 名稱當證據，誤判改名沒生效，實際上內建 ai-title 與 Herdr 分頁都已正確。user 層已有「環境現況先查本機」條文卻沒被遵守，所以升級成機制。回顧見 `docs/retrospective/20261126-session-title-context/`。
