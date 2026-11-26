@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.2] - 2026-11-26
+
+起因：近 30 天 1,044 個主 session 中有 97 個被自動壓縮、共 270 次（平均 2.8 次），觸發點 p50 367K；`context-size-reminder.py` 門檻 400K 高於壓縮點，0.9.3 起從未觸發。
+- fix(context-size-reminder)：門檻 400K → 250K、級距 50K → 150K，自動壓縮前只提醒一次；壓縮後掉回門檻下重置。
+- test：`tests/context-reminder.sh` 改為 250K 級距，新增「壓縮前不重複提醒」。
+
 ## [0.40.1] - 2026-11-25
 
 起因：issue #75——blog 主控（hc 後端）spawn 的 worker 被放進使用者正在看的另一個 workspace。`app_layout.py` 的 `terminal.keep --place` 位置相對「目前 focus 的 pane」，但 `pane.focus` 之後沒核對 focus 真的到了。

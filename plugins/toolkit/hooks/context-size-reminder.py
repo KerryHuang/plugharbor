@@ -4,7 +4,9 @@
 每輪重送整份 context，長 session 換題不清會每輪重讀前一件事（2026-10-21 /usage：
 「Start fresh when you switch tasks」佔近 24h 用量 62%）。只用 systemMessage 給人看，
 不進 Claude 的 context；不擋停止。超過 THRESHOLD 後每多長 STEP 才再提醒一次。
-換題建議主要由 agent 在主題轉換時提（使用者 CLAUDE.md 的回合結尾規則），這裡只當 400K 的安全網。
+換題建議主要由 agent 在主題轉換時提（使用者 CLAUDE.md 的回合結尾規則），這裡補「同一件事做太久」的提醒。
+門檻須低於自動壓縮點（autoCompactWindow 400K 實際約 367K 觸發）；0.9.3 設 400K 時永遠到不了。
+STEP 夠大，壓縮前只提醒一次；壓縮後掉回門檻下會重置。
 任何例外吞掉、exit 0（hook fail-open：提醒失效不該擋住停止）。
 """
 import json
@@ -12,8 +14,8 @@ import os
 import sys
 from pathlib import Path
 
-THRESHOLD = 400_000
-STEP = 50_000
+THRESHOLD = 250_000
+STEP = 150_000
 TAIL_BYTES = 512 * 1024
 STATE_DIR = Path(os.path.expanduser("~/.claude")) / "context-reminder"
 
