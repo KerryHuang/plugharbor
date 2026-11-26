@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.40.3] - 2026-11-26
+
+起因：2026-11-25 夜 formwright 自動駕駛派的 3 則背景 worker prompt（`bg.mjs` 固定開頭「背景 worker 任務（規則見最後一段）」，內含「改用」「不要再」）被 `feedback-capture` 當成使用者糾正記進佇列；同類的「唯讀任務」前綴自 11-08 略過後已驗效。
+- fix(feedback-capture)：略過前綴加 `背景 worker 任務`。
+- test：`tests/feedback-hooks.sh` §12 補「開頭→不記」「不在開頭→仍記」。
+
 ## [0.40.2] - 2026-11-26
 
 起因：近 30 天 1,044 個主 session 中有 97 個被自動壓縮、共 270 次（平均 2.8 次），觸發點 p50 367K；`context-size-reminder.py` 門檻 400K 高於壓縮點，0.9.3 起從未觸發。

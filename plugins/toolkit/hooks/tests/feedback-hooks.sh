@@ -82,6 +82,13 @@ payload "唯讀任務：不要修改任何檔案。檢查有沒有漏掉同類�
 payload "這是唯讀任務之外，你漏掉了一步" | HOME="$H4" USERPROFILE="$H4" "$PY" "$CAPTURE" >/dev/null
 [ "$(wc -l < "$Q4" | tr -d ' ')" = 1 ] || fail "不在開頭的糾正應仍記錄"
 
+# 12) agent-dispatch 背景 worker 的派工 prompt 不算糾正；不在開頭的才算（獨立 HOME）
+H5="$TMP/home5"; Q5="$H5/.claude/feedback-loop/queue.jsonl"; mkdir -p "$H5"
+payload "背景 worker 任務（規則見最後一段）：修正輪，改用新的寫法，不要再沿用舊結論" | HOME="$H5" USERPROFILE="$H5" "$PY" "$CAPTURE" >/dev/null
+[ ! -f "$Q5" ] || fail "背景 worker 任務 prompt 不該進佇列"
+payload "你派的背景 worker 任務怎麼沒回報" | HOME="$H5" USERPROFILE="$H5" "$PY" "$CAPTURE" >/dev/null
+[ "$(wc -l < "$Q5" | tr -d ' ')" = 1 ] || fail "不在開頭的糾正應仍記錄"
+
 # --- feedback-reminder ---
 R="$TMP/rhome"; RF="$R/.claude/feedback-loop"
 rrun() { HOME="$R" USERPROFILE="$R" "$PY" "$REMINDER"; }
