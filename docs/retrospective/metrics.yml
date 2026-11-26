@@ -72,6 +72,7 @@ metrics:
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期；期間無漂英文訊號，20261113135638-17b9d7 是誤擋（壓縮前舊英文），已由 2e47aaf 修"}
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無「說中文」或漂英文訊號"}
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-11-27，未到期"}
   - id: M-20261113-02
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -83,6 +84,7 @@ metrics:
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期"}
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無信任誤判訊號"}
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-11-27，未到期"}
   - id: M-20261117-01
     source: 20261117-reply-address/report.md
     layer: toolkit
@@ -93,6 +95,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-12-08，未到期；11-17 後佇列無「位址錯了／改名」糾正"}
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-08，未到期"}
   - id: M-20261117-02
     source: 20261117-reply-address/report.md
     layer: toolkit
@@ -103,6 +106,7 @@ metrics:
     status: open
     checks:
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-12-08，未到期"}
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-08，未到期"}
   - id: M-20261123-01
     source: 20261123-implement-bypass/report.md
     layer: lifecycle
@@ -111,7 +115,8 @@ metrics:
     due: {date: "2026-12-14"}
     if_not: (a) hook 失敗就改 (b) after.md 併入計畫範本、implement 降為選用；到期時 R1 未套用則判 fail 並重新排程
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-14，未到期"}
   - id: M-20261123-02
     source: 20261123-implement-bypass/report.md
     layer: lifecycle
@@ -120,7 +125,8 @@ metrics:
     due: {date: "2026-12-14"}
     if_not: 清單新增項目一律走腳本開票並回寫號碼
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-14，未到期"}
   - id: M-20261123-03
     source: 20261123-implement-bypass/report.md
     layer: workspace
@@ -129,7 +135,8 @@ metrics:
     due: {date: "2026-12-14"}
     if_not: 恢復為只在沒裝 superpowers 時觸發的退路版
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-14，未到期"}
   - id: M-20261123-04
     source: 20261123-feedback-plugin-handoff/report.md
     layer: workspace
@@ -138,7 +145,8 @@ metrics:
     due: {date: "2026-12-21"}
     if_not: 升級成 guard：unattended 模式下擋 push --force／--force-with-lease
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-21，未到期"}
   - id: M-20261123-05
     source: 20261123-feedback-plugin-handoff/report.md
     layer: toolkit
@@ -147,7 +155,8 @@ metrics:
     due: {date: "2026-12-21"}
     if_not: 改為 spawn 前用使用者 login shell 匯出整份環境（扣除污染變數）
     status: open
-    checks: []
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-21，未到期"}
   - id: M-20261123-06
     source: 20261123-feedback-plugin-handoff/report.md
     layer: workspace
@@ -155,5 +164,25 @@ metrics:
     criterion: 2026-11-24～12-21 回饋佇列出現「派工漏附已確認決定、產出與已確認答案相反」的筆數＝0
     due: {date: "2026-12-21"}
     if_not: 改寫 unattended 第 0 步，派初稿時指名附帳本與 design-questions 的已確認答案
+    status: open
+    checks:
+      - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-12-21，未到期"}
+
+  - id: M-20261126-01
+    source: 20261126-session-title-context/report.md
+    layer: toolkit
+    metric: agent 回答標題問題時用對來源
+    criterion: toolkit 0.42.0 發版後到 2026-12-17，回饋佇列出現「誤判 session 標題／改名沒生效／拿 derived 名稱當標題」的糾正或 friction 筆數＝0
+    due: {date: "2026-12-17"}
+    if_not: 看注入的 additionalContext 有沒有出現在 transcript；有出現仍誤判就把關鍵字擴大或改成每回合注入
+    status: open
+    checks: []
+  - id: M-20261126-02
+    source: 20261126-session-title-context/report.md
+    layer: toolkit
+    metric: 建議標題的套用率
+    criterion: 0.42.0 發版後到 2026-12-17，建議行之後第一則使用者 prompt 前後沒有對應 custom-title 的案例（排除 nameSource=user）≤ 5%；基準為發版前正常送出 11/211、排隊送出 4/4 漏套用（用本報告目錄的 scan.py 重算）
+    due: {date: "2026-12-17"}
+    if_not: 排隊以外還有漏套用路徑，逐例看 hook 當下的 transcript 尾段
     status: open
     checks: []

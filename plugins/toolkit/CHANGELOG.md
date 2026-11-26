@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.42.0] - 2026-11-26
+
+起因：佇列 20261126121405-475036（agent friction），另有回饋歸檔中同類「怎麼沒改名」4 筆。被問到 session 標題時，agent 拿 `~/.claude/sessions` 的 derived 名稱當證據，誤判改名沒生效，實際上內建 ai-title 與 Herdr 分頁都已正確。user 層已有「環境現況先查本機」條文卻沒被遵守，所以升級成機制。回顧見 `docs/retrospective/20261126-session-title-context/`。
+- feat(auto-session-title)：使用者訊息提到「標題／改名／rename」時，以 additionalContext 注入目前標題與各來源：內建 ai-title、custom-title、本次正在套用的建議標題、sessions 檔 name（標明 derived 名稱不是標題）；在 Herdr 內加上 `hc get` 的 terminal title 與分頁名。transcript 沒有紀錄時照實寫「沒有紀錄」。
+- fix(auto-session-title)：assistant 還在跑時送出的 prompt 會排隊，Claude Code 在送出當下就跑 hook，讀不到之後才寫出的建議行；下一輪的掃描又停在那則 prompt，建議永遠不會套用（本機 transcript 中 4 個清楚的排隊案例全部漏套用）。改為 `sentAtMs` 早於建議行的 prompt 不算回合邊界、下一次送出時補套用；`promptSource: system` 的通知與 peer 訊息也不算邊界。以本機 2381 個 prompt 時點重播，新舊版只差 11 處，都是應套用而舊版漏掉的，沒有誤套舊建議。測試補第 8～13 項。
+
 ## [0.41.0] - 2026-11-26
 
 起因：使用 plugharbor 的專案在自動駕駛時回報三筆摩擦（回饋佇列 20261126140542-b2f7fc、-cff048、-a341c0）：同一主控的兩條平行線改到共用檔，land-check 互回 11、無人值守規定排隊，互等成死結；`bg.mjs --type reviewer` 報「未知的任務類型」；背景 worker 用 `lifecycle:reviewer` 審查時沒有 Bash 跑不了 `git diff`、也讀不到 worktree 外的材料。
