@@ -15,13 +15,12 @@
     "top": [
       { "cli": "codex", "model": "gpt-6.1-sol", "effort": "high" },
       { "cli": "claude", "model": "opus", "effort": "high" },
-      { "cli": "claude-api", "model": "opus", "effort": "high" },
       { "cli": "agy", "model": "gemini-3.8-flash-high", "effort": "high" },
       { "cli": "pi", "model": "claude-bridge/claude-opus-5-5", "effort": "high" }
     ],
     "standard": [
-      { "cli": "claude-api", "model": "sonnet", "effort": "medium" },
       { "cli": "claude", "model": "sonnet", "effort": "medium" },
+      { "cli": "claude-api", "model": "sonnet", "effort": "medium" },
       { "cli": "codex", "model": "gpt-6.1-sol", "effort": "medium" },
       { "cli": "agy", "model": "gemini-3.8-flash-medium", "effort": "medium" },
       { "cli": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium" }

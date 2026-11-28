@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [2.2.3] - 2026-11-28
+
+起因：同 toolkit 0.43.2（API 帳單三天用掉 $200，背景 worker 的 standard 路由是 API 優先）。
+- docs(unattended)：背景 worker 改寫為「訂閱優先，額度用完自動改派、可溢流到 API」，跟 toolkit 路由表一致。
+
 ## [2.2.2] - 2026-11-26
 
 起因：同 toolkit 0.43.0——同家 opus 審查一週約 $286，自動駕駛連修正輪複審也走 opus。

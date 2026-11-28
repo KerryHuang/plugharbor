@@ -9,7 +9,7 @@ SKILL.md 第 2～4 步與第 6 節的細則。起因：Agent subagent 跑在主 
 | 實作（`implement`）、QA／走查（`qa`）、文件（`docs`）、機械類（`mechanical`） | 背景 worker，`--type` 依路由表派 |
 | 規劃、架構、設計、最終審查、`lifecycle:domain-advisor` 分流 | 維持訂閱：主控自己做或 Agent subagent；審查照 SKILL.md 第 3 步 |
 
-路由表決定第一家（standard 是 claude-api、cheap 可能是 agy）；額度用完或 key 失效時腳本封鎖那一家、在同一個 worktree 改派下一個候選，主控不用自己重派。
+路由表決定第一家（standard 是 claude 訂閱、claude-api 只當溢流；cheap 可能是 agy）；額度用完或 key 失效時腳本封鎖那一家、在同一個 worktree 改派下一個候選，主控不用自己重派。
 
 下列情況不走背景 worker，改用 Agent subagent（現行做法），帳本與回報寫 `退回訂閱：<原因>`：
 

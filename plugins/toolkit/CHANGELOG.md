@@ -2,6 +2,12 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.2] - 2026-11-28
+
+起因：API 帳單 11/25～11/27 用掉 $200（11/26 約 $170，其中 Opus 約 $135）。依 session transcript 回推：全是 formwright 自動駕駛的背景 worker 經 `claude-api` 跑，11/26 的 Opus 集中在 4 個 implement session（每個 300～535 次呼叫，cache read 約佔一半）；11/27～28 改走訂閱 `claude` 後 API 趨近 0。Opus 升級實作者已在 0.42.1 修掉，但 standard 仍是 API 優先、top 仍有 `claude-api`。
+- fix(agent-dispatch)：standard 改為訂閱優先，`claude-api` 移到 `claude` 之後，只在訂閱額度用完時溢流；top 移除 `claude-api`（Opus 不走 API 計費）；cheap（Haiku）維持 API 在 `claude` 前。SKILL.md 同步。
+- test(agent-dispatch)：路由測試跟著改；「第一名」測試帶 `env: {}`，不再因本機設了 `AGENT_DISPATCH_CLAUDE_API_KEY_CMD` 而失敗（先前本機 10 項失敗）；改派測試改用 cheap 類型並以 mesh 標 agy 不可用，避免叫到本機真的 agy。
+
 ## [0.43.1] - 2026-11-26
 
 起因：自動駕駛回報（回饋佇列 20261126200452-8480e0）。上一輪以 `--type implement --model opus --effort high` 派出，`bg.mjs start --continue` 續派時模型與等級重新走路由變成 sonnet／medium，卻 resume 同一個 session；主控得自己察覺、kill 再重派。usage 與 unattended「續派沿用 context」都讓人以為會沿用。

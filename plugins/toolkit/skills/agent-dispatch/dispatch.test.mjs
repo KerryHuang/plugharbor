@@ -226,7 +226,7 @@ const none = { blocks: {} }
 
 for (const [type, cli] of Object.entries(firstOf)) {
   test(`candidates：${type} 第一名是 ${cli}`, () => {
-    const c = candidates({ type, routing, state: none, available: null, now: 0 })
+    const c = candidates({ type, routing, state: none, available: null, now: 0, env: {} })  // 不受本機 key 來源影響
     assert.equal(c[0].cli, cli)
     assert.equal(c.length, 4)
     assert.equal(c.at(-1).cli, 'pi')
@@ -248,24 +248,25 @@ test('candidates：只剩可用的 CLI，exclude 也排除', () => {
 const withKey = { AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'echo k' }
 const pick = (tier, env) => candidates({ tier, routing, state: none, available: null, now: 0, env })
 
-test('routing：standard 與 cheap 的 claude-api 緊接在 claude 之前，model/effort 相同', () => {
-  for (const tier of ['standard', 'cheap']) {
+// standard 訂閱優先、API 只當溢流（緊接在 claude 之後）；cheap（Haiku）API 在 claude 之前；top 不走 API
+test('routing：standard 的 claude-api 緊接在 claude 之後、cheap 的緊接在 claude 之前，model/effort 相同', () => {
+  for (const [tier, offset] of [['standard', -1], ['cheap', 1]]) {
     const list = routing.tiers[tier]
     const i = list.findIndex(c => c.cli === 'claude-api')
     assert.ok(i >= 0, tier)
-    assert.equal(list[i + 1].cli, 'claude')
-    assert.equal(list[i].model, list[i + 1].model)
-    assert.equal(list[i].effort, list[i + 1].effort)
+    assert.equal(list[i + offset].cli, 'claude', tier)
+    assert.equal(list[i].model, list[i + offset].model)
+    assert.equal(list[i].effort, list[i + offset].effort)
   }
+  assert.equal(routing.family['claude-api'], 'anthropic')
 })
 
-test('routing：top 的 claude-api 緊接在 claude 之後，family 為 anthropic', () => {
-  const list = routing.tiers.top
-  const i = list.findIndex(c => c.cli === 'claude')
-  assert.equal(list[i + 1].cli, 'claude-api')
-  assert.equal(list[i + 1].model, list[i].model)
-  assert.equal(list[i + 1].effort, list[i].effort)
-  assert.equal(routing.family['claude-api'], 'anthropic')
+test('routing：top 不含 claude-api（Opus 不走 API 計費）', () => {
+  assert.ok(!routing.tiers.top.some(c => c.cli === 'claude-api'))
+})
+
+test('candidates：有設 key 來源時 implement 第一名仍是 claude（訂閱）', () => {
+  assert.equal(candidates({ type: 'implement', routing, state: none, available: null, now: 0, env: withKey })[0].cli, 'claude')
 })
 
 test('reviewer(claude-api) 不挑 claude 或 pi（同家族）', () => {
@@ -285,8 +286,8 @@ test('candidates：沒設 key 來源時不含 claude-api，結果與改動前相
     }
 })
 
-test('candidates：有設時含 claude-api', () => {
-  for (const tier of ['standard', 'cheap', 'top']) assert.ok(pick(tier, withKey).some(x => x.cli === 'claude-api'), tier)
+test('candidates：有設時 standard／cheap 含 claude-api', () => {
+  for (const tier of ['standard', 'cheap']) assert.ok(pick(tier, withKey).some(x => x.cli === 'claude-api'), tier)
 })
 
 test('reviewer：沒設 key 來源、author codex、claude 被封鎖 → 不挑 claude-api', () => {
@@ -555,6 +556,12 @@ function tmpRepo() {
   git('init', '-q'); writeFileSync(join(repo, 'a.txt'), 'a')
   git('add', 'a.txt'); git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-qm', 'init')
   return repo
+}
+
+function noAgyMesh() {
+  const f = join(mkdtempSync(join(tmpdir(), 'ad-mesh-')), 'mesh.json')
+  writeFileSync(f, JSON.stringify({ results: [{ layer: 2, a: 'agy', status: 'fail' }] }))
+  return f
 }
 
 async function runJob(env, { state, setup, cli = 'claude', type, mesh, agent } = {}) {
@@ -941,12 +948,13 @@ test('buildArgs worker：claude 系帶 --session-id／--resume，仍在 --add-di
 
 test('背景 worker --type：claude-api 額度用盡 → 封鎖、改派 claude 做完，status 記實際對象與改派紀錄', async () => {
   const f = argsLog()
-  const { job, status, root } = await runJob({ ...KEY, SHIM_RESULT: 'api-quota', SHIM_ARGS: f }, { type: 'implement' })
-  assert.match(readFileSync(join(job.ws, 'job.json'), 'utf8'), /"type": "implement"/)
+  // cheap 類型、mesh 標 agy 不可用（本機真的 agy 不能被叫到），claude-api 排第一
+  const { job, status, root } = await runJob({ ...KEY, SHIM_RESULT: 'api-quota', SHIM_ARGS: f }, { type: 'docs', mesh: noAgyMesh() })
+  assert.match(readFileSync(join(job.ws, 'job.json'), 'utf8'), /"type": "docs"/)
   assert.equal(status.state, 'done')
   assert.equal(status.cli, 'claude')
   assert.deepEqual(status.attempts, [{ cli: 'claude-api', outcome: 'quota' }])
-  assert.match(status.line, /^\[bg\] 交給 claude（sonnet／medium），理由：implement；改派自 claude-api（quota）/)
+  assert.match(status.line, /^\[bg\] 交給 claude（haiku／low），理由：docs；改派自 claude-api（quota）/)
   assert.ok(readState(join(root, 'state.json')).blocks['claude-api'].until > Date.now())
   const [first, second] = readArgs(f)
   assert.ok(first.includes('--session-id') && second.includes('--session-id'))
@@ -1070,7 +1078,7 @@ test('prepare --continue：舊版 job.json 只有 cli → 沿用該 cli', () => 
 test('背景 worker --type：claude-api 取 key 失敗且狀態檔寫不進去 → 仍改派下一家做完', async () => {
   const d = mkdtempSync(join(tmpdir(), 'ad-ro2-'))
   const notDir = join(d, 'file'); writeFileSync(notDir, 'x')
-  const { status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, { type: 'implement', state: join(notDir, 'state.json') })
+  const { status } = await runJob({ AGENT_DISPATCH_CLAUDE_API_KEY_CMD: 'exit 1' }, { type: 'docs', mesh: noAgyMesh(), state: join(notDir, 'state.json') })
   assert.equal(status.state, 'done')
   assert.equal(status.cli, 'claude')
   assert.deepEqual(status.attempts, [{ cli: 'claude-api', outcome: 'key' }])
