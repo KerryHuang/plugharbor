@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.3] - 2026-11-28
+
+起因：0.43.2 改成訂閱優先後，使用者問「訂閱用完是不是就不能自動用 API」；這條溢流路徑原本沒有測試。
+- test(agent-dispatch)：新增「`--type implement` 訂閱 claude 額度用盡 → 封鎖 claude、同一 worktree 溢流到 claude-api 做完」，驗 `status.cli`、`attempts`、`line` 與封鎖狀態。行為不變。
+
 ## [0.43.2] - 2026-11-28
 
 起因：API 帳單 11/25～11/27 用掉 $200（11/26 約 $170，其中 Opus 約 $135）。依 session transcript 回推：全是 formwright 自動駕駛的背景 worker 經 `claude-api` 跑，11/26 的 Opus 集中在 4 個 implement session（每個 300～535 次呼叫，cache read 約佔一半）；11/27～28 改走訂閱 `claude` 後 API 趨近 0。Opus 升級實作者已在 0.42.1 修掉，但 standard 仍是 API 優先、top 仍有 `claude-api`。

@@ -534,6 +534,7 @@ const fs = require('node:fs')
 fs.writeFileSync('changed.txt', 'by worker')
 if (process.env.SHIM_ARGS) fs.appendFileSync(process.env.SHIM_ARGS, JSON.stringify(process.argv.slice(2)) + '\\n')
 if (process.env.SHIM_RESULT === 'api-quota' && process.env.ANTHROPIC_API_KEY) { console.log('Credit balance is too low'); process.exit(1) }
+if (process.env.SHIM_RESULT === 'sub-quota' && !process.env.ANTHROPIC_API_KEY) { console.log('Error: usage limit reached'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'no-agent' && process.argv.includes('--agent')) { console.log("--agent 'x:y' not found. Available agents: claude"); process.exit(1) }
 if (process.env.SHIM_RESULT === 'no-session' && process.argv.includes('--resume')) { console.log('No conversation found with session ID: x'); process.exit(1) }
 if (process.env.SHIM_RESULT === 'push') {
@@ -961,6 +962,15 @@ test('背景 worker --type：claude-api 額度用盡 → 封鎖、改派 claude 
   assert.notEqual(first[first.indexOf('--session-id') + 1], second[second.indexOf('--session-id') + 1])
   assert.match(second[1], /前一位 worker（claude-api）被額度或 API key 問題中斷/)
   assert.match(readFileSync(join(job.ws, 'log.txt'), 'utf8'), /===== claude-api[\s\S]*===== claude（/)
+})
+
+test('背景 worker --type implement：訂閱 claude 額度用盡 → 封鎖、溢流到 claude-api 做完', async () => {
+  const { status, root } = await runJob({ ...KEY, SHIM_RESULT: 'sub-quota' }, { type: 'implement' })
+  assert.equal(status.state, 'done')
+  assert.equal(status.cli, 'claude-api')
+  assert.deepEqual(status.attempts, [{ cli: 'claude', outcome: 'quota' }])
+  assert.match(status.line, /^\[bg\] 交給 claude-api（sonnet／medium），理由：implement；改派自 claude（quota）/)
+  assert.ok(readState(join(root, 'state.json')).blocks.claude.until > Date.now())
 })
 
 test('背景 worker --to claude-api：額度用盡不改派，回 quota', async () => {
