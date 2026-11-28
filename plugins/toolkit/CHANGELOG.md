@@ -2,6 +2,11 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.4] - 2026-11-28
+
+起因：查 pi 怎麼決定模型時，發現 `agent-mesh-check/references/cli-notes.md` 把 `--thinking` 寫成「沒給模型時」才用，但 pi 1.6.1 官方 `docs/cli.md` 是「`--thinking` 蓋過 `--model` 的尾綴」；也沒寫沒給模型時的預設來源與 `claude-bridge` 的計費。
+- docs(agent-mesh-check)：`cli-notes.md` 的 pi 列改寫 thinking 規則與 `claude-bridge`／`anthropic/` 的差別，補「沒給 `--model` 時」一條（settings 預設、`--provider` 用法、環境的 `ANTHROPIC_API_KEY` 會讓 bridge 改用 key 計費）；標明 2026-11-28 以 1.6.1 複核。
+
 ## [0.43.3] - 2026-11-28
 
 起因：0.43.2 改成訂閱優先後，使用者問「訂閱用完是不是就不能自動用 API」；這條溢流路徑原本沒有測試。

@@ -20,7 +20,7 @@
 - prompt 以 `-` 開頭（如 `---` frontmatter）時 claude 會報 `unknown option`（2026-11 實測）。`buildArgs` 在這種 prompt 前補一個半形空格：常見的參數解析器都以第一個字元是不是 `-` 判斷選項，空格開頭就當位置參數或選項值，模型讀到的內容只多一個空格；其他 prompt 原樣傳。2026-11-04 macOS 實測：claude、codex、agy、pi 收到 `---` 開頭的 prompt 都正常回答，沒有被當成選項。
 - driver 的 codex 一定要 `danger-full-access`：read-only 沙箱會擋網路，被叫起的 CLI 就連不到模型。
 
-## 指定模型與思考等級（2026-11-04 在 macOS 實測：claude 2.1.317、codex 0.166.0、agy 1.4.12、pi 1.4.0）
+## 指定模型與思考等級（2026-11-04 在 macOS 實測：claude 2.1.317、codex 0.166.0、agy 1.4.12、pi 1.4.0；pi 部分 2026-11-28 以 1.6.1 的 `--help` 與 `docs/cli.md` 複核）
 
 `clis.mjs` 的 `buildArgs(name, mode, prompt, { model, effort })` 依下表組參數；agent-dispatch 路由表（`../../agent-dispatch/references/routing.json`）的 12 組都實際 ping 過。
 
@@ -29,10 +29,11 @@
 | claude | `--model <別名或 ID>`（`opus`、`sonnet`、`haiku`） | `--effort <level>` | 別名即可 |
 | codex | `-m <model>` | `-c model_reasoning_effort=<level>` | 沒有列表指令；看 `~/.codex/config.toml` 的 `model` |
 | agy | `--model <id>` | `--effort <level>`（模型 ID 本身也帶等級，如 `gemini-3.8-flash-high`） | `agy models` |
-| pi | `--model <provider>/<id>:<thinking>` | 沒給模型時 `--thinking <level>` | `pi --list-models`；走 Claude 訂閱用 `claude-bridge/` |
+| pi | `--model <provider>/<id>:<thinking>` | 掛在 `--model` 尾綴；`--thinking <level>` 也行，兩者並給時 `--thinking` 優先（依模型能力 clamp）。`clis.mjs` 有模型就用尾綴、沒模型才用 `--thinking` | `pi --list-models`；走 Claude 訂閱用 `claude-bridge/`（`pi-claude-bridge` extension 註冊的 provider，用 Claude Code 登入；`anthropic/` 是 pi 自己的 provider，不走訂閱） |
 
 ## 已知坑
 
+- **pi 沒給 `--model` 時**：用 `~/.pi/agent/settings.json` 的 `defaultProvider`／`defaultModel`（專案 `.pi/settings.json` 覆蓋），沒設才用內建的各 provider 預設；thinking 預設 `defaultThinkingLevel`，未設為 `medium`。`--provider` 只縮小 `--model` 的查找範圍、要搭配 `--model`。環境有 `ANTHROPIC_API_KEY` 時 bridge 的 Claude Code 子程序會改用 key 計費（bridge README）。
 - **stdin 一律關閉**：`pi -p` 只要 stdin 沒關，就會無限等待。用 shell 呼叫時加 `< /dev/null`。
 - **codex 很耗 token**：保留使用者設定時，一次 PING 約 3 萬 token，因為會載入 user 層的 rules、hooks、plugins。加上 `--ignore-user-config --ignore-rules` 後約 1.4 萬，代價是用 codex 的預設模型。
 - **codex 會把 prompt 原文印進輸出**：如果判斷成功的方式是「prompt 叫它照抄，輸出裡有那段字就算過」，就算模型沒回話也會假通過。驗證時改成要求它把隨機字串轉成大寫，再比對大寫版。
