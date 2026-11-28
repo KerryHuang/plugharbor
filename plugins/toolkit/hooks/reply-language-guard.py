@@ -32,15 +32,32 @@ def read_rows(path):
 
 
 def prompt_text(row):
-    """真正的使用者提問回傳文字，其他（tool_result、meta、壓縮摘要）回傳 None。"""
+    """真正的使用者提問回傳文字，其他（tool_result、meta、壓縮摘要、背景任務通知）回傳 None。"""
     if row.get("type") != "user" or row.get("isMeta") or row.get("isCompactSummary"):
         return None
     content = row.get("message", {}).get("content")
     if isinstance(content, str):
-        return content
+        # 背景任務完成通知不是 meta 列、內容是英文，當成提問會整回合放行（2026-11-26）
+        return None if content.lstrip().startswith("<task-notification>") else content
     if isinstance(content, list) and not is_tool_result(row):
         return " ".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
     return None
+
+
+def earlier_prompt(path):
+    """尾段沒有提問時掃全檔，只解析看起來是 user 列的行，回傳最後一則提問。"""
+    prompt = None
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if '"type":"user"' not in line and '"type": "user"' not in line:
+                continue
+            try:
+                text = prompt_text(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+            if text is not None:
+                prompt = text
+    return prompt
 
 
 def is_tool_result(row):
@@ -73,12 +90,15 @@ def main():
         if prompt is not None:
             break
     else:
-        return
+        # 長 session（自動駕駛）的最後一則提問常在尾段之外，找不到就整回合放行（2026-11-26）：改掃全檔的 user 列
+        prompt, i = earlier_prompt(path), 0
+        if prompt is None:
+            return
     if not is_cjk_prompt(prompt):
         return
     # 回合起點：最後一個非 tool_result 的 user 列。跨 session 訊息、subagent 交回、Stop hook 回饋都是 meta 列，
     # 也會開啟新回合；只從提問算起的話，自動駕駛開場回合的英文會在之後每個回合被重擋（2026-11-14）
-    start = max(j for j in range(i, len(rows)) if rows[j].get("type") == "user" and not is_tool_result(rows[j]))
+    start = max((j for j in range(i, len(rows)) if rows[j].get("type") == "user" and not is_tool_result(rows[j])), default=-1)
     texts = [c.get("text", "") for row in rows[start + 1:] if row.get("type") == "assistant"
              for c in row.get("message", {}).get("content", []) if isinstance(c, dict) and c.get("type") == "text"]
     # Stop 觸發時最後一則回覆常還沒寫進 transcript，只在 payload 裡

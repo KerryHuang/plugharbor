@@ -19,7 +19,7 @@ EXCERPT = 300
 PATTERN = re.compile(
     r"不對|不是這樣|錯了|搞錯|我說過|我剛說|我剛剛說|跟你說過|我不是說|不是叫你|不是要你|我要的是"
     r"|改用|不要再|別再|又來了|怎麼又|為什麼又|你漏了|漏掉|沒照|沒有照|為什麼沒|為什麼不"
-    r"|怎麼停|怎麼沒|應該.{0,30}才對|不就.{0,30}嗎|我都要|還要我"
+    r"|怎麼停|怎麼沒|應該.{0,30}才對|不就.{0,30}嗎|我都要|還要我|說中文|講中文"
     r"|\bwrong\b|that'?s not what|not what I (?:asked|meant|said)|\bI said\b|\bI told you\b"
     r"|\bI asked\b|\byou missed\b|\byou forgot\b|\bdon'?t do that\b|\bstop doing\b"
     r"|\bwhy did(?:n'?t)? you\b|\bincorrect\b|^\s*no[,.!\s]",

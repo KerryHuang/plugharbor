@@ -2,6 +2,13 @@
 
 格式：每次改動 `hooks/`、`guards/`、`skills/`、`agents/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [0.43.5] - 2026-11-28
+
+起因：retrospective 驗收 M-20261113-01 判定未生效（`docs/retrospective/20261128-language-guard-blind-spots/report.md`）。2026-11-26 formwright 自動駕駛 session 在 context 壓縮後整段英文回報送達使用者，使用者回「說中文」；佇列沒收到這筆。
+- fix(reply-language-guard)：背景任務完成通知（`<task-notification>`）不再當成使用者提問；尾段 4MB 找不到提問時改掃全檔的 user 列（長 session 的最後一則提問常在尾段之外，原本整回合放行）。以事故 transcript 重播：修正前放行、修正後攔下。
+- fix(feedback-capture)：糾正樣式加「說中文｜講中文」。
+- test：補通知列與超過 4MB 的重現案例、「說中文」入佇列。
+
 ## [0.43.4] - 2026-11-28
 
 起因：查 pi 怎麼決定模型時，發現 `agent-mesh-check/references/cli-notes.md` 把 `--thinking` 寫成「沒給模型時」才用，但 pi 1.6.1 官方 `docs/cli.md` 是「`--thinking` 蓋過 `--model` 的尾綴」；也沒寫沒給模型時的預設來源與 `claude-bridge` 的計費。

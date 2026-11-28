@@ -55,6 +55,25 @@ class ReplyLanguageGuard(unittest.TestCase):
         self.assertEqual(out["decision"], "block")
         self.assertIn("Now updating the README", out["reason"])
 
+    def test_task_notification_is_not_taken_as_english_prompt(self):
+        # 2026-11-26 formwright 自動駕駛：背景任務完成通知是非 meta 的英文 user 列，被當成提問而放行
+        note = "<task-notification>\n<task-id>bg1</task-id>\n<status>completed</status>\n</task-notification>"
+        rows = [user("繼續自動駕駛，做完回報"), assistant("好，開始。"), user(note),
+                assistant("The one-click installer is finished: all five parts are merged into main.")]
+        out = json.loads(self.run_hook(rows))
+        self.assertEqual(out["decision"], "block")
+        self.assertIn("one-click installer", out["reason"])
+
+    def test_prompt_beyond_tail_window_still_counts(self):
+        # 2026-11-26 formwright 自動駕駛：transcript 19.7MB，最後一則提問在尾段 4MB 之外，找不到提問就整回合放行
+        filler = [tool_result()] + [{"type": "user", "message": {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "x", "content": "中" * 100_000}]}} for _ in range(20)]
+        note = "<task-notification>\n<task-id>bg1</task-id>\n</task-notification>"
+        rows = [user("繼續自動駕駛，做完回報"), assistant("好，開始。")] + filler + [
+            user(note), assistant("The one-click installer is finished: all parts are merged.")]
+        out = json.loads(self.run_hook(rows))
+        self.assertEqual(out["decision"], "block")
+
     def test_old_english_before_meta_turn_start_is_not_rescanned(self):
         # 2026-11-14 自動駕駛 session：開場回合的英文句，在之後每個由跨 session 訊息開啟的回合都被重擋
         rows = [user("繼續自動駕駛"), assistant("Now the docs cleanup. Let me look at the repo state."),

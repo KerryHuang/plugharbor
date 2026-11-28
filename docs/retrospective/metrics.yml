@@ -68,11 +68,12 @@ metrics:
     criterion: 2026-11-13 之後，feedback 佇列出現「說中文」類糾正或「回覆漂成英文」的 agent friction 筆數＝0
     due: {date: "2026-11-27"}
     if_not: 檢查 Stop hook 是否被 stop_hook_active 放行掉、或英文段判準太嚴；再考慮 PreToolUse 在工具呼叫前即時提醒
-    status: open
+    status: failed
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期；期間無漂英文訊號，20261113135638-17b9d7 是誤擋（壓縮前舊英文），已由 2e47aaf 修"}
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無「說中文」或漂英文訊號"}
       - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-11-27，未到期"}
+      - {date: "2026-11-28", verdict: fail, evidence: "佇列字面 0 筆，但 transcript 掃到漏網：formwright session d2cb257d 於 2026-11-26T17:48Z 壓縮後整段英文回報送達使用者，22:37Z 使用者回「說中文」（佇列未收，糾正樣式沒涵蓋）。根因：guard 往回找提問時取到 <task-notification>（背景任務完成通知，非 isMeta、英文），判定提問非 CJK 而放行。另 11-14 修正後 guard 擋下 188 次真英文段，漂移本身仍頻繁、靠事後攔。"}
   - id: M-20261113-02
     source: 20261113-feedback-handoff/report.md
     layer: toolkit
@@ -80,11 +81,12 @@ metrics:
     criterion: 0.21.1 發版後，佇列出現「信任檢查判 missing 但實際由上層繼承」或「worker 卡在信任對話框」的筆數＝0
     due: {date: "2026-11-27"}
     if_not: 改成先試 agent start、失敗才請使用者處理
-    status: open
+    status: passed
     checks:
       - {date: "2026-11-17", verdict: not-due, evidence: "due 2026-11-27，未到期"}
       - {date: "2026-11-23", verdict: not-due, evidence: "due 2026-11-27，未到期；11-17 後佇列無信任誤判訊號"}
       - {date: "2026-11-26", verdict: not-due, evidence: "due 2026-11-27，未到期"}
+      - {date: "2026-11-28", verdict: pass, evidence: "0.21.1（2026-11-13 11:14）後佇列 0 筆；transcript 中信任檢查實跑 16 次／13 個 session，結果皆 ok（含「trusted via 上層 blog」的繼承案例與 wt-ok），之後都直接派工，無一請使用者按信任；使用者訊息無信任對話框抱怨。"}
   - id: M-20261117-01
     source: 20261117-reply-address/report.md
     layer: toolkit
@@ -184,5 +186,14 @@ metrics:
     criterion: 0.42.0 發版後到 2026-12-17，建議行之後第一則使用者 prompt 前後沒有對應 custom-title 的案例（排除 nameSource=user）≤ 5%；基準為發版前正常送出 11/211、排隊送出 4/4 漏套用（用本報告目錄的 scan.py 重算）
     due: {date: "2026-12-17"}
     if_not: 排隊以外還有漏套用路徑，逐例看 hook 當下的 transcript 尾段
+    status: open
+    checks: []
+  - id: M-20261128-01
+    source: 20261128-language-guard-blind-spots/report.md
+    layer: toolkit
+    metric: 語言 guard 長 session 盲點（0.43.5）
+    criterion: toolkit 0.43.5 發版後到 2026-12-19，transcript 中使用者「說中文／講中文」類糾正筆數＝0（佇列 0.43.5 起會收「說中文」，佇列與 transcript 兩邊都查）
+    due: {date: "2026-12-19"}
+    if_not: 逐例重播當下的 Stop（截在那則英文回覆、last_assistant_message 帶入），看 guard 選到哪一列當提問與回合起點
     status: open
     checks: []

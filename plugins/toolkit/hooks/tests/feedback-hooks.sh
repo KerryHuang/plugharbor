@@ -38,18 +38,22 @@ PYEOF
 payload "That's not what I asked for" | run "$CAPTURE" >/dev/null
 [ "$(lines)" = 2 ] || fail "英文糾正未命中"
 
+# 2b) 「說中文」類語言糾正命中（2026-11-26 漏收）
+payload "說中文" | run "$CAPTURE" >/dev/null
+[ "$(lines)" = 3 ] || fail "「說中文」未命中"
+
 # 3) 未命中不寫
 payload "幫我整理這份報告的格式" | run "$CAPTURE" >/dev/null
-[ "$(lines)" = 2 ] || fail "未命中卻寫入"
+[ "$(lines)" = 3 ] || fail "未命中卻寫入"
 
 # 4) 長貼上（> 2000 字）跳過
 LONG="不對$(printf 'x%.0s' $(seq 1 2100))"
 payload "$LONG" | run "$CAPTURE" >/dev/null
-[ "$(lines)" = 2 ] || fail "長貼上未跳過"
+[ "$(lines)" = 3 ] || fail "長貼上未跳過"
 
 # 5) slash command 跳過
 payload "/some-command 不對" | run "$CAPTURE" >/dev/null
-[ "$(lines)" = 2 ] || fail "slash command 未跳過"
+[ "$(lines)" = 3 ] || fail "slash command 未跳過"
 
 # 7) 壞掉的 stdin：exit 0、stdout 空
 OUT="$(printf 'not json{' | run "$CAPTURE")" || fail "壞 stdin 應 exit 0"
@@ -59,7 +63,7 @@ OUT="$(printf '\xff\xfe\x00' | run "$CAPTURE")" || fail "非 UTF-8 stdin 應 exi
 
 # 8) Windows 式 cp950 stdio 仍正確解中文
 payload "又來了" | PYTHONIOENCODING=cp950 run "$CAPTURE" >/dev/null
-[ "$(lines)" = 3 ] || fail "cp950 stdio 下未命中"
+[ "$(lines)" = 4 ] || fail "cp950 stdio 下未命中"
 
 # 9) 佇列目錄無法建立（feedback 是檔案）也 exit 0
 H2="$TMP/home2"; mkdir -p "$H2/.claude"; : > "$H2/.claude/feedback-loop"
